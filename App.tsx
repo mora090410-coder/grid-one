@@ -803,19 +803,22 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {showShareModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-          <div className="liquid-glass w-full max-w-sm p-6 text-center flex flex-col items-center gap-4">
-            <h2 className="text-xl font-black text-white italic tracking-tighter uppercase">BOARD LINK</h2>
-            <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={window.location.href} size={140} /></div>
-            <div className="bg-black/40 border border-white/10 rounded-lg p-1.5 flex items-center gap-2 w-full">
-              <div className="flex-1 px-2 py-2 text-[10px] font-mono text-gray-400 truncate">{window.location.href}</div>
-              <button onClick={handleCopyLink} className="px-3 py-1.5 rounded text-[9px] font-black uppercase btn-cardinal">{copyFeedback ? 'COPIED' : 'COPY'}</button>
+      {showShareModal && (() => {
+        const shareUrl = activePoolId ? `${window.location.origin}/?poolId=${activePoolId}` : window.location.href;
+        return (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+            <div className="liquid-glass w-full max-w-sm p-6 text-center flex flex-col items-center gap-4">
+              <h2 className="text-xl font-black text-white italic tracking-tighter uppercase">BOARD LINK</h2>
+              <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={shareUrl} size={140} /></div>
+              <div className="bg-black/40 border border-white/10 rounded-lg p-1.5 flex items-center gap-2 w-full">
+                <div className="flex-1 px-2 py-2 text-[10px] font-mono text-gray-400 truncate">{shareUrl}</div>
+                <button onClick={handleCopyLink} className="px-3 py-1.5 rounded text-[9px] font-black uppercase btn-cardinal">{copyFeedback ? 'COPIED' : 'COPY'}</button>
+              </div>
+              <button onClick={handleCloseShare} className="w-full py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase text-gray-400">CLOSE</button>
             </div>
-            <button onClick={handleCloseShare} className="w-full py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase text-gray-400">CLOSE</button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showLanding ? (
         <LandingPage onCreate={openSetupWizard} />
@@ -830,20 +833,16 @@ const AppContent: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowShareModal(true)} className="p-2 bg-white/5 border border-white/10 rounded-full text-team-top-bright"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg></button>
-              {adminToken ? (
-                <button onClick={() => setShowAdminView(!showAdminView)} className={`p-2 rounded-full transition-colors ${showAdminView ? 'bg-[#9D2235] text-white shadow-lg' : 'bg-white/10 text-team-top-bright hover:bg-white/20'}`} title={showAdminView ? "Switch to Player View" : "Open Commissioner Dashboard"}>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </button>
-              ) : (
-                <button onClick={() => setShowAuthModal(true)} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2-2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </button>
+              {adminToken && (
+                <>
+                  <button onClick={() => setShowShareModal(true)} className="p-2 bg-white/5 border border-white/10 rounded-full text-team-top-bright"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg></button>
+                  <button onClick={() => setShowAdminView(!showAdminView)} className={`p-2 rounded-full transition-colors ${showAdminView ? 'bg-[#9D2235] text-white shadow-lg' : 'bg-white/10 text-team-top-bright hover:bg-white/20'}`} title={showAdminView ? "Switch to Player View" : "Open Commissioner Dashboard"}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
           </header>
