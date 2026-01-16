@@ -26,15 +26,27 @@ async function verifyPassword(password: string, storedHash: string, salt: string
 }
 
 // ============= CORS =============
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
-};
+const ALLOWED_ORIGINS = [
+  'http://localhost:8788',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://sbxpro.pages.dev',
+];
 
-export const onRequestOptions: PagesFunction = async () => {
-  return new Response(null, { status: 204, headers: corsHeaders });
+function getCorsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('Origin') || '';
+  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) || origin === '';
+
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+export const onRequestOptions: PagesFunction = async (context) => {
+  return new Response(null, { status: 204, headers: getCorsHeaders(context.request) });
 };
 
 /**
@@ -46,7 +58,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   if (!val) {
     return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 
@@ -55,7 +67,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   return new Response(JSON.stringify(publicPayload), {
     status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 };
 
@@ -69,14 +81,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 
   const val = await context.env.POOLS.get(`pool:${poolId}`);
   if (!val) {
     return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 
@@ -92,12 +104,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   if (!isValid) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Password' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 
   return new Response(JSON.stringify({ success: true, message: 'Authentication Verified' }), {
-    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' },
   });
 };
 
@@ -111,7 +123,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 
@@ -119,7 +131,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     const existing = await context.env.POOLS.get(`pool:${poolId}`);
     if (!existing) {
       return new Response(JSON.stringify({ error: 'Pool not found' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
       });
     }
 
@@ -134,7 +146,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
     if (!isValid) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
       });
     }
 
@@ -148,12 +160,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
 
     return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 200, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
     console.error('Pool update error:', err);
     return new Response(JSON.stringify({ error: 'Failed to update pool', message: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 500, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 };

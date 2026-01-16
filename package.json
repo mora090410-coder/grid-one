@@ -7,7 +7,9 @@
     "dev": "vite",
     "local": "wrangler pages dev -- npm run dev",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
@@ -18,12 +20,16 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241230.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^27.4.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
+    "vitest": "^4.0.17",
     "wrangler": "^4.59.2"
   }
 }

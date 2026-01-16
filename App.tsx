@@ -1,16 +1,18 @@
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, ErrorInfo, ReactNode, Component } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, ErrorInfo, ReactNode, Component, Suspense, lazy } from 'react';
 // @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
 import { GameState, BoardData, LiveGameData, WinnerHighlights } from './types';
 import { SAMPLE_BOARD, TEAM_THEMES, NFL_TEAMS } from './constants';
-import AdminPanel from './components/AdminPanel';
+// Lazy load heavy components for better bundle splitting
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
 import BoardGrid from './components/BoardGrid';
 import InfoCards from './components/InfoCards';
 import ScenarioPanel from './components/ScenarioPanel';
 import PlayerFilter from './components/PlayerFilter';
 import LandingPage from './components/LandingPage';
-import { parseBoardImage } from './services/geminiService';
+// Lazy load Gemini service - only needed for image scanning
+const loadGeminiService = () => import('./services/geminiService');
 // Phase 2 Architecture: Custom Hooks
 import { usePoolData, INITIAL_GAME, EMPTY_BOARD } from './hooks/usePoolData';
 import { useLiveScoring } from './hooks/useLiveScoring';
@@ -155,12 +157,46 @@ const AppContent: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const urlPoolId = searchParams.get('poolId');
 
-  const [dataReady, setDataReady] = useState(false);
-  const [loadingPool, setLoadingPool] = useState(false);
-  const [poolError, setPoolError] = useState<string | null>(null);
-  const [activePoolId, setActivePoolId] = useState<string | null>(urlPoolId);
-  const [adminToken, setAdminToken] = useState('');
+  // ===== PHASE 2: Custom Hooks =====
+  // Pool data hook (replaces game, board, activePoolId, loadingPool, dataReady, poolError)
+  const poolData = usePoolData();
+  const {
+    game, setGame,
+    board, setBoard,
+    activePoolId, setActivePoolId,
+    loadingPool,
+    dataReady,
+    error: poolError,
+    loadPoolData,
+    publishPool,
+    updatePool,
+    clearError: clearPoolError
+  } = poolData;
 
+  // Live scoring hook (replaces liveData, liveStatus, isSynced, isRefreshing, lastUpdated)
+  const liveScoring = useLiveScoring(game, dataReady, loadingPool);
+  const {
+    liveData,
+    liveStatus,
+    isSynced,
+    isRefreshing,
+    lastUpdated,
+    fetchLive
+  } = liveScoring;
+
+  // Auth hook (replaces adminToken state)
+  const auth = useAuth();
+  const {
+    adminToken,
+    setAdminToken,
+    verifyToken,
+    login: authLogin,
+    logout: authLogout,
+    isLoggingIn: authIsLoggingIn,
+    authError
+  } = auth;
+
+  // ===== UI State (kept local) =====
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -187,15 +223,10 @@ const AppContent: React.FC = () => {
   const [wizardError, setWizardError] = useState<string | null>(null);
   const wizardFileRef = useRef<HTMLInputElement>(null);
 
-  const [game, setGame] = useState<GameState>(INITIAL_GAME);
-  const [board, setBoard] = useState<BoardData>(SAMPLE_BOARD);
-  const [liveData, setLiveData] = useState<LiveGameData | null>(null);
-  const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
-  const [isSynced, setIsSynced] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
+  // Remaining local state
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedCoords, setHighlightedCoords] = useState<{ left: number, top: number } | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
 
   const showLanding = !activePoolId && !hasEnteredApp && !isInitialized && !wizardSuccess;
   const isCommissionerMode = showAdminView && !!adminToken;
@@ -232,42 +263,22 @@ const AppContent: React.FC = () => {
     root.setProperty('--top-primary-bright', ensureMinLuminance(topTheme.primary, 0.6));
   }, [game.leftAbbr, game.topAbbr]);
 
+  // Load pool data using hook when URL has poolId
   useEffect(() => {
-    const loadData = async () => {
-      const currentParams = new URLSearchParams(window.location.search);
-      const poolId = currentParams.get('poolId');
+    const currentParams = new URLSearchParams(window.location.search);
+    const poolId = currentParams.get('poolId');
 
-      if (poolId) {
-        setLoadingPool(true);
-        try {
-          const res = await fetch(`${API_URL}/${poolId}`);
-          if (!res.ok) throw new Error('Pool not found');
-          const result = await res.json();
-          if (result.data) {
-            setGame(result.data.game);
-            setBoard(result.data.board);
-            setActivePoolId(poolId);
-            setIsInitialized(true);
-            const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-            if (storedTokens[poolId]) {
-              setAdminToken(storedTokens[poolId]);
-            }
-          }
-        } catch (err: any) {
-          setPoolError(err.message);
-        } finally {
-          setLoadingPool(false);
+    if (poolId) {
+      loadPoolData(poolId).then(() => {
+        setIsInitialized(true);
+        // Restore admin token from local storage
+        const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+        if (storedTokens[poolId]) {
+          setAdminToken(storedTokens[poolId]);
         }
-      } else {
-        const savedGame = localStorage.getItem('squares_game');
-        const savedBoard = localStorage.getItem('squares_board');
-        if (savedGame) setGame(JSON.parse(savedGame));
-        if (savedBoard) setBoard(JSON.parse(savedBoard));
-      }
-      setDataReady(true);
-    };
-    loadData();
-  }, []);
+      });
+    }
+  }, [loadPoolData, setAdminToken]);
 
   useEffect(() => {
     if (!dataReady || loadingPool) return;
@@ -275,76 +286,7 @@ const AppContent: React.FC = () => {
     localStorage.setItem('squares_board', JSON.stringify(board));
   }, [game, board, dataReady, loadingPool]);
 
-  const fetchLive = useCallback(async () => {
-    if (!dataReady || loadingPool) return;
-    if (game.useManualScores) {
-      setLiveData({
-        leftScore: game.manualLeftScore || 0, topScore: game.manualTopScore || 0,
-        quarterScores: { Q1: { left: 0, top: 0 }, Q2: { left: 0, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } },
-        clock: 'MANUAL', period: 4, state: 'in', detail: 'Manual Control', isOvertime: false, isManual: true
-      });
-      setLiveStatus('MANUAL OVERRIDE');
-      setIsSynced(true);
-      setLastUpdated(new Date().toLocaleTimeString());
-      return;
-    }
-    if (!game.dates) {
-      setLiveStatus('WAITING FOR DATE');
-      setIsSynced(false);
-      setLiveData(null);
-      return;
-    }
-    setIsRefreshing(true);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
-    try {
-      const cleanDates = (game.dates || '').replace(/\D/g, '');
-      const res = await fetch(`${LIVE_PROXY_URL}?dates=${cleanDates}`, { cache: 'no-store', signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data?.events) throw new Error('No Data');
-      const targetLeft = normalizeAbbr(game.leftAbbr);
-      const targetTop = normalizeAbbr(game.topAbbr);
-      const event = data.events.find((e: any) => {
-        const comps = e?.competitions?.[0]?.competitors || [];
-        const abbrs: string[] = comps.map((c: any) => normalizeAbbr(c.team?.abbreviation));
-        return abbrs.some((a: string) => a === targetLeft || (targetLeft === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH'))) &&
-          abbrs.some((a: string) => a === targetTop || (targetTop === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH')));
-      });
-      if (!event) { setLiveStatus(`NO MATCH FOUND`); setIsSynced(false); setLiveData(null); return; }
-      const comp = event.competitions[0];
-      const leftTeam = comp.competitors.find((c: any) => normalizeAbbr(c.team?.abbreviation) === targetLeft || (targetLeft === 'WAS_WSH_ALIAS' && (normalizeAbbr(c.team?.abbreviation) === 'WAS' || normalizeAbbr(c.team?.abbreviation) === 'WSH')));
-      const topTeam = comp.competitors.find((c: any) => normalizeAbbr(c.team?.abbreviation) === targetTop || (targetTop === 'WAS_WSH_ALIAS' && (normalizeAbbr(c.team?.abbreviation) === 'WAS' || normalizeAbbr(c.team?.abbreviation) === 'WSH')));
-      const status = comp.status;
-      setLiveData({
-        leftScore: Number(leftTeam?.score || 0), topScore: Number(topTeam?.score || 0),
-        quarterScores: {
-          Q1: { left: Number(leftTeam?.linescores?.[0]?.value || 0), top: Number(topTeam?.linescores?.[0]?.value || 0) },
-          Q2: { left: Number(leftTeam?.linescores?.[1]?.value || 0), top: Number(topTeam?.linescores?.[1]?.value || 0) },
-          Q3: { left: Number(leftTeam?.linescores?.[2]?.value || 0), top: Number(topTeam?.linescores?.[2]?.value || 0) },
-          Q4: { left: Number(leftTeam?.linescores?.[3]?.value || 0), top: Number(topTeam?.linescores?.[3]?.value || 0) },
-          OT: { left: Number(leftTeam?.linescores?.[4]?.value || 0), top: Number(topTeam?.linescores?.[4]?.value || 0) },
-        },
-        clock: status.displayClock || '', period: Number(status.period || 0), state: status.type.state as any, detail: status.type.detail || '', isOvertime: Number(status.period) > 4, isManual: false
-      });
-      setLiveStatus(status.type.state === 'post' ? 'FINAL' : 'LIVE');
-      setIsSynced(true);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err: any) {
-      setLiveStatus('OFFLINE');
-      setIsSynced(false);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [game, dataReady, loadingPool]);
-
-  useEffect(() => {
-    if (!dataReady) return;
-    fetchLive();
-    const interval = setInterval(fetchLive, 60000);
-    return () => clearInterval(interval);
-  }, [fetchLive, dataReady]);
+  // fetchLive and its polling useEffect are now handled by useLiveScoring hook
 
   const highlights = useMemo<WinnerHighlights>(() => {
     if (!liveData) return { quarterWinners: {}, currentLabel: 'NOW' };
@@ -443,7 +385,7 @@ const AppContent: React.FC = () => {
     e.preventDefault();
     if (!joinInput) return;
     const targetId = joinInput.trim().toUpperCase();
-    setIsRefreshing(true);
+    setIsJoining(true);
     try {
       const res = await fetch(`${API_URL}/${targetId}`);
       if (!res.ok) throw new Error("League Code not found in stadium databases.");
@@ -461,7 +403,7 @@ const AppContent: React.FC = () => {
     } catch (err: any) {
       alert(err.message || "Verification Failed");
     } finally {
-      setIsRefreshing(false);
+      setIsJoining(false);
     }
   };
 
@@ -823,6 +765,7 @@ const AppContent: React.FC = () => {
                                 const rawBase64 = ev.target!.result as string;
                                 const compressed = await compressImage(rawBase64);
                                 setGame(p => ({ ...p, coverImage: compressed }));
+                                const { parseBoardImage } = await loadGeminiService();
                                 const scannedBoard = await parseBoardImage(compressed);
                                 setBoard(scannedBoard);
                               } catch (err: any) {
@@ -928,7 +871,9 @@ const AppContent: React.FC = () => {
           </header>
           {isCommissionerMode && (
             <div className="absolute inset-0 z-[80] bg-[#050101] p-4 overflow-y-auto">
-              <AdminPanel game={game} board={board} adminToken={adminToken} activePoolId={activePoolId} onApply={(g, b) => { setGame(g); setBoard(b); }} onPublish={handlePublish} />
+              <Suspense fallback={<div className="flex items-center justify-center h-64 text-white/50">Loading Commissioner Hub...</div>}>
+                <AdminPanel game={game} board={board} adminToken={adminToken} activePoolId={activePoolId} onApply={(g, b) => { setGame(g); setBoard(b); }} onPublish={handlePublish} />
+              </Suspense>
               <div className="flex gap-4 mt-8 pb-12">
                 <button onClick={() => setShowAdminView(false)} className="px-6 py-2 bg-white/5 border border-white/10 rounded text-xs text-white font-black uppercase tracking-widest hover:bg-white/10">Return to Board View</button>
                 <button onClick={handleLogout} className="px-6 py-2 border border-red-900/40 text-xs text-red-400 font-black uppercase tracking-widest hover:bg-red-900/10">Log Out & Return to Home</button>

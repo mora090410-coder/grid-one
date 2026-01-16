@@ -26,8 +26,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-6 py-8 md:px-12 w-full max-w-7xl mx-auto">
-        <div className="text-2xl md:text-3xl font-black tracking-tighter italic text-white drop-shadow-2xl">
+      <nav className="relative z-50 flex items-center justify-between px-6 py-8 md:px-12 w-full max-w-7xl mx-auto" aria-label="Main navigation">
+        <div className="text-2xl md:text-3xl font-black tracking-tighter italic text-white drop-shadow-2xl" role="banner">
           SBX<span className="text-[#FFC72C]">PRO</span>
         </div>
       </nav>
@@ -46,14 +46,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           <div className="flex flex-col items-center justify-center gap-4">
             <button
               onClick={onCreate}
+              aria-label="Create a new squares league"
               className="w-full md:w-auto group relative px-10 py-5 bg-[#9D2235] rounded-full overflow-hidden transition-all hover:scale-105 shadow-[0_0_40px_rgba(157,34,53,0.4)] border border-white/10 hover:border-[#FFC72C]/50"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out" aria-hidden="true"></div>
 
               <span className="relative flex items-center justify-center gap-3 font-black uppercase tracking-widest text-sm md:text-base"
                 style={{ color: getContrastYIQ('#9D2235') }}>
                 Create Your League
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </span>
@@ -61,6 +62,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 
             <button
               onClick={onLogin}
+              aria-label="Login as commissioner to manage existing league"
               className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-[#FFC72C] transition-colors"
             >
               Already have a league? <span className="underline">Commissioner Login</span>
@@ -70,8 +72,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
       </main>
 
       {/* Feature Showcase Grid */}
-      <section className="relative z-10 w-full max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="grid md:grid-cols-3 gap-6">
+      <section className="relative z-10 w-full max-w-7xl mx-auto px-6 py-24 md:py-32" aria-labelledby="features-heading">
+        <h2 id="features-heading" className="sr-only">Key Features</h2>
+        <div className="grid md:grid-cols-3 gap-6" role="list">
           {[
             {
               title: "AI Game Logic",

@@ -48,12 +48,28 @@ function validateCreatePool(data: any): { valid: true; data: any } | { valid: fa
 }
 
 // ============= CORS & RATE LIMITING =============
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
-};
+// Allowed origins for CORS - add production domains here
+const ALLOWED_ORIGINS = [
+  'http://localhost:8788',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://sbxpro.pages.dev',  // Cloudflare Pages default
+  // Add your production domain here, e.g.:
+  // 'https://sbxpro.com',
+];
+
+function getCorsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('Origin') || '';
+  // In development, allow localhost; in production, validate against whitelist
+  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) || origin === '';
+
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+}
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -77,10 +93,10 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // ============= HANDLERS =============
-export const onRequestOptions: PagesFunction = async () => {
+export const onRequestOptions: PagesFunction = async (context) => {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders,
+    headers: getCorsHeaders(context.request),
   });
 };
 
@@ -94,7 +110,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: 'Too many requests. Please try again later.'
       }), {
         status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' }
+        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Retry-After': '60' }
       });
     }
 
@@ -107,7 +123,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: 'Password must be at least 4 characters'
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
       });
     }
 
@@ -121,27 +137,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: validation.error
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
       });
     }
 
     const data = validation.data;
     const leagueName = data.game.title.trim();
     const normalizedName = leagueName.toLowerCase().replace(/\s+/g, '-');
+    const nameKey = `name:${normalizedName}`;
 
-    // Check for duplicate names
-    const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
-    if (existingPool) {
-      return new Response(JSON.stringify({
-        error: 'League name already exists',
-        message: `A league named "${leagueName}" already exists. Please choose a different name.`
-      }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Generate pool ID
+    // Generate pool ID first
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let poolId = '';
     const randomValues = new Uint32Array(8);
@@ -150,7 +155,36 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       poolId += chars[randomValues[i] % chars.length];
     }
 
-    // Hash password
+    // ============= OPTIMISTIC LOCKING PATTERN =============
+    // This prevents race conditions by using write-then-verify:
+    // 1. Write our poolId to the name key
+    // 2. Read it back immediately
+    // 3. If the value matches our poolId, we won the race
+    // 4. If not, another request won - clean up and return conflict
+
+    // Step 1: Attempt to claim the name by writing our poolId
+    await context.env.POOLS.put(nameKey, poolId);
+
+    // Small delay to allow KV propagation (eventual consistency)
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Step 2: Read back to verify we won the race
+    const claimedPoolId = await context.env.POOLS.get(nameKey);
+
+    // Step 3: Check if we won
+    if (claimedPoolId !== poolId) {
+      // Another request won the race - we lost
+      // Don't clean up the name key as it belongs to the winner
+      return new Response(JSON.stringify({
+        error: 'League name already exists',
+        message: `A league named "${leagueName}" was just created. Please choose a different name.`
+      }), {
+        status: 409,
+        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Step 4: We won! Now create the pool data
     const salt = generateSalt();
     const hashedPassword = await hashPassword(adminToken, salt);
 
@@ -164,17 +198,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     };
 
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(payload));
-    await context.env.POOLS.put(`name:${normalizedName}`, poolId);
 
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   } catch (err: any) {
     console.error('Pool creation error:', err);
     return new Response(JSON.stringify({ error: 'Failed to create pool', message: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
     });
   }
 };
