@@ -19,9 +19,13 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
         parts: [
           {
             text: `Analyze this football squares board image. 
-            1. Identify the 10 numbers on the top horizontal axis (oppAxis).
-            2. Identify the 10 numbers on the left vertical axis (bearsAxis).
+            1. Identify the numbers on the top horizontal axis (oppAxis).
+            2. Identify the numbers on the left vertical axis (bearsAxis).
             3. Extract the names written in each of the 100 squares.
+            4. Check if there are different axis numbers for different quarters (Dynamic Board).
+               - Look for multiple rows/columns of numbers labeled Q1, Q2, Q3, Q4/Final.
+               - If found, extract them into the ByQuarter fields.
+               - If only one set is found, populate the main axis fields and leave ByQuarter fields null.
             
             Important:
             - Output the results as JSON.
@@ -48,12 +52,32 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
             bearsAxis: {
               type: Type.ARRAY,
               items: { type: Type.INTEGER },
-              description: "The 10 digits on the vertical (left) axis."
+              description: "The 10 digits on the vertical (left) axis. (Default/Q1)"
             },
             oppAxis: {
               type: Type.ARRAY,
               items: { type: Type.INTEGER },
-              description: "The 10 digits on the horizontal (top) axis."
+              description: "The 10 digits on the horizontal (top) axis. (Default/Q1)"
+            },
+            bearsAxisByQuarter: {
+              type: Type.OBJECT,
+              properties: {
+                Q1: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q2: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q3: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q4: { type: Type.ARRAY, items: { type: Type.INTEGER } }
+              },
+              nullable: true
+            },
+            oppAxisByQuarter: {
+              type: Type.OBJECT,
+              properties: {
+                Q1: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q2: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q3: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+                Q4: { type: Type.ARRAY, items: { type: Type.INTEGER } }
+              },
+              nullable: true
             },
             squaresGrid: {
               type: Type.ARRAY,
@@ -82,11 +106,19 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   try {
     const rawData = JSON.parse(text);
 
-    return {
+    const board: BoardData = {
       bearsAxis: rawData.bearsAxis,
       oppAxis: rawData.oppAxis,
-      squares: rawData.squaresGrid
-    } as BoardData;
+      squares: rawData.squaresGrid,
+      isDynamic: !!rawData.bearsAxisByQuarter || !!rawData.oppAxisByQuarter
+    };
+
+    if (board.isDynamic) {
+      board.bearsAxisByQuarter = rawData.bearsAxisByQuarter;
+      board.oppAxisByQuarter = rawData.oppAxisByQuarter;
+    }
+
+    return board;
   } catch (e) {
     console.error("Failed to parse or transform AI response:", text);
     throw new Error("AI returned invalid data structure");

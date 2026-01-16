@@ -1,10 +1,45 @@
 
 // Cloudflare Pages Functions environment types
-type KVNamespace = any;
-type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
+// Cloudflare Pages Functions environment types
+interface KVNamespace {
+  get(key: string, type?: "text" | "json" | "arrayBuffer" | "stream"): Promise<any>;
+  put(key: string, value: string | ReadableStream | ArrayBuffer | FormData, options?: any): Promise<void>;
+  delete(key: string): Promise<void>;
+  list(options?: any): Promise<any>;
+}
+
+interface EventContext<Env, P = string, Data = Record<string, unknown>> {
+  request: Request;
+  functionPath: string;
+  waitUntil: (promise: Promise<any>) => void;
+  passThroughOnException: () => void;
+  next: (input?: Request | string, init?: RequestInit) => Promise<Response>;
+  env: Env;
+  params: P;
+  data: Data;
+}
+
+type PagesFunction<Env = any, Params = string, Data = Record<string, unknown>> = (
+  context: EventContext<Env, Params, Data>
+) => Promise<Response> | Response;
 
 interface Env {
   POOLS: KVNamespace;
+}
+
+// Payload Types
+interface CreatePoolPayload {
+  game: {
+    title: string;
+    description?: string;
+    [key: string]: any;
+  };
+  board: {
+    squares: any[];
+    [key: string]: any;
+  };
+  adminPassword?: string;
+  isPublic?: boolean;
 }
 
 // ============= INLINE CRYPTO UTILITIES =============
@@ -23,28 +58,30 @@ async function hashPassword(password: string, salt: string): Promise<string> {
 }
 
 // ============= INLINE VALIDATION =============
-function validateCreatePool(data: any): { valid: true; data: any } | { valid: false; error: string } {
+function validateCreatePool(data: any): { valid: true; data: CreatePoolPayload } | { valid: false; error: string } {
   if (!data || typeof data !== 'object') {
     return { valid: false, error: 'Invalid payload' };
   }
 
-  if (!data.game || typeof data.game !== 'object') {
+  const payload = data as Partial<CreatePoolPayload>;
+
+  if (!payload.game || typeof payload.game !== 'object') {
     return { valid: false, error: 'Missing game data' };
   }
 
-  if (!data.game.title || typeof data.game.title !== 'string' || data.game.title.length < 1) {
+  if (!payload.game.title || typeof payload.game.title !== 'string' || payload.game.title.length < 1) {
     return { valid: false, error: 'League name is required' };
   }
 
-  if (data.game.title.length > 100) {
+  if (payload.game.title.length > 100) {
     return { valid: false, error: 'League name too long (max 100 characters)' };
   }
 
-  if (!data.board || !Array.isArray(data.board.squares) || data.board.squares.length !== 100) {
+  if (!payload.board || !Array.isArray(payload.board.squares) || payload.board.squares.length !== 100) {
     return { valid: false, error: 'Invalid board data' };
   }
 
-  return { valid: true, data };
+  return { valid: true, data: payload as CreatePoolPayload };
 }
 
 // ============= CORS & RATE LIMITING =============

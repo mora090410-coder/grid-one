@@ -22,9 +22,10 @@ const INITIAL_GAME: GameState = {
 };
 
 const EMPTY_BOARD: BoardData = {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    squares: Array(100).fill(null).map(() => [])
+    bearsAxis: [null, null, null, null, null, null, null, null, null, null],
+    oppAxis: [null, null, null, null, null, null, null, null, null, null],
+    squares: Array(100).fill(null).map(() => []),
+    isDynamic: false
 };
 
 const API_URL = `${window.location.origin}/api/pools`;

@@ -24,6 +24,31 @@ interface UseLiveScoringReturn {
     fetchLive: () => Promise<void>;
 }
 
+// Basic ESPN API types
+interface Competitor {
+    score: string;
+    team: {
+        abbreviation: string;
+    };
+    linescores?: Array<{ value: number }>;
+}
+
+interface Competition {
+    competitors: Competitor[];
+    status: {
+        displayClock: string;
+        period: number;
+        type: {
+            state: string;
+            detail: string;
+        };
+    };
+}
+
+interface ESPNEvent {
+    competitions: Competition[];
+}
+
 export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool: boolean): UseLiveScoringReturn {
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
     const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
@@ -78,9 +103,9 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             const targetLeft = normalizeAbbr(game.leftAbbr);
             const targetTop = normalizeAbbr(game.topAbbr);
 
-            const event = data.events.find((e: any) => {
+            const event = data.events.find((e: ESPNEvent) => {
                 const comps = e?.competitions?.[0]?.competitors || [];
-                const abbrs: string[] = comps.map((c: any) => normalizeAbbr(c.team?.abbreviation));
+                const abbrs: string[] = comps.map((c: Competitor) => normalizeAbbr(c.team?.abbreviation));
                 return abbrs.some((a: string) => a === targetLeft || (targetLeft === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH'))) &&
                     abbrs.some((a: string) => a === targetTop || (targetTop === 'WAS_WSH_ALIAS' && (a === 'WAS' || a === 'WSH')));
             });
@@ -93,11 +118,11 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             }
 
             const comp = event.competitions[0];
-            const leftTeam = comp.competitors.find((c: any) =>
+            const leftTeam = comp.competitors.find((c: Competitor) =>
                 normalizeAbbr(c.team?.abbreviation) === targetLeft ||
                 (targetLeft === 'WAS_WSH_ALIAS' && (normalizeAbbr(c.team?.abbreviation) === 'WAS' || normalizeAbbr(c.team?.abbreviation) === 'WSH'))
             );
-            const topTeam = comp.competitors.find((c: any) =>
+            const topTeam = comp.competitors.find((c: Competitor) =>
                 normalizeAbbr(c.team?.abbreviation) === targetTop ||
                 (targetTop === 'WAS_WSH_ALIAS' && (normalizeAbbr(c.team?.abbreviation) === 'WAS' || normalizeAbbr(c.team?.abbreviation) === 'WSH'))
             );
@@ -124,7 +149,7 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             setLiveStatus(status.type.state === 'post' ? 'FINAL' : 'LIVE');
             setIsSynced(true);
             setLastUpdated(new Date().toLocaleTimeString());
-        } catch (err: any) {
+        } catch (err: unknown) {
             setLiveStatus('OFFLINE');
             setIsSynced(false);
         } finally {

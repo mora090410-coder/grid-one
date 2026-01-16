@@ -21,10 +21,25 @@ export interface GameState {
   coverImage?: string; // Base64 image string for board cover
 }
 
+// Dynamic Board Support - Per-Quarter Axes
+export type QuarterKey = 'Q1' | 'Q2' | 'Q3' | 'Q4';
+
+export interface QuarterAxes {
+  Q1: (number | null)[];
+  Q2: (number | null)[];
+  Q3: (number | null)[];
+  Q4: (number | null)[];  // Q4 is also used for Final score
+}
+
 export interface BoardData {
-  bearsAxis: number[];
-  oppAxis: number[];
-  squares: string[][]; // Flat array of 100 entries (index 0-99)
+  bearsAxis: (number | null)[];   // Standard board (backward compatible)
+  oppAxis: (number | null)[];     // Standard board (backward compatible)
+  squares: string[][];
+
+  // Dynamic board support (optional - defaults to standard)
+  isDynamic?: boolean;
+  bearsAxisByQuarter?: QuarterAxes;
+  oppAxisByQuarter?: QuarterAxes;
 }
 
 export interface QuarterScores {

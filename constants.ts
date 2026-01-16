@@ -32,26 +32,26 @@ export const TEAM_THEMES: Record<string, { primary: string; secondary: string }>
   DAL: { primary: '#003594', secondary: '#869397' },
   DEN: { primary: '#FB4F14', secondary: '#002244' },
   DET: { primary: '#0076B6', secondary: '#B0B7BC' },
-  GB:  { primary: '#203731', secondary: '#FFB612' },
+  GB: { primary: '#203731', secondary: '#FFB612' },
   HOU: { primary: '#03202F', secondary: '#A71930' },
   IND: { primary: '#002C5F', secondary: '#A2AAAD' },
   JAX: { primary: '#006778', secondary: '#D7A22A' },
-  KC:  { primary: '#E31837', secondary: '#FFB81C' },
-  LV:  { primary: '#000000', secondary: '#A5ACAF' },
+  KC: { primary: '#E31837', secondary: '#FFB81C' },
+  LV: { primary: '#000000', secondary: '#A5ACAF' },
   LAC: { primary: '#0080C6', secondary: '#FFC20E' },
   LAR: { primary: '#003594', secondary: '#FFA300' },
-  LA:  { primary: '#003594', secondary: '#FFA300' }, // Alias
+  LA: { primary: '#003594', secondary: '#FFA300' }, // Alias
   MIA: { primary: '#008E97', secondary: '#FC4C02' },
   MIN: { primary: '#4F2683', secondary: '#FFC62F' },
-  NE:  { primary: '#002244', secondary: '#C60C30' },
-  NO:  { primary: '#D3BC8D', secondary: '#101820' },
+  NE: { primary: '#002244', secondary: '#C60C30' },
+  NO: { primary: '#D3BC8D', secondary: '#101820' },
   NYG: { primary: '#002244', secondary: '#A71930' },
   NYJ: { primary: '#125740', secondary: '#000000' },
   PHI: { primary: '#004C54', secondary: '#A5ACAF' },
   PIT: { primary: '#FFB612', secondary: '#101820' },
-  SF:  { primary: '#AA0000', secondary: '#B3995D' },
+  SF: { primary: '#AA0000', secondary: '#B3995D' },
   SEA: { primary: '#002244', secondary: '#69BE28' },
-  TB:  { primary: '#D50A0A', secondary: '#34302B' },
+  TB: { primary: '#D50A0A', secondary: '#34302B' },
   TEN: { primary: '#0C2340', secondary: '#4B92DB' },
   WAS: { primary: '#5A1414', secondary: '#FFB612' },
   WSH: { primary: '#5A1414', secondary: '#FFB612' } // Alias
@@ -94,7 +94,35 @@ export const SAMPLE_BOARD: BoardData = {
   bearsAxis: [7, 1, 8, 4, 6, 9, 2, 5, 0, 3],
   oppAxis: [9, 4, 8, 6, 2, 0, 1, 7, 5, 3],
   squares: generateIndexedSquares(
-    [9, 4, 8, 6, 2, 0, 1, 7, 5, 3], 
+    [9, 4, 8, 6, 2, 0, 1, 7, 5, 3],
     [7, 1, 8, 4, 6, 9, 2, 5, 0, 3]
   )
+};
+
+// Empty board template for new pools (standard mode)
+export const EMPTY_BOARD: BoardData = {
+  bearsAxis: Array(10).fill(null),
+  oppAxis: Array(10).fill(null),
+  squares: Array(100).fill([]),
+  isDynamic: false,
+};
+
+// Empty board template for dynamic mode (per-quarter axes)
+export const EMPTY_DYNAMIC_BOARD: BoardData = {
+  bearsAxis: Array(10).fill(null),
+  oppAxis: Array(10).fill(null),
+  squares: Array(100).fill([]),
+  isDynamic: true,
+  bearsAxisByQuarter: {
+    Q1: Array(10).fill(null),
+    Q2: Array(10).fill(null),
+    Q3: Array(10).fill(null),
+    Q4: Array(10).fill(null),
+  },
+  oppAxisByQuarter: {
+    Q1: Array(10).fill(null),
+    Q2: Array(10).fill(null),
+    Q3: Array(10).fill(null),
+    Q4: Array(10).fill(null),
+  },
 };

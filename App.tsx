@@ -18,6 +18,9 @@ import { usePoolData, INITIAL_GAME, EMPTY_BOARD } from './hooks/usePoolData';
 import { useLiveScoring } from './hooks/useLiveScoring';
 import { useAuth } from './hooks/useAuth';
 
+// Basic error boundary component
+import ErrorBoundary from './components/ErrorBoundary';
+
 interface ErrorBoundaryProps {
   children?: ReactNode;
 }
@@ -93,49 +96,26 @@ const ensureMinLuminance = (hex: string, minLum: number = 0.6): string => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  public state: ErrorBoundaryState = { hasError: false };
-
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-  }
-
-  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("SBXPRO Application Crash:", error, errorInfo);
-  }
-
-  render() {
-    const { hasError } = this.state;
-
-    if (hasError) {
-      return (
-        <div className="min-h-screen bg-[#050101] flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-full bg-red-900/30 flex items-center justify-center mb-6 border border-red-500/30">
-            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">Application Encountered an Error</h1>
-          <p className="text-gray-400 text-sm max-w-xs mb-8">We've encountered a script error. Try recovering your session below.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="btn-cardinal px-10 py-4 rounded-full text-sm font-black uppercase tracking-widest shadow-xl"
-          >
-            Recover My Board
-          </button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const API_URL = `${window.location.origin}/api/pools`;
 const LIVE_PROXY_URL = import.meta.env.VITE_LIVE_PROXY_URL || 'https://wandering-flower-f1de.anthony-mora13.workers.dev';
+
+/**
+ * Get axis for a specific quarter (dynamic boards) or standard axis
+ */
+const getAxisForQuarter = (
+  board: BoardData,
+  side: 'left' | 'top',
+  quarter?: string
+): (number | null)[] => {
+  if (!board.isDynamic || !quarter) {
+    return side === 'left' ? board.bearsAxis : board.oppAxis;
+  }
+  // Map quarter to axis key (Final uses Q4)
+  const qKey = (quarter === 'Final' ? 'Q4' : quarter) as 'Q1' | 'Q2' | 'Q3' | 'Q4';
+  const axes = side === 'left' ? board.bearsAxisByQuarter : board.oppAxisByQuarter;
+  return axes?.[qKey] || (side === 'left' ? board.bearsAxis : board.oppAxis);
+};
 
 const normalizeAbbr = (abbr: string | undefined): string => {
   if (!abbr) return '';
@@ -313,10 +293,21 @@ const AppContent: React.FC = () => {
     if (!liveData) return null;
     const topDigit = liveData.topScore % 10;
     const leftDigit = liveData.leftScore % 10;
-    const colIdx = board.oppAxis.indexOf(topDigit);
-    const rowIdx = board.bearsAxis.indexOf(leftDigit);
+
+    // For dynamic boards, determine current quarter for axis lookup
+    const currentQuarter = liveData.state === 'post' ? 'Final' :
+      liveData.period <= 1 ? 'Q1' :
+        liveData.period === 2 ? 'Q2' :
+          liveData.period === 3 ? 'Q3' : 'Q4';
+
+    // Use quarter-specific axes for dynamic boards
+    const topAxis = getAxisForQuarter(board, 'top', currentQuarter);
+    const leftAxis = getAxisForQuarter(board, 'left', currentQuarter);
+
+    const colIdx = topAxis.indexOf(topDigit);
+    const rowIdx = leftAxis.indexOf(leftDigit);
     const owners = (colIdx !== -1 && rowIdx !== -1) ? (board.squares[rowIdx * 10 + colIdx] || []) : [];
-    return { key: `${topDigit}-${leftDigit}`, owners, state: liveData.state };
+    return { key: `${topDigit}-${leftDigit}`, owners, state: liveData.state, quarter: currentQuarter };
   }, [liveData, board]);
 
   /**
