@@ -6,6 +6,26 @@ interface Env {
   POOLS: KVNamespace;
 }
 
+// ============= INLINE CRYPTO UTILITIES =============
+async function hashPassword(password: string, salt: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(password: string, storedHash: string, salt: string): Promise<boolean> {
+  const computedHash = await hashPassword(password, salt);
+  if (computedHash.length !== storedHash.length) return false;
+  let result = 0;
+  for (let i = 0; i < computedHash.length; i++) {
+    result |= computedHash.charCodeAt(i) ^ storedHash.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+// ============= CORS =============
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
@@ -14,47 +34,33 @@ const corsHeaders = {
 };
 
 export const onRequestOptions: PagesFunction = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
+  return new Response(null, { status: 204, headers: corsHeaders });
 };
 
 /**
- * Public Access Route
- * Allows players to view the board without a password.
- * Sanitizes sensitive adminToken from output.
+ * Public Access Route - Sanitizes sensitive data
  */
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
   const val = await context.env.POOLS.get(`pool:${poolId}`);
 
   if (!val) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), { 
-      status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ error: 'Pool not found' }), {
+      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   const parsed = JSON.parse(val);
-  
-  // Security Sanitization: Remove adminToken so public users cannot see it.
-  const { adminToken: _, ...publicPayload } = parsed;
+  const { passwordHash, passwordSalt, adminToken, ...publicPayload } = parsed;
 
   return new Response(JSON.stringify(publicPayload), {
     status: 200,
-    headers: { 
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store'
-    },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 };
 
 /**
- * Verification Route
- * Handshake for Commissioner Hub login.
- * Compares Bearer token to stored adminToken.
+ * Authentication Verification Route
  */
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
@@ -62,38 +68,41 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const token = authHeader?.replace('Bearer ', '');
 
   if (!token) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), { 
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   const val = await context.env.POOLS.get(`pool:${poolId}`);
   if (!val) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), { 
-      status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ error: 'Pool not found' }), {
+      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   const parsed = JSON.parse(val);
 
-  if (token !== parsed.adminToken) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Password' }), { 
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  // Support both old (plaintext) and new (hashed) formats
+  let isValid = false;
+  if (parsed.passwordHash && parsed.passwordSalt) {
+    isValid = await verifyPassword(token, parsed.passwordHash, parsed.passwordSalt);
+  } else if (parsed.adminToken) {
+    isValid = token === parsed.adminToken;
+  }
+
+  if (!isValid) {
+    return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Password' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   return new Response(JSON.stringify({ success: true, message: 'Authentication Verified' }), {
-    status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 };
 
 /**
  * Protected Update Route
- * Verifies Authorization token matches stored adminToken before persisting changes.
  */
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   const poolId = context.params.id as string;
@@ -101,29 +110,31 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
   const token = authHeader?.replace('Bearer ', '');
 
   if (!token) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), { 
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   try {
     const existing = await context.env.POOLS.get(`pool:${poolId}`);
-    
     if (!existing) {
-      return new Response(JSON.stringify({ error: 'Pool not found' }), { 
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ error: 'Pool not found' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const parsed = JSON.parse(existing);
 
-    // Strict Verification: Provided token must match stored adminToken
-    if (token !== parsed.adminToken) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), { 
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    let isValid = false;
+    if (parsed.passwordHash && parsed.passwordSalt) {
+      isValid = await verifyPassword(token, parsed.passwordHash, parsed.passwordSalt);
+    } else if (parsed.adminToken) {
+      isValid = token === parsed.adminToken;
+    }
+
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -137,13 +148,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
 
     return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Failed to update pool', message: err.message }), { 
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.error('Pool update error:', err);
+    return new Response(JSON.stringify({ error: 'Failed to update pool', message: err.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 };

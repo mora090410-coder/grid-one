@@ -11,6 +11,10 @@ import ScenarioPanel from './components/ScenarioPanel';
 import PlayerFilter from './components/PlayerFilter';
 import LandingPage from './components/LandingPage';
 import { parseBoardImage } from './services/geminiService';
+// Phase 2 Architecture: Custom Hooks
+import { usePoolData, INITIAL_GAME, EMPTY_BOARD } from './hooks/usePoolData';
+import { useLiveScoring } from './hooks/useLiveScoring';
+import { useAuth } from './hooks/useAuth';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -20,27 +24,7 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-const INITIAL_GAME: GameState = {
-  title: '',
-  meta: 'Super Bowl Party',
-  leftAbbr: 'DAL',
-  leftName: 'Dallas Cowboys',
-  topAbbr: 'WAS',
-  topName: 'Washington Commanders',
-  dates: '',
-  lockTitle: false,
-  lockMeta: false,
-  useManualScores: false,
-  manualLeftScore: 0,
-  manualTopScore: 0,
-  coverImage: ''
-};
-
-const EMPTY_BOARD: BoardData = {
-  bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-  oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-  squares: Array(100).fill(null).map(() => [])
-};
+// INITIAL_GAME and EMPTY_BOARD are now imported from hooks/usePoolData
 
 async function compressImage(base64Str: string): Promise<string> {
   return new Promise((resolve) => {

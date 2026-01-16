@@ -1,5 +1,4 @@
 
-// Check if a league name is available
 type KVNamespace = any;
 type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
 
@@ -15,17 +14,14 @@ const corsHeaders = {
 };
 
 export const onRequestOptions: PagesFunction = async () => {
-    return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
         const { leagueName } = await context.request.json();
 
-        if (!leagueName) {
+        if (!leagueName || typeof leagueName !== 'string') {
             return new Response(JSON.stringify({
                 error: 'Missing league name',
                 available: false
@@ -36,8 +32,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
 
         const normalizedName = leagueName.trim().toLowerCase().replace(/\s+/g, '-');
-
-        // Check if name exists
         const existingPool = await context.env.POOLS.get(`name:${normalizedName}`);
 
         return new Response(JSON.stringify({
@@ -45,14 +39,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             leagueName: leagueName.trim()
         }), {
             status: 200,
-            headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-                'Cache-Control': 'no-store'
-            },
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
         });
 
     } catch (err: any) {
+        console.error('Check name error:', err);
         return new Response(JSON.stringify({
             error: 'Check failed',
             message: err.message,
