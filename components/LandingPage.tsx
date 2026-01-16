@@ -3,9 +3,10 @@ import { getContrastYIQ } from '../App';
 
 interface LandingPageProps {
   onCreate: () => void;
+  onLogin: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   return (
     <div className="min-h-screen w-full relative overflow-hidden flex flex-col font-sans text-white bg-[#050101]">
       {/* Cinematic Background Layer */}
@@ -42,7 +43,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate }) => {
             <span className="text-white">Real-time NFL data.</span> Built for Commissioners. Loved by Players.
           </p>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+          <div className="flex flex-col items-center justify-center gap-4">
             <button
               onClick={onCreate}
               className="w-full md:w-auto group relative px-10 py-5 bg-[#9D2235] rounded-full overflow-hidden transition-all hover:scale-105 shadow-[0_0_40px_rgba(157,34,53,0.4)] border border-white/10 hover:border-[#FFC72C]/50"
@@ -56,6 +57,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </span>
+            </button>
+
+            <button
+              onClick={onLogin}
+              className="text-[10px] font-bold text-gray-500 uppercase tracking-widest hover:text-[#FFC72C] transition-colors"
+            >
+              Already have a league? <span className="underline">Commissioner Login</span>
             </button>
           </div>
         </div>

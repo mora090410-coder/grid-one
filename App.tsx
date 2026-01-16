@@ -190,6 +190,11 @@ const AppContent: React.FC = () => {
   const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginLeagueName, setLoginLeagueName] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardPassword, setWizardPassword] = useState('');
@@ -598,6 +603,44 @@ const AppContent: React.FC = () => {
     window.history.pushState({}, '', newUrl);
   };
 
+  const handleCommissionerLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginLeagueName || !loginPassword) return;
+
+    setLoginError(null);
+    setIsLoggingIn(true);
+
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leagueName: loginLeagueName, password: loginPassword })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || 'Login failed');
+      }
+
+      // Store the admin token
+      const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+      storedTokens[result.poolId] = loginPassword;
+      localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+
+      // Redirect to the pool
+      setShowLoginModal(false);
+      setLoginLeagueName('');
+      setLoginPassword('');
+      window.location.href = `${window.location.origin}/?poolId=${result.poolId}`;
+
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const openSetupWizard = () => {
     setGame(INITIAL_GAME);
     setBoard(EMPTY_BOARD);
@@ -643,6 +686,30 @@ const AppContent: React.FC = () => {
                 className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-white/40 outline-none transition-colors font-mono uppercase" />
               <button type="submit" disabled={isRefreshing} className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
                 {isRefreshing ? 'Verifying...' : (knownAdminToken ? 'Enter Commissioner Hub' : 'Enter Stadium')}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="liquid-glass p-6 w-full max-w-xs animate-in zoom-in duration-300 border-gold-glass">
+            <form onSubmit={handleCommissionerLogin} className="space-y-4">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Commissioner Login</h3>
+                <button type="button" onClick={() => { setShowLoginModal(false); setLoginError(null); }} className="text-gray-400 hover:text-white">&times;</button>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">Enter your league name and password to access your dashboard.</p>
+              {loginError && (
+                <div className="bg-red-900/20 border border-red-500/30 rounded p-2 text-[10px] text-red-400 font-bold">{loginError}</div>
+              )}
+              <input autoFocus type="text" value={loginLeagueName} onChange={(e) => setLoginLeagueName(e.target.value)} placeholder="League Name"
+                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors" disabled={isLoggingIn} />
+              <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="Password"
+                className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-gold-glass outline-none transition-colors" disabled={isLoggingIn} />
+              <button type="submit" disabled={isLoggingIn || !loginLeagueName || !loginPassword} className="w-full btn-cardinal py-3 rounded text-xs font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50">
+                {isLoggingIn ? 'Authenticating...' : 'Access My League'}
               </button>
             </form>
           </div>
@@ -821,7 +888,7 @@ const AppContent: React.FC = () => {
       })()}
 
       {showLanding ? (
-        <LandingPage onCreate={openSetupWizard} />
+        <LandingPage onCreate={openSetupWizard} onLogin={() => setShowLoginModal(true)} />
       ) : (
         <>
           <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60 backdrop-blur-md z-50">
