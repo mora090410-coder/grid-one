@@ -18,7 +18,13 @@ const INITIAL_GAME: GameState = {
     useManualScores: false,
     manualLeftScore: 0,
     manualTopScore: 0,
-    coverImage: ''
+    coverImage: '',
+    payouts: {
+        Q1: 125,
+        Q2: 125,
+        Q3: 125,
+        Final: 250
+    }
 };
 
 const EMPTY_BOARD: BoardData = {

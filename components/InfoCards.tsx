@@ -7,9 +7,9 @@ const getLogoUrl = (abbr: string) => {
   return `https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png`;
 };
 
-const Scoreboard: React.FC<{ 
-  game: GameState; 
-  live: LiveGameData | null; 
+const Scoreboard: React.FC<{
+  game: GameState;
+  live: LiveGameData | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   liveStatus?: string;
@@ -40,34 +40,34 @@ const Scoreboard: React.FC<{
       const qKey = `Q${i}` as keyof typeof quarterScores;
       cumulativeTotal += quarterScores[qKey][team];
     }
-    
+
     return cumulativeTotal % 10;
   };
 
   return (
     <div className="p-6 flex flex-col justify-between rounded-2xl shadow-lg border border-white/10"
-         style={{ background: `linear-gradient(135deg, rgba(var(--left-rgb), 0.6) 0%, rgba(var(--top-rgb), 0.6) 100%)` }}>
+      style={{ background: `linear-gradient(135deg, rgba(var(--left-rgb), 0.6) 0%, rgba(var(--top-rgb), 0.6) 100%)` }}>
       <div className="flex justify-between items-start mb-6">
         <div className="flex-1">
           <h4 className="text-lg font-black uppercase tracking-tight line-clamp-1 flex items-center gap-2 drop-shadow-md"
-              style={{ color: 'var(--text-contrast-left)' }}>
+            style={{ color: 'var(--text-contrast-left)' }}>
             {game.title || `${game.leftAbbr} vs ${game.topAbbr}`}
             {live?.isManual && (
               <span className="text-[10px] bg-red-900/40 px-2 py-0.5 rounded border border-red-500/20"
-                    style={{ color: 'white' }}>MANUAL</span>
+                style={{ color: 'white' }}>MANUAL</span>
             )}
           </h4>
           <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5 opacity-80"
-             style={{ color: 'var(--text-contrast-left)' }}>{game.meta}</p>
+            style={{ color: 'var(--text-contrast-left)' }}>{game.meta}</p>
         </div>
         <div className="flex items-center gap-3">
           {live && (
             <div className="font-black text-[10px] uppercase bg-black/30 border border-white/20 px-2 py-1 rounded tracking-widest shadow-sm"
-                 style={{ color: 'var(--text-contrast-top)' }}>
+              style={{ color: 'var(--text-contrast-top)' }}>
               {live.state === 'post' ? 'Final' : (live.isOvertime ? `OT ${live.clock}` : (live.detail || live.clock))}
             </div>
           )}
-          <button 
+          <button
             onClick={onRefresh}
             disabled={isRefreshing}
             className={`p-2 rounded-lg bg-black/20 border border-white/20 hover:bg-black/40 transition-all ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
@@ -92,7 +92,7 @@ const Scoreboard: React.FC<{
       )}
 
       <div className="mb-2 text-[9px] font-black uppercase tracking-widest text-center opacity-60"
-           style={{ color: 'var(--text-contrast-left)' }}>
+        style={{ color: 'var(--text-contrast-left)' }}>
         Squares Scoreboard (Last Digit)
       </div>
 
@@ -109,7 +109,7 @@ const Scoreboard: React.FC<{
         <tbody className="text-base">
           <tr className="border-t border-white/20">
             <td className="py-4 text-left font-black uppercase tracking-tighter text-lg flex items-center gap-3 drop-shadow-sm"
-                style={{ color: 'var(--text-contrast-left)' }}>
+              style={{ color: 'var(--text-contrast-left)' }}>
               <img src={getLogoUrl(game.leftAbbr)} alt={game.leftAbbr} className="w-8 h-8 object-contain drop-shadow-md" onError={(e) => (e.currentTarget.style.display = 'none')} />
               {game.leftAbbr}
             </td>
@@ -117,13 +117,13 @@ const Scoreboard: React.FC<{
             <td className="font-black text-xl" style={{ color: 'var(--text-contrast-left)' }}>{getSquaresDigit('left', 'Q2')}</td>
             <td className="font-black text-xl" style={{ color: 'var(--text-contrast-left)' }}>{getSquaresDigit('left', 'Q3')}</td>
             <td className={`font-black text-xl transition-transform ${isFinal ? 'scale-110 drop-shadow-sm' : ''}`}
-                style={{ color: 'var(--text-contrast-top)' }}>
+              style={{ color: 'var(--text-contrast-top)' }}>
               {live?.isManual ? (live.leftScore % 10) : getSquaresDigit('left', 'Final')}
             </td>
           </tr>
           <tr className="border-t border-white/20">
             <td className="py-4 text-left font-black uppercase tracking-tighter text-lg flex items-center gap-3 drop-shadow-sm"
-                style={{ color: 'var(--text-contrast-left)' }}>
+              style={{ color: 'var(--text-contrast-left)' }}>
               <img src={getLogoUrl(game.topAbbr)} alt={game.topAbbr} className="w-8 h-8 object-contain drop-shadow-md" onError={(e) => (e.currentTarget.style.display = 'none')} />
               {game.topAbbr}
             </td>
@@ -131,7 +131,7 @@ const Scoreboard: React.FC<{
             <td className="font-black text-xl" style={{ color: 'var(--text-contrast-left)' }}>{getSquaresDigit('top', 'Q2')}</td>
             <td className="font-black text-xl" style={{ color: 'var(--text-contrast-left)' }}>{getSquaresDigit('top', 'Q3')}</td>
             <td className={`font-black text-xl transition-transform ${isFinal ? 'scale-110 drop-shadow-sm' : ''}`}
-                style={{ color: 'var(--text-contrast-top)' }}>
+              style={{ color: 'var(--text-contrast-top)' }}>
               {live?.isManual ? (live.topScore % 10) : getSquaresDigit('top', 'Final')}
             </td>
           </tr>
@@ -161,17 +161,19 @@ const getPlayersAtScore = (board: BoardData, key: string) => {
   return board.squares[rowIdx * 10 + colIdx] || [];
 };
 
-const Payouts: React.FC<{ 
-  liveStatus: string; 
-  lastUpdated: string; 
-  highlights: WinnerHighlights; 
-  board: BoardData; 
-  live: LiveGameData | null 
-}> = ({ liveStatus, lastUpdated, highlights, board, live }) => {
+const Payouts: React.FC<{
+  liveStatus: string;
+  lastUpdated: string;
+  highlights: WinnerHighlights;
+  board: BoardData;
+  live: LiveGameData | null;
+  game: GameState;
+}> = ({ liveStatus, lastUpdated, highlights, board, live, game }) => {
 
   const renderWinnerLine = (label: string, amount: string, status: RowStatus, qKey: string, isFinal: boolean = false) => {
     if (status === 'blank') return null;
     let winnerData: { names: string[], statusText: string, key: string } | null = null;
+    let isActive = false;
 
     if (status === 'winner' && !live?.isManual) {
       const lockedKey = highlights.quarterWinners[qKey];
@@ -180,32 +182,50 @@ const Payouts: React.FC<{
       }
     } else if (status === 'current' || live?.isManual) {
       if (live) {
+        isActive = true;
         const currentKey = `${live.topScore % 10}-${live.leftScore % 10}`;
-        winnerData = { names: getPlayersAtScore(board, currentKey), statusText: live.isManual ? 'Current Score' : 'Current Leader', key: currentKey };
+        // Terminology Update: "Current Holder" instead of "Leader"
+        winnerData = { names: getPlayersAtScore(board, currentKey), statusText: live.isManual ? 'Current Score' : 'Current Holder', key: currentKey };
       }
     }
 
     return (
-      <div className={`group flex flex-col gap-0.5 ${isFinal ? 'mt-4 pt-3 border-t border-white/10' : 'pb-2 border-b border-white/5 last:border-0'}`}>
+      <div className={`group flex flex-col gap-1 transition-all duration-300 ${isFinal ? 'mt-4 pt-4 border-t border-white/10' : 'pb-3 border-b border-white/5 last:border-0'}`}>
         <div className="flex justify-between items-center text-sm">
-          <span className={`font-black uppercase tracking-tight ${isFinal ? 'text-team-top text-base' : 'text-gray-400'}`}>{label}</span>
-          <span className={`font-black ${isFinal ? 'text-team-top text-base' : 'text-white'}`}>{amount}</span>
+          <span className={`font-bold uppercase tracking-wide ${isFinal ? 'text-white text-base' : 'text-gray-400 group-hover:text-gray-300'}`}>{label}</span>
+          <span className={`font-black tracking-tight ${isFinal ? 'text-[#FFC72C] text-lg' : 'text-white'}`}>{amount}</span>
         </div>
+
+        {/* Status Area */}
         {status === 'awaiting' ? (
-          <div className="text-[10px] text-gray-600 font-bold uppercase italic tracking-widest">Awaiting Kickoff...</div>
-        ) : winnerData ? (
-          <div className="flex items-center justify-between animate-in fade-in slide-in-from-left-2 duration-300">
-            <div className="flex items-center gap-2">
-              <span className={`text-[11px] md:text-xs font-bold ${winnerData.statusText === 'Winner' ? 'text-white' : 'text-team-top italic'}`}>
-                {winnerData.names.length > 0 ? winnerData.names.join(', ') : 'No Owner'}
-              </span>
-              <span className="text-[9px] text-gray-500 font-mono">[{winnerData.key}]</span>
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest ${winnerData.statusText === 'Winner' ? 'text-green-400' : 'text-team-top animate-pulse'}`}>
-              {winnerData.statusText}
-            </span>
+          <div className="flex items-center gap-2 mt-0.5 opacity-60">
+            <div className="w-1 h-1 rounded-full bg-gray-500"></div>
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.15em]">Awaiting Kickoff</span>
           </div>
-        ) : <div className="h-4"></div>}
+        ) : winnerData ? (
+          <div className={`flex flex-col mt-1 p-2 rounded-lg border backdrop-blur-md animate-in fade-in slide-in-from-left-2 duration-500 ${isActive
+            ? 'bg-gradient-to-r from-[#9D2235]/20 to-transparent border-[#9D2235]/30'
+            : 'bg-white/5 border-white/10'
+            }`}>
+
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-2">
+                {isActive && <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>}
+                <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-red-400' : 'text-[#FFC72C]'}`}>
+                  {winnerData.statusText}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-gray-400 bg-black/40 px-1.5 rounded">{winnerData.key}</span>
+            </div>
+
+            <div className={`text-xs md:text-sm font-bold truncate ${isActive ? 'text-white' : 'text-gray-200'}`}>
+              {winnerData.names.length > 0 ? winnerData.names.join(', ') : 'No Owner'}
+            </div>
+          </div>
+        ) : <div className="h-1"></div>}
       </div>
     );
   };
@@ -213,21 +233,25 @@ const Payouts: React.FC<{
   const currentStatus = live ? live.state : 'pre';
   const currentPeriod = live ? live.period : 0;
 
+  // Default payouts if not set
+  const p = game.payouts || { Q1: 125, Q2: 125, Q3: 125, Final: 250 };
+
   return (
-    <div className="liquid-glass p-4 h-auto flex flex-col">
-      <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Payout Structure</div>
-      <div className="flex flex-col justify-start gap-2">
-        {renderWinnerLine('1st Quarter Winner', '$125', getRowStatus(false, 1, currentStatus, currentPeriod), 'Q1')}
-        {renderWinnerLine('2nd Quarter Winner', '$125', getRowStatus(false, 2, currentStatus, currentPeriod), 'Q2')}
-        {renderWinnerLine('3rd Quarter Winner', '$125', getRowStatus(false, 3, currentStatus, currentPeriod), 'Q3')}
-        {renderWinnerLine('Final Game Winner', '$250', getRowStatus(true, 4, currentStatus, currentPeriod), 'Final', true)}
+    <div className="liquid-glass p-5 h-auto flex flex-col border border-white/10 shadow-2xl bg-[#1c1c1e]/60 backdrop-blur-xl rounded-2xl">
+      <div className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Payout Structure</div>
+      <div className="flex flex-col justify-start gap-1">
+        {renderWinnerLine('1st Quarter', `$${p.Q1}`, getRowStatus(false, 1, currentStatus, currentPeriod), 'Q1')}
+        {renderWinnerLine('2nd Quarter', `$${p.Q2}`, getRowStatus(false, 2, currentStatus, currentPeriod), 'Q2')}
+        {renderWinnerLine('3rd Quarter', `$${p.Q3}`, getRowStatus(false, 3, currentStatus, currentPeriod), 'Q3')}
+        {renderWinnerLine('Final Score', `$${p.Final}`, getRowStatus(true, 4, currentStatus, currentPeriod), 'Final', true)}
       </div>
-      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px]">
+
+      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between opacity-50 hover:opacity-100 transition-opacity">
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${liveStatus.includes('Error') || liveStatus.includes('Required') ? 'bg-red-500' : 'bg-white live-indicator'}`}></div>
-          <span className="text-gray-500 font-bold uppercase tracking-widest">{liveStatus}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${liveStatus.includes('Error') || liveStatus.includes('Required') ? 'bg-red-500' : 'bg-green-500 live-indicator'}`}></div>
+          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{liveStatus}</span>
         </div>
-        <span className="text-gray-600 italic">Synced {lastUpdated || 'Never'}</span>
+        <span className="text-[9px] text-gray-600 font-medium italic">Synced {lastUpdated || 'Never'}</span>
       </div>
     </div>
   );

@@ -863,12 +863,17 @@ const AppContent: React.FC = () => {
           {isCommissionerMode && (
             <div className="absolute inset-0 z-[80] bg-[#050101] p-4 overflow-y-auto">
               <Suspense fallback={<div className="flex items-center justify-center h-64 text-white/50">Loading Commissioner Hub...</div>}>
-                <AdminPanel game={game} board={board} adminToken={adminToken} activePoolId={activePoolId} onApply={(g, b) => { setGame(g); setBoard(b); }} onPublish={handlePublish} />
+                <AdminPanel
+                  game={game}
+                  board={board}
+                  adminToken={adminToken}
+                  activePoolId={activePoolId}
+                  onApply={(g, b) => { setGame(g); setBoard(b); }}
+                  onPublish={handlePublish}
+                  onClose={() => setShowAdminView(false)}
+                  onLogout={handleLogout}
+                />
               </Suspense>
-              <div className="flex gap-4 mt-8 pb-12">
-                <button onClick={() => setShowAdminView(false)} className="px-6 py-2 bg-white/5 border border-white/10 rounded text-xs text-white font-black uppercase tracking-widest hover:bg-white/10">Return to Board View</button>
-                <button onClick={handleLogout} className="px-6 py-2 border border-red-900/40 text-xs text-red-400 font-black uppercase tracking-widest hover:bg-red-900/10">Log Out & Return to Home</button>
-              </div>
             </div>
           )}
           <div className="flex-shrink-0 flex items-center justify-center gap-4 py-3 z-40 relative">
@@ -898,14 +903,9 @@ const AppContent: React.FC = () => {
                   </div>
                 )}
                 <InfoCards.Scoreboard game={game} live={liveData} onRefresh={fetchLive} isRefreshing={isRefreshing} liveStatus={liveStatus} />
-                <div className="liquid-glass p-5 relative overflow-hidden group glass-top">
-                  <div className="text-[10px] font-black text-team-top uppercase tracking-widest mb-2 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>{currentLiveWinner?.state === 'post' ? 'Final Winner' : 'Live Winner'}</div>
-                  <div className="flex items-end justify-between">
-                    <div><div className="text-2xl font-black text-white leading-none mb-1">{currentLiveWinner?.owners.length ? currentLiveWinner.owners.join(', ') : (liveData ? 'No Owner' : '—')}</div><div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Square Owner</div></div>
-                    <div className="text-right"><div className="text-xl font-black text-team-top font-mono">{currentLiveWinner?.key || '?-?'}</div><div className="text-[9px] font-bold text-gray-500 uppercase">Coord</div></div>
-                  </div>
+                <div className="mt-4">
+                  <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} game={game} />
                 </div>
-                <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} />
                 <div className="space-y-4">
                   <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                   <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />

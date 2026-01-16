@@ -19,6 +19,12 @@ export interface GameState {
   manualLeftScore?: number;
   manualTopScore?: number;
   coverImage?: string; // Base64 image string for board cover
+  payouts?: {
+    Q1: number;
+    Q2: number;
+    Q3: number;
+    Final: number;
+  };
 }
 
 // Dynamic Board Support - Per-Quarter Axes
