@@ -225,16 +225,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       )}
 
       {/* Top Header & Publish */}
-      <div className="liquid-glass p-6 border-l-4 border-l-[#FFC72C] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in slide-in-from-top-4 duration-500">
+      {/* Top Header & Publish */}
+      <div className="premium-glass p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-in slide-in-from-top-4 duration-500 mb-8">
         <div>
-          <h3 className="text-xl font-black text-white uppercase tracking-tight italic">COMMISSIONER HUB</h3>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
-            {activePoolId ? `STADIUM ID: ${activePoolId}` : 'Drafting New Pool'}
+          <h3 className="text-2xl font-semibold text-white tracking-tight">Commissioner Hub</h3>
+          <p className="text-xs font-medium text-gray-400 mt-1">
+            {activePoolId ? `Stadium ID: ${activePoolId}` : 'Drafting New Pool'}
           </p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto items-center">
+        <div className="flex gap-3 w-full md:w-auto items-center">
           {scanStatus && (
-            <div className={`mr-4 text-[10px] font-black uppercase tracking-widest animate-pulse ${scanStatus.includes('SUCCESSFUL') ? 'text-green-400' :
+            <div className={`mr-4 text-[10px] font-bold uppercase tracking-widest animate-pulse ${scanStatus.includes('SUCCESSFUL') ? 'text-green-400' :
               scanStatus.includes('ANALYZING') ? 'text-orange-500' : 'text-red-500'
               }`}>
               {scanStatus}
@@ -243,9 +244,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           <button
             disabled={isSaving}
             onClick={handlePublishClick}
-            className={`flex-1 md:flex-none px-8 py-3 btn-cardinal text-white rounded text-xs font-black uppercase tracking-widest shadow-xl transition-all ${isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+            className={`flex-1 md:flex-none px-6 py-3 bg-white text-black rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg hover:bg-gray-200 transition-all ${isSaving ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
           >
-            {isSaving ? 'SYNCING...' : 'PUBLISH TO LIVE'}
+            {isSaving ? 'Syncing...' : 'Publish to Live'}
           </button>
         </div>
       </div>
@@ -253,76 +254,76 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       {/* Main Settings Area */}
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-4">
-            <h4 className="text-[10px] font-black text-gold uppercase tracking-widest mb-4">League Settings</h4>
+          <div className="premium-glass p-6 rounded-2xl space-y-5">
+            <h4 className="text-label mb-2">League Settings</h4>
 
             {/* Dynamic Board Toggle */}
-            <div className="bg-white/5 p-3 rounded-lg border border-white/10 flex justify-between items-center mb-4">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center mb-4">
               <div>
-                <div className="text-[10px] font-bold text-white uppercase tracking-widest">Board Type</div>
-                <div className="text-[9px] text-gray-500 font-bold uppercase">
+                <div className="text-sm font-medium text-white">Board Type</div>
+                <div className="text-xs text-gray-400 mt-0.5">
                   {parsedBoardData?.isDynamic ? 'Rotating Axes (Different per Quarter)' : 'Standard (Same Axis for All Quarters)'}
                 </div>
               </div>
               <button
                 onClick={toggleBoardType}
-                className={`px-4 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all ${parsedBoardData?.isDynamic
-                  ? 'bg-gold text-black hover:bg-white'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                className={`px-4 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${parsedBoardData?.isDynamic
+                  ? 'bg-white text-black shadow-md'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
                   }`}
               >
                 {parsedBoardData?.isDynamic ? 'Dynamic' : 'Standard'}
               </button>
             </div>
 
-            <div className="grid gap-4">
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">League Name</label>
-                <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-gold-glass" />
+            <div className="grid gap-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 ml-1">League Name</label>
+                <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full glass-input p-3 text-sm" />
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Subtext / Location</label>
-                <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-gold-glass" />
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 ml-1">Subtext / Location</label>
+                <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full glass-input p-3 text-sm" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Left Team</label>
-                <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-gold-glass">
-                  {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
+            <div className="grid grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 ml-1">Left Team</label>
+                <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input p-3 text-sm appearance-none cursor-pointer">
+                  {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-black">{t.abbr}</option>)}
                 </select>
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-500 uppercase">Top Team</label>
-                <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-gold-glass">
-                  {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr}</option>)}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400 ml-1">Top Team</label>
+                <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input p-3 text-sm appearance-none cursor-pointer">
+                  {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-black">{t.abbr}</option>)}
                 </select>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[9px] font-bold text-gray-500 uppercase">ESPN Date Override</label>
-              <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full bg-black/50 border border-white/10 rounded p-2.5 text-xs text-white outline-none" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-400 ml-1">ESPN Date Override</label>
+              <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full glass-input p-3 text-sm" />
             </div>
           </div>
 
-          <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-4">
+          <div className="premium-glass p-6 rounded-2xl space-y-5">
             <div className="flex justify-between items-center">
-              <h4 className="text-[10px] font-black text-gold uppercase tracking-widest">Manual Score Controls</h4>
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" checked={localGame.useManualScores} onChange={(e) => updateField('useManualScores', e.target.checked)} className="accent-[#9D2235]" />
-                <span className="text-[9px] text-gray-500 font-bold uppercase group-hover:text-white transition-colors">Enable Overrides</span>
+              <h4 className="text-label">Score Controls</h4>
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <span className="text-xs text-gray-400 font-medium group-hover:text-white transition-colors">Enable Manual Overrides</span>
+                <input type="checkbox" checked={localGame.useManualScores} onChange={(e) => updateField('useManualScores', e.target.checked)} className="accent-white scale-125" />
               </label>
             </div>
             {localGame.useManualScores && (
-              <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">{localGame.leftAbbr} Score</label>
-                  <input type="number" value={localGame.manualLeftScore} onChange={(e) => updateField('manualLeftScore', parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-white/10 rounded p-2 text-xs text-white font-black" />
+              <div className="grid grid-cols-2 gap-5 animate-in fade-in duration-300">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-400 ml-1">{localGame.leftAbbr} Score</label>
+                  <input type="number" value={localGame.manualLeftScore} onChange={(e) => updateField('manualLeftScore', parseInt(e.target.value) || 0)} className="w-full glass-input p-3 text-sm font-semibold" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase">{localGame.topAbbr} Score</label>
-                  <input type="number" value={localGame.manualTopScore} onChange={(e) => updateField('manualTopScore', parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-white/10 rounded p-2 text-xs text-white font-black" />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-400 ml-1">{localGame.topAbbr} Score</label>
+                  <input type="number" value={localGame.manualTopScore} onChange={(e) => updateField('manualTopScore', parseInt(e.target.value) || 0)} className="w-full glass-input p-3 text-sm font-semibold" />
                 </div>
               </div>
             )}
@@ -330,13 +331,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         </div>
 
         <div className="flex flex-col space-y-4">
-          <div className="bg-black/30 rounded-xl border border-white/10 flex-1 flex flex-col min-h-[400px] overflow-hidden shadow-inner relative">
-            <div className="bg-black/50 p-3 flex justify-between items-center border-b border-white/10">
-              <span className="text-[9px] font-black text-gray-500 uppercase pl-2 tracking-widest">Board Transcription (JSON)</span>
+          <div className="premium-glass flex-1 flex flex-col min-h-[400px] overflow-hidden shadow-inner relative rounded-2xl">
+            <div className="p-4 flex justify-between items-center border-b border-white/5 bg-white/5">
+              <span className="text-label pl-2">Board Transcription (JSON)</span>
               <div className="flex gap-3">
-                <button onClick={handleClear} className="text-[8px] font-black text-white/40 uppercase hover:text-white px-2 transition-colors">Clear Board</button>
-                <label className={`text-[8px] font-black bg-[#9D2235]/10 text-gold border border-gold-glass rounded px-4 py-1.5 cursor-pointer hover:bg-[#9D2235] hover:text-white transition-all shadow-lg ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {isScanning ? 'MAPPING...' : 'Scan Physical Board'}
+                <button onClick={handleClear} className="text-xs font-semibold text-gray-400 hover:text-white px-2 transition-colors">Clear Board</button>
+                <label className={`text-xs font-semibold bg-white/10 text-white border border-white/10 rounded-lg px-4 py-2 cursor-pointer hover:bg-white/20 transition-all shadow-lg ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {isScanning ? 'Mapping...' : 'Scan Physical Board'}
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                 </label>
               </div>
@@ -344,67 +345,67 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
             <textarea
               value={boardText}
               onChange={(e) => setBoardText(e.target.value)}
-              className={`flex-1 w-full bg-transparent p-5 text-[10px] font-mono text-white/80 focus:outline-none resize-none custom-scrollbar transition-opacity ${isScanning ? 'opacity-50' : 'opacity-100'}`}
+              className={`flex-1 w-full bg-transparent p-6 text-xs font-mono text-gray-300 focus:outline-none resize-none custom-scrollbar transition-opacity leading-relaxed ${isScanning ? 'opacity-50' : 'opacity-100'}`}
               spellCheck={false}
               placeholder="Paste custom JSON or use the scanner above..."
             />
             {isScanning && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/50 backdrop-blur-sm">
-                <div className="bg-black/80 px-8 py-5 rounded-2xl border border-gold-glass text-gold font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl animate-pulse text-center">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/60 backdrop-blur-md">
+                <div className="bg-[#1c1c1e] px-8 py-6 rounded-2xl border border-white/10 text-white font-bold uppercase tracking-widest text-xs shadow-2xl animate-pulse text-center">
                   Intelligent OCR Mapping...<br />
-                  <span className="text-[8px] font-bold text-white/40 lowercase mt-3 block">Processing 100-cell player matrix</span>
+                  <span className="text-[10px] font-medium text-gray-500 lowercase mt-2 block">Processing 100-cell player matrix</span>
                 </div>
               </div>
             )}
           </div>
-          <button onClick={handleApply} className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md">
+          <button onClick={handleApply} className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-md active:scale-[0.99]">
             Refresh Visual UI
           </button>
         </div>
       </div>
 
       {/* Manual Grid Editor Section */}
-      <div className="liquid-glass p-6 border-l-4 border-l-[#9D2235] space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-        <div className="flex justify-between items-end">
+      <div className="premium-glass p-6 md:p-8 rounded-2xl flex flex-col space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="flex justify-between items-end pb-4 border-b border-white/5">
           <div>
-            <h3 className="text-xl font-black text-white uppercase tracking-tight italic">VISUAL GRID EDITOR</h3>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Direct board manipulation & coordinate tuning</p>
+            <h3 className="text-xl font-semibold text-white tracking-tight">Visual Grid Editor</h3>
+            <p className="text-xs font-medium text-gray-400 mt-1">Direct board manipulation & coordinate tuning</p>
           </div>
           <div className="text-right">
-            <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Editing Controls</span>
+            <span className="text-xs font-medium text-gray-500 mb-2 block">Editing Controls</span>
             <div className="flex gap-2 justify-end">
-              <div className="h-1.5 w-6 rounded bg-team-left"></div>
-              <div className="h-1.5 w-6 rounded bg-team-top"></div>
+              <div className="h-1.5 w-6 rounded-full bg-team-left/80"></div>
+              <div className="h-1.5 w-6 rounded-full bg-team-top/80"></div>
             </div>
           </div>
         </div>
 
         {!parsedBoardData ? (
-          <div className="bg-red-900/10 border border-red-500/20 p-8 rounded-2xl text-center space-y-2">
-            <p className="text-sm text-red-400 font-black uppercase tracking-widest">Visual Editor Locked</p>
-            <p className="text-[10px] text-gray-500 font-bold uppercase">Resolve JSON syntax errors in the Transcription panel to unlock.</p>
+          <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-xl text-center space-y-2">
+            <p className="text-sm text-red-400 font-bold uppercase tracking-wide">Visual Editor Locked</p>
+            <p className="text-xs text-gray-500">Resolve JSON syntax errors in the Transcription panel to unlock.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto custom-scrollbar bg-black/20 p-4 rounded-2xl border border-white/5">
-            <div className="min-w-[900px] space-y-4">
+          <div className="overflow-x-auto custom-scrollbar bg-[#1c1c1e]/50 p-6 rounded-xl border border-white/5 shadow-inner">
+            <div className="min-w-[900px] space-y-6">
 
               {/* Dynamic Axis Selector */}
               {parsedBoardData.isDynamic && (
-                <div className="flex items-center justify-center gap-2 mb-4 bg-white/5 p-2 rounded-lg mx-auto w-fit">
-                  <div className="text-[10px] font-black text-white uppercase tracking-widest mr-2">Editable Quarter:</div>
+                <div className="flex items-center justify-center gap-3 mb-6 bg-white/5 p-2 rounded-xl mx-auto w-fit border border-white/5 px-4">
+                  <div className="text-xs font-medium text-gray-300 mr-2">Editable Quarter:</div>
                   {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
                     <button
                       key={q}
                       onClick={() => setActiveAxisQuarter(q)}
-                      className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${activeAxisQuarter === q
-                        ? 'bg-gold text-black shadow-lg'
-                        : 'bg-black/40 text-gray-500 hover:text-white hover:bg-white/10'
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${activeAxisQuarter === q
+                        ? 'bg-white text-black shadow-md scale-105'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
                       {q}
                     </button>
                   ))}
-                  <div className="text-[9px] text-gray-500 font-bold uppercase ml-2 border-l border-white/10 pl-2">
+                  <div className="text-xs font-medium text-gray-500 ml-4 pl-4 border-l border-white/10">
                     Adjusting axes for {activeAxisQuarter === 'Q4' ? '4th Quarter & Final' : `${activeAxisQuarter} Score`}
                   </div>
                 </div>
@@ -413,24 +414,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
               {/* Header: Top Team and Axis */}
               <div className="flex items-end">
                 <div className="w-[120px] pr-4 flex flex-col justify-end">
-                  <div className="text-[9px] font-black text-team-left uppercase text-right leading-none pb-2">{localGame.leftAbbr}</div>
+                  <div className="text-xs font-bold text-gray-400 text-right pb-2 tracking-wide uppercase">{localGame.leftAbbr}</div>
                 </div>
                 <div className="flex-1">
-                  <div className="text-center text-[10px] font-black text-team-top uppercase tracking-[0.3em] mb-3">{localGame.topName}</div>
+                  <div className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{localGame.topName}</div>
                   <div className="grid grid-cols-10 gap-2">
                     {currentOppAxis?.map((val, idx) => (
                       <div key={idx} className="space-y-1.5">
-                        <div className="text-[8px] font-black text-gray-600 text-center uppercase tracking-tighter">COL {idx}</div>
+                        <div className="text-[9px] font-bold text-gray-600 text-center uppercase">COL {idx}</div>
                         <div className="relative group">
                           <select
                             value={val ?? ''}
                             onChange={(e) => handleAxisChange('oppAxis', idx, e.target.value)}
-                            className="w-full bg-black/60 border border-white/10 rounded-lg p-2.5 text-center text-xs text-white font-black focus:border-team-top focus:bg-black/80 outline-none appearance-none transition-all shadow-inner cursor-pointer"
+                            className="w-full h-10 bg-white/5 border border-white/5 rounded-lg text-center text-sm text-white font-bold focus:bg-white/10 outline-none appearance-none cursor-pointer transition-all hover:bg-white/10"
                           >
-                            <option value="" className="bg-black text-gray-500">?</option>
-                            {axisDigits.map(d => <option key={d} value={d} className="bg-black text-white font-bold">{d}</option>)}
+                            <option value="" className="bg-[#1c1c1e] text-gray-500">?</option>
+                            {axisDigits.map(d => <option key={d} value={d} className="bg-[#1c1c1e] text-white font-medium">{d}</option>)}
                           </select>
-                          <div className="absolute inset-0 rounded-lg pointer-events-none group-focus-within:ring-2 group-focus-within:ring-team-top/30 group-focus-within:border-team-top transition-all"></div>
                         </div>
                       </div>
                     ))}
@@ -440,20 +440,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
               {/* Body: Left Labels and Main Grid */}
               <div className="flex">
-                <div className="w-[120px] flex flex-col gap-2 pr-4 pt-1 border-r border-white/10">
+                <div className="w-[120px] flex flex-col gap-2 pr-4 pt-1 border-r border-white/5">
                   {currentBearsAxis?.map((val, idx) => (
                     <div key={idx} className="flex items-center justify-end gap-3 group h-12">
-                      <span className="text-[8px] font-black text-gray-600 uppercase text-right group-hover:text-white transition-colors tracking-tighter">ROW {idx}</span>
+                      <span className="text-[9px] font-bold text-gray-600 uppercase text-right group-hover:text-white transition-colors">ROW {idx}</span>
                       <div className="relative w-12">
                         <select
                           value={val ?? ''}
                           onChange={(e) => handleAxisChange('bearsAxis', idx, e.target.value)}
-                          className="w-full h-full bg-black/60 border border-white/10 rounded-lg p-2 text-center text-[11px] text-white font-black focus:border-team-left focus:bg-black/80 outline-none appearance-none transition-all cursor-pointer"
+                          className="w-full h-12 bg-white/5 border border-white/5 rounded-lg text-center text-sm text-white font-bold focus:bg-white/10 outline-none appearance-none cursor-pointer transition-all hover:bg-white/10"
                         >
-                          <option value="" className="bg-black text-gray-500">?</option>
-                          {axisDigits.map(d => <option key={d} value={d} className="bg-black text-white font-bold">{d}</option>)}
+                          <option value="" className="bg-[#1c1c1e] text-gray-500">?</option>
+                          {axisDigits.map(d => <option key={d} value={d} className="bg-[#1c1c1e] text-white font-medium">{d}</option>)}
                         </select>
-                        <div className="absolute inset-0 rounded-lg pointer-events-none group-focus-within:ring-2 group-focus-within:ring-team-left/30 group-focus-within:border-team-left transition-all"></div>
                       </div>
                     </div>
                   ))}
