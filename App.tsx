@@ -135,7 +135,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 const API_URL = `${window.location.origin}/api/pools`;
-const LIVE_PROXY_URL = 'https://wandering-flower-f1de.anthony-mora13.workers.dev';
+const LIVE_PROXY_URL = import.meta.env.VITE_LIVE_PROXY_URL || 'https://wandering-flower-f1de.anthony-mora13.workers.dev';
 
 const normalizeAbbr = (abbr: string | undefined): string => {
   if (!abbr) return '';
