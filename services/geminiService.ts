@@ -19,22 +19,18 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
         parts: [
           {
             text: `Analyze this football squares board image. 
-            1. Identify the numbers on the top horizontal axis (oppAxis).
-            2. Identify the numbers on the left vertical axis (bearsAxis).
-            3. Extract the names written in each of the 100 squares.
-            4. Check if there are different axis numbers for different quarters (Dynamic Board).
-               - Look for multiple rows/columns of numbers labeled Q1, Q2, Q3, Q4/Final.
-               - If found, extract them into the ByQuarter fields.
-               - If only one set is found, populate the main axis fields and leave ByQuarter fields null.
+            1. EXTRACT NAMES: Identify and extract the name written in each of the 100 squares.
+               - Output 'squaresGrid' as an array of 100 arrays (one per cell, row-by-row).
             
-            Important:
-            - Output the results as JSON.
-            - Identify the positions of names. 
-            - Provide 'squaresGrid' as an array of 100 items. 
-            - Each item corresponds to a position (moving row by row, left to right).
-            - Each item is an array of strings (names in that box).
-            - If a square is empty, provide an empty array [].
-            - Ensure output is exactly 100 items in 'squaresGrid'.`
+            2. DETECT AXIS NUMBERS: Look at the top and left headers.
+               - Are there MULTIPLE rows/columns of numbers (e.g. labeled Q1, Q2, Q3, Final)?
+               - If YES: This is a DYNAMIC BOARD. Extract each set of 10 numbers into 'bearsAxisByQuarter' (left) and 'oppAxisByQuarter' (top).
+               - If NO (just one row/col): Extract the single set into 'bearsAxis' and 'oppAxis'.
+            
+            3. DATA CLEANING:
+               - Use 0-9 digits only for axes.
+               - If a digit is unreadable, use null or -1.
+               - Ensure output is exactly 100 items in 'squaresGrid'.`
           },
           {
             inlineData: {

@@ -36,8 +36,8 @@ async function compressImage(base64Str: string): Promise<string> {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1200;
-      const MAX_HEIGHT = 1200;
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
       let width = img.width;
       let height = img.height;
 
@@ -438,7 +438,8 @@ const AppContent: React.FC = () => {
       setGame(prev => ({ ...prev, title: leagueTitle, coverImage: targetCover }));
       setWizardSuccess(true);
       setIsInitialized(true);
-      setShowAdminView(false);
+      setIsPreviewMode(false); // Force Edit Mode
+      setShowAdminView(true); // Open Admin Panel
       setActiveTab('board');
 
       const newUrl = new URL(window.location.href);
@@ -907,7 +908,7 @@ const AppContent: React.FC = () => {
                           disabled={isCreating}
                           className={`w-full btn-primary flex items-center justify-center gap-2 ${!game.coverImage ? 'opacity-50' : ''}`}
                         >
-                          {isCreating ? "Processing..." : "Scan board"}
+                          {isCreating ? "Processing..." : "Launch Board"}
                         </button>
 
                         {!isCreating && (
@@ -923,184 +924,191 @@ const AppContent: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
-      {showShareModal && (() => {
-        const shareUrl = activePoolId ? `${window.location.origin}/?poolId=${activePoolId}` : window.location.href;
-        return (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="premium-glass w-full max-w-sm p-6 text-center flex flex-col items-center gap-4 animate-in zoom-in duration-300">
-              <h2 className="text-lg font-semibold text-white tracking-tight">Access Link</h2>
-              <div className="bg-white p-4 rounded-xl shadow-lg"><QRCodeSVG value={shareUrl} size={160} /></div>
-              <div className="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center gap-3 w-full">
-                <div className="flex-1 text-xs font-mono text-gray-400 truncate text-left">{shareUrl}</div>
-                <button onClick={handleCopyLink} className="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-white/10 hover:bg-white/20 text-white transition-colors">{copyFeedback ? 'Copied' : 'Copy'}</button>
+      {
+        showShareModal && (() => {
+          const shareUrl = activePoolId ? `${window.location.origin}/?poolId=${activePoolId}` : window.location.href;
+          return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="premium-glass w-full max-w-sm p-6 text-center flex flex-col items-center gap-4 animate-in zoom-in duration-300">
+                <h2 className="text-lg font-semibold text-white tracking-tight">Access Link</h2>
+                <div className="bg-white p-4 rounded-xl shadow-lg"><QRCodeSVG value={shareUrl} size={160} /></div>
+                <div className="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center gap-3 w-full">
+                  <div className="flex-1 text-xs font-mono text-gray-400 truncate text-left">{shareUrl}</div>
+                  <button onClick={handleCopyLink} className="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-white/10 hover:bg-white/20 text-white transition-colors">{copyFeedback ? 'Copied' : 'Copy'}</button>
+                </div>
+                <button onClick={handleCloseShare} className="w-full btn-secondary text-sm">Close</button>
               </div>
-              <button onClick={handleCloseShare} className="w-full btn-secondary text-sm">Close</button>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()
+      }
 
-      {showLanding ? (
-        <LandingPage onCreate={openSetupWizard} onJoin={() => setShowJoinModal(true)} onLogin={() => setShowLoginModal(true)} />
-      ) : (
-        <>
-          <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
-            {/* Header / Nav */}
-            <div className="flex-shrink-0 flex items-center justify-between p-4 md:py-6 bg-transparent z-50">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9D2235] to-[#7f1d2b] flex items-center justify-center text-white font-bold tracking-tight shadow-lg border border-white/10">SBX</div>
-                <div className="flex flex-col">
-                  <h1 className="text-xl font-bold leading-none tracking-tight text-white mb-1">{game.title || 'Super Bowl LIX'}</h1>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/60 font-medium">
-                      {game.leftAbbr} vs {game.topAbbr} • {game.dates || 'Feb 9, 2025'}
-                    </span>
-                    {isSynced && <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" title="Live Sync Active"></span>}
+      {
+        showLanding ? (
+          <LandingPage onCreate={openSetupWizard} onJoin={() => setShowJoinModal(true)} onLogin={() => setShowLoginModal(true)} />
+        ) : (
+          <>
+            <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
+              {/* Header / Nav */}
+              <div className="flex-shrink-0 flex items-center justify-between p-4 md:py-6 bg-transparent z-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9D2235] to-[#7f1d2b] flex items-center justify-center text-white font-bold tracking-tight shadow-lg border border-white/10">SBX</div>
+                  <div className="flex flex-col">
+                    <h1 className="text-xl font-bold leading-none tracking-tight text-white mb-1">{game.title || 'Super Bowl LIX'}</h1>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-white/60 font-medium">
+                        {game.leftAbbr} vs {game.topAbbr} • {game.dates || 'Feb 9, 2025'}
+                      </span>
+                      {isSynced && <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" title="Live Sync Active"></span>}
+                    </div>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {activePoolId && (
+                    <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                    </button>
+                  )}
+
+                  {adminToken ? (
+                    <div className="flex items-center gap-3">
+                      {isPreviewMode && (
+                        <span className="hidden md:inline text-[10px] uppercase font-bold text-gray-500 animate-in fade-in transition-colors">Preview Mode</span>
+                      )}
+                      <div className="flex items-center bg-white/10 p-1 rounded-full border border-white/5 backdrop-blur-md">
+                        <button
+                          onClick={() => handleTogglePreview(false)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${!isPreviewMode ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleTogglePreview(true)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${isPreviewMode ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
+                            }`}
+                        >
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  ) : activePoolId ? (
+                    <button onClick={() => setShowAuthModal(true)} className="px-5 py-2.5 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wide hover:bg-white/15 transition-colors border border-white/10">
+                      Login
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                {activePoolId && (
-                  <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                  </button>
+              {/* Main Content Area */}
+              <div className="flex-1 relative overflow-hidden flex flex-col md:flex-row gap-8 pb-6 px-4 md:px-0">
+                {activeTab === 'live' && (
+                  <div className="flex-1 h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-0 scrollbar-hide animate-in fade-in duration-500">
+                    <div className="space-y-6">
+                      {liveStatus === 'NO MATCH FOUND' && (
+                        <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
+                          <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
+                          <div>
+                            <h4 className="text-sm font-bold text-yellow-500 mb-1">Live Scoring Unavailable</h4>
+                            <p className="text-xs text-yellow-500/80">Check your date and teams in the Organizer settings.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <InfoCards.Scoreboard game={game} live={liveData} onRefresh={fetchLive} isRefreshing={isRefreshing} liveStatus={liveStatus} />
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} game={game} />
+
+                        <div className="space-y-4">
+                          <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                          <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
-                {adminToken ? (
-                  <div className="flex items-center gap-3">
-                    {isPreviewMode && (
-                      <span className="hidden md:inline text-[10px] uppercase font-bold text-gray-500 animate-in fade-in transition-colors">Preview Mode</span>
-                    )}
-                    <div className="flex items-center bg-white/10 p-1 rounded-full border border-white/5 backdrop-blur-md">
-                      <button
-                        onClick={() => handleTogglePreview(false)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${!isPreviewMode ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
-                          }`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleTogglePreview(true)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${isPreviewMode ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'
-                          }`}
-                      >
-                        Preview
-                      </button>
+                <div className={`${activeTab === 'board' ? 'block' : 'hidden md:block'} md:flex-1 h-full overflow-hidden flex flex-col pb-24 md:pb-0`}>
+                  <div className="flex-1 relative bg-[#1c1c1e]/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
+                    <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-4 flex items-center justify-center">
+                      {isEmptyBoard ? (
+                        <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
+                          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+                            <svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                          </div>
+                          <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
+                          <p className="text-sm text-gray-500 mb-8 leading-relaxed">Add names to squares to share with your group.</p>
+                          {adminToken ? (
+                            <button onClick={() => setShowAdminView(true)} className="btn-primary w-full shadow-lg">Edit Board</button>
+                          ) : (
+                            <div className="inline-flex px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs font-medium text-gray-500">Waiting for organizer...</div>
+                          )}
+                        </div>
+                      ) : (
+                        <BoardGrid
+                          board={board}
+                          highlights={highlights}
+                          live={liveData}
+                          selectedPlayer={selectedPlayer}
+                          highlightedCoords={highlightedCoords}
+                          leftTeamName={game.leftName || game.leftAbbr}
+                          topTeamName={game.topName || game.topAbbr}
+                        />
+                      )}
                     </div>
                   </div>
-                ) : activePoolId ? (
-                  <button onClick={() => setShowAuthModal(true)} className="px-5 py-2.5 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wide hover:bg-white/15 transition-colors border border-white/10">
-                    Login
-                  </button>
-                ) : null}
-              </div>
-            </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 relative overflow-hidden flex flex-col md:flex-row gap-8 pb-6 px-4 md:px-0">
-              {activeTab === 'live' && (
-                <div className="flex-1 h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-0 scrollbar-hide animate-in fade-in duration-500">
-                  <div className="space-y-6">
-                    {liveStatus === 'NO MATCH FOUND' && (
-                      <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
-                        <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
-                        <div>
-                          <h4 className="text-sm font-bold text-yellow-500 mb-1">Live Scoring Unavailable</h4>
-                          <p className="text-xs text-yellow-500/80">Check your date and teams in the Organizer settings.</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <InfoCards.Scoreboard game={game} live={liveData} onRefresh={fetchLive} isRefreshing={isRefreshing} liveStatus={liveStatus} />
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <InfoCards.Payouts liveStatus={liveStatus} lastUpdated={lastUpdated} highlights={highlights} board={board} live={liveData} game={game} />
-
-                      <div className="space-y-4">
-                        <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                        <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                      </div>
-                    </div>
+                  <div className="mt-6">
+                    <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
                   </div>
                 </div>
-              )}
-
-              <div className={`${activeTab === 'board' ? 'block' : 'hidden md:block'} md:flex-1 h-full overflow-hidden flex flex-col pb-24 md:pb-0`}>
-                <div className="flex-1 relative bg-[#1c1c1e]/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
-                  <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-4 flex items-center justify-center">
-                    {isEmptyBoard ? (
-                      <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
-                        <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
-                          <svg className="w-10 h-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                        </div>
-                        <h3 className="text-xl font-semibold text-white mb-2">Board is empty</h3>
-                        <p className="text-sm text-gray-500 mb-8 leading-relaxed">Add names to squares to share with your group.</p>
-                        {adminToken ? (
-                          <button onClick={() => setShowAdminView(true)} className="btn-primary w-full shadow-lg">Edit Board</button>
-                        ) : (
-                          <div className="inline-flex px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs font-medium text-gray-500">Waiting for organizer...</div>
-                        )}
-                      </div>
-                    ) : (
-                      <BoardGrid
-                        board={board}
-                        highlights={highlights}
-                        live={liveData}
-                        selectedPlayer={selectedPlayer}
-                        highlightedCoords={highlightedCoords}
-                        leftTeamName={game.leftName || game.leftAbbr}
-                        topTeamName={game.topName || game.topAbbr}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
-                </div>
               </div>
-            </div>
 
-            {/* Mobile Tab Bar */}
-            <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex p-1.5 bg-[#1c1c1e]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
-              <button onClick={() => setActiveTab('live')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                Live
-              </button>
-              <button onClick={() => setActiveTab('board')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
-                Board
-              </button>
-              {adminToken && (
-                <button onClick={() => setShowAdminView(true)} className="ml-2 w-10 h-10 rounded-full bg-[#9D2235] text-white flex items-center justify-center shadow-lg border border-red-500/20">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              {/* Mobile Tab Bar */}
+              <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex p-1.5 bg-[#1c1c1e]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
+                <button onClick={() => setActiveTab('live')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                  Live
                 </button>
-              )}
+                <button onClick={() => setActiveTab('board')} className={`px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                  Board
+                </button>
+                {adminToken && (
+                  <button onClick={() => setShowAdminView(true)} className="ml-2 w-10 h-10 rounded-full bg-[#9D2235] text-white flex items-center justify-center shadow-lg border border-red-500/20">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )
+      }
 
       {/* Commissioner Overlay */}
-      {isCommissionerMode && (
-        <div className="fixed inset-0 z-[80] bg-[#050101] p-4 md:p-8 overflow-y-auto animate-in slide-in-from-bottom-10 duration-300">
-          <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Loading Organizer...</div>}>
-            <AdminPanel
-              game={game}
-              board={board}
-              adminToken={adminToken}
-              activePoolId={activePoolId}
-              onApply={(g, b) => { setGame(g); setBoard(b); }}
-              onPublish={handlePublish}
-              onClose={() => setShowAdminView(false)}
-              onLogout={handleLogout}
-              onPreview={() => handleTogglePreview(true)}
-            />
-          </Suspense>
-        </div>
-      )}
-    </div>
+      {
+        isCommissionerMode && (
+          <div className="fixed inset-0 z-[80] bg-[#050101] p-4 md:p-8 overflow-y-auto animate-in slide-in-from-bottom-10 duration-300">
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Loading Organizer...</div>}>
+              <AdminPanel
+                game={game}
+                board={board}
+                adminToken={adminToken}
+                activePoolId={activePoolId}
+                onApply={(g, b) => { setGame(g); setBoard(b); }}
+                onPublish={handlePublish}
+                onClose={() => handleTogglePreview(true)}
+                onLogout={handleLogout}
+                onPreview={() => handleTogglePreview(true)}
+              />
+            </Suspense>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

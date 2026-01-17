@@ -33,10 +33,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     // We won't auto-reset on every prop change to avoid losing work.
   }, []);
 
-  // Update parent state whenever local state changes (reactive update)
   useEffect(() => {
     onApply(localGame, localBoard);
   }, [localGame, localBoard, onApply]);
+
+  // Self-healing: Ensure dynamic boards have quarter axes initialized
+  useEffect(() => {
+    if (localBoard.isDynamic) {
+      let changed = false;
+      const copy = { ...localBoard };
+
+      if (!copy.bearsAxisByQuarter) {
+        copy.bearsAxisByQuarter = {
+          Q1: [...copy.bearsAxis],
+          Q2: [...copy.bearsAxis],
+          Q3: [...copy.bearsAxis],
+          Q4: [...copy.bearsAxis]
+        };
+        changed = true;
+      }
+
+      if (!copy.oppAxisByQuarter) {
+        copy.oppAxisByQuarter = {
+          Q1: [...copy.oppAxis],
+          Q2: [...copy.oppAxis],
+          Q3: [...copy.oppAxis],
+          Q4: [...copy.oppAxis]
+        };
+        changed = true;
+      }
+
+      if (changed) {
+        console.log("Repairing missing dynamic axis data...");
+        setLocalBoard(copy);
+      }
+    }
+  }, [localBoard.isDynamic, localBoard.bearsAxisByQuarter, localBoard.oppAxisByQuarter]);
 
 
   const applyScanResult = (newBoard: BoardData) => {
