@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useEffect } from 'react';
 import { GameState, BoardData } from '../types';
+import { supabase } from '../services/supabase';
 
 const INITIAL_GAME: GameState = {
     title: '',
@@ -40,6 +41,7 @@ interface PoolDataState {
     game: GameState;
     board: BoardData;
     activePoolId: string | null;
+    ownerId: string | null;
     loadingPool: boolean;
     dataReady: boolean;
     error: string | null;
@@ -59,63 +61,92 @@ export function usePoolData(): UsePoolDataReturn {
     const [game, setGame] = useState<GameState>(INITIAL_GAME);
     const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
     const [activePoolId, setActivePoolId] = useState<string | null>(null);
+    const [ownerId, setOwnerId] = useState<string | null>(null);
     const [loadingPool, setLoadingPool] = useState(true);
     const [dataReady, setDataReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Load pool data from server
+
+    // Load pool data from Supabase
     const loadPoolData = useCallback(async (poolId: string) => {
         setLoadingPool(true);
         setError(null);
 
         try {
-            const res = await fetch(`${API_URL}/${poolId}`, { method: 'GET' });
-            if (!res.ok) {
-                if (res.status === 404) throw new Error('Pool not found');
-                throw new Error('Failed to load pool');
-            }
+            const { data, error } = await supabase
+                .from('contests')
+                .select('*')
+                .eq('id', poolId)
+                .single();
 
-            const poolPayload = await res.json();
+            if (error) throw error;
+            if (!data) throw new Error('Pool not found');
+
             setActivePoolId(poolId);
+            setOwnerId(data.owner_id);
 
-            // Load pool data
-            if (poolPayload.data) {
-                setGame(poolPayload.data.game || INITIAL_GAME);
-                setBoard(poolPayload.data.board || EMPTY_BOARD);
-            }
+            // Map database fields to app state
+            // settings has GameState, board_data has BoardData
+            // We expect settings to be GameState and board_data to be BoardData
+            setGame(data.settings || INITIAL_GAME);
+            setBoard(data.board_data || EMPTY_BOARD);
 
             setDataReady(true);
         } catch (err: any) {
+            console.error("Load Pool Error:", err);
             setError(err.message);
-            setDataReady(true); // Still mark ready so UI can handle error state
+            setDataReady(true);
         } finally {
             setLoadingPool(false);
         }
     }, []);
 
-    // Publish new pool to server
+    // Publish new pool to Supabase
     const publishPool = useCallback(async (
         adminToken: string,
         currentData?: { game: GameState; board: BoardData }
     ): Promise<string | void> => {
-        const dataToPublish = currentData || { game, board };
+        // NOTE: New creation flow uses CreateContest.tsx directly.
+        // This function is kept for compatibility with BoardView's AdminPanel if needed,
+        // but typically BoardView uses this for "Wizard" inside the board.
+        // We should map this to Supabase insert.
+
+        const g = currentData?.game || game;
+        const b = currentData?.board || board;
+
+        // Note: adminToken is treated as the passcode here.
+        // If we are creating a new pool from BoardView wizard:
 
         try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${adminToken}`
-                },
-                body: JSON.stringify(dataToPublish)
-            });
+            // We need an owner_id. BoardView might not have AuthContext user if anonymous?
+            // If user is not logged in, we might need anon auth or strict requirement.
+            // For now, let's assume this feature requires auth or we use a fallback?
+            // CreateContest.tsx handles the main flow. 
+            // If this is called, we'll try to insert. 
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.message || errData.error || 'Failed to create pool');
-            }
+            // To properly support this, we really should use the user from AuthContext.
+            // But this hook doesn't have it.
+            // For now, let's throw if we can't get session, OR check if we can get it from supabase.auth
 
-            const { poolId } = await res.json();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("You must be logged in to publish a pool.");
+
+            const payload = {
+                owner_id: user.id,
+                title: g.title,
+                settings: { ...g, adminPasscode: adminToken },
+                board_data: b
+            };
+
+            const { data, error } = await supabase
+                .from('contests')
+                .insert([payload])
+                .select('id')
+                .single();
+
+            if (error) throw error;
+
+            const poolId = data.id;
             setActivePoolId(poolId);
             return poolId;
         } catch (err: any) {
@@ -124,29 +155,26 @@ export function usePoolData(): UsePoolDataReturn {
         }
     }, [game, board]);
 
-    // Update existing pool
+    // Update existing pool in Supabase
     const updatePool = useCallback(async (
         poolId: string,
-        adminToken: string,
+        adminToken: string, // Unused in RLS if we rely on auth session, but kept for signature
         data: { game: GameState; board: BoardData }
     ): Promise<boolean> => {
         try {
-            const res = await fetch(`${API_URL}/${poolId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${adminToken}`
-                },
-                body: JSON.stringify(data)
-            });
+            const { error } = await supabase
+                .from('contests')
+                .update({
+                    settings: data.game,
+                    board_data: data.board,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', poolId);
 
-            if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.message || errData.error || 'Failed to update');
-            }
-
+            if (error) throw error;
             return true;
         } catch (err: any) {
+            console.error("Update Pool Error:", err);
             setError(err.message);
             return false;
         }
@@ -158,6 +186,7 @@ export function usePoolData(): UsePoolDataReturn {
         game,
         board,
         activePoolId,
+        ownerId,
         loadingPool,
         dataReady,
         error,

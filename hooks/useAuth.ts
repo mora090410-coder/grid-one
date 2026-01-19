@@ -3,6 +3,8 @@
  * Manages admin authentication state and verification
  */
 import { useState, useCallback } from 'react';
+import { useAuth as useGlobalAuth } from '../context/AuthContext';
+import { User, Session } from '@supabase/supabase-js';
 
 const API_URL = `${window.location.origin}/api/pools`;
 
@@ -16,9 +18,12 @@ interface UseAuthReturn {
     login: (leagueName: string, password: string) => Promise<{ success: boolean; poolId?: string; error?: string }>;
     logout: () => void;
     clearAuthError: () => void;
+    user: User | null;
+    session: Session | null;
 }
 
 export function useAuth(): UseAuthReturn {
+    const { user, session } = useGlobalAuth();
     const [adminToken, setAdminTokenState] = useState<string | null>(() => {
         return localStorage.getItem('sbx_adminToken');
     });
@@ -112,7 +117,9 @@ export function useAuth(): UseAuthReturn {
         verifyToken,
         login,
         logout,
-        clearAuthError
+        clearAuthError,
+        user,
+        session
     };
 }
 

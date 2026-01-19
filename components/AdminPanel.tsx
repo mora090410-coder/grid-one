@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { GameState, BoardData } from '../types';
 import { NFL_TEAMS } from '../constants';
 import { parseBoardImage } from '../services/geminiService';
-import { getContrastYIQ } from '../App';
+import { getContrastYIQ } from '../utils/theme';
 
 interface AdminPanelProps {
   game: GameState;
@@ -20,10 +20,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [scanStatus, setScanStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
+
+  // Auto-save status: 'saved' | 'saving' | 'error'
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstRender = useRef(true);
 
   // Sync with props ONLY when not editing (simple check)
   // Ideally this would be more robust, but assuming simple session edits
@@ -33,9 +37,47 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     // We won't auto-reset on every prop change to avoid losing work.
   }, []);
 
+  // Apply changes locally (for real-time preview)
   useEffect(() => {
     onApply(localGame, localBoard);
   }, [localGame, localBoard, onApply]);
+
+  // Debounced auto-save to backend
+  useEffect(() => {
+    // Skip first render (initial load)
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Clear any pending save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set status to saving immediately
+    setSaveStatus('saving');
+
+    // Debounce the actual save by 800ms
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await onPublish(adminToken, {
+          game: localGame,
+          board: localBoard
+        });
+        setSaveStatus('saved');
+      } catch (e) {
+        console.error('Auto-save failed:', e);
+        setSaveStatus('error');
+      }
+    }, 800);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [localGame, localBoard, adminToken, onPublish]);
 
   // Self-healing: Ensure dynamic boards have quarter axes initialized
   useEffect(() => {
@@ -116,20 +158,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     setLocalBoard(newBoard);
   };
 
-  const handlePublishClick = async () => {
+  // Retry save on error
+  const handleRetry = async () => {
+    setSaveStatus('saving');
     try {
-      setIsSaving(true);
       await onPublish(adminToken, {
         game: localGame,
         board: localBoard
       });
-      console.log("Board successfully published to live stadium!");
-    } catch (e: unknown) {
-      console.error("Publishing Error:", e);
-      const errMsg = e instanceof Error ? e.message : "Network Error";
-      alert(`Publish Failed: ${errMsg}`);
-    } finally {
-      setIsSaving(false);
+      setSaveStatus('saved');
+    } catch (e) {
+      console.error('Retry save failed:', e);
+      setSaveStatus('error');
     }
   };
 
@@ -256,13 +296,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
             Log Out
           </button>
 
-          <button
-            disabled={isSaving}
-            onClick={handlePublishClick}
-            className={`btn-primary px-6 py-2.5 ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isSaving ? 'Syncing...' : 'Sync Changes'}
-          </button>
+          {/* Auto-save status chip */}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/10">
+            {saveStatus === 'saved' && (
+              <>
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-[13px] font-semibold text-white/60">All changes saved</span>
+              </>
+            )}
+            {saveStatus === 'saving' && (
+              <>
+                <svg className="w-4 h-4 text-white/40 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-[13px] font-semibold text-white/60">Saving…</span>
+              </>
+            )}
+            {saveStatus === 'error' && (
+              <>
+                <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="text-[13px] font-semibold text-red-400">Couldn't save</span>
+                <button onClick={handleRetry} className="text-[11px] font-bold text-white/80 hover:text-white underline underline-offset-2 ml-1">
+                  Retry
+                </button>
+              </>
+            )}
+          </div>
 
           <button onClick={onClose} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors ml-2" title="Close Panel">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

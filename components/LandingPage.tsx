@@ -1,5 +1,5 @@
 import React from 'react';
-import { getContrastYIQ } from '../App';
+import { getContrastYIQ } from '../utils/theme';
 
 interface LandingPageProps {
   onCreate: () => void;
