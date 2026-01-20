@@ -52,8 +52,37 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
     return board.oppAxisByQuarter?.[viewQuarter] || board.oppAxis;
   }, [board, viewQuarter]);
 
-  // Helper to find highlight key from digit scores
-  const getHighlightKey = (topDigit: number, leftDigit: number) => `${topDigit}-${leftDigit}`;
+  // Build a map of winning cell IDs to their milestone labels
+  // Cell ID format: `${topDigit}:${leftDigit}` (using : to avoid confusion with score format)
+  const winningCellsMap = React.useMemo(() => {
+    const map: Record<string, string[]> = {};
+
+    Object.entries(highlights.quarterWinners).forEach(([milestone, scoreKey]) => {
+      // scoreKey is in format "topDigit-leftDigit"
+      const parts = scoreKey.split('-');
+      if (parts.length !== 2) return;
+
+      const [topDigit, leftDigit] = parts;
+      const cellId = `${topDigit}:${leftDigit}`;
+
+      // For dynamic boards, only include milestones for current view quarter
+      if (board.isDynamic) {
+        const quarterKey = milestone === 'Final' ? 'Q4' : milestone;
+        if (quarterKey !== viewQuarter) return;
+      }
+
+      if (!map[cellId]) map[cellId] = [];
+      map[cellId].push(milestone);
+    });
+
+    return map;
+  }, [highlights.quarterWinners, board.isDynamic, viewQuarter]);
+
+  // Helper to create cell ID from digits
+  const getCellId = (topDigit: number, leftDigit: number) => `${topDigit}:${leftDigit}`;
+
+  // Helper for live score matching (still uses dash format for backwards compat)
+  const getLiveScoreKey = (topScore: number, leftScore: number) => `${topScore % 10}-${leftScore % 10}`;
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full gap-4">
@@ -150,24 +179,23 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                   const players = board.squares[cellIndex] || [];
                   const hasSelectedPlayer = selectedPlayer && players.some(p => p.toLowerCase().includes(selectedPlayer.toLowerCase()));
 
-                  const scoreKey = getHighlightKey(tDigit, lDigit);
-                  const isLiveScore = !isFinal && live && scoreKey === `${live.topScore % 10}-${live.leftScore % 10}` && (
-                    !board.isDynamic ||
-                    (viewQuarter === (live.period <= 1 ? 'Q1' : live.period === 2 ? 'Q2' : live.period === 3 ? 'Q3' : 'Q4'))
-                  );
-
-                  const isHighlightedScenario = highlightedCoords && scoreKey === `${highlightedCoords.top % 10}-${highlightedCoords.left % 10}`;
-
-                  const winningLabels = Object.keys(highlights.quarterWinners).filter(k => {
-                    if (highlights.quarterWinners[k] !== scoreKey) return false;
-                    if (board.isDynamic) {
-                      const quarterKey = k === 'Final' ? 'Q4' : k;
-                      return quarterKey === viewQuarter;
-                    }
-                    return true;
-                  });
-
+                  // Use new cell ID based approach for winner matching
+                  const cellId = getCellId(tDigit, lDigit);
+                  const winningLabels = winningCellsMap[cellId] || [];
                   const hasFinishedWinner = winningLabels.length > 0;
+
+                  // Live score matching  
+                  const isLiveScore = !isFinal && live &&
+                    tDigit === (live.topScore % 10) &&
+                    lDigit === (live.leftScore % 10) && (
+                      !board.isDynamic ||
+                      (viewQuarter === (live.period <= 1 ? 'Q1' : live.period === 2 ? 'Q2' : live.period === 3 ? 'Q3' : 'Q4'))
+                    );
+
+                  // Scenario highlight matching
+                  const isHighlightedScenario = highlightedCoords &&
+                    tDigit === (highlightedCoords.top % 10) &&
+                    lDigit === (highlightedCoords.left % 10);
 
                   // Clean cell styling - Apple-clean, minimal
                   let cellClass = "relative border-r border-b border-white/[0.06] last:border-r-0 transition-all duration-200 p-0.5 cursor-pointer ";
@@ -220,6 +248,11 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                         <div className="text-[10px] text-white/50 font-mono">
                           {lDigit}/{tDigit}
                         </div>
+                        {winningLabels.length > 0 && (
+                          <div className="text-[10px] text-[#FFC72C] font-medium mt-0.5">
+                            Won: {winningLabels.map(l => l === 'Q2' ? 'Half' : l).join(', ')}
+                          </div>
+                        )}
                         {/* Arrow */}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2c2c2e]" />
                       </div>
