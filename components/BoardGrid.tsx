@@ -77,7 +77,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
       )}
 
       {/* Main Board Container */}
-      <div className="relative rounded-xl overflow-hidden bg-[#1c1c1e]/60 border border-white/[0.08]
+      <div className="relative rounded-xl overflow-visible bg-[#1c1c1e]/60 border border-white/[0.08]
                       w-auto h-auto 
                       md:h-[75vh] md:max-h-[75vh] md:aspect-square">
 
@@ -169,35 +169,37 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
                   const hasFinishedWinner = winningLabels.length > 0;
 
-                  // Clean cell styling
-                  let cellClass = "relative border-r border-b border-white/[0.08] last:border-r-0 transition-all duration-200 p-0.5 overflow-hidden cursor-pointer ";
+                  // Clean cell styling - Apple-clean, minimal
+                  let cellClass = "relative border-r border-b border-white/[0.06] last:border-r-0 transition-all duration-200 p-0.5 cursor-pointer ";
 
                   if (selectedPlayer && !hasSelectedPlayer) {
-                    cellClass += "bg-black/40 opacity-25 ";
+                    cellClass += "bg-black/40 opacity-20 ";
                   } else {
-                    cellClass += "bg-white/[0.02] hover:bg-white/[0.06] ";
+                    cellClass += "bg-white/[0.02] hover:bg-white/[0.05] ";
                   }
 
-                  // Highlight states - gold outline, subtle fill
+                  // Highlight states - thin outlines, subtle fills
                   if (isHighlightedScenario) {
-                    cellClass += "z-50 bg-white/15 ring-2 ring-inset ring-white ";
+                    // Scenario hover - white outline
+                    cellClass += "z-50 bg-white/10 ring-1 ring-inset ring-white/80 ";
                   } else if (isLiveScore) {
-                    cellClass += "z-40 bg-orange-500/15 ring-2 ring-inset ring-orange-400 ";
+                    // Current winning cell - thin gold outline + subtle gold fill
+                    cellClass += "z-40 bg-[#FFC72C]/12 ring-1 ring-inset ring-[#FFC72C] ";
                   } else if (hasFinishedWinner) {
-                    cellClass += "z-30 bg-[#FFC72C]/10 ring-2 ring-inset ring-[#FFC72C]/70 ";
+                    // Past winner cell - subtle gold hint  
+                    cellClass += "z-30 bg-[#FFC72C]/8 ring-1 ring-inset ring-[#FFC72C]/50 ";
                   } else if (hasSelectedPlayer) {
-                    cellClass += "z-10 bg-white/[0.08] ring-1 ring-inset ring-white/30 ";
+                    cellClass += "z-10 bg-white/[0.06] ring-1 ring-inset ring-white/20 ";
                   }
 
                   return (
                     <td
                       key={colIndex}
-                      className={cellClass}
-                      title={players.length > 0 ? `${players.join(', ')}\n${lDigit}/${tDigit}` : `Empty\n${lDigit}/${tDigit}`}
+                      className={`${cellClass} group`}
                     >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
-                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${hasFinishedWinner || isHighlightedScenario || isLiveScore ? 'text-white font-bold' : 'text-white/70 font-medium'
+                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-[#FFC72C] font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
                             }`}
                           style={{ fontSize: 'clamp(9px, 1.3vh, 14px)' }}
                         >
@@ -205,22 +207,21 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                         </div>
                       </div>
 
-                      {/* Winner Badges - Compact */}
-                      <div className="absolute top-0 right-0 flex flex-col items-end p-[1px] gap-0.5 pointer-events-none z-20">
-                        {isFinal && winningLabels.includes('Final') && (
-                          <div className="drop-shadow-sm" style={{ fontSize: 'clamp(10px, 1.8vh, 18px)' }}>🏆</div>
-                        )}
-                        {winningLabels.map(label => (
-                          <div key={label}
-                            className={`rounded px-1 uppercase font-bold leading-none ${label === 'Final'
-                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black'
-                              : 'bg-white text-black'
-                              }`}
-                            style={{ fontSize: 'clamp(5px, 0.8vh, 9px)', padding: '2px 4px' }}
-                          >
-                            {label.replace('Final', 'FIN')}
-                          </div>
-                        ))}
+                      {/* Small gold dot indicator for current winning cell only */}
+                      {isLiveScore && (
+                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-[#FFC72C] pointer-events-none" />
+                      )}
+
+                      {/* Custom tooltip - appears on hover */}
+                      <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-[#2c2c2e] border border-white/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none whitespace-nowrap">
+                        <div className="text-[11px] font-semibold text-white">
+                          {players.length > 0 ? players.join(', ') : 'Empty'}
+                        </div>
+                        <div className="text-[10px] text-white/50 font-mono">
+                          {lDigit}/{tDigit}
+                        </div>
+                        {/* Arrow */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2c2c2e]" />
                       </div>
                     </td>
                   );
