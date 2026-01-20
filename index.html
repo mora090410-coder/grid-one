@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SBXPRO</title>
+    <title>GridOne - Squares, made effortless</title>
+    <meta name="description"
+        content="Upload a board (or start clean). Share one link. Everyone sees live winners and what-if outcomes.">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -19,20 +22,20 @@
             /* Liquid Glass Tints derived from RGB vars */
             --glass-bg-left: rgba(var(--left-rgb), 0.15);
             --glass-bg-top: rgba(var(--top-rgb), 0.15);
-            
+
             --glass-border-left: rgba(var(--left-rgb), 0.3);
             --glass-border-top: rgba(var(--top-rgb), 0.3);
 
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             --glass-shine: inset 0 4px 20px rgba(255, 255, 255, 0.08);
-            
+
             --text-contrast-left: #ffffff;
             --text-contrast-top: #ffffff;
         }
-        
+
         body {
             background-color: #050101;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 0% 0%, rgba(var(--left-rgb), 0.2) 0%, transparent 60%),
                 radial-gradient(circle at 100% 0%, rgba(var(--top-rgb), 0.2) 0%, transparent 60%),
                 linear-gradient(180deg, #0a0203 0%, #000000 100%);
@@ -43,12 +46,14 @@
         }
 
         /* Generic Liquid Glass */
-        .liquid-glass, .glass {
-            background: rgba(30,30,30, 0.4); /* Fallback */
+        .liquid-glass,
+        .glass {
+            background: rgba(30, 30, 30, 0.4);
+            /* Fallback */
             background: linear-gradient(135deg, rgba(var(--left-rgb), 0.1), rgba(var(--top-rgb), 0.1));
             backdrop-filter: blur(16px) saturate(180%);
             -webkit-backdrop-filter: blur(16px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             box-shadow: var(--glass-shadow), var(--glass-shine);
         }
@@ -58,46 +63,83 @@
             background: var(--glass-bg-left);
             border-color: var(--glass-border-left);
         }
+
         .glass-top {
             background: var(--glass-bg-top);
             border-color: var(--glass-border-top);
         }
 
         /* Primary Button Gradient - Blends both teams */
-        .btn-cardinal, .btn-primary {
+        .btn-cardinal,
+        .btn-primary {
             background: linear-gradient(135deg, var(--left-primary) 0%, var(--top-primary) 100%);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0,0,0, 0.4);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
             transition: all 0.2s ease;
         }
-        .btn-cardinal:hover, .btn-primary:hover {
+
+        .btn-cardinal:hover,
+        .btn-primary:hover {
             filter: brightness(1.1);
             transform: translateY(-1px);
         }
 
         /* Typography Utilities */
-        .text-team-left { color: var(--left-primary); }
-        .text-team-top { color: var(--top-primary); }
-        .text-team-left-bright { color: var(--left-primary-bright); }
-        .text-team-top-bright { color: var(--top-primary-bright); }
-        
-        .border-left-glass { border-color: var(--glass-border-left); }
-        .border-top-glass { border-color: var(--glass-border-top); }
+        .text-team-left {
+            color: var(--left-primary);
+        }
+
+        .text-team-top {
+            color: var(--top-primary);
+        }
+
+        .text-team-left-bright {
+            color: var(--left-primary-bright);
+        }
+
+        .text-team-top-bright {
+            color: var(--top-primary-bright);
+        }
+
+        .border-left-glass {
+            border-color: var(--glass-border-left);
+        }
+
+        .border-top-glass {
+            border-color: var(--glass-border-top);
+        }
 
         /* Animations */
         @keyframes pulse-left {
-            0% { box-shadow: 0 0 0 0 rgba(var(--left-rgb), 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(var(--left-rgb), 0); }
-            100% { box-shadow: 0 0 0 0 rgba(var(--left-rgb), 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(var(--left-rgb), 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(var(--left-rgb), 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(var(--left-rgb), 0);
+            }
         }
+
         @keyframes pulse-top {
-            0% { box-shadow: 0 0 0 0 rgba(var(--top-rgb), 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(var(--top-rgb), 0); }
-            100% { box-shadow: 0 0 0 0 rgba(var(--top-rgb), 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(var(--top-rgb), 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(var(--top-rgb), 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(var(--top-rgb), 0);
+            }
         }
-        
+
         .live-indicator {
             width: 8px;
             height: 8px;
@@ -105,30 +147,35 @@
             border-radius: 50%;
             animation: pulse-left 2s infinite;
         }
-        
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #000;
         }
+
         ::-webkit-scrollbar-thumb {
             background: var(--left-primary);
             border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: var(--left-secondary);
         }
     </style>
 
-<link rel="stylesheet" href="/index.css">
-<link rel="stylesheet" href="/premium.css">
+    <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/premium.css">
 </head>
+
 <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
