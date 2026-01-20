@@ -108,6 +108,8 @@ const BoardViewContent: React.FC = () => {
     const [showWizardModal, setShowWizardModal] = useState(false);
     const [showAdminView, setShowAdminView] = useState(false); // Restored
     const [showRecoveryModal, setShowRecoveryModal] = useState(false); // New
+    const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
+    const [showPayoutsModal, setShowPayoutsModal] = useState(false);
 
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [authInput, setAuthInput] = useState('');
@@ -831,26 +833,50 @@ const BoardViewContent: React.FC = () => {
                                             {/* Hero: Winning Now */}
                                             <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
 
+                                            {/* Action Row: Find squares + Selected player chip */}
+                                            <div className="flex items-center justify-between gap-3">
+                                                <button
+                                                    onClick={() => setShowFindSquaresModal(true)}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                    Find my squares
+                                                </button>
+
+                                                {/* Selected player chip */}
+                                                {selectedPlayer && (
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200">
+                                                        <span className="text-xs font-medium text-white">{selectedPlayer}</span>
+                                                        <button
+                                                            onClick={() => setSelectedPlayer('')}
+                                                            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                                                        >
+                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {/* Next Score Scenarios - Side by side on large screens */}
                                             <div className="grid md:grid-cols-2 gap-4">
                                                 <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                                 <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                             </div>
 
-                                            {/* Compact Player Search */}
-                                            <div className="rounded-[20px] bg-white/[0.03] border border-white/10 p-4">
-                                                <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
-                                            </div>
-
-                                            {/* Payouts Accordion - collapsed by default */}
-                                            <InfoCards.PayoutsAccordion
-                                                liveStatus={liveStatus}
-                                                lastUpdated={lastUpdated}
-                                                highlights={highlights}
-                                                board={board}
-                                                live={liveData}
-                                                game={game}
-                                            />
+                                            {/* Subtle Payouts link */}
+                                            <button
+                                                onClick={() => setShowPayoutsModal(true)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-white/40 hover:text-white/60 transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                View payouts
+                                            </button>
                                         </div>
                                     )}
 
@@ -884,9 +910,32 @@ const BoardViewContent: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Player Search on Board view too */}
-                                            <div className="rounded-[20px] bg-white/[0.03] border border-white/10 p-4">
-                                                <PlayerFilter board={board} setSelected={setSelectedPlayer} selected={selectedPlayer} />
+                                            {/* Action Row: Find squares + Selected player chip */}
+                                            <div className="flex items-center justify-between gap-3">
+                                                <button
+                                                    onClick={() => setShowFindSquaresModal(true)}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                    Find my squares
+                                                </button>
+
+                                                {/* Selected player chip */}
+                                                {selectedPlayer && (
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200">
+                                                        <span className="text-xs font-medium text-white">{selectedPlayer}</span>
+                                                        <button
+                                                            onClick={() => setSelectedPlayer('')}
+                                                            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                                                        >
+                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -911,6 +960,83 @@ const BoardViewContent: React.FC = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Find Squares Modal */}
+            {showFindSquaresModal && (
+                <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowFindSquaresModal(false)}
+                    />
+                    {/* Modal content */}
+                    <div className="relative w-full max-w-md mx-4 mb-0 md:mb-0 bg-[#1c1c1e] border border-white/10 rounded-t-[24px] md:rounded-[24px] shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-white">Find my squares</h3>
+                                <button
+                                    onClick={() => setShowFindSquaresModal(false)}
+                                    className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <svg className="w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <PlayerFilter board={board} setSelected={(player) => {
+                                setSelectedPlayer(player);
+                                setShowFindSquaresModal(false);
+                            }} selected={selectedPlayer} />
+                            {selectedPlayer && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedPlayer('');
+                                        setShowFindSquaresModal(false);
+                                    }}
+                                    className="w-full mt-4 py-2 text-sm font-medium text-white/50 hover:text-white transition-colors"
+                                >
+                                    Clear selection
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Payouts Modal */}
+            {showPayoutsModal && (
+                <div className="fixed inset-0 z-[90] flex items-end md:items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowPayoutsModal(false)}
+                    />
+                    {/* Modal content */}
+                    <div className="relative w-full max-w-lg mx-4 mb-0 md:mb-0 max-h-[80vh] overflow-y-auto bg-[#1c1c1e] border border-white/10 rounded-t-[24px] md:rounded-[24px] shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+                        <div className="sticky top-0 z-10 bg-[#1c1c1e] p-4 border-b border-white/[0.06] flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white">Payouts</h3>
+                            <button
+                                onClick={() => setShowPayoutsModal(false)}
+                                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                            >
+                                <svg className="w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <InfoCards.PayoutsAccordion
+                                liveStatus={liveStatus}
+                                lastUpdated={lastUpdated}
+                                highlights={highlights}
+                                board={board}
+                                live={liveData}
+                                game={game}
+                            />
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Commissioner Overlay */}
