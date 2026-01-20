@@ -726,6 +726,9 @@ const BoardViewContent: React.FC = () => {
                                     <div className="flex-1 text-xs font-mono text-gray-400 truncate text-left">{shareUrl}</div>
                                     <button onClick={handleCopyLink} className="px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-white/10 hover:bg-white/20 text-white transition-colors">{copyFeedback ? 'Copied' : 'Copy'}</button>
                                 </div>
+                                <p className="text-[10px] text-gray-500 leading-tight px-4">
+                                    <span className="font-bold text-white/60">Note:</span> This link gives <span className="text-white/60">read-only access</span> to others. You see edit controls because you are the owner.
+                                </p>
                                 <button onClick={handleCloseShare} className="w-full btn-secondary text-sm">Close</button>
                             </div>
                         </div>
