@@ -833,59 +833,61 @@ const BoardViewContent: React.FC = () => {
                                             {/* Hero: Winning Now */}
                                             <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
 
-                                            {/* Action Row: Find squares + Selected player chip */}
-                                            <div className="flex items-center justify-between gap-3">
-                                                <button
-                                                    onClick={() => setShowFindSquaresModal(true)}
-                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                    </svg>
-                                                    Find my squares
-                                                </button>
-
-                                                {/* Selected player chip */}
-                                                {selectedPlayer && (
-                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200">
-                                                        <span className="text-xs font-medium text-white">{selectedPlayer}</span>
-                                                        <button
-                                                            onClick={() => setSelectedPlayer('')}
-                                                            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                                                        >
-                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-
                                             {/* Next Score Scenarios - Side by side on large screens */}
                                             <div className="grid md:grid-cols-2 gap-4">
                                                 <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                                 <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                             </div>
-
-                                            {/* Subtle Payouts link */}
-                                            <button
-                                                onClick={() => setShowPayoutsModal(true)}
-                                                className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-white/40 hover:text-white/60 transition-colors"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                View payouts
-                                            </button>
                                         </div>
                                     )}
 
                                     {/* Board Tab Content */}
                                     {activeTab === 'board' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
-                                            {/* Board Grid */}
-                                            <div className="relative bg-[#1c1c1e]/40 border border-white/10 rounded-[20px] overflow-hidden shadow-2xl backdrop-blur-md min-h-[500px]">
-                                                <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-4 flex items-center justify-center">
+                                        <div className="space-y-4 animate-in fade-in duration-300">
+                                            {/* Sticky Top Controls */}
+                                            <div className="sticky top-0 z-20 bg-[#0a0a0a]/95 backdrop-blur-md -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-white/[0.06] flex items-center justify-between gap-3">
+                                                {/* Left: Search + Selected chip */}
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <button
+                                                        onClick={() => setShowFindSquaresModal(true)}
+                                                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all shrink-0"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                        </svg>
+                                                        <span className="hidden sm:inline">Find my squares</span>
+                                                    </button>
+
+                                                    {/* Selected player chip */}
+                                                    {selectedPlayer && (
+                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200 min-w-0">
+                                                            <span className="text-xs font-medium text-white truncate">Showing: {selectedPlayer}</span>
+                                                            <button
+                                                                onClick={() => setSelectedPlayer('')}
+                                                                className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shrink-0"
+                                                            >
+                                                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Right: Zoom controls */}
+                                                <div className="hidden md:flex items-center gap-1 p-1 bg-white/[0.04] rounded-lg border border-white/10">
+                                                    <button className="px-2.5 py-1 text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/10 rounded transition-all">
+                                                        Fit
+                                                    </button>
+                                                    <button className="px-2.5 py-1 text-[11px] font-medium text-white/60 hover:text-white hover:bg-white/10 rounded transition-all">
+                                                        100%
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Board Grid Container */}
+                                            <div className="relative bg-[#1c1c1e]/40 border border-white/[0.08] rounded-[16px] overflow-hidden shadow-xl min-h-[500px]">
+                                                <div className="absolute inset-0 overflow-auto touch-pan-x touch-pan-y p-3 flex items-center justify-center">
                                                     {isEmptyBoard ? (
                                                         <div className="text-center max-w-sm mx-auto p-8 animate-in fade-in zoom-in duration-500">
                                                             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
@@ -908,34 +910,6 @@ const BoardViewContent: React.FC = () => {
                                                         />
                                                     )}
                                                 </div>
-                                            </div>
-
-                                            {/* Action Row: Find squares + Selected player chip */}
-                                            <div className="flex items-center justify-between gap-3">
-                                                <button
-                                                    onClick={() => setShowFindSquaresModal(true)}
-                                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-semibold text-white/70 hover:bg-white/[0.08] hover:text-white transition-all"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                    </svg>
-                                                    Find my squares
-                                                </button>
-
-                                                {/* Selected player chip */}
-                                                {selectedPlayer && (
-                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 animate-in fade-in duration-200">
-                                                        <span className="text-xs font-medium text-white">{selectedPlayer}</span>
-                                                        <button
-                                                            onClick={() => setSelectedPlayer('')}
-                                                            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                                                        >
-                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     )}

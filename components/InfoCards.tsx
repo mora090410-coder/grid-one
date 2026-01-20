@@ -192,6 +192,7 @@ const WinnerHeroCard: React.FC<{
 };
 
 // Compact milestone row showing Q1, Half, Q3, Final winner status
+// Compact milestone row showing Q1, Half, Q3, Final winner status with payouts
 const WinnersMilestoneRow: React.FC<{
   game: GameState;
   board: BoardData;
@@ -201,6 +202,13 @@ const WinnersMilestoneRow: React.FC<{
   const currentMilestone = getCurrentMilestone(live);
   const isFinal = live?.state === 'post';
   const period = live?.period || 0;
+
+  // Payout amounts per milestone (use game.payouts or defaults)
+  const payouts = game.payouts || { Q1: 125, Q2: 125, Q3: 125, Final: 250 };
+  const getPayout = (qKey: string): string => {
+    const amount = payouts[qKey as keyof typeof payouts] || 0;
+    return `$${amount}`;
+  };
 
   // Build milestone data array
   const milestones: { key: Milestone; label: string; qKey: string }[] = [
@@ -251,7 +259,22 @@ const WinnersMilestoneRow: React.FC<{
   };
 
   if (!live) {
-    return null;
+    // Show payouts even when game hasn't started
+    return (
+      <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
+        <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+          {milestones.map(({ key, qKey }) => (
+            <div key={key} className="p-3 md:p-4 text-center opacity-50">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">{key === 'Half' ? 'Half' : key}</span>
+              </div>
+              <p className="text-[11px] font-semibold text-white/40 mb-0.5">—</p>
+              <p className="text-[11px] font-semibold text-green-400/70">{getPayout(qKey)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -262,7 +285,7 @@ const WinnersMilestoneRow: React.FC<{
           return (
             <div key={key} className={`p-3 md:p-4 text-center ${data.state === 'pending' ? 'opacity-40' : ''}`}>
               {/* Label with state indicator */}
-              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
                 {data.state === 'live' && (
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                 )}
@@ -277,8 +300,8 @@ const WinnersMilestoneRow: React.FC<{
               {/* Winner name */}
               <p className="text-xs md:text-sm font-semibold text-white truncate mb-0.5">{data.winner}</p>
 
-              {/* Digits */}
-              <p className="text-[10px] font-mono text-white/30">{data.digits}</p>
+              {/* Payout amount - always visible */}
+              <p className="text-[11px] font-semibold text-green-400/70">{getPayout(qKey)}</p>
             </div>
           );
         })}

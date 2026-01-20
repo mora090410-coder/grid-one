@@ -12,6 +12,21 @@ interface BoardGridProps {
   highlightedCoords?: { left: number; top: number } | null;
 }
 
+// Get initials from a name (first letter of first and last name)
+const getInitials = (name: string): string => {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+// Format players for cell display - show initials, truncate if multiple
+const formatCellDisplay = (players: string[]): string => {
+  if (players.length === 0) return '';
+  if (players.length === 1) return getInitials(players[0]);
+  return `${getInitials(players[0])}+${players.length - 1}`;
+};
+
 const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selectedPlayer, leftTeamName, topTeamName, highlightedCoords }) => {
   const isFinal = live?.state === 'post';
   const [viewQuarter, setViewQuarter] = React.useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
@@ -41,63 +56,58 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
   const getHighlightKey = (topDigit: number, leftDigit: number) => `${topDigit}-${leftDigit}`;
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full gap-6">
+    <div className="flex flex-col items-center justify-center w-full h-full gap-4">
       {/* Quarter Selector for Dynamic Boards */}
       {board.isDynamic && (
-        <div className="flex items-center gap-1 bg-[#1c1c1e]/90 p-1.5 rounded-xl border border-white/10 shadow-lg animate-in fade-in slide-in-from-bottom-4 backdrop-blur-md">
-          <span className="text-[10px] uppercase font-bold text-gray-500 px-3 tracking-wider">Viewing Axis:</span>
+        <div className="flex items-center gap-1 bg-[#1c1c1e]/90 p-1 rounded-lg border border-white/10 shadow-lg">
+          <span className="text-[10px] uppercase font-semibold text-white/40 px-2 tracking-wide">Axis:</span>
           {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
             <button
               key={q}
               onClick={() => setViewQuarter(q)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${viewQuarter === q
-                ? 'bg-white text-black shadow-md scale-105'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewQuarter === q
+                ? 'bg-white text-black'
+                : 'text-white/50 hover:text-white hover:bg-white/10'
                 }`}
             >
-              {q === 'Q4' ? 'Q4/Final' : q}
+              {q === 'Q4' ? 'Final' : q}
             </button>
           ))}
         </div>
       )}
 
-      {/* Main Board Container - Premium Glass Effect */}
-      <div className="relative shadow-2xl rounded-2xl overflow-hidden bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/10
+      {/* Main Board Container */}
+      <div className="relative rounded-xl overflow-hidden bg-[#1c1c1e]/60 border border-white/[0.08]
                       w-auto h-auto 
-                      md:h-[80vh] md:max-h-[80vh] md:aspect-square ring-1 ring-white/5">
+                      md:h-[75vh] md:max-h-[75vh] md:aspect-square">
 
         <table className="border-collapse table-fixed w-full h-full">
           <colgroup>
-            <col className="w-[8%] md:w-[6%]" />
-            <col className="w-[8%] md:w-[6%]" />
-            {Array(10).fill(0).map((_, i) => <col key={i} className="w-[8.4%] md:w-[8.8%]" />)}
+            <col className="w-[7%] md:w-[5%]" />
+            <col className="w-[7%] md:w-[5%]" />
+            {Array(10).fill(0).map((_, i) => <col key={i} className="w-[8.6%] md:w-[9%]" />)}
           </colgroup>
 
           <thead>
-            {/* Top Team Header */}
-            <tr className="h-[8%] md:h-[10%]">
+            {/* Top Team Header - Compact */}
+            <tr className="h-[6%] md:h-[7%]">
               <th colSpan={2} className="bg-transparent border-none"></th>
-              <th colSpan={10} className="bg-gradient-to-b from-white/10 to-transparent border-b border-white/10 text-center align-middle p-2 backdrop-blur-sm">
-                <div className="w-full flex items-center justify-center">
-                  <span
-                    className="font-bold tracking-widest uppercase truncate drop-shadow-sm text-white"
-                    style={{ fontSize: 'clamp(0.8rem, 2vh, 2.5rem)' }}
-                  >
-                    {topTeamName}
-                  </span>
-                </div>
+              <th colSpan={10} className="bg-white/[0.03] border-b border-white/[0.08] text-center align-middle p-1">
+                <span className="font-bold tracking-wider uppercase text-white/80" style={{ fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)' }}>
+                  {topTeamName}
+                </span>
               </th>
             </tr>
             {/* Top Axis Numbers */}
-            <tr className="h-[6%] md:h-[8%]">
+            <tr className="h-[5%] md:h-[6%]">
               <th className="bg-transparent border-none"></th>
-              <th className="bg-white/5 text-gray-400 text-[8px] md:text-[1.2vh] font-bold border-r border-b border-white/10 relative p-0">
-                <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-60">TOP</div>
+              <th className="bg-white/[0.03] text-white/30 text-[7px] md:text-[9px] font-medium border-r border-b border-white/[0.08] relative p-0">
+                <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-50">TOP</div>
               </th>
               {currentOppAxis.map((n, i) => (
-                <th key={i} className="bg-white/5 border-b border-r border-white/10 last:border-r-0 align-middle transition-colors hover:bg-white/10">
+                <th key={i} className="bg-white/[0.03] border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.06]">
                   <div className="flex items-center justify-center h-full w-full">
-                    <span className="font-bold text-white" style={{ fontSize: 'clamp(1rem, 2.5vh, 2rem)' }}>{n}</span>
+                    <span className="font-bold text-white" style={{ fontSize: 'clamp(0.8rem, 2vh, 1.5rem)' }}>{n}</span>
                   </div>
                 </th>
               ))}
@@ -106,16 +116,16 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
           <tbody>
             {currentBearsAxis.map((leftDigit, rowIndex) => (
               <tr key={rowIndex} className="h-[8.6%] md:h-auto">
-                {/* Left Team Header */}
+                {/* Left Team Header - Compact */}
                 {rowIndex === 0 && (
-                  <th rowSpan={10} className="bg-gradient-to-r from-white/10 to-transparent border-r border-white/10 text-center relative p-0 overflow-hidden backdrop-blur-sm">
+                  <th rowSpan={10} className="bg-white/[0.03] border-r border-white/[0.08] text-center relative p-0 overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div
-                        className="whitespace-nowrap font-bold tracking-widest uppercase drop-shadow-sm text-white"
+                        className="whitespace-nowrap font-bold tracking-wider uppercase text-white/80"
                         style={{
                           writingMode: 'vertical-rl',
                           transform: 'rotate(180deg)',
-                          fontSize: 'clamp(0.8rem, 2vh, 2.5rem)',
+                          fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)',
                         }}
                       >
                         {leftTeamName}
@@ -125,9 +135,9 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                 )}
 
                 {/* Left Axis Numbers */}
-                <th className="bg-white/5 border-r border-b border-white/10 last:border-b-0 align-middle transition-colors hover:bg-white/10">
+                <th className="bg-white/[0.03] border-r border-b border-white/[0.08] last:border-b-0 align-middle transition-colors hover:bg-white/[0.06]">
                   <div className="flex items-center justify-center h-full w-full">
-                    <span className="font-bold text-white" style={{ fontSize: 'clamp(1rem, 2.5vh, 2rem)' }}>{leftDigit}</span>
+                    <span className="font-bold text-white" style={{ fontSize: 'clamp(0.8rem, 2vh, 1.5rem)' }}>{leftDigit}</span>
                   </div>
                 </th>
 
@@ -159,52 +169,54 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
                   const hasFinishedWinner = winningLabels.length > 0;
 
-                  // Project Jony Cell Styling
-                  let cellClass = "relative border-r border-b border-white/5 last:border-r-0 last:border-b-0 transition-all duration-300 p-0.5 md:p-1 overflow-hidden ";
+                  // Clean cell styling
+                  let cellClass = "relative border-r border-b border-white/[0.08] last:border-r-0 transition-all duration-200 p-0.5 overflow-hidden cursor-pointer ";
 
                   if (selectedPlayer && !hasSelectedPlayer) {
-                    // Dimmed state
-                    cellClass += "bg-black/40 opacity-30 grayscale blur-[0.5px] ";
+                    cellClass += "bg-black/40 opacity-25 ";
                   } else {
-                    // Default State - Subtle Glow
-                    cellClass += "bg-white/[0.03] hover:bg-white/[0.08] ";
+                    cellClass += "bg-white/[0.02] hover:bg-white/[0.06] ";
                   }
 
-                  // Active States (Replacing borders with Rings/Glows)
+                  // Highlight states - gold outline, subtle fill
                   if (isHighlightedScenario) {
-                    cellClass += "z-50 bg-white/20 ring-inset ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-[1.02] ";
+                    cellClass += "z-50 bg-white/15 ring-2 ring-inset ring-white ";
                   } else if (isLiveScore) {
-                    cellClass += "z-40 bg-orange-500/20 ring-inset ring-2 ring-orange-500 animate-pulse shadow-[0_0_20px_rgba(249,115,22,0.4)] ";
+                    cellClass += "z-40 bg-orange-500/15 ring-2 ring-inset ring-orange-400 ";
                   } else if (hasFinishedWinner) {
-                    cellClass += "z-30 bg-[#FFC72C]/20 ring-inset ring-2 ring-[#FFC72C] shadow-[0_0_15px_rgba(255,199,44,0.3)] ";
+                    cellClass += "z-30 bg-[#FFC72C]/10 ring-2 ring-inset ring-[#FFC72C]/70 ";
                   } else if (hasSelectedPlayer) {
-                    cellClass += "z-10 bg-white/10 ring-inset ring-1 ring-white/30 ";
+                    cellClass += "z-10 bg-white/[0.08] ring-1 ring-inset ring-white/30 ";
                   }
 
                   return (
-                    <td key={colIndex} className={cellClass}>
+                    <td
+                      key={colIndex}
+                      className={cellClass}
+                      title={players.length > 0 ? `${players.join(', ')}\n${lDigit}/${tDigit}` : `Empty\n${lDigit}/${tDigit}`}
+                    >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
-                          className={`text-center leading-tight break-words flex items-center justify-center w-full max-h-full transition-colors ${hasFinishedWinner || isHighlightedScenario || isLiveScore ? 'text-white font-bold' : 'text-white/80 font-medium'
+                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${hasFinishedWinner || isHighlightedScenario || isLiveScore ? 'text-white font-bold' : 'text-white/70 font-medium'
                             }`}
-                          style={{ fontSize: 'clamp(8px, 1.2vh, 16px)' }}
+                          style={{ fontSize: 'clamp(9px, 1.3vh, 14px)' }}
                         >
-                          {players.join(', ')}
+                          {formatCellDisplay(players)}
                         </div>
                       </div>
 
-                      {/* Winner Badges - Refined */}
-                      <div className="absolute top-0 right-0 flex flex-col items-end p-[2px] md:p-1 gap-0.5 pointer-events-none z-20">
+                      {/* Winner Badges - Compact */}
+                      <div className="absolute top-0 right-0 flex flex-col items-end p-[1px] gap-0.5 pointer-events-none z-20">
                         {isFinal && winningLabels.includes('Final') && (
-                          <div className="drop-shadow-lg animate-in zoom-in" style={{ fontSize: 'clamp(12px, 2.2vh, 24px)' }}>🏆</div>
+                          <div className="drop-shadow-sm" style={{ fontSize: 'clamp(10px, 1.8vh, 18px)' }}>🏆</div>
                         )}
                         {winningLabels.map(label => (
                           <div key={label}
-                            className={`rounded-md uppercase font-bold leading-none shadow-sm backdrop-blur-md ${label === 'Final'
-                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black shadow-gold/20'
+                            className={`rounded px-1 uppercase font-bold leading-none ${label === 'Final'
+                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-black'
                               : 'bg-white text-black'
                               }`}
-                            style={{ fontSize: 'clamp(6px, 1vh, 11px)', padding: '3px 6px' }}
+                            style={{ fontSize: 'clamp(5px, 0.8vh, 9px)', padding: '2px 4px' }}
                           >
                             {label.replace('Final', 'FIN')}
                           </div>
@@ -223,3 +235,4 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 };
 
 export default BoardGrid;
+
