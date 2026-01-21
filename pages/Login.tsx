@@ -73,9 +73,7 @@ const Login: React.FC = () => {
         <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300">
                 <div className="text-center mb-8">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9D2235] to-[#7f1d2b] flex items-center justify-center text-white font-bold text-xl shadow-lg border border-white/10 mx-auto mb-4">
-                        SBX
-                    </div>
+                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
                         {isSignUp ? 'Create Account' : 'Welcome Back'}
                     </h1>

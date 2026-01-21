@@ -7,6 +7,7 @@ import CreateContest from './pages/CreateContest';
 import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
 import FullScreenLoading from './components/loading/FullScreenLoading';
+import Layout from './components/layout/Layout';
 
 // Wrapper to handle root routing logic
 const Home = () => {
@@ -36,9 +37,30 @@ const App: React.FC = () => {
         <React.Suspense fallback={<FullScreenLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/create" element={<CreateContest />} />
+            <Route
+              path="/login"
+              element={
+                <Layout>
+                  <Login />
+                </Layout>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/create"
+              element={
+                <Layout>
+                  <CreateContest />
+                </Layout>
+              }
+            />
             <Route path="*" element={<BoardView />} />
           </Routes>
         </React.Suspense>
