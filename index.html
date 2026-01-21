@@ -178,9 +178,55 @@
     <link rel="stylesheet" href="/premium.css">
 
 
+    <style>
+        /* Splash Screen Styles */
+        #splash {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #0B0C0F;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            #splash {
+                transition: none;
+            }
+        }
+
+        /* Diagonal */
+        .splash-diagonal {
+            width: 8px;
+            height: 120px;
+            background-color: #8F1D2C;
+            transform: rotate(-45deg);
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(143, 29, 44, 0.2);
+        }
+
+        /* Gold Dot */
+        .splash-dot {
+            position: absolute;
+            top: 48px;
+            right: 48px;
+            width: 8px;
+            height: 8px;
+            background-color: #FFC72C;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 199, 44, 0.3);
+        }
+    </style>
 </head>
 
 <body>
+    <div id="splash">
+        <div class="splash-diagonal"></div>
+        <div class="splash-dot"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

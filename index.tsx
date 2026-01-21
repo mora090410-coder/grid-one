@@ -9,6 +9,16 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+// Remove splash screen
+const splash = document.getElementById('splash');
+if (splash) {
+  splash.style.opacity = '0';
+  setTimeout(() => {
+    splash.remove();
+  }, 300); // Match transition duration
+}
+
 root.render(
   <React.StrictMode>
     <App />
