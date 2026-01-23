@@ -21,6 +21,7 @@ const Header: React.FC = () => {
     ];
 
     const isLanding = location.pathname === '/';
+    const isLoginPage = location.pathname === '/login';
 
     // Don't show header on BoardView if specifically requested to be fullscreen, 
     // but for now, we apply to all. 
@@ -85,7 +86,7 @@ const Header: React.FC = () => {
                             </button>
                         </div>
                     ) : (
-                        !isLanding && (
+                        !isLanding && !isLoginPage && (
                             <button
                                 onClick={() => navigate('/login')}
                                 className="text-sm font-medium text-white/70 hover:text-white transition-colors"
@@ -147,15 +148,17 @@ const Header: React.FC = () => {
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => {
-                                navigate('/login');
-                                setIsMenuOpen(false);
-                            }}
-                            className="text-sm font-medium text-white/70 hover:text-white text-left pl-2"
-                        >
-                            Log In
-                        </button>
+                        !isLoginPage && (
+                            <button
+                                onClick={() => {
+                                    navigate('/login');
+                                    setIsMenuOpen(false);
+                                }}
+                                className="text-sm font-medium text-white/70 hover:text-white text-left pl-2"
+                            >
+                                Log In
+                            </button>
+                        )
                     )}
                 </div>
             </div>

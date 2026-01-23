@@ -17,7 +17,6 @@ const CreateContest: React.FC = () => {
     const [step, setStep] = useState(1);
     const [game, setGame] = useState<GameState>(INITIAL_GAME);
     const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
-    const [passcode, setPasscode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
@@ -80,7 +79,6 @@ const CreateContest: React.FC = () => {
             const finalBoard = manualBoard || board;
             const leagueTitle = game.title?.trim();
             if (!leagueTitle) throw new Error("League Name is required.");
-            if (!passcode) throw new Error("Passcode is required.");
 
             // Create payload matching Supabase schema
             const payload = {
@@ -101,7 +99,7 @@ const CreateContest: React.FC = () => {
 
             // Add passcode to settings for legacy compat (handshake)
             // Ideally this should be a hashed column, but following "Wrapper Strategy" constraints.
-            (payload.settings as any).adminPasscode = passcode;
+            // (payload.settings as any).adminPasscode = "auth-owner";
 
             const { data, error } = await supabase
                 .from('contests')
@@ -114,7 +112,7 @@ const CreateContest: React.FC = () => {
 
             // Store token locally for immediate access
             const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-            storedTokens[data.id] = passcode;
+            storedTokens[data.id] = "auth-owner";
             localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
 
             setSuccessPoolId(data.id);
@@ -192,22 +190,11 @@ const CreateContest: React.FC = () => {
                                         autoFocus
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-label">Organizer Passcode</label>
-                                    <input
-                                        type="password"
-                                        value={passcode}
-                                        onChange={(e) => setPasscode(e.target.value)}
-                                        className="w-full glass-input"
-                                        placeholder="Create a secure passcode"
-                                    />
-                                    <p className="text-[10px] text-gray-500">You'll use this to edit the board later.</p>
-                                </div>
                             </div>
 
                             <div className="pt-4">
                                 <button
-                                    disabled={!game.title || !passcode}
+                                    disabled={!game.title}
                                     onClick={() => setStep(2)}
                                     className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
