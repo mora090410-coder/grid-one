@@ -440,8 +440,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
         setBoard(SAMPLE_BOARD);
 
-        // Navigate to login page
-        navigate('/login');
+        // Navigate to landing page
+        navigate('/');
     };
 
     const handleCommissionerLogin = () => {
