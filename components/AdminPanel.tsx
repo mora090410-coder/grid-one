@@ -665,29 +665,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                     return (
                       <div key={cellIdx} className="relative group h-12">
-                        <input
-                          type="text"
-                          value={players.join(', ')}
-                          onChange={(e) => handleGridCellChange(cellIdx, e.target.value)}
-                          placeholder={`${currentOppAxis?.[c] ?? '?'}-${currentBearsAxis?.[r] ?? '?'}`}
-                          className="w-full h-full bg-white/5 border border-white/5 rounded-lg text-[10px] px-1 text-center font-medium text-white/90 focus:border-gold/50 focus:bg-white/10 outline-none transition-all placeholder:text-white/10"
-                        />
+                        {/* Unified Click Handler */}
+                        <div
+                          onClick={() => setEditingMetaIndex(cellIdx)}
+                          className="w-full h-full bg-white/5 border border-white/5 rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all group active:scale-95"
+                        >
+                          <span className="text-[10px] font-medium text-white/90 truncate w-full text-center">
+                            {players[0] || ''}
+                          </span>
+                          {players.length === 0 && (
+                            <span className="text-[9px] text-white/20 select-none">
+                              {currentOppAxis?.[c] ?? '?'}-{currentBearsAxis?.[r] ?? '?'}
+                            </span>
+                          )}
+                        </div>
+
                         {players.length > 0 && (
-                          <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-gold/50"></div>
+                          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gold shadow-sm pointer-events-none"></div>
                         )}
 
-                        {/* Edit Metadata Trigger */}
-                        <button
-                          onClick={() => setEditingMetaIndex(cellIdx)}
-                          className="absolute bottom-1 right-1 p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Edit details"
-                        >
-                          {entryMetaByIndex[cellIdx]?.paid_status === 'paid' ? (
-                            <svg className="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
-                          ) : (
-                            <svg className="w-3 h-3 text-white/40 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          )}
-                        </button>
+                        {/* Status Indicator (Paid) */}
+                        {entryMetaByIndex[cellIdx]?.paid_status === 'paid' && (
+                          <div className="absolute bottom-1 right-1 pointer-events-none">
+                            <svg className="w-3 h-3 text-green-400 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -702,9 +704,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       {editingMetaIndex !== null && (
         <MetadataModal
           cellIndex={editingMetaIndex}
+          currentName={localBoard.squares[editingMetaIndex]?.[0] || ''}
           currentMeta={entryMetaByIndex[editingMetaIndex]}
-          onSave={(meta) => {
+          onSave={(name, meta) => {
+            // 1. Update Board Name (triggers debounce save)
+            const newBoard = { ...localBoard };
+            newBoard.squares[editingMetaIndex] = name ? [name] : [];
+            setLocalBoard(newBoard);
+
+            // 2. Save Metadata (immediate)
             saveEntryMeta(meta);
+
             setEditingMetaIndex(null);
           }}
           onClose={() => setEditingMetaIndex(null)}
@@ -717,10 +727,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 // Internal Modal Component
 const MetadataModal: React.FC<{
   cellIndex: number;
+  currentName: string;
   currentMeta?: EntryMeta;
-  onSave: (meta: EntryMeta) => void;
+  onSave: (name: string, meta: EntryMeta) => void;
   onClose: () => void;
-}> = ({ cellIndex, currentMeta, onSave, onClose }) => {
+}> = ({ cellIndex, currentName, currentMeta, onSave, onClose }) => {
+  const [name, setName] = useState(currentName);
   const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status || 'unknown');
   const [notifyOptIn, setNotifyOptIn] = useState(currentMeta?.notify_opt_in || false);
   const [contactType, setContactType] = useState<EntryMeta['contact_type']>(currentMeta?.contact_type || 'email');
@@ -732,7 +744,7 @@ const MetadataModal: React.FC<{
       return;
     }
 
-    onSave({
+    onSave(name.trim(), {
       cell_index: cellIndex,
       paid_status: paidStatus,
       notify_opt_in: notifyOptIn,
@@ -745,14 +757,31 @@ const MetadataModal: React.FC<{
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+
+        {/* Header */}
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-white">Square Details</h3>
+          <h3 className="text-lg font-semibold text-white">Edit Square</h3>
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
 
-        <div className="space-y-4">
+        {/* Content Body */}
+        <div className="space-y-6">
+
+          {/* Name Input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Player Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter Name"
+              className="w-full glass-input"
+              autoFocus
+            />
+          </div>
+
           {/* Paid Status */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Payment Status</label>
@@ -775,7 +804,7 @@ const MetadataModal: React.FC<{
           </div>
 
           {/* Notification Settings */}
-          <div className="space-y-3 pt-2 border-t border-white/5">
+          <div className="space-y-3 pt-4 border-t border-white/5">
             <label className="flex items-center gap-3 cursor-pointer group">
               <div className={`w-10 h-6 rounded-full p-1 transition-colors ${notifyOptIn ? 'bg-green-500' : 'bg-white/10'}`}>
                 <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${notifyOptIn ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -811,7 +840,8 @@ const MetadataModal: React.FC<{
           </div>
         </div>
 
-        <div className="pt-4 flex justify-end">
+        {/* Footer Actions */}
+        <div className="pt-2 flex justify-end">
           <button
             onClick={handleSave}
             className="px-6 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200 transition-colors"
