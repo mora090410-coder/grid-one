@@ -34,7 +34,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   // Bulk Assign State
   const [isAssignMode, setIsAssignMode] = useState(false);
   const [assignLabel, setAssignLabel] = useState('');
-  const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unknown');
+  const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
 
   // Auto-save status: 'saved' | 'saving' | 'error'
@@ -186,15 +186,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     setTimeout(() => setScanStatus(null), 5000);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!confirm("Are you sure you want to clear all names from the board?")) return;
+
     const emptyBoard: BoardData = {
       bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       squares: Array(100).fill(null).map(() => []),
       isDynamic: false
     };
+
     setLocalBoard(emptyBoard);
+    setEntryMetaByIndex({}); // Clear local metadata
+
+    // Clear DB metadata
+    if (activePoolId) {
+      const { error } = await supabase
+        .from('contest_entries')
+        .delete()
+        .eq('contest_id', activePoolId);
+
+      if (error) console.error("Failed to clear cloud metadata", error);
+    }
+
     setScanStatus("Board Cleared");
     setTimeout(() => setScanStatus(null), 3000);
   };
@@ -308,8 +322,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       }
     }
 
-    const newBoard = { ...localBoard };
+    const newBoard = {
+      ...localBoard,
+      squares: [...localBoard.squares] // Ensure shallow copy of array
+    };
     const label = assignLabel.trim();
+
+    // Prepare batch metadata updates
+    const metaUpdates: any[] = [];
+    const newEntryMetaByIndex = { ...entryMetaByIndex };
 
     indices.forEach(idx => {
       // Update Name
@@ -317,33 +338,53 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
       // Update Metadata if specific status selected
       if (assignPaidDefault !== 'unknown') {
-        const meta = entryMetaByIndex[idx] || {
+        const currentM = entryMetaByIndex[idx];
+        const newMeta = {
+          contest_id: activePoolId,
           cell_index: idx,
-          paid_status: 'unknown',
-          notify_opt_in: false,
-          contact_type: null,
-          contact_value: null
+          paid_status: assignPaidDefault,
+          notify_opt_in: currentM?.notify_opt_in ?? false,
+          contact_type: currentM?.contact_type ?? null,
+          contact_value: currentM?.contact_value ?? null,
+          updated_at: new Date().toISOString()
         };
 
-        saveEntryMeta({
-          ...meta,
-          paid_status: assignPaidDefault,
-          cell_index: idx
-        });
+        metaUpdates.push(newMeta);
+        newEntryMetaByIndex[idx] = newMeta as EntryMeta;
       }
     });
 
+    // 1. Update Local Board State
     setLocalBoard(newBoard);
+
+    // 2. Update Local Metadata State
+    if (metaUpdates.length > 0) {
+      setEntryMetaByIndex(newEntryMetaByIndex);
+
+      // 3. Batch Upsert to Supabase
+      if (activePoolId) {
+        supabase
+          .from('contest_entries')
+          .upsert(metaUpdates, { onConflict: 'contest_id, cell_index' })
+          .then(({ error }) => {
+            if (error) {
+              console.error("Batch save failed:", error);
+              alert("Failed to save payment status. Please try again.");
+            }
+          });
+      }
+    }
+
     setSelectedCellIndices(new Set());
     setIsAssignMode(false);
     setAssignLabel('');
-    setAssignPaidDefault('unknown');
+    setAssignPaidDefault('unpaid');
   };
 
   // --- Manual Grid Editor Sync Functions ---
 
   const handleGridCellChange = (cellIndex: number, value: string) => {
-    const newBoard = { ...localBoard };
+    const newBoard = { ...localBoard, squares: [...localBoard.squares] };
     const names = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
     newBoard.squares[cellIndex] = names;
     setLocalBoard(newBoard);
@@ -705,7 +746,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
             <div className="w-full md:w-auto space-y-1">
               <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Payment Status</label>
               <div className="flex bg-[#1c1c1e] rounded-lg p-1 border border-white/10">
-                {(['unknown', 'unpaid', 'paid'] as const).map(status => (
+                {(['unpaid', 'paid'] as const).map(status => (
                   <button
                     key={status}
                     onClick={() => setAssignPaidDefault(status)}
@@ -801,8 +842,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                             }
                           }}
                           className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 ${isAssignMode && selectedCellIndices.has(cellIdx)
-                              ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                              : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                            ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
                             }`}
                         >
                           <span className="text-[10px] font-medium text-white/90 truncate w-full text-center">
@@ -815,14 +856,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           )}
                         </div>
 
-                        {players.length > 0 && (
-                          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gold shadow-sm pointer-events-none"></div>
-                        )}
+                        {/* Remove yellow dot - redundant with paid/unpaid status */}
 
-                        {/* Status Indicator (Paid) */}
+
+                        {/* Status Indicator (Paid/Unpaid) */}
                         {entryMetaByIndex[cellIdx]?.paid_status === 'paid' && (
                           <div className="absolute bottom-1 right-1 pointer-events-none">
                             <svg className="w-3 h-3 text-green-400 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                          </div>
+                        )}
+                        {entryMetaByIndex[cellIdx]?.paid_status === 'unpaid' && (
+                          <div className="absolute bottom-1 right-1 pointer-events-none">
+                            <svg className="w-3 h-3 text-red-500 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                           </div>
                         )}
                       </div>
@@ -843,7 +888,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           currentMeta={entryMetaByIndex[editingMetaIndex]}
           onSave={(name, meta) => {
             // 1. Update Board Name (triggers debounce save)
-            const newBoard = { ...localBoard };
+            const newBoard = { ...localBoard, squares: [...localBoard.squares] };
             newBoard.squares[editingMetaIndex] = name ? [name] : [];
             setLocalBoard(newBoard);
 
@@ -868,7 +913,7 @@ const MetadataModal: React.FC<{
   onClose: () => void;
 }> = ({ cellIndex, currentName, currentMeta, onSave, onClose }) => {
   const [name, setName] = useState(currentName);
-  const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status || 'unknown');
+  const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status && currentMeta.paid_status !== 'unknown' ? currentMeta.paid_status : 'unpaid');
   const [notifyOptIn, setNotifyOptIn] = useState(currentMeta?.notify_opt_in || false);
   const [contactType, setContactType] = useState<EntryMeta['contact_type']>(currentMeta?.contact_type || 'email');
   const [contactValue, setContactValue] = useState(currentMeta?.contact_value || '');
@@ -921,13 +966,13 @@ const MetadataModal: React.FC<{
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Payment Status</label>
             <div className="flex gap-2">
-              {(['unknown', 'unpaid', 'paid'] as const).map(status => (
+              {(['unpaid', 'paid'] as const).map(status => (
                 <button
                   key={status}
                   onClick={() => setPaidStatus(status)}
                   className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold capitalize transition-all ${paidStatus === status
                     ? (status === 'paid' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                      status === 'unpaid' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
+                      status === 'unpaid' ? 'bg-red-500/20 text-red-500 border border-red-500/50' :
                         'bg-white text-black')
                     : 'bg-white/5 text-gray-400 hover:bg-white/10'
                     }`}
