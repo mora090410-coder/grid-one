@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
 const Login: React.FC = () => {
@@ -12,7 +12,8 @@ const Login: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [searchParams] = useSearchParams();
+    const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

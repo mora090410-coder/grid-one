@@ -56,7 +56,7 @@ const normalizeAbbr = (abbr: string | undefined): string => {
     return a;
 };
 
-const BoardViewContent: React.FC = () => {
+const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPoolId = searchParams.get('poolId');
 
@@ -157,7 +157,8 @@ const BoardViewContent: React.FC = () => {
     const [isJoining, setIsJoining] = useState(false);
 
     // Don't show landing if: loading pool data, have a URL poolId, already in app, initialized, or just finished wizard
-    const showLanding = !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized && !wizardSuccess;
+    // In demo mode, we always bypass landing
+    const showLanding = !demoMode && !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized && !wizardSuccess;
     // Commissioner Mode gated by Preview Mode
     const isOwner = auth.user && ownerId && auth.user.id === ownerId;
     const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
@@ -166,6 +167,22 @@ const BoardViewContent: React.FC = () => {
     useEffect(() => {
         if (isOwner) setShowAdminView(true);
     }, [isOwner]);
+
+    // Initialize Demo Mode
+    useEffect(() => {
+        if (demoMode) {
+            setBoard(SAMPLE_BOARD);
+            setGame({
+                ...INITIAL_GAME,
+                title: 'Demo: Super Bowl LIX',
+                leftAbbr: 'KC',
+                topAbbr: 'SF',
+            });
+            setIsInitialized(true);
+            setHasEnteredApp(true);
+            setActiveTab('board');
+        }
+    }, [demoMode, setBoard, setGame]);
 
     const knownAdminToken = useMemo(() => {
         const targetId = joinInput.trim().toUpperCase() || activePoolId;
@@ -741,7 +758,7 @@ const BoardViewContent: React.FC = () => {
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {!loadingPool && showLanding ? (
-                <LandingPage onCreate={openSetupWizard} onJoin={() => setShowJoinModal(true)} onLogin={handleCommissionerLogin} />
+                <LandingPage onCreate={openSetupWizard} onDemo={() => navigate('/demo')} onLogin={handleCommissionerLogin} />
             ) : !loadingPool && (
                 <>
                     <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
@@ -1048,10 +1065,10 @@ const BoardViewContent: React.FC = () => {
 };
 
 // Use BoardView name directly
-const BoardView: React.FC = () => {
+const BoardView: React.FC<{ demoMode?: boolean }> = ({ demoMode }) => {
     return (
         <ErrorBoundary>
-            <BoardViewContent />
+            <BoardViewContent demoMode={demoMode} />
         </ErrorBoundary>
     );
 };

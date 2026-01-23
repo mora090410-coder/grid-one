@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
@@ -13,6 +13,7 @@ import Layout from './components/layout/Layout';
 const Home = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const poolId = searchParams.get('poolId');
 
   // If poolId is present, show the board
@@ -23,9 +24,15 @@ const Home = () => {
   // Otherwise show the landing page
   return (
     <LandingPage
-      onCreate={() => navigate('/create')}
-      onLogin={() => navigate('/login')}
-      onJoin={() => navigate('/login')} // For now, redirect join to login
+      onCreate={() => {
+        if (user) {
+          navigate('/create');
+        } else {
+          navigate('/login?mode=signup');
+        }
+      }}
+      onLogin={() => navigate('/login?mode=signin')}
+      onDemo={() => navigate('/demo')}
     />
   );
 };
@@ -37,6 +44,7 @@ const App: React.FC = () => {
         <React.Suspense fallback={<FullScreenLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/demo" element={<BoardView demoMode={true} />} />
             <Route
               path="/login"
               element={
