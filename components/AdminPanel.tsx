@@ -31,6 +31,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [entryMetaByIndex, setEntryMetaByIndex] = useState<Record<number, EntryMeta>>({});
   const [editingMetaIndex, setEditingMetaIndex] = useState<number | null>(null);
 
+  // Bulk Assign State
+  const [isAssignMode, setIsAssignMode] = useState(false);
+  const [assignLabel, setAssignLabel] = useState('');
+  const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unknown');
+  const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
+
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showMenu, setShowMenu] = useState(false);
@@ -272,6 +278,66 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  // --- Bulk Assign Logic ---
+  const toggleCellSelection = (index: number) => {
+    const newSet = new Set(selectedCellIndices);
+    if (newSet.has(index)) {
+      newSet.delete(index);
+    } else {
+      newSet.add(index);
+    }
+    setSelectedCellIndices(newSet);
+  };
+
+  const handleBulkApply = () => {
+    if (!assignLabel.trim()) {
+      alert("Please enter a label.");
+      return;
+    }
+    if (selectedCellIndices.size === 0) return;
+
+    // Check for conflicts
+    const indices = Array.from(selectedCellIndices);
+    const conflicts = indices.filter(idx => localBoard.squares[idx] && localBoard.squares[idx].length > 0);
+
+    if (conflicts.length > 0) {
+      if (!confirm(`Replace names in ${conflicts.length} squares?`)) {
+        return;
+      }
+    }
+
+    const newBoard = { ...localBoard };
+    const label = assignLabel.trim();
+
+    indices.forEach(idx => {
+      // Update Name
+      newBoard.squares[idx] = [label];
+
+      // Update Metadata if specific status selected
+      if (assignPaidDefault !== 'unknown') {
+        const meta = entryMetaByIndex[idx] || {
+          cell_index: idx,
+          paid_status: 'unknown',
+          notify_opt_in: false,
+          contact_type: null,
+          contact_value: null
+        };
+
+        saveEntryMeta({
+          ...meta,
+          paid_status: assignPaidDefault,
+          cell_index: idx
+        });
+      }
+    });
+
+    setLocalBoard(newBoard);
+    setSelectedCellIndices(new Set());
+    setIsAssignMode(false);
+    setAssignLabel('');
+    setAssignPaidDefault('unknown');
   };
 
   // --- Manual Grid Editor Sync Functions ---
@@ -585,29 +651,89 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       {/* Manual Grid Editor Section */}
       <div className="premium-glass p-6 md:p-8 rounded-3xl flex flex-col space-y-6 animate-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
-          <div>
+          <div className="flex-1">
             <h3 className="text-xl font-semibold text-white tracking-tight">Grid Editor</h3>
             <p className="text-sm font-medium text-gray-400 mt-1">Tap any cell or axis to edit names and numbers manually.</p>
           </div>
 
-          {/* Dynamic Axis Selector */}
-          {localBoard.isDynamic && (
-            <div className="flex items-center bg-black/30 rounded-lg p-1 border border-white/5">
-              {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
-                <button
-                  key={q}
-                  onClick={() => setActiveAxisQuarter(q)}
-                  className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeAxisQuarter === q
-                    ? 'bg-white/20 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-300'
-                    }`}
-                >
-                  {q === 'Q4' ? 'Final' : q}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {/* Dynamic Axis Selector */}
+            {localBoard.isDynamic && (
+              <div className="flex items-center bg-black/30 rounded-lg p-1 border border-white/5">
+                {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
+                  <button
+                    key={q}
+                    onClick={() => setActiveAxisQuarter(q)}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeAxisQuarter === q
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                  >
+                    {q === 'Q4' ? 'Final' : q}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Bulk Assign Toggle */}
+            <button
+              onClick={() => {
+                setIsAssignMode(!isAssignMode);
+                setSelectedCellIndices(new Set());
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isAssignMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+            >
+              {isAssignMode ? 'Done' : 'Assign Squares'}
+            </button>
+          </div>
         </div>
+
+        {/* Bulk Assign Panel */}
+        {isAssignMode && (
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center animate-in slide-in-from-top-2">
+            <div className="flex-1 w-full space-y-1">
+              <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Label to Apply</label>
+              <input
+                type="text"
+                value={assignLabel}
+                onChange={(e) => setAssignLabel(e.target.value)}
+                placeholder="e.g. Mora"
+                className="w-full bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+              />
+            </div>
+
+            <div className="w-full md:w-auto space-y-1">
+              <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Payment Status</label>
+              <div className="flex bg-[#1c1c1e] rounded-lg p-1 border border-white/10">
+                {(['unknown', 'unpaid', 'paid'] as const).map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setAssignPaidDefault(status)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-white'}`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-end gap-2 w-full md:w-auto pt-4 md:pt-0">
+              <button
+                onClick={() => setIsAssignMode(false)}
+                className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkApply}
+                disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
+                className="px-6 py-2 rounded-lg text-sm font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Apply to {selectedCellIndices.size}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto custom-scrollbar bg-black/20 p-6 rounded-2xl border border-white/5">
           <div className="min-w-[800px] space-y-6">
@@ -667,8 +793,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       <div key={cellIdx} className="relative group h-12">
                         {/* Unified Click Handler */}
                         <div
-                          onClick={() => setEditingMetaIndex(cellIdx)}
-                          className="w-full h-full bg-white/5 border border-white/5 rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all group active:scale-95"
+                          onClick={() => {
+                            if (isAssignMode) {
+                              toggleCellSelection(cellIdx);
+                            } else {
+                              setEditingMetaIndex(cellIdx);
+                            }
+                          }}
+                          className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 ${isAssignMode && selectedCellIndices.has(cellIdx)
+                              ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                              : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                            }`}
                         >
                           <span className="text-[10px] font-medium text-white/90 truncate w-full text-center">
                             {players[0] || ''}
