@@ -60,7 +60,7 @@ const Login: React.FC = () => {
                 // Note: Supabase signUp returns success for existing users if email confirmation is on. 
                 // We depend on the user checking their email or getting a "User already registered" error depending on config.
 
-                const { error: signUpError } = await supabase.auth.signUp({
+                const { data, error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -73,14 +73,17 @@ const Login: React.FC = () => {
                 });
 
                 if (signUpError) {
-                    // Smart error handling for existing users
+                    // Smart error handling for existing users (caught by unique constraint)
                     if (signUpError.message.includes('already registered') || signUpError.message.includes('unique constraint')) {
                         setError('This email is already registered. Please sign in instead.');
-                        // Optional: auto-switch to sign in?
-                        // setIsSignUp(false); 
                     } else {
                         throw signUpError;
                     }
+                } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+                    // CRITICAL: Supabase returns success but empty identities if user exists (security masking)
+                    // We catch this to prevent "silent failure" where user waits for email that never comes.
+                    setError('An account with this email already exists. Please log in using your password.');
+                    setIsSignUp(false); // Auto-switch to login for them
                 } else {
                     alert('Check your email for the confirmation link!');
                 }
