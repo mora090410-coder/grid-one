@@ -549,7 +549,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                   <div className="px-4 py-2.5">
                     <div className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1">Board ID</div>
-                    <div className="text-xs font-mono text-white/50 break-all select-all">{activePoolId || 'Not saved'}</div>
+                    <div className="text-xs font-mono text-white/50 break-all select-all">
+                      {isActivated ? (activePoolId || 'Not saved') : 'Activate to view'}
+                    </div>
                   </div>
 
                   <div className="my-1.5 border-t border-white/[0.08]" />

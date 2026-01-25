@@ -4,6 +4,7 @@ type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
 
 interface Env {
   POOLS: KVNamespace;
+  PUBLIC_SITE_URL?: string;
 }
 
 // ============= INLINE CRYPTO UTILITIES =============
@@ -25,20 +26,27 @@ async function verifyPassword(password: string, storedHash: string, salt: string
   return result === 0;
 }
 
+// ... existing code ...
+
 // ============= CORS =============
-const ALLOWED_ORIGINS = [
+const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:8788',
   'http://localhost:3000',
   'http://localhost:3001',
   'https://sbxpro.pages.dev',
+  'https://getgridone.com',
+  'https://www.getgridone.com',
 ];
 
-function getCorsHeaders(request: Request): Record<string, string> {
+function getCorsHeaders(request: Request, extraOrigin?: string): Record<string, string> {
   const origin = request.headers.get('Origin') || '';
-  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) || origin === '';
+  const allowed = [...DEFAULT_ALLOWED_ORIGINS];
+  if (extraOrigin) allowed.push(extraOrigin);
+
+  const isAllowed = allowed.some(a => origin.startsWith(a)) || origin === '';
 
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : allowed[0],
     'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -46,7 +54,7 @@ function getCorsHeaders(request: Request): Record<string, string> {
 }
 
 export const onRequestOptions: PagesFunction = async (context) => {
-  return new Response(null, { status: 204, headers: getCorsHeaders(context.request) });
+  return new Response(null, { status: 204, headers: getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL) });
 };
 
 /**
@@ -58,7 +66,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   if (!val) {
     return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
@@ -67,7 +75,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   return new Response(JSON.stringify(publicPayload), {
     status: 200,
-    headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 };
 
@@ -81,14 +89,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
   const val = await context.env.POOLS.get(`pool:${poolId}`);
   if (!val) {
     return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
@@ -104,12 +112,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   if (!isValid) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Password' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
   return new Response(JSON.stringify({ success: true, message: 'Authentication Verified' }), {
-    status: 200, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' },
+    status: 200, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' },
   });
 };
 
@@ -123,7 +131,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
   if (!token) {
     return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
@@ -131,7 +139,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     const existing = await context.env.POOLS.get(`pool:${poolId}`);
     if (!existing) {
       return new Response(JSON.stringify({ error: 'Pool not found' }), {
-        status: 404, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+        status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
       });
     }
 
@@ -146,7 +154,7 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
     if (!isValid) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
-        status: 401, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+        status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
       });
     }
 
@@ -160,12 +168,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     await context.env.POOLS.put(`pool:${poolId}`, JSON.stringify(updated));
 
     return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 200, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
     console.error('Pool update error:', err);
     return new Response(JSON.stringify({ error: 'Failed to update pool', message: err.message }), {
-      status: 500, headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      status: 500, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 };

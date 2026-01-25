@@ -25,6 +25,7 @@ type PagesFunction<Env = any, Params = string, Data = Record<string, unknown>> =
 
 interface Env {
   POOLS: KVNamespace;
+  PUBLIC_SITE_URL?: string;
 }
 
 // Payload Types
@@ -39,7 +40,7 @@ interface CreatePoolPayload {
     [key: string]: any;
   };
   adminPassword?: string;
-  adminEmail?: string; // New field
+  adminEmail?: string;
   isPublic?: boolean;
 }
 
@@ -90,29 +91,35 @@ function validateCreatePool(data: any): { valid: true; data: CreatePoolPayload }
   return { valid: true, data: payload as CreatePoolPayload };
 }
 
-// ============= CORS & RATE LIMITING =============
+// ... existing code ...
+
 // Allowed origins for CORS - add production domains here
-const ALLOWED_ORIGINS = [
+const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:8788',
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://sbxpro.pages.dev',  // Cloudflare Pages default
-  // Add your production domain here, e.g.:
-  // 'https://sbxpro.com',
+  'https://sbxpro.pages.dev',
+  'https://getgridone.com',
+  'https://www.getgridone.com',
 ];
 
-function getCorsHeaders(request: Request): Record<string, string> {
+function getCorsHeaders(request: Request, extraOrigin?: string): Record<string, string> {
   const origin = request.headers.get('Origin') || '';
-  // In development, allow localhost; in production, validate against whitelist
-  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) || origin === '';
+  const allowed = [...DEFAULT_ALLOWED_ORIGINS];
+  if (extraOrigin) allowed.push(extraOrigin);
+
+  const isAllowed = allowed.some(a => origin.startsWith(a)) || origin === '';
 
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : allowed[0],
     'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
   };
 }
+
+// ... handlers ...
+// In handlers, call getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL)
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60000;
@@ -139,7 +146,7 @@ function checkRateLimit(ip: string): boolean {
 export const onRequestOptions: PagesFunction = async (context) => {
   return new Response(null, {
     status: 204,
-    headers: getCorsHeaders(context.request),
+    headers: getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL),
   });
 };
 
@@ -153,7 +160,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: 'Too many requests. Please try again later.'
       }), {
         status: 429,
-        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Retry-After': '60' }
+        headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Retry-After': '60' }
       });
     }
 
@@ -166,7 +173,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: 'Password must be at least 4 characters'
       }), {
         status: 400,
-        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
       });
     }
 
@@ -180,7 +187,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: validation.error
       }), {
         status: 400,
-        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
       });
     }
 
@@ -223,7 +230,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         message: `A league named "${leagueName}" was just created. Please choose a different name.`
       }), {
         status: 409,
-        headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
       });
     }
 
@@ -244,13 +251,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     return new Response(JSON.stringify({ poolId, success: true }), {
       status: 200,
-      headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   } catch (err: any) {
     console.error('Pool creation error:', err);
     return new Response(JSON.stringify({ error: 'Failed to create pool', message: err.message }), {
       status: 500,
-      headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+      headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 };

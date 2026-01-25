@@ -4,6 +4,7 @@ type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
 
 interface Env {
     POOLS: KVNamespace;
+    PUBLIC_SITE_URL?: string;
 }
 
 // ============= INLINE CRYPTO =============
@@ -26,19 +27,24 @@ async function verifyPassword(password: string, storedHash: string, salt: string
 }
 
 // ============= CORS & RATE LIMITING =============
-const ALLOWED_ORIGINS = [
+const DEFAULT_ALLOWED_ORIGINS = [
     'http://localhost:8788',
     'http://localhost:3000',
     'http://localhost:3001',
     'https://sbxpro.pages.dev',
+    'https://getgridone.com',
+    'https://www.getgridone.com',
 ];
 
-function getCorsHeaders(request: Request): Record<string, string> {
+function getCorsHeaders(request: Request, extraOrigin?: string): Record<string, string> {
     const origin = request.headers.get('Origin') || '';
-    const isAllowed = ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed)) || origin === '';
+    const allowed = [...DEFAULT_ALLOWED_ORIGINS];
+    if (extraOrigin) allowed.push(extraOrigin);
+
+    const isAllowed = allowed.some(a => origin.startsWith(a)) || origin === '';
 
     return {
-        'Access-Control-Allow-Origin': isAllowed ? origin || '*' : ALLOWED_ORIGINS[0],
+        'Access-Control-Allow-Origin': isAllowed ? origin || '*' : allowed[0],
         'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Max-Age': '86400',
@@ -62,7 +68,7 @@ function checkLoginRateLimit(ip: string): boolean {
 }
 
 export const onRequestOptions: PagesFunction = async (context) => {
-    return new Response(null, { status: 204, headers: getCorsHeaders(context.request) });
+    return new Response(null, { status: 204, headers: getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL) });
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -74,7 +80,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 message: 'Please wait before trying again.'
             }), {
                 status: 429,
-                headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Retry-After': '60' }
+                headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Retry-After': '60' }
             });
         }
 
@@ -86,7 +92,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 message: 'League name and password are required.'
             }), {
                 status: 400,
-                headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
             });
         }
 
@@ -99,7 +105,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 message: 'League name or password is incorrect.'
             }), {
                 status: 401,
-                headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
             });
         }
 
@@ -110,7 +116,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 message: 'League name or password is incorrect.'
             }), {
                 status: 401,
-                headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
             });
         }
 
@@ -129,20 +135,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
                 message: 'League name or password is incorrect.'
             }), {
                 status: 401,
-                headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
             });
         }
 
         return new Response(JSON.stringify({ success: true, poolId, message: 'Login successful' }), {
             status: 200,
-            headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+            headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
         });
 
     } catch (err: any) {
         console.error('Login error:', err);
         return new Response(JSON.stringify({ error: 'Login failed', message: 'An error occurred.' }), {
             status: 500,
-            headers: { ...getCorsHeaders(context.request), 'Content-Type': 'application/json' }
+            headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
         });
     }
 };
