@@ -79,13 +79,14 @@ const Login: React.FC = () => {
                     } else {
                         throw signUpError;
                     }
-                } else if (data.user && data.user.identities && data.user.identities.length === 0) {
-                    // CRITICAL: Supabase returns success but empty identities if user exists (security masking)
+                } else if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+                    // CRITICAL: Supabase returns success but empty/missing identities if user exists (security masking)
                     // We catch this to prevent "silent failure" where user waits for email that never comes.
                     setError('An account with this email already exists. Please log in using your password.');
                     setIsSignUp(false); // Auto-switch to login for them
                 } else {
                     alert('Check your email for the confirmation link!');
+                    setIsSignUp(false); // Switch to login view so they can wait for email
                 }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
