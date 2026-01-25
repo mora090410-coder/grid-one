@@ -33,7 +33,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'edit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'overview' | 'edit'>('overview');
 
   // Metadata State (via Hook)
   const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
@@ -432,10 +432,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         {/* CENTER: Tab Navigation */}
         <div className="flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
           <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'overview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
           >
-            Dashboard
+            Overview
           </button>
           <button
             onClick={() => setActiveTab('edit')}
@@ -609,16 +609,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       </div>
 
       {/* Organizer Dashboard */}
-      {
-        activeTab === 'dashboard' && (
-          <OrganizerDashboard
-            board={localBoard}
-            entryMetaByIndex={entryMetaByIndex}
-            liveData={liveData}
-            onOpenSquareDetails={(idx) => setEditingMetaIndex(idx)}
-          />
-        )
-      }
+      {/* CONTENT AREA */}
+      {activeTab === 'overview' ? (
+        <OrganizerDashboard
+          board={localBoard}
+          entryMetaByIndex={entryMetaByIndex}
+          liveData={liveData}
+          onOpenSquareDetails={(idx) => setEditingMetaIndex(idx)}
+          gameTitle={localGame.title}
+        />
+      ) : null}
 
       {/* Edit View Content */}
       {
