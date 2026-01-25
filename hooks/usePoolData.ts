@@ -53,7 +53,6 @@ interface UsePoolDataReturn extends PoolDataState {
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
     publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
-    syncGuestBoardToSupabase: (guestGame: GameState, guestBoard: BoardData, userId: string, guestPasscode?: string) => Promise<string>;
     updatePool: (poolId: string, adminToken: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
     clearError: () => void;
 }
@@ -96,7 +95,7 @@ export function usePoolData(): UsePoolDataReturn {
         } catch (err: any) {
             console.error("Load Pool Error:", err);
             setError(err.message);
-            setDataReady(false); // Leaked previously
+            setDataReady(true);
         } finally {
             setLoadingPool(false);
         }
@@ -107,10 +106,28 @@ export function usePoolData(): UsePoolDataReturn {
         adminToken: string,
         currentData?: { game: GameState; board: BoardData }
     ): Promise<string | void> => {
+        // NOTE: New creation flow uses CreateContest.tsx directly.
+        // This function is kept for compatibility with BoardView's AdminPanel if needed,
+        // but typically BoardView uses this for "Wizard" inside the board.
+        // We should map this to Supabase insert.
+
         const g = currentData?.game || game;
         const b = currentData?.board || board;
 
+        // Note: adminToken is treated as the passcode here.
+        // If we are creating a new pool from BoardView wizard:
+
         try {
+            // We need an owner_id. BoardView might not have AuthContext user if anonymous?
+            // If user is not logged in, we might need anon auth or strict requirement.
+            // For now, let's assume this feature requires auth or we use a fallback?
+            // CreateContest.tsx handles the main flow. 
+            // If this is called, we'll try to insert. 
+
+            // To properly support this, we really should use the user from AuthContext.
+            // But this hook doesn't have it.
+            // For now, let's throw if we can't get session, OR check if we can get it from supabase.auth
+
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("You must be logged in to publish a pool.");
 
@@ -137,46 +154,6 @@ export function usePoolData(): UsePoolDataReturn {
             throw err;
         }
     }, [game, board]);
-
-    // Sync Guest Board to Supabase
-    const syncGuestBoardToSupabase = useCallback(async (
-        guestGame: GameState,
-        guestBoard: BoardData,
-        userId: string,
-        guestPasscode?: string
-    ) => {
-        try {
-            const payload = {
-                owner_id: userId,
-                title: guestGame.title,
-                settings: { ...guestGame, adminPasscode: guestPasscode || '1234' }, // Fallback if missing
-                board_data: guestBoard,
-                created_at: new Date().toISOString()
-            };
-
-            const { data, error } = await supabase
-                .from('contests')
-                .insert([payload])
-                .select('id')
-                .single();
-
-            if (error) throw error;
-            if (!data) throw new Error("Insertion failed");
-
-            // Update app state to reflect the new real pool
-            setActivePoolId(data.id);
-            setOwnerId(userId);
-            setGame(guestGame);
-            setBoard(guestBoard);
-            setDataReady(true);
-
-            return data.id;
-        } catch (err: any) {
-            console.error("Sync Failed:", err);
-            setError("Failed to sync guest board: " + err.message);
-            throw err;
-        }
-    }, []);
 
     // Update existing pool in Supabase
     const updatePool = useCallback(async (
@@ -218,7 +195,6 @@ export function usePoolData(): UsePoolDataReturn {
         setActivePoolId,
         loadPoolData,
         publishPool,
-        syncGuestBoardToSupabase,
         updatePool,
         clearError
     };

@@ -5,11 +5,10 @@ interface LandingPageProps {
   onScan: () => void;
   onLogin: () => void;
   onDemo: () => void;
-  isAuthenticated?: boolean;
 }
 
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, onDemo, isAuthenticated }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, onDemo }) => {
   return (
     <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
       {/* Background */}
@@ -71,21 +70,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onScan, onLogin, on
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
-            {isAuthenticated ? (
-              <a
-                href="/dashboard"
-                className="rounded-full px-4 py-2 text-sm text-white bg-white/10 hover:bg-white/20 transition-all font-medium border border-white/5"
-              >
-                Dashboard
-              </a>
-            ) : (
-              <button
-                onClick={onLogin}
-                className="rounded-full px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all font-medium"
-              >
-                Sign in
-              </button>
-            )}
+            <button
+              onClick={onLogin}
+              className="rounded-full px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all font-medium"
+            >
+              Sign in
+            </button>
           </div>
         </nav>
       </header>

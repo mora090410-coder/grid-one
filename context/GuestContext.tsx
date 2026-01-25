@@ -5,9 +5,8 @@ interface GuestContextType {
     guestBoard: {
         game: GameState;
         board: BoardData;
-        adminPasscode?: string;
     } | null;
-    setGuestBoard: (data: { game: GameState; board: BoardData; adminPasscode?: string } | null) => void;
+    setGuestBoard: (data: { game: GameState; board: BoardData } | null) => void;
     clearGuestBoard: () => void;
 }
 
@@ -16,7 +15,7 @@ const GuestContext = createContext<GuestContextType | undefined>(undefined);
 const GUEST_STORAGE_KEY = 'gridone_guest_board';
 
 export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [guestBoard, setGuestBoardState] = useState<{ game: GameState; board: BoardData; adminPasscode?: string } | null>(null);
+    const [guestBoard, setGuestBoardState] = useState<{ game: GameState; board: BoardData } | null>(null);
 
     // Load from local storage on mount
     useEffect(() => {
@@ -31,7 +30,7 @@ export const GuestProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, []);
 
-    const setGuestBoard = (data: { game: GameState; board: BoardData; adminPasscode?: string } | null) => {
+    const setGuestBoard = (data: { game: GameState; board: BoardData } | null) => {
         setGuestBoardState(data);
         if (data) {
             localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(data));

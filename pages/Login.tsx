@@ -13,30 +13,16 @@ const Login: React.FC = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [searchParams] = useSearchParams();
-    const mode = searchParams.get('mode');
-    const redirect = searchParams.get('redirect');
-    const isClaim = mode === 'claim';
-    const [isSignUp, setIsSignUp] = useState(mode === 'signup' || isClaim);
+    const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Pre-fill email from query param if claiming
-    React.useEffect(() => {
-        const emailParam = searchParams.get('email');
-        if (emailParam) {
-            setEmail(decodeURIComponent(emailParam));
-        }
-        // If claiming, we want to start in signup mode primarily, but if they switch tabs we handle state
-        if (mode === 'signin') setIsSignUp(false);
-        if (mode === 'signup') setIsSignUp(true);
-    }, [searchParams, mode]);
-
-    // If already logged in, redirect
+    // If already logged in, redirect to dashboard
     React.useEffect(() => {
         if (session) {
-            navigate(redirect || '/dashboard');
+            navigate('/dashboard');
         }
-    }, [session, navigate, redirect]);
+    }, [session, navigate]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,26 +42,7 @@ const Login: React.FC = () => {
                     throw new Error('First and last name are required');
                 }
 
-                // MAGIC FIRST: "Try Login First" Strategy
-                // If the user is claiming a board, they might enter their existing credentials.
-                // We try to sign them in silently first. If it works, great! If not, we proceed to create.
-                if (isClaim) {
-                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                        email,
-                        password,
-                    });
-                    if (!signInError && signInData.session) {
-                        // Success! They are logged in. The session effect will handle the redirect.
-                        return;
-                    }
-                    // If login failed, we proceed to signup...
-                }
-
-                // Attempt usage of existing user check if possible, or just sign up
-                // Note: Supabase signUp returns success for existing users if email confirmation is on. 
-                // We depend on the user checking their email or getting a "User already registered" error depending on config.
-
-                const { data, error: signUpError } = await supabase.auth.signUp({
+                const { error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
@@ -86,23 +53,8 @@ const Login: React.FC = () => {
                         }
                     }
                 });
-
-                if (signUpError) {
-                    // Smart error handling for existing users (caught by unique constraint)
-                    if (signUpError.message.includes('already registered') || signUpError.message.includes('unique constraint')) {
-                        setError('This email is already registered. Please sign in instead.');
-                    } else {
-                        throw signUpError;
-                    }
-                } else if (data.user && ((!data.user.identities || data.user.identities.length === 0) || (new Date(data.user.created_at).getTime() < Date.now() - 60000))) {
-                    // CRITICAL: Supabase returns success but empty/missing identities if user exists (security masking)
-                    // We also check created_at: if the user was created > 60s ago, it's definitely an existing user.
-                    setError('An account with this email already exists. Please log in using your password.');
-                    setIsSignUp(false); // Auto-switch to login for them
-                } else {
-                    alert(`Confirmation link sent to ${email}!\n\nIMPORTANT: If you already have an account, you will NOT receive a link. Please Log In instead.`);
-                    setIsSignUp(false); // Switch to login view so they can wait for email
-                }
+                if (error) throw error;
+                alert('Check your email for the confirmation link!');
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
@@ -124,28 +76,12 @@ const Login: React.FC = () => {
                 <div className="text-center mb-8">
                     <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
-                        {isClaim ? 'Claim Your Board' : (isSignUp ? 'Create Account' : 'Welcome Back')}
+                        {isSignUp ? 'Create Account' : 'Welcome Back'}
                     </h1>
                     <p className="text-sm text-gray-400 mt-2">
-                        {isClaim ? 'Create an account to save your paid board.' : (isSignUp ? 'Start organizing your pools' : 'Login to manage your contests')}
+                        {isSignUp ? 'Start organizing your pools' : 'Login to manage your contests'}
                     </p>
                 </div>
-
-                {isClaim && isSignUp && (
-                    <div className="bg-[#FFC72C]/10 border border-[#FFC72C]/20 rounded-xl p-4 mb-6 text-center animate-in slide-in-from-top-2">
-                        <p className="text-[#FFC72C] text-xs font-bold uppercase tracking-wider mb-2">Already have an account?</p>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsSignUp(false);
-                                setError(null);
-                            }}
-                            className="w-full py-2 bg-[#FFC72C] text-black text-sm font-bold rounded-lg hover:brightness-110 transition-all shadow-lg"
-                        >
-                            Log In to Claim
-                        </button>
-                    </div>
-                )}
 
                 {error && (
                     <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium">
