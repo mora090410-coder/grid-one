@@ -76,7 +76,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         loadPoolData,
         publishPool,
         updatePool,
-        clearError: clearPoolError
+        clearError: clearPoolError,
+        isActivated
     } = poolData;
 
     // Live scoring hook (replaces liveData, liveStatus, isSynced, isRefreshing, lastUpdated)
@@ -1057,6 +1058,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             onClose={() => handleTogglePreview(true)}
                             onLogout={handleLogout}
                             onPreview={() => handleTogglePreview(true)}
+                            isActivated={isActivated}
                         />
                     </Suspense>
                 </div>

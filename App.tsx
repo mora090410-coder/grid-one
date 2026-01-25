@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
+import Paid from './pages/Paid';
 import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
 import FullScreenLoading from './components/loading/FullScreenLoading';
@@ -69,6 +70,7 @@ const App: React.FC = () => {
                 </Layout>
               }
             />
+            <Route path="/paid" element={<Layout><Paid /></Layout>} />
             <Route path="*" element={<BoardView />} />
           </Routes>
         </React.Suspense>

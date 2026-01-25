@@ -45,6 +45,7 @@ interface PoolDataState {
     loadingPool: boolean;
     dataReady: boolean;
     error: string | null;
+    isActivated: boolean;
 }
 
 interface UsePoolDataReturn extends PoolDataState {
@@ -65,6 +66,7 @@ export function usePoolData(): UsePoolDataReturn {
     const [loadingPool, setLoadingPool] = useState(true);
     const [dataReady, setDataReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isActivated, setIsActivated] = useState(false);
 
 
     // Load pool data from Supabase
@@ -73,9 +75,10 @@ export function usePoolData(): UsePoolDataReturn {
         setError(null);
 
         try {
+            // Security: Select only safe columns to prevent leaking backend Stripe fields
             const { data, error } = await supabase
                 .from('contests')
-                .select('*')
+                .select('id, owner_id, settings, board_data, is_activated, activated_at')
                 .eq('id', poolId)
                 .single();
 
@@ -84,10 +87,10 @@ export function usePoolData(): UsePoolDataReturn {
 
             setActivePoolId(poolId);
             setOwnerId(data.owner_id);
+            setIsActivated(data.is_activated || false);
 
             // Map database fields to app state
             // settings has GameState, board_data has BoardData
-            // We expect settings to be GameState and board_data to be BoardData
             setGame(data.settings || INITIAL_GAME);
             setBoard(data.board_data || EMPTY_BOARD);
 
@@ -196,7 +199,8 @@ export function usePoolData(): UsePoolDataReturn {
         loadPoolData,
         publishPool,
         updatePool,
-        clearError
+        clearError,
+        isActivated
     };
 }
 
