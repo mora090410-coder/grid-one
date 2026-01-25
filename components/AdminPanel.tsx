@@ -881,12 +881,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                     <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-white/5">
                       {currentBearsAxis?.map((val, idx) => (
-                        <div key={idx} className="flex items-center justify-end gap-3 group h-12">
+                        <div key={idx} className="flex items-center justify-end gap-1 group h-12 relative">
+                          {/* Delete Button for Extra Rows */}
+                          {currentBearsAxis.length > 10 && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Remove this row and its squares?')) {
+                                  // Remove axis item
+                                  const newAxis = [...currentBearsAxis];
+                                  newAxis.splice(idx, 1);
+
+                                  // Remove corresponding squares (10 items per row)
+                                  // Note: If columns are also messed up (>10), this logic might be imperfect but sufficient for row deletion
+                                  const colCount = currentOppAxis?.length || 10;
+                                  const newSquares = [...localBoard.squares];
+                                  newSquares.splice(idx * colCount, colCount);
+
+                                  const newBoard = { ...localBoard };
+                                  if (newBoard.isDynamic) {
+                                    // Update quarter specific if dynamic
+                                    if (!newBoard.bearsAxisByQuarter) newBoard.bearsAxisByQuarter = { Q1: [], Q2: [], Q3: [], Q4: [] };
+                                    newBoard.bearsAxisByQuarter[activeAxisQuarter] = newAxis;
+                                  } else {
+                                    newBoard.bearsAxis = newAxis;
+                                  }
+                                  newBoard.squares = newSquares;
+                                  setLocalBoard(newBoard);
+                                }
+                              }}
+                              className="absolute -left-6 opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-300 transition-opacity"
+                              title="Delete extra row"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          )}
                           <div className="relative w-10">
                             <select
                               value={val ?? ''}
                               onChange={(e) => handleAxisChange('bearsAxis', idx, e.target.value)}
-                              className="w-full h-12 bg-[#1c1c1e] border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
+                              className={`w-full h-12 bg-[#1c1c1e] border rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5 ${currentBearsAxis.length > 10 ? 'border-red-500/50' : 'border-white/10'}`}
                             >
                               <option value="" className="text-gray-500">?</option>
                               {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
