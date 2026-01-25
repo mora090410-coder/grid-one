@@ -13,6 +13,7 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
 
   let retries = 3;
   let delay = 1000;
+  let response: any;
 
   while (retries >= 0) {
     try {
