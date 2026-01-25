@@ -26,7 +26,10 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               1. EXTRACT NAMES: Identify and extract the name written in each of the 100 squares.
                  - Output 'squaresGrid' as an array of 100 arrays (one per cell, row-by-row).
               
-              2. DETECT AXIS NUMBERS: Look at the top and left headers.
+              2. DETECT AXIS NUMBERS: Look strictly at the gray or highlighted headers directly adjacent to the grid 10x10.
+                 - IGNORE dates (e.g., 12/14), prices ($125), team names, or other text outside the main axis headers.
+                 - The top axis must have EXACTLY 10 digits (0-9).
+                 - The left axis must have EXACTLY 10 digits (0-9).
                  - Are there MULTIPLE rows/columns of numbers (e.g. labeled Q1, Q2, Q3, Final)?
                  - If YES: This is a DYNAMIC BOARD. Extract each set of 10 numbers into 'bearsAxisByQuarter' (left) and 'oppAxisByQuarter' (top).
                  - If NO (just one row/col): Extract the single set into 'bearsAxis' and 'oppAxis'.
@@ -34,7 +37,7 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               3. DATA CLEANING:
                  - Use 0-9 digits only for axes.
                  - If a digit is unreadable, use null or -1.
-                 - Ensure output is exactly 100 items in 'squaresGrid'.`
+                 - Ensure output used strictly 10 items for axes and 100 items for 'squaresGrid'.`
             },
             {
               inlineData: {
@@ -52,12 +55,12 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               bearsAxis: {
                 type: Type.ARRAY,
                 items: { type: Type.INTEGER },
-                description: "The 10 digits on the vertical (left) axis. (Default/Q1)"
+                description: "The exactly 10 digits on the vertical (left) axis. Ignore dates or decorative numbers."
               },
               oppAxis: {
                 type: Type.ARRAY,
                 items: { type: Type.INTEGER },
-                description: "The 10 digits on the horizontal (top) axis. (Default/Q1)"
+                description: "The exactly 10 digits on the horizontal (top) axis. Ignore dates or decorative numbers."
               },
               bearsAxisByQuarter: {
                 type: Type.OBJECT,
@@ -122,8 +125,8 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
     const rawData = JSON.parse(text);
 
     const board: BoardData = {
-      bearsAxis: rawData.bearsAxis,
-      oppAxis: rawData.oppAxis,
+      bearsAxis: rawData.bearsAxis?.slice(0, 10),
+      oppAxis: rawData.oppAxis?.slice(0, 10),
       squares: rawData.squaresGrid,
       isDynamic: !!rawData.bearsAxisByQuarter || !!rawData.oppAxisByQuarter
     };
