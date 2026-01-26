@@ -215,7 +215,48 @@ const Dashboard: React.FC = () => {
                         <span className="text-button text-gray-400 group-hover:text-white">Create New Pool</span>
                     </Link>
 
-                    {contests.length === 0 && (
+                    {/* Pending Guest Board Card (if exists) */}
+                    {pendingGuestBoard && !showMigratedToast && (
+                        <div
+                            onClick={handleManualMigration}
+                            className="group relative aspect-video bg-[#9D2235]/10 border border-[#9D2235]/50 border-dashed rounded-2xl overflow-hidden hover:bg-[#9D2235]/20 transition-all flex flex-col cursor-pointer animate-in fade-in"
+                        >
+                            {/* Badger for Unsaved */}
+                            <div className="absolute top-4 left-4 z-20">
+                                <span className="px-2 py-1 rounded bg-[#9D2235] text-white text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1">
+                                    <Save className="w-3 h-3" />
+                                    Unsaved Board
+                                </span>
+                            </div>
+
+                            {/* Cover Preview */}
+                            <div className="flex-1 relative overflow-hidden bg-black/20">
+                                {pendingGuestBoard.game.coverImage ? (
+                                    <img src={pendingGuestBoard.game.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500" alt="Cover" />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Trophy className="w-12 h-12 text-[#9D2235]/40" />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+
+                                {/* Center Action */}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                                    <span className="px-4 py-2 bg-white text-[#9D2235] rounded-full text-xs font-black uppercase tracking-widest shadow-xl">
+                                        {migrating ? 'Saving...' : 'Click to Save'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-4 border-t border-[#9D2235]/20 bg-[#9D2235]/5 relative z-10">
+                                <h3 className="text-base font-bold text-white truncate mb-1">{pendingGuestBoard.game.title || 'My New Board'}</h3>
+                                <p className="text-xs text-[#9D2235] font-medium">Guest Board Found • 100 Squares</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {contests.length === 0 && !pendingGuestBoard && (
                         <div className="col-span-1 md:col-span-2 lg:col-span-2">
                             <EmptyState
                                 variant="first-time"
