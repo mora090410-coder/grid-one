@@ -118,7 +118,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [authIdInput, setAuthIdInput] = useState(''); // New: For Board ID in login
     const [joinInput, setJoinInput] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState(''); // New: For recovery
-    const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
+    const [activeTab, setActiveTab] = useState<'live' | 'board'>('board');
     const [boardZoom, setBoardZoom] = useState<'fit' | '100'>('fit');
     const [hasEnteredApp, setHasEnteredApp] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
