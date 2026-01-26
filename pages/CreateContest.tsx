@@ -85,15 +85,24 @@ const CreateContest: React.FC = () => {
                 // Mock a quick delay to feel like "Processing"
                 await new Promise(r => setTimeout(r, 800));
 
+                console.log("Attempting guest save...", {
+                    gameTitle: game.title,
+                    boardSquares: finalBoard.squares.length
+                });
+
                 // Save to Local Storage
                 localStorage.setItem('squares_game', JSON.stringify({ ...game, title: leagueTitle }));
                 localStorage.setItem('squares_board', JSON.stringify(finalBoard));
+
+                console.log("Guest save successful. Storage length:", localStorage.getItem('squares_game')?.length);
 
                 // Redirect to Signup (which triggers MigrationWrapper)
                 navigate('/login?mode=signup');
                 return;
             } catch (err) {
                 console.error("Guest Save Error", err);
+                // Explicitly alert the user so they know it failed before redirecting
+                alert("Failed to save board to device storage. Please check if your storage is full.");
                 setError("Failed to save board locally.");
                 setIsLoading(false);
                 return;

@@ -132,8 +132,29 @@ const Dashboard: React.FC = () => {
         );
     }
 
+    // DEBUG: Check storage on mount
+    useEffect(() => {
+        const g = localStorage.getItem('squares_game');
+        const b = localStorage.getItem('squares_board');
+        console.log("Dashboard Mount - Storage Check:", {
+            hasGame: !!g,
+            hasBoard: !!b,
+            gameLength: g?.length,
+            boardLength: b?.length
+        });
+    }, []);
+
     return (
         <div className="min-h-screen bg-[#050505] text-white p-6 font-sans relative">
+            {/* DEBUGGING OVERLAY - REMOVE BEFORE PRODUCTION */}
+            <div className="fixed bottom-0 left-0 right-0 bg-black/80 border-t border-white/10 p-2 text-[10px] font-mono text-gray-400 z-50 flex justify-between px-6">
+                <span>
+                    Storage Game: {localStorage.getItem('squares_game') ? 'FOUND' : 'MISSING'} |
+                    Storage Board: {localStorage.getItem('squares_board') ? 'FOUND' : 'MISSING'}
+                </span>
+                <span>User: {user ? user.email : 'NONE'}</span>
+            </div>
+
             {pendingGuestBoard && !showMigratedToast && (
                 <div className="max-w-6xl mx-auto mb-6 animate-in slide-in-from-top-4 fade-in duration-500">
                     <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex items-center justify-between shadow-lg backdrop-blur-md">
