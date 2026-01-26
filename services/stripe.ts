@@ -8,10 +8,18 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
             body: JSON.stringify({ contestId }),
         });
 
-        const data = await response.json();
+        let data;
+        const text = await response.text();
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            // If not JSON, it's likely a Cloudflare infrastructure error (500/502 HTML)
+            console.error('Non-JSON response:', text);
+            throw new Error(`Server Error: ${response.status} - Please check logs`);
+        }
 
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to initiate checkout');
+            throw new Error(data.error || `Server Error: ${response.status}`);
         }
 
         if (data.url) {
@@ -19,8 +27,8 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
         } else {
             throw new Error('No checkout URL returned');
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Checkout Error:', error);
-        alert('Failed to connect to payment provider. Please try again.');
+        alert(error.message || 'Failed to connect to payment provider.');
     }
 };
