@@ -99,7 +99,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
 
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
               Squares, made{" "}
-              <span className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+              <span className="text-[#FFC72C]">
                 effortless
               </span>
               .
