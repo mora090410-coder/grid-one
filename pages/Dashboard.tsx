@@ -65,7 +65,7 @@ const Dashboard: React.FC = () => {
             localStorage.removeItem('squares_game');
             localStorage.removeItem('squares_board');
             // Show success and reload
-            window.location.href = `/?poolId=${newId}&migrated=true`;
+            window.location.href = `/?poolId=${newId}&migrated=true&forceAdmin=true`;
         } catch (err) {
             console.error("Manual migration failed", err);
             alert("Failed to save board. Please try again.");
@@ -289,7 +289,7 @@ const Dashboard: React.FC = () => {
                     )}
 
                     {contests.map(contest => (
-                        <Link key={contest.id} to={`/?poolId=${contest.id}`} className="group relative aspect-video bg-[#1c1c1e] border border-white/10 rounded-2xl overflow-hidden hover:border-[#9D2235]/50 transition-all hover:shadow-2xl hover:shadow-[#9D2235]/10 flex flex-col">
+                        <Link key={contest.id} to={`/?poolId=${contest.id}&forceAdmin=true`} className="group relative aspect-video bg-[#1c1c1e] border border-white/10 rounded-2xl overflow-hidden hover:border-[#9D2235]/50 transition-all hover:shadow-2xl hover:shadow-[#9D2235]/10 flex flex-col">
 
                             {/* Cover Image or Gradient */}
                             <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">

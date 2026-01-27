@@ -44,7 +44,7 @@ const Header: React.FC = () => {
                     <img
                         src="/icons/gridone-icon-256.png"
                         alt="GridOne"
-                        className="h-8 w-8 rounded-lg shadow-lg shadow-[#8F1D2C]/20 group-hover:scale-105 transition-transform duration-300"
+                        className="h-8 w-8 rounded-lg shadow-lg shadow-[#8F1D2C]/20 group-hover:scale-105 transition-transform duration-300 ring-1 ring-[#FFC72C]/50"
                     />
                     <div className="flex flex-col leading-none">
                         <span className="text-white font-bold tracking-tight text-sm">GridOne</span>

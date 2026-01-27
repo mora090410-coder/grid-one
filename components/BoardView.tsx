@@ -135,6 +135,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     useEffect(() => {
         if (urlPoolId) {
+            // Check for forceAdmin
+            const forceAdmin = searchParams.get('forceAdmin') === 'true';
+            if (forceAdmin) {
+                setIsPreviewMode(false);
+                setShowAdminView(true);
+                localStorage.setItem('sbxpro_preview_mode', 'false');
+            }
+
             loadPoolData(urlPoolId).then(() => {
                 setIsInitialized(true);
                 const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
