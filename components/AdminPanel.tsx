@@ -1140,6 +1140,7 @@ const MetadataModal: React.FC<{
           </button>
         </div>
       </div>
+    </div>
     </>
   )
 }
