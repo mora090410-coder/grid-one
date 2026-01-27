@@ -265,8 +265,43 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
         </table>
       </div>
     </div>
+
   );
 };
 
-export default BoardGrid;
+const arePropsEqual = (prev: BoardGridProps, next: BoardGridProps) => {
+  // 1. Generic props check (shallow)
+  // Check board reference (should change if board updates)
+  if (prev.board !== next.board) return false;
+  if (prev.selectedPlayer !== next.selectedPlayer) return false;
+
+  // Highlighted Coords deep check
+  const pCoords = prev.highlightedCoords;
+  const nCoords = next.highlightedCoords;
+  if (pCoords !== nCoords) {
+    if (!pCoords || !nCoords) return false;
+    if (pCoords.left !== nCoords.left || pCoords.top !== nCoords.top) return false;
+  }
+
+  // Highlights ref check (updates via useMemo in parent)
+  if (prev.highlights !== next.highlights) return false;
+
+  // 2. Live Data Check - The Critical Part
+  // If one is null and other isn't, re-render
+  if (!prev.live && !next.live) return true;
+  if (!prev.live || !next.live) return false;
+
+  // Deep compare only visual fields (IGNORE CLOCK)
+  return (
+    prev.live.state === next.live.state &&
+    prev.live.period === next.live.period &&
+    prev.live.leftScore === next.live.leftScore &&
+    prev.live.topScore === next.live.topScore &&
+    // Check quarter scores length/values if needed, but current/total scores usually suffice for grid winning cells
+    // Technically quarter scores might change late? Let's check keys length just in case
+    Object.keys(prev.live.quarterScores).length === Object.keys(next.live.quarterScores).length
+  );
+};
+
+export default React.memo(BoardGrid, arePropsEqual);
 
