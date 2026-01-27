@@ -79,7 +79,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [joinInput, setJoinInput] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState('');
-    const [activeTab, setActiveTab] = useState<'live' | 'board'>('board');
+    const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
     const [boardZoom, setBoardZoom] = useState<'fit' | '100'>('fit');
 
     // App State
