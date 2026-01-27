@@ -59,15 +59,19 @@ const App: React.FC = () => {
         const storedGame = localStorage.getItem('squares_game');
         const storedBoard = localStorage.getItem('squares_board');
 
-        // GUARD: If we just finished migration (url has migrated=true), force clear and stop.
-        // This prevents "refresh loops" from creating duplicate boards.
+        // GUARD 1: If we just finished migration (url has migrated=true), force clear and stop.
         if (window.location.search.includes('migrated=true')) {
-            if (storedGame || storedBoard) {
-                console.log("Cleanup: Removing leftover guest data after migration.");
-                localStorage.removeItem('squares_game');
-                localStorage.removeItem('squares_board');
-            }
-            return;
+          if (storedGame || storedBoard) {
+            localStorage.removeItem('squares_game');
+            localStorage.removeItem('squares_board');
+          }
+          return;
+        }
+
+        // GUARD 2: If we are already viewing a pool (poolId exists), DO NOT MIGRATE.
+        // This protects the user from being kicked off a paid board if they have leftover local data.
+        if (window.location.search.includes('poolId=')) {
+          return;
         }
 
         if (storedGame && storedBoard) {
