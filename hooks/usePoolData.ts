@@ -191,7 +191,12 @@ export function usePoolData(): UsePoolDataReturn {
         guestData: { game: GameState; board: BoardData }
     ): Promise<string> => {
         try {
-            const leagueTitle = guestData.game.title?.trim() || "My First Pool";
+            // If title is missing, use a fallback that indicates error but allows debugging
+            const leagueTitle = guestData.game.title?.trim();
+            if (!leagueTitle) {
+                console.error("Migration Error: Missing Title in Guest Data", guestData);
+                throw new Error("Cannot migrate board: Missing Title");
+            }
 
             const payload = {
                 owner_id: user.id,

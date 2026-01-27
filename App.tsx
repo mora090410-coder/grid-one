@@ -67,7 +67,10 @@ const App: React.FC = () => {
 
             // Only migrate if there's actual data (basic check)
             if (gameData.title) {
-              console.log("Migrating guest board...");
+              console.log("Migrating guest board...", { title: gameData.title, squares: boardData.squares?.length });
+              // Optional: user feedback
+              // alert(`Migrating your board: ${gameData.title}`); 
+
               const newId = await migrateGuestBoard(user, {
                 game: gameData,
                 board: boardData
