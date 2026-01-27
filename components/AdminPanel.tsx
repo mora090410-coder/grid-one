@@ -436,29 +436,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         <div className="flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'overview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'overview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('edit')}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'edit' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'edit' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
           >
             Edit
           </button>
-          <div className="w-px h-3 bg-white/10 mx-1"></div>
+          <div className="w-px h-3 bg-white/10 mx-0.5 md:mx-1"></div>
           <button
             onClick={() => setActiveTab('preview')}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'preview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'preview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
           >
             Preview
           </button>
         </div>
 
         {/* RIGHT: Status + Overflow Menu */}
-        <div className="flex items-center gap-3">
-          {/* Status pill - compact */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10">
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Status pill - compact (Hidden on mobile) */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10">
             {saveStatus === 'saved' && (
               <>
                 <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
