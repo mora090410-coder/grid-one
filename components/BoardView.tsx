@@ -141,10 +141,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [loadPoolData, setAdminToken, urlPoolId]);
 
     useEffect(() => {
+        // FIX: Do NOT overwrite guest draft with loaded pool data.
+        // If we are viewing a specific poolId (saved board), we should not touch the local storage drafts.
+        if (urlPoolId) return;
+
         if (!dataReady || loadingPool) return;
         localStorage.setItem('squares_game', JSON.stringify(game));
         localStorage.setItem('squares_board', JSON.stringify(board));
-    }, [game, board, dataReady, loadingPool]);
+    }, [game, board, dataReady, loadingPool, urlPoolId]);
 
     // 6. Helpers
     const handleTogglePreview = (enabled: boolean) => {
