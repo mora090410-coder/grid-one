@@ -24,10 +24,11 @@ interface AdminPanelProps {
   onLogout: () => void;
   onPreview: () => void;
   isActivated: boolean;
-  initialTab?: 'overview' | 'edit';
+  initialTab?: 'overview' | 'edit' | 'preview';
+  renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, isActivated, initialTab = 'overview' }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, isActivated, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -35,7 +36,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
-  const [activeTab, setActiveTab] = useState<'overview' | 'edit'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'edit' | 'preview'>(initialTab);
 
   // Metadata State (via Hook)
   const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
@@ -447,8 +448,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           </button>
           <div className="w-px h-3 bg-white/10 mx-1"></div>
           <button
-            onClick={onPreview}
-            className="px-4 py-1.5 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-colors"
+            onClick={() => setActiveTab('preview')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'preview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
           >
             Preview
           </button>
@@ -1139,6 +1140,15 @@ const MetadataModal: React.FC<{
           </button>
         </div>
       </div>
+      )}
+
+      {/* PREVIEW TAB CONTENT */}
+      {activeTab === 'preview' && renderPreview && (
+        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-[#09090b] border border-white/10 relative shadow-2xl">
+          {renderPreview()}
+        </div>
+      )}
+
     </div>
   );
 };
