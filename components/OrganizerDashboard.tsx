@@ -7,6 +7,7 @@ interface OrganizerDashboardProps {
     entryMetaByIndex: Record<number, EntryMeta>;
     liveData: LiveGameData | null;
     onOpenSquareDetails: (cellIndex: number) => void;
+    onBulkStatusUpdate?: (indices: number[], status: 'paid' | 'unpaid') => void;
     gameTitle?: string;
 }
 
@@ -31,6 +32,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     entryMetaByIndex,
     liveData,
     onOpenSquareDetails,
+    onBulkStatusUpdate
 }) => {
     // 1. Coverage Stats
     const coverage = useMemo(() => {
@@ -46,83 +48,59 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     const paymentStats = useMemo(() => {
         let paid = 0;
         let unpaid = 0;
-        let unknown = 0;
 
-        // Only count filled squares? Or all squares that have metadata?
-        // User request: "across squares that are filled (or across all squares; pick one)"
-        // Let's go with filled squares to be more accurate to "active" participants
         board.squares.forEach((sq, idx) => {
             if (sq && sq.length > 0) {
-                const status = entryMetaByIndex[idx]?.paid_status || 'unpaid'; // Default to unpaid if not set? Or unknown?
-                // Actually types says 'unknown' | 'unpaid' | 'paid'. If missing, it's effectively unknown or unpaid.
-                // Let's assume missing = unpaid for safety, or unknown.
-                // User said: "Count of paid / unpaid / unknown".
                 const meta = entryMetaByIndex[idx];
-                if (!meta || meta.paid_status === 'unknown') unknown++;
-                else if (meta.paid_status === 'paid') paid++;
-                else unpaid++;
+                if (meta?.paid_status === 'paid') {
+                    paid++;
+                } else {
+                    // Treat unknown/undefined as unpaid for stats if occupied
+                    unpaid++;
+                }
             }
         });
 
-        const needsFollowUp = unpaid + unknown;
-        return { paid, unpaid, unknown, needsFollowUp };
+        return { paid, unpaid, needsFollowUp: unpaid };
     }, [board, entryMetaByIndex]);
 
-    // 3. Follow-up Queue
+    // 3. Follow-up Queue (Grouped by Player)
     const workQueue = useMemo(() => {
-        const queue: { idx: number; name: string; reason: string; priority: number; paid: string; notify: boolean; contact: boolean }[] = [];
+        const groups: Record<string, { name: string; indices: number[] }> = {};
 
         board.squares.forEach((names, idx) => {
             if (!names || names.length === 0) return;
 
             const meta = entryMetaByIndex[idx];
-            const name = names[0];
             const isPaid = meta?.paid_status === 'paid';
-            const isUnknown = !meta || meta.paid_status === 'unknown';
-            const isUnpaid = !isPaid && !isUnknown; // Explicitly unpaid
-            const hasContact = !!(meta?.contact_value);
-            const notifyOptIn = !!meta?.notify_opt_in;
 
-            // Priority Logic
-            // 1. Winner missing contact (hard to know if they stick around, but let's skipping winner check here for simplicity/perf unless essential)
-            //    User said: "Winner missing contact... [highest priority]". 
-            //    To do this efficiently, we'd need to know if they are a winner.
-            //    Let's skip winner check in this first pass to keep it simple, or add it if we have winner info.
-            //    Actually, let's stick to the 3 rules:
-            //    a) Missng contact + notify (High)
-            //    b) Unpaid (Medium)
-            //    c) Missing contact (Low? or just missing contact + notify?)
+            // If NOT paid, add to queue
+            if (!isPaid) {
+                const rawName = names[0];
+                const key = rawName.toLowerCase().trim();
 
-            // User Spec:
-            // a) Winner missing contact (if notify_opt_in true and contact_value null) [highest priority] -- SKIP for MVP/Complexity unless easy
-            // b) Unpaid squares
-            // c) Missing contact where notify_opt_in is true
-
-            if (notifyOptIn && !hasContact) {
-                queue.push({ idx, name, reason: 'Missing Contact (Notify On)', priority: 3, paid: meta?.paid_status || '?', notify: true, contact: false });
-            } else if (isUnpaid || isUnknown) {
-                queue.push({ idx, name, reason: 'Unpaid', priority: 2, paid: meta?.paid_status || 'unpaid', notify: notifyOptIn, contact: hasContact });
+                if (!groups[key]) {
+                    groups[key] = { name: rawName, indices: [] };
+                }
+                groups[key].indices.push(idx);
             }
         });
 
-        // Sort by priority (desc), then index
-        return queue.sort((a, b) => b.priority - a.priority || a.idx - b.idx).slice(0, 10);
+        // Convert to array and sort by count (desc)
+        return Object.values(groups)
+            .sort((a, b) => b.indices.length - a.indices.length)
+            .slice(0, 50); // increased limit since we group
     }, [board, entryMetaByIndex]);
 
     // 4. Winners Snapshot
     const winnerInfo = useMemo(() => {
-        // If we have liveData, we can show actual winners.
-        // If not, we have nothing.
-        // We can also show "Projected" winners if using manual scores?
-        // User requested: "Reuse existing winner computation... Q1, Q2, Q3, Final"
-
         if (!liveData) return null;
 
         const { quarterWinners } = calculateWinnerHighlights(liveData);
         const results: { label: string; name: string; sq: number }[] = [];
 
         // Helper to find owner of a score pair
-        const findOwner = (scoreKey: string, quarter: string) => { // scoreKey = "7-0" (Top-Left)
+        const findOwner = (scoreKey: string, quarter: string) => {
             const [topDigit, leftDigit] = scoreKey.split('-').map(Number);
             const topAxis = getAxisForQuarter(board, 'top', quarter);
             const leftAxis = getAxisForQuarter(board, 'left', quarter);
@@ -134,29 +112,18 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
             return { name: names && names.length > 0 ? names[0] : 'Unassigned', sq: idx + 1 };
         };
 
-        if (quarterWinners['Q1']) {
-            const w = findOwner(quarterWinners['Q1'], 'Q1');
-            results.push({ label: 'Q1', ...w });
-        }
-        if (quarterWinners['Q2']) {
-            const w = findOwner(quarterWinners['Q2'], 'Q2');
-            results.push({ label: 'Q2', ...w });
-        }
-        if (quarterWinners['Q3']) {
-            const w = findOwner(quarterWinners['Q3'], 'Q3');
-            results.push({ label: 'Q3', ...w });
-        }
-        if (quarterWinners['Final']) {
-            const w = findOwner(quarterWinners['Final'], 'Final');
-            results.push({ label: 'Final', ...w });
-        }
+        if (quarterWinners['Q1']) results.push({ label: 'Q1', ...findOwner(quarterWinners['Q1'], 'Q1') });
+        if (quarterWinners['Q2']) results.push({ label: 'Q2', ...findOwner(quarterWinners['Q2'], 'Q2') });
+        if (quarterWinners['Q3']) results.push({ label: 'Q3', ...findOwner(quarterWinners['Q3'], 'Q3') });
+        if (quarterWinners['Final']) results.push({ label: 'Final', ...findOwner(quarterWinners['Final'], 'Final') });
 
         return results;
     }, [board, liveData]);
 
-    const copyFollowUp = (item: any) => {
-        const text = `Square ${item.idx + 1} - ${item.name} - Status: ${item.paid}`;
-        navigator.clipboard.writeText(text);
+    const handleMarkPaid = (indices: number[]) => {
+        if (onBulkStatusUpdate) {
+            onBulkStatusUpdate(indices, 'paid');
+        }
     };
 
     return (
@@ -196,15 +163,10 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                         <span className="flex-1">Unpaid</span>
                         <span className="text-white font-mono">{paymentStats.unpaid}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                        <span className="flex-1">Unknown</span>
-                        <span className="text-white font-mono">{paymentStats.unknown}</span>
-                    </div>
                 </div>
             </DashboardCard>
 
-            {/* 3. Follow-Up Queue (Spans 2 cols on large if needed, or stick to grid) */}
+            {/* 3. Follow-Up Queue (Grouped) */}
             <DashboardCard title="Follow-Up Queue" className="md:col-span-2 lg:col-span-1 row-span-2">
                 {workQueue.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-8">
@@ -214,22 +176,34 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                         <p className="text-sm text-gray-400">You're all caught up!</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 pr-1 custom-scrollbar max-h-[400px] overflow-y-auto">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-500 px-2 mb-1">
+                            <span>Player</span>
+                            <span>Action</span>
+                        </div>
                         {workQueue.map((item) => (
-                            <div key={item.idx} className="flex items-center justify-between p-2 rounded-lg bg-black/20 border border-white/5 hover:bg-white/5 transition-colors group">
+                            <div key={item.name} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] transition-colors group">
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-[10px] font-mono text-white/50">{item.idx + 1}</div>
                                     <div className="min-w-0">
-                                        <div className="text-sm font-medium text-white truncate max-w-[100px]">{item.name}</div>
-                                        <div className="text-[10px] text-red-300 truncate">{item.reason}</div>
+                                        <div className="text-sm font-bold text-white truncate max-w-[120px]">{item.name}</div>
+                                        <div className="text-[10px] text-red-300 font-medium flex items-center gap-1.5">
+                                            <span className="bg-red-500/20 px-1.5 rounded text-red-400">
+                                                {item.indices.length} squares
+                                            </span>
+                                            <span className="opacity-50 text-[9px] uppercase tracking-wide">Unpaid</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => copyFollowUp(item)} className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white" title="Copy Info">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                    </button>
-                                    <button onClick={() => onOpenSquareDetails(item.idx)} className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white" title="Open Details">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                <div className="flex items-center gap-2">
+                                    {/* Mark Paid Button */}
+                                    <button
+                                        onClick={() => handleMarkPaid(item.indices)}
+                                        className="p-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white transition-all shadow-lg shadow-green-900/20"
+                                        title="Mark All Paid"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>

@@ -621,6 +621,49 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           entryMetaByIndex={entryMetaByIndex}
           liveData={liveData}
           onOpenSquareDetails={(idx) => setEditingMetaIndex(idx)}
+          onBulkStatusUpdate={(indices, status) => {
+            // Re-using the bulk update logic pattern
+            const metaUpdates: any[] = [];
+            const newEntryMetaByIndex = { ...entryMetaByIndex };
+
+            indices.forEach(idx => {
+              const currentM = entryMetaByIndex[idx];
+              const newMeta = {
+                contest_id: activePoolId,
+                cell_index: idx,
+                paid_status: status,
+                notify_opt_in: currentM?.notify_opt_in ?? false,
+                contact_type: currentM?.contact_type ?? null,
+                contact_value: currentM?.contact_value ?? null,
+                updated_at: new Date().toISOString()
+              };
+              metaUpdates.push(newMeta);
+              newEntryMetaByIndex[idx] = newMeta as EntryMeta;
+            });
+
+            // Update Local State
+            setEntryMetaByIndex(newEntryMetaByIndex);
+
+            // Batch Upsert to Supabase
+            if (activePoolId) {
+              const payload = metaUpdates.map(m => ({
+                contest_id: m.contest_id,
+                cell_index: m.cell_index,
+                paid_status: m.paid_status,
+                notify_opt_in: m.notify_opt_in,
+                contact_type: m.contact_type || null,
+                contact_value: m.contact_value || null,
+                updated_at: m.updated_at
+              }));
+
+              supabase
+                .from('contest_entries')
+                .upsert(payload, { onConflict: 'contest_id, cell_index' })
+                .then(({ error }) => {
+                  if (error) console.error("Batch status update failed:", error);
+                });
+            }
+          }}
           gameTitle={localGame.title}
         />
       ) : null}
