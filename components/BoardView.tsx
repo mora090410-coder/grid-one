@@ -11,6 +11,7 @@ const AdminPanel = lazy(() => import('./AdminPanel'));
 import BoardGrid from './BoardGrid';
 import InfoCards from './InfoCards';
 import ScenarioPanel from './ScenarioPanel';
+import LockedLiveView from './LockedLiveView';
 import PlayerFilter from './PlayerFilter';
 import LandingPage from './LandingPage';
 // Lazy load Gemini service - only needed for image scanning
@@ -77,7 +78,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         publishPool,
         updatePool,
         clearError: clearPoolError,
-        isActivated
+        isActivated,
+        isPaid
     } = poolData;
 
     // Live scoring hook (replaces liveData, liveStatus, isSynced, isRefreshing, lastUpdated)
@@ -831,32 +833,54 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
                                     {/* Live Tab Content */}
                                     {activeTab === 'live' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300">
+                                        (!isPaid && !isOwner) ? (
+                                            <LockedLiveView ownerId={ownerId} />
+                                        ) : (
+                                            <div className="space-y-6 animate-in fade-in duration-300">
 
-                                            {/* Warning if no match */}
-                                            {liveStatus === 'NO MATCH FOUND' && (
-                                                <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
-                                                    <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
-                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                        </svg>
+                                                {/* Organizer Banner */}
+                                                {isOwner && !isPaid && (
+                                                    <div className="p-4 rounded-xl bg-gradient-to-r from-red-900/40 to-black border border-red-500/30 flex items-center justify-between shadow-lg">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 rounded-full bg-red-500/10">
+                                                                <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                            </div>
+                                                            <p className="text-sm font-bold text-white">Your group cannot see live winners yet.</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setShowAdminView(true)}
+                                                            className="px-4 py-2 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all"
+                                                        >
+                                                            Activate Now
+                                                        </button>
                                                     </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-semibold text-yellow-500 mb-1">Live scoring unavailable</h4>
-                                                        <p className="text-xs text-yellow-500/80">Check your date and teams in settings.</p>
+                                                )}
+
+                                                {/* Warning if no match */}
+                                                {liveStatus === 'NO MATCH FOUND' && (
+                                                    <div className="p-4 rounded-[20px] bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-4">
+                                                        <div className="p-2 rounded-full bg-yellow-500/20 text-yellow-500">
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-semibold text-yellow-500 mb-1">Live scoring unavailable</h4>
+                                                            <p className="text-xs text-yellow-500/80">Check your date and teams in settings.</p>
+                                                        </div>
                                                     </div>
+                                                )}
+
+                                                {/* Hero: Winning Now */}
+                                                <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
+
+                                                {/* Next Score Scenarios - Side by side on large screens */}
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
+                                                    <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                                 </div>
-                                            )}
-
-                                            {/* Hero: Winning Now */}
-                                            <InfoCards.WinningNowHero game={game} board={board} live={liveData} highlights={highlights} />
-
-                                            {/* Next Score Scenarios - Side by side on large screens */}
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                <ScenarioPanel.LeftScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
-                                                <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                             </div>
-                                        </div>
+                                        )
                                     )}
 
                                     {/* Board Tab Content */}

@@ -46,6 +46,7 @@ interface PoolDataState {
     dataReady: boolean;
     error: string | null;
     isActivated: boolean;
+    isPaid: boolean;
 }
 
 interface UsePoolDataReturn extends PoolDataState {
@@ -233,7 +234,8 @@ export function usePoolData(): UsePoolDataReturn {
         updatePool,
         migrateGuestBoard,
         clearError,
-        isActivated
+        isActivated,
+        isPaid: isActivated // Alias for clarity per requirements
     };
 }
 

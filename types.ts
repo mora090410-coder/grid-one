@@ -83,3 +83,11 @@ export interface EntryMeta {
   contact_type: 'sms' | 'email' | null;
   contact_value: string | null;
 }
+
+export interface PoolDataWrapper {
+  id: string;
+  game: GameState;
+  board: BoardData;
+  is_paid: boolean;
+  is_owner: boolean;
+}
