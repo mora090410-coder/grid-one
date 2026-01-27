@@ -704,7 +704,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-label">Away Team (Left)</label>
+                      <label className="text-label">Left Team</label>
                       <div className="relative">
                         <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
                           {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
@@ -715,7 +715,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-label">Home Team (Top)</label>
+                      <label className="text-label">Top Team</label>
                       <div className="relative">
                         <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
                           {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
