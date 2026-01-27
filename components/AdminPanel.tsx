@@ -24,9 +24,10 @@ interface AdminPanelProps {
   onLogout: () => void;
   onPreview: () => void;
   isActivated: boolean;
+  initialTab?: 'overview' | 'edit';
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, isActivated }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, isActivated, initialTab = 'overview' }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -34,7 +35,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
-  const [activeTab, setActiveTab] = useState<'overview' | 'edit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'edit'>(initialTab);
 
   // Metadata State (via Hook)
   const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
