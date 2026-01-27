@@ -319,59 +319,95 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             const g = currentData?.game || game;
             const b = currentData?.board || board;
 
-            // For existing pools owned by the current user, use Supabase directly
-            if (activePoolId && isOwner) {
-                const success = await updatePool(activePoolId, token, { game: g, board: b });
-                if (!success) throw new Error("Failed to save changes to Supabase");
-                console.log("Changes saved to Supabase successfully");
+            const currentUser = auth.user;
+
+            // CASE 1: UPDATE EXISTING POOL
+            if (activePoolId) {
+                // If Owner -> Use Supabase Client (RLS)
+                if (isOwner) {
+                    const success = await updatePool(activePoolId, { game: g, board: b }, token); // Pass token just in case, though likely unused by RLS
+                    if (!success) throw new Error("Failed to save changes to Supabase");
+                    console.log("Changes saved to Supabase successfully");
+                    return activePoolId;
+                }
+
+                // If NOT Owner (Legacy Admin with Password) -> Use API Endpoint
+                // This preserves ability for shared-password admins to update specific fields if API allows
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
+                const payload = {
+                    game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
+                    board: b,
+                    adminEmail: currentData?.adminEmail
+                };
+                const res = await fetch(`${API_URL}/${activePoolId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+                        if (activePoolId) delete storedTokens[activePoolId];
+                        localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+                        setAdminToken('');
+                        setShowAdminView(false);
+                        throw new Error('Unauthorized: Admin Password Incorrect or Expired.');
+                    }
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.message || `Server Error: ${res.status}`);
+                }
+                const result = await res.json();
                 return activePoolId;
             }
 
-            // Fallback to legacy KV API for new pools or non-owners
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000);
-            const payload = {
-                game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
-                board: b,
-                adminEmail: currentData?.adminEmail
-            };
-            const method = activePoolId ? 'PUT' : 'POST';
-            const url = activePoolId ? `${API_URL}/${activePoolId}` : API_URL;
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(payload),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-                    if (activePoolId) delete storedTokens[activePoolId];
-                    localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-                    setAdminToken('');
-                    setShowAdminView(false);
-                    throw new Error('Unauthorized: Admin Session Expired. Please log in again.');
+            // CASE 2: CREATE NEW POOL
+            else {
+                // If Logged In -> Create via Supabase
+                if (currentUser) {
+                    // We use the hook's publishPool which inserts directly
+                    const newId = await publishPool(token, { game: g, board: b });
+                    if (!newId) throw new Error("Creation failed");
+
+                    // Update URL
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set('poolId', newId);
+                    window.history.pushState({ poolId: newId }, '', newUrl.toString());
+
+                    return newId;
                 }
-                const errJson = await res.json().catch(() => ({}));
-                throw new Error(errJson.message || `Server Error: ${res.status}`);
+
+                // If Guest -> Save to LocalStorage and Redirect
+                else {
+                    console.log("Guest Creation detected. Saving to local storage and redirecting...");
+
+                    // We save the PASSWORD (token) into the game settings temporarily so it persists after migration
+                    // The migration logic will need to hash this or set it up.
+                    const guestGameStr = JSON.stringify({ ...g, adminPasscode: token });
+                    localStorage.setItem('sbxpro_guest_game', guestGameStr);
+                    localStorage.setItem('sbxpro_guest_board', JSON.stringify(b));
+
+                    // Force redirect to login page with signup mode
+                    // We throw a specific error to stop the Wizard from showing "Success" state prematurely
+                    navigate('/login?mode=signup');
+                    // We return void here, but the UI might expect a promise. 
+                    // Throwing an error "Redirecting..." is a way to halt execution if needed, 
+                    // but cleaner is to return nothing/null if signature allows.
+                    // The signature returns string | void.
+                    return;
+                }
             }
-            const result = await res.json();
-            const newPoolId = activePoolId || result.poolId;
-            if (!newPoolId) throw new Error("Pool ID was not returned by server.");
-            const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
-            storedTokens[newPoolId] = token;
-            localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
-            setActivePoolId(newPoolId);
-            setAdminToken(token);
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set('poolId', newPoolId);
-            window.history.pushState({ poolId: newPoolId }, '', newUrl.toString());
-            return newPoolId;
         } catch (err: any) {
             const msg = err.name === 'AbortError' ? "Server timeout. Cloudflare response was delayed." : (err.message || "Unknown Network Error");
             console.error("Publish Failed:", err);
-            alert(`Publish Failed: ${msg}`);
+            // Don't alert if we are just redirecting?
+            // But we might have thrown above.
+            if (msg !== 'Redirecting...') {
+                alert(`Publish Failed: ${msg}`);
+            }
             throw err;
         }
     };

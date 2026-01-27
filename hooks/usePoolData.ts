@@ -55,7 +55,7 @@ interface UsePoolDataReturn extends PoolDataState {
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
     publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
-    updatePool: (poolId: string, adminToken: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
+    updatePool: (poolId: string, data: { game: GameState; board: BoardData }, adminToken?: string) => Promise<boolean>;
     migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
 }
@@ -163,8 +163,8 @@ export function usePoolData(): UsePoolDataReturn {
     // Update existing pool in Supabase
     const updatePool = useCallback(async (
         poolId: string,
-        adminToken: string, // Unused in RLS if we rely on auth session, but kept for signature
-        data: { game: GameState; board: BoardData }
+        data: { game: GameState; board: BoardData },
+        adminToken?: string // Unused in RLS if we rely on auth session, but kept for signature
     ): Promise<boolean> => {
         try {
             const { error } = await supabase
