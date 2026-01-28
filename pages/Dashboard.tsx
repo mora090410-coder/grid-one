@@ -56,8 +56,26 @@ const Dashboard: React.FC = () => {
         }
     }, []);
 
+    // Auto-migrate guest board if exists
+    useEffect(() => {
+        if (user && pendingGuestBoard && !migrating) {
+            handleManualMigration();
+        }
+    }, [user, pendingGuestBoard]);
+
     const handleManualMigration = async () => {
-        if (!user || !pendingGuestBoard) return;
+        if (!user || !pendingGuestBoard || migrating) return;
+
+        // Safety Check: Avoid duplicates if user refreshed or it's already there
+        const alreadyExists = contests.some(c => c.title === pendingGuestBoard.game.title);
+        if (alreadyExists) {
+            console.log("Board already exists in cloud, clearing local storage.");
+            localStorage.removeItem('squares_game');
+            localStorage.removeItem('squares_board');
+            setPendingGuestBoard(null);
+            return;
+        }
+
         setMigrating(true);
         try {
             const newId = await migrateGuestBoard(user, pendingGuestBoard);
@@ -68,7 +86,10 @@ const Dashboard: React.FC = () => {
             window.location.href = `/?poolId=${newId}&migrated=true&forceAdmin=true`;
         } catch (err) {
             console.error("Manual migration failed", err);
-            alert("Failed to save board. Please try again.");
+            // Only alert if it's a real error, not a duplicate key race condition
+            if (err instanceof Error && !err.message.includes('duplicate')) {
+                alert("Failed to save board. Please try again.");
+            }
             setMigrating(false);
         }
     };
@@ -143,44 +164,57 @@ const Dashboard: React.FC = () => {
                 <div className="max-w-6xl mx-auto mb-6 animate-in slide-in-from-top-4 fade-in duration-500">
                     <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex items-center justify-between shadow-lg backdrop-blur-md">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20">
-                                <Save className="w-6 h-6 text-indigo-400" />
-                            </div>
+                            {migrating ? (
+                                <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20">
+                                    <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            ) : (
+                                <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20">
+                                    <Save className="w-6 h-6 text-indigo-400" />
+                                </div>
+                            )}
                             <div>
-                                <h3 className="text-lg font-bold text-white mb-1">Unsaved Board Found</h3>
+                                <h3 className="text-lg font-bold text-white mb-1">
+                                    {migrating ? 'Syncing Board...' : 'Unsaved Board Found'}
+                                </h3>
                                 <p className="text-sm text-indigo-200">
-                                    We found "{pendingGuestBoard.game.title || 'a board'}" on this device. Save it to your account now.
+                                    {migrating
+                                        ? `Saving "${pendingGuestBoard.game.title}" to your account...`
+                                        : `We found "${pendingGuestBoard.game.title || 'a board'}" on this device. Saving it now...`
+                                    }
                                 </p>
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    // Use a temporary state for confirmation to avoid "flash" of native confirm
-                                    const btn = document.activeElement as HTMLElement;
-                                    if (btn.innerText === "CONFIRM DISCARD") {
-                                        localStorage.removeItem('squares_game');
-                                        localStorage.removeItem('squares_board');
-                                        setPendingGuestBoard(null);
-                                    } else {
-                                        btn.innerText = "CONFIRM DISCARD";
-                                        btn.classList.add("text-red-500", "bg-red-500/10");
-                                        setTimeout(() => {
-                                            if (btn && btn.isConnected) {
-                                                btn.innerText = "Discard";
-                                                btn.classList.remove("text-red-500", "bg-red-500/10");
-                                            }
-                                        }, 3000);
-                                    }
-                                }}
-                                className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-all"
-                            >
-                                Discard
-                            </button>
+                            {!migrating && (
+                                <button
+                                    onClick={() => {
+                                        // Use a temporary state for confirmation to avoid "flash" of native confirm
+                                        const btn = document.activeElement as HTMLElement;
+                                        if (btn.innerText === "CONFIRM DISCARD") {
+                                            localStorage.removeItem('squares_game');
+                                            localStorage.removeItem('squares_board');
+                                            setPendingGuestBoard(null);
+                                        } else {
+                                            btn.innerText = "CONFIRM DISCARD";
+                                            btn.classList.add("text-red-500", "bg-red-500/10");
+                                            setTimeout(() => {
+                                                if (btn && btn.isConnected) {
+                                                    btn.innerText = "Discard";
+                                                    btn.classList.remove("text-red-500", "bg-red-500/10");
+                                                }
+                                            }, 3000);
+                                        }
+                                    }}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-all"
+                                >
+                                    Discard
+                                </button>
+                            )}
                             <button
                                 onClick={handleManualMigration}
                                 disabled={migrating}
-                                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100"
                             >
                                 {migrating ? 'Saving...' : 'Save to Account'}
                             </button>
