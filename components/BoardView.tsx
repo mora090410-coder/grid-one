@@ -359,15 +359,25 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
                     <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 space-y-6">
                         {effectiveTab === 'live' && (
-                            (!isPaid && !isOwner) ? <LockedLiveView ownerId={ownerId} /> : (
-                                <div className="space-y-6 animate-in fade-in duration-300">
+                            <div className="relative">
+                                {/* Blur Overlay for Players (!isPaid && !isOwner) */}
+                                {!isPaid && !isOwner && (
+                                    <div className="absolute inset-0 z-50 flex items-center justify-center animate-in fade-in duration-500">
+                                        <LockedLiveView ownerId={ownerId} variant="overlay" />
+                                    </div>
+                                )}
+
+                                <div className={`space-y-6 animate-in fade-in duration-300 ${(!isPaid && !isOwner) ? 'blur-xl select-none pointer-events-none opacity-40 transition-all duration-500' : ''}`}>
                                     {isOwner && !isPaid && (
-                                        <div className="p-4 rounded-xl bg-gradient-to-r from-red-900/40 to-black border border-red-500/30 flex items-center justify-between shadow-lg">
+                                        <div className="p-4 rounded-xl bg-gradient-to-r from-red-900/40 to-black border border-red-500/30 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-full bg-red-500/10"><svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
-                                                <p className="text-sm font-bold text-white">Your group cannot see live winners yet.</p>
+                                                <div className="p-2 rounded-full bg-red-500/10 shrink-0"><svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
+                                                <div>
+                                                    <h3 className="text-sm font-bold text-white">Group Access Locked</h3>
+                                                    <p className="text-xs text-white/70">Your players cannot see live winners or scenarios. Pay $9.99 to activate live syncing for everyone.</p>
+                                                </div>
                                             </div>
-                                            <button onClick={() => setShowAdminView(true)} className="px-4 py-2 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all">Activate Now</button>
+                                            <button onClick={() => setShowAdminView(true)} className="w-full md:w-auto px-6 py-2.5 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all whitespace-nowrap">Pay $9.99 to Activate</button>
                                         </div>
                                     )}
                                     {liveStatus === 'NO MATCH FOUND' && (
@@ -384,7 +394,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                         <ScenarioPanel.TopScenarios game={game} board={board} live={liveData} onScenarioHover={setHighlightedCoords} />
                                     </div>
                                 </div>
-                            )
+                            </div>
                         )}
 
                         {effectiveTab === 'board' && (
