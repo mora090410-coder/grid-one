@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface LandingPageProps {
   onCreate: () => void;
@@ -382,13 +383,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>© {new Date().getFullYear()} GridOne.</div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors">
+              <Link to="/privacy" className="hover:text-white transition-colors">
                 Privacy
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
+              </Link>
+              <Link to="/terms" className="hover:text-white transition-colors">
                 Terms
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
+              </Link>
+              <a href="mailto:support@gridone.app" className="hover:text-white transition-colors">
                 Support
               </a>
             </div>

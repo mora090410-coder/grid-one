@@ -387,6 +387,18 @@ const Dashboard: React.FC = () => {
                         </Link>
                     ))}
                 </div>
+
+                {/* Footer */}
+                <footer className="mt-16 pt-8 border-t border-white/10 text-xs text-white/50">
+                    <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <div>© {new Date().getFullYear()} GridOne.</div>
+                        <div className="flex gap-6">
+                            <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+                            <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
+                            <a href="mailto:support@gridone.app" className="hover:text-white transition-colors">Support</a>
+                        </div>
+                    </div>
+                </footer>
             </div>
             {/* DEBUG OVERLAY */}
             <div className="fixed bottom-4 right-4 p-4 bg-black/80 border border-red-500 rounded z-50 text-xs text-red-300 font-mono pointer-events-none">

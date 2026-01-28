@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
 import Paid from './pages/Paid';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
 import FullScreenLoading from './components/loading/FullScreenLoading';
@@ -77,6 +79,8 @@ const App: React.FC = () => {
               }
             />
             <Route path="/paid" element={<Layout><Paid /></Layout>} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="*" element={<BoardView />} />
           </Routes>
         </React.Suspense>
