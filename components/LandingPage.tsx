@@ -117,10 +117,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
               </button>
 
               <button
-                onClick={onDemo}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-95"
+                disabled
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white/50 ring-1 ring-white/10 cursor-not-allowed"
               >
-                View demo
+                Coming Soon
               </button>
             </div>
 
