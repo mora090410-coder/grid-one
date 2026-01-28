@@ -3,3 +3,8 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
 
+
+[vars]
+VITE_GEMINI_API_KEY = "AIzaSyArAAGKawl_unxmvCXX7pBIiJIrOPlXJcg"
+VITE_SUPABASE_URL = "https://illqymckwqiawdwxhwcy.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsbHF5bWNrd3FpYXdkd3hod2N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MzY5NTYsImV4cCI6MjA4NDQxMjk1Nn0.WjPue5WK3-ghXSPxEEL7Rt6HWL3e9OnF-QiBZ9iNl94"
