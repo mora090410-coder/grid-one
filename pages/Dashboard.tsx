@@ -1,12 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Plus, Trash2, Trophy, Save } from 'lucide-react'; // Added Save icon
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Plus, Trash2, Trophy, Save, LogOut } from 'lucide-react'; // Added Save icon
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData'; // Added Hook
 import { GameState, BoardData } from '../types';
 import EmptyState from '../components/empty/EmptyState';
+import FullScreenLoading from '../components/loading/FullScreenLoading';
 
 interface Contest {
     id: string;
@@ -16,7 +17,7 @@ interface Contest {
 }
 
 const Dashboard: React.FC = () => {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, signOut } = useAuth();
     const navigate = useNavigate();
     const { migrateGuestBoard } = usePoolData(); // Use Hook
     const [contests, setContests] = useState<Contest[]>([]);
@@ -25,7 +26,7 @@ const Dashboard: React.FC = () => {
     const [migrating, setMigrating] = useState(false); // Local migrating state
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-    const [searchParams] = React.useMemo(() => [new URLSearchParams(window.location.search)], []);
+    const [searchParams, setSearchParams] = useSearchParams();
     const [showMigratedToast, setShowMigratedToast] = useState(false);
 
     useEffect(() => {
@@ -56,12 +57,13 @@ const Dashboard: React.FC = () => {
         }
     }, []);
 
-    // Auto-migrate guest board if exists
+    // Auto-migrate guest board if exists AND mode is 'claim'
     useEffect(() => {
-        if (user && pendingGuestBoard && !migrating) {
+        const isClaimMode = searchParams.get('mode') === 'claim';
+        if (user && pendingGuestBoard && !migrating && isClaimMode) {
             handleManualMigration();
         }
-    }, [user, pendingGuestBoard]);
+    }, [user, pendingGuestBoard, searchParams]);
 
     const handleManualMigration = async () => {
         if (!user || !pendingGuestBoard || migrating) return;
@@ -82,6 +84,12 @@ const Dashboard: React.FC = () => {
             // Clear storage
             localStorage.removeItem('squares_game');
             localStorage.removeItem('squares_board');
+
+            // Cleanup URL (remove mode=claim)
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('mode');
+            setSearchParams(newParams);
+
             // Show success and reload
             window.location.href = `/?poolId=${newId}&migrated=true&forceAdmin=true`;
         } catch (err) {
@@ -154,6 +162,10 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
         );
+    }
+
+    if (migrating) {
+        return <FullScreenLoading message="Finalizing your board setup..." />;
     }
 
 
@@ -253,6 +265,13 @@ const Dashboard: React.FC = () => {
                                 New Contest
                             </Link>
                         )}
+                        <button
+                            onClick={() => signOut()}
+                            className="p-2 text-gray-400 hover:text-white transition-colors"
+                            title="Log Out"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
 

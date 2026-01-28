@@ -1,6 +1,10 @@
 import React from 'react';
 
-const FullScreenLoading: React.FC = () => {
+interface FullScreenLoadingProps {
+    message?: string;
+}
+
+const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message }) => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0B0C0F]">
             <div className="flex flex-col items-center gap-6">
@@ -16,8 +20,8 @@ const FullScreenLoading: React.FC = () => {
                 </div>
 
                 {/* Text */}
-                <div className="text-white/40 text-xs font-medium tracking-[0.2em] animate-pulse">
-                    GRIDONE
+                <div className="text-white/40 text-xs font-medium tracking-[0.2em] animate-pulse uppercase">
+                    {message || 'GRIDONE'}
                 </div>
             </div>
         </div>
