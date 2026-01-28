@@ -38,6 +38,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             metadata: {
                 contestId,
             },
+            allow_promotion_codes: true,
         });
 
         return new Response(JSON.stringify({ url: session.url }), {
