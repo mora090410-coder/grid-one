@@ -369,6 +369,13 @@ const Dashboard: React.FC = () => {
                     ))}
                 </div>
             </div>
+            {/* DEBUG OVERLAY */}
+            <div className="fixed bottom-4 right-4 p-4 bg-black/80 border border-red-500 rounded z-50 text-xs text-red-300 font-mono pointer-events-none">
+                <p>User: {user?.id || 'None'}</p>
+                <p>Contests: {contests.length}</p>
+                <p>Storage: {localStorage.getItem('squares_game') ? 'Has Game' : 'No Game'}</p>
+                <p>Pending: {pendingGuestBoard ? 'Yes' : 'No'}</p>
+            </div>
         </div>
     );
 };
