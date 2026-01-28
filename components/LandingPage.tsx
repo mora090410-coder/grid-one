@@ -55,12 +55,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
               How it works
             </a>
             <a
-              href="#pricing"
-              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
-            >
-              Pricing
-            </a>
-            <a
               href="#faq"
               className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
             >
@@ -271,90 +265,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
           </div>
         </section>
 
-        {/* Pricing */}
-        <section id="pricing" className="mt-32">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white">Simple pricing</h2>
-              <p className="mt-2 text-sm text-white/70">
-                Build for free. Pay only when you’re ready to share the live link.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {/* Board Activation */}
-            <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 hover:ring-white/20 transition-all">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white">Activate this board</div>
-                <div className="text-lg font-semibold text-white">$9.99</div>
-              </div>
-              <div className="mt-1 text-sm text-white/65">Perfect for a one-off event.</div>
-
-              <div className="mt-6 space-y-3 text-sm text-white/70">
-                <Feature>Shareable viewer link</Feature>
-                <Feature>Live winners + scenarios</Feature>
-                <Feature>Organizer edit controls</Feature>
-              </div>
-
-              <button
-                onClick={onCreate}
-                className="mt-8 w-full rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition-all"
-              >
-                Create and activate
-              </button>
-            </div>
-
-            {/* Founding Pass */}
-            <div className="relative rounded-3xl bg-white/5 p-8 ring-1 ring-[#FFC72C]/30 hover:ring-[#FFC72C]/50 transition-all shadow-lg shadow-[#FFC72C]/5">
-              <div className="absolute right-5 top-5 rounded-full bg-[#FFC72C] px-3 py-1 text-[11px] font-bold text-black uppercase tracking-wide">
-                Best value
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white">Founding Pass</div>
-                <div className="text-lg font-semibold text-white">$29.99</div>
-              </div>
-              <div className="mt-1 text-sm text-white/65">
-                For early adopters—locks in the best price.
-              </div>
-
-              <div className="mt-6 space-y-3 text-sm text-white/70">
-                <Feature>Includes this Super Bowl board</Feature>
-                <Feature>
-                  <span className="text-white font-medium">Unlimited boards next season</span>
-                </Feature>
-                <Feature>Early access to new formats</Feature>
-              </div>
-
-              {/* Comparison row */}
-              <div className="mt-6 rounded-2xl bg-black/30 p-4 ring-1 ring-white/10">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-3 text-[12px] text-white/75">
-                  <div />
-                  <div className="text-white/50 font-medium">Board</div>
-                  <div className="text-white/50 font-medium">Pass</div>
-
-                  <Row label="Includes Super Bowl board" a="✓" b="✓" />
-                  <Row label="Shareable viewer link" a="✓" b="✓" />
-                  <Row label="Unlimited boards next season" a="—" b="✓" />
-                  <Row label="Early access to new formats" a="—" b="✓" />
-                </div>
-              </div>
-
-              <button
-                onClick={onCreate}
-                className="mt-8 w-full rounded-full bg-[#FFC72C] px-5 py-3 text-sm font-semibold text-black hover:brightness-110 shadow-lg shadow-[#FFC72C]/20 transition-all"
-              >
-                Get Founding Pass
-              </button>
-            </div>
-          </div>
-
-          <p className="mt-6 text-xs text-white/50">
-            GridOne is a tracking tool for organizers. It does not take payments or run betting.
-          </p>
-        </section>
-
         {/* FAQ */}
         <section id="faq" className="mt-32">
           <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
@@ -389,7 +299,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
               <Link to="/terms" className="hover:text-white transition-colors">
                 Terms
               </Link>
-              <a href="mailto:support@gridone.app" className="hover:text-white transition-colors">
+              <a href="mailto:support@getgridone.com" className="hover:text-white transition-colors">
                 Support
               </a>
             </div>
@@ -400,28 +310,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
   );
 };
 
-// Internal Helper Components for Clean Layout
-function Feature({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-[10px] text-white ring-1 ring-white/10">
-        ✓
-      </span>
-      <span>{children}</span>
-    </div>
-  );
-}
-
-function Row({ label, a, b }: { label: string; a: string; b: string }) {
-  return (
-    <>
-      <div className="text-white/70">{label}</div>
-      <div className="text-center text-white/70">{a}</div>
-      <div className="text-center text-white/90 font-medium">{b}</div>
-    </>
-  );
-}
-
+// Internal Helper Components
 function Faq({ q, a }: { q: string; a: string }) {
   return (
     <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors">

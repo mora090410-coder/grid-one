@@ -395,7 +395,7 @@ const Dashboard: React.FC = () => {
                         <div className="flex gap-6">
                             <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
                             <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-                            <a href="mailto:support@gridone.app" className="hover:text-white transition-colors">Support</a>
+                            <a href="mailto:support@getgridone.com" className="hover:text-white transition-colors">Support</a>
                         </div>
                     </div>
                 </footer>

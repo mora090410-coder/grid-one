@@ -80,7 +80,7 @@ const Privacy: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">6. Contact</h2>
             <p>
-              Questions? Email us at <a href="mailto:support@gridone.app" className="text-[#FFC72C] hover:underline">support@gridone.app</a>.
+              Questions? Email us at <a href="mailto:support@getgridone.com" className="text-[#FFC72C] hover:underline">support@getgridone.com</a>.
             </p>
           </section>
         </div>
