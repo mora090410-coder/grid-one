@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import { createCheckoutSession } from '../services/stripe';
 // @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
 import { GameState, BoardData, WinnerHighlights } from '../types';
@@ -377,7 +378,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                                     <p className="text-xs text-white/70">Your players cannot see live winners or scenarios. Pay $9.99 to activate live syncing for everyone.</p>
                                                 </div>
                                             </div>
-                                            <button onClick={() => setShowAdminView(true)} className="w-full md:w-auto px-6 py-2.5 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all whitespace-nowrap">Pay $9.99 to Activate</button>
+                                            <button onClick={() => activePoolId && createCheckoutSession(activePoolId)} className="w-full md:w-auto px-6 py-2.5 bg-[#9D2235] hover:bg-[#b0263b] rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all whitespace-nowrap">Pay $9.99 to Activate</button>
                                         </div>
                                     )}
                                     {liveStatus === 'NO MATCH FOUND' && (
