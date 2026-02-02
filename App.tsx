@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
@@ -17,6 +17,7 @@ import RequireAuth from './components/auth/RequireAuth';
 const Root = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const poolId = searchParams.get('poolId');
 
   if (poolId) {
@@ -25,7 +26,14 @@ const Root = () => {
 
   return (
     <LandingPage
-      onCreate={() => navigate('/create')}
+      onCreate={() => {
+        if (user) {
+          navigate('/create');
+        } else {
+          // Direct to sign up, but return to create page after
+          navigate('/login?mode=signup&returnTo=/create');
+        }
+      }}
       onLogin={() => navigate('/login?mode=signin')}
       onDemo={() => navigate('/demo')}
     />
