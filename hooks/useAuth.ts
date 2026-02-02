@@ -20,10 +20,11 @@ interface UseAuthReturn {
     clearAuthError: () => void;
     user: User | null;
     session: Session | null;
+    loading: boolean;
 }
 
 export function useAuth(): UseAuthReturn {
-    const { user, session } = useGlobalAuth();
+    const { user, session, loading } = useGlobalAuth();
     const [adminToken, setAdminTokenState] = useState<string | null>(() => {
         return localStorage.getItem('sbx_adminToken');
     });
@@ -119,7 +120,8 @@ export function useAuth(): UseAuthReturn {
         logout,
         clearAuthError,
         user,
-        session
+        session,
+        loading
     };
 }
 
