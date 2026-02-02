@@ -64,7 +64,8 @@ const Login: React.FC = () => {
                         data: {
                             first_name: firstName.trim(),
                             last_name: lastName.trim(),
-                            full_name: `${firstName.trim()} ${lastName.trim()}`
+                            full_name: `${firstName.trim()} ${lastName.trim()}`,
+                            campaign: 'superbowl_2026_free' // Tag for marketing
                         }
                     }
                 });
@@ -135,10 +136,10 @@ const Login: React.FC = () => {
                 <div className="text-center mb-8">
                     <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform ring-1 ring-[#FFC72C]/50" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
-                        {isSignUp ? 'Create Account' : (isClaim ? 'Sign In to Claim' : 'Welcome Back')}
+                        {isSignUp ? 'Create Free Account' : (isClaim ? 'Sign In to Claim' : 'Welcome Back')}
                     </h1>
                     <p className="text-sm text-gray-400 mt-2">
-                        {isSignUp ? 'Start organizing your pools' : 'Login to manage your contests'}
+                        {isSignUp ? 'Join the 2026 Pool - It’s Free' : 'Login to manage your contests'}
                     </p>
                 </div>
 

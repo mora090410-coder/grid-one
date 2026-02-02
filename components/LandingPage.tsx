@@ -95,16 +95,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
               Squares, made{" "}
               <span className="text-[#FFC72C]">
-                effortless
+                Free & Simple
               </span>
               .
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Upload a board (or start clean). Share one link. Everyone sees the{" "}
-              <span className="text-white font-medium">current winners</span> and{" "}
-              <span className="text-white font-medium">“what-if” outcomes</span> live—no group texts, no
-              confusion.
+              Join the <span className="text-white font-medium">2026 Pool</span>. Upload a board, share one link, and let everyone see live winners and scenarios. 
+              Totally free for the Super Bowl.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -112,7 +110,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) 
                 onClick={onCreate}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-[#8F1D2C]/20 transition-all active:scale-95"
               >
-                Create your board
+                Create Free Board
                 <span className="text-white/80">→</span>
               </button>
 
