@@ -1,7 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import usePoolData from './hooks/usePoolData'; // Added Import
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateContest from './pages/CreateContest';
@@ -12,31 +11,18 @@ import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
+import RequireAuth from './components/auth/RequireAuth';
 
-// Wrapper to handle root routing logic
-const Home = () => {
+const Root = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const poolId = searchParams.get('poolId');
 
-  // If poolId is present, show the board
   if (poolId) {
     return <BoardView />;
   }
 
-  // If user is logged in, redirect to dashboard
-  if (user) {
-    // Wrap in useEffect to avoid state update during render warning, or just use Navigate component
-    // Since we are in the render body, using Navigate is cleaner if allowed, but here let's validly straightforward return.
-    // Actually, side-effects in render are bad. Better to use useEffect.
-    React.useEffect(() => {
-      navigate('/dashboard');
-    }, [navigate]);
-    return null; // or a loading spinner
-  }
-
-  // Otherwise show the landing page
   return (
     <LandingPage
       onCreate={() => navigate('/create')}
@@ -48,44 +34,55 @@ const Home = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <React.Suspense fallback={<FullScreenLoading />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/demo" element={<BoardView demoMode={true} />} />
-            <Route
-              path="/login"
-              element={
-                <Layout>
-                  <Login />
-                </Layout>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <Layout>
-                  <CreateContest />
-                </Layout>
-              }
-            />
-            <Route path="/paid" element={<Layout><Paid /></Layout>} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="*" element={<BoardView />} />
-          </Routes>
-        </React.Suspense>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <React.Suspense fallback={<FullScreenLoading />}>
+            <Routes>
+              <Route path="/" element={<Root />} />
+              <Route path="/demo" element={<BoardView demoMode={true} />} />
+              <Route
+                path="/login"
+                element={
+                  <Layout>
+                    <Login />
+                  </Layout>
+                }
+              />
+
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireAuth>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/create"
+                element={
+                  <RequireAuth>
+                    <Layout>
+                      <CreateContest />
+                    </Layout>
+                  </RequireAuth>
+                }
+              />
+
+              <Route path="/paid" element={<Layout><Paid /></Layout>} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </React.Suspense>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 };
 
