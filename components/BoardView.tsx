@@ -47,6 +47,7 @@ const getAxisForQuarter = (
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPoolId = searchParams.get('poolId');
+    const forceAdmin = searchParams.get('forceAdmin') === 'true';
     const navigate = useNavigate();
 
     // 1. Data Hooks
@@ -63,16 +64,18 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const auth = useAuth();
     const { adminToken, setAdminToken, logout: authLogout } = auth;
 
-    // Strict Auth Enforcement (Lead Gen)
+    // Require auth only for explicit admin flows; shared pool links remain public read-only.
+    const requiresAuthForRoute = !demoMode && (forceAdmin || !urlPoolId);
+
     useEffect(() => {
-        if (!auth.loading && !auth.user && !loadingPool) {
+        if (requiresAuthForRoute && !auth.loading && !auth.user && !loadingPool) {
             // Redirect to login if trying to view a board without auth
             const returnUrl = encodeURIComponent(window.location.search);
             navigate(`/login?returnTo=${returnUrl}`);
         }
-    }, [auth.loading, auth.user, loadingPool, navigate]);
+    }, [auth.loading, auth.user, loadingPool, navigate, requiresAuthForRoute]);
 
-    if (!auth.loading && !auth.user) {
+    if (requiresAuthForRoute && !auth.loading && !auth.user) {
         return <FullScreenLoading message="Signing needed to view boards..." />;
     }
 
@@ -147,8 +150,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     useEffect(() => {
         if (urlPoolId) {
-            // Check for forceAdmin
-            const forceAdmin = searchParams.get('forceAdmin') === 'true';
             if (forceAdmin) {
                 setIsPreviewMode(false);
                 setShowAdminView(true);
