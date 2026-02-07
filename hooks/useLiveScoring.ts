@@ -49,13 +49,6 @@ const shiftIsoDate = (isoDate: string, offsetDays: number): string => {
     return d.toISOString().slice(0, 10);
 };
 
-const getDateCandidates = (isoDate: string): string[] => {
-    const center = formatDateKey(isoDate);
-    const prev = formatDateKey(shiftIsoDate(isoDate, -1));
-    const next = formatDateKey(shiftIsoDate(isoDate, 1));
-    return Array.from(new Set([center, prev, next]));
-};
-
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const normalizeGameState = (value: string | undefined): 'pre' | 'in' | 'post' => {
@@ -129,6 +122,25 @@ const eventMatchScore = (event: ESPNEvent, leftTarget: string, topTarget: string
     return score;
 };
 
+const fetchScoreboardEvents = async (dateKey: string): Promise<ESPNEvent[]> => {
+    let attempt = 0;
+    while (attempt < 3) {
+        try {
+            // Send both keys for compatibility with deployed proxy variants.
+            const url = `${LIVE_PROXY_URL}?dates=${dateKey}&date=${dateKey}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return Array.isArray(data?.events) ? data.events : [];
+        } catch (err) {
+            attempt += 1;
+            if (attempt >= 3) throw err;
+            await sleep(250 * Math.pow(2, attempt - 1));
+        }
+    }
+    return [];
+};
+
 export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool: boolean): UseLiveScoringReturn {
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
     const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
@@ -173,47 +185,24 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
         try {
             const targetLeft = normalizeTeamKey(game.leftAbbr);
             const targetTop = normalizeTeamKey(game.topAbbr);
-            const dateCandidates = getDateCandidates(game.dates);
-
             let event: ESPNEvent | undefined;
 
-            for (const dateKey of dateCandidates) {
-                let events: ESPNEvent[] = [];
-                let attempt = 0;
-                while (attempt < 3) {
-                    try {
-                        // Send both keys for compatibility with deployed proxy variants.
-                        const url = `${LIVE_PROXY_URL}?dates=${dateKey}&date=${dateKey}`;
-                        const res = await fetch(url);
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        const data = await res.json();
-                        events = Array.isArray(data?.events) ? data.events : [];
-                        break;
-                    } catch (err) {
-                        attempt += 1;
-                        if (attempt >= 3) throw err;
-                        await sleep(250 * Math.pow(2, attempt - 1));
-                    }
+            const exactDateKey = formatDateKey(game.dates);
+            const exactEvents = await fetchScoreboardEvents(exactDateKey);
+            event = exactEvents.find((e: ESPNEvent) => eventMatchScore(e, targetLeft, targetTop) === 2);
+
+            // Only check adjacent dates when the selected date has no events at all.
+            // If the date has events but no exact matchup, report no match.
+            if (!event && exactEvents.length === 0) {
+                const fallbackDateKeys = [
+                    formatDateKey(shiftIsoDate(game.dates, -1)),
+                    formatDateKey(shiftIsoDate(game.dates, 1)),
+                ];
+                for (const dateKey of fallbackDateKeys) {
+                    const events = await fetchScoreboardEvents(dateKey);
+                    event = events.find((e: ESPNEvent) => eventMatchScore(e, targetLeft, targetTop) === 2);
+                    if (event) break;
                 }
-
-                // 1) Strict matchup: both selected teams in one event
-                event = events.find((e: ESPNEvent) => eventMatchScore(e, targetLeft, targetTop) === 2);
-
-                // 2) Soft fallback: at least one side matches (helps with API abbreviation drift)
-                if (!event) {
-                    let bestScore = 0;
-                    let bestEvent: ESPNEvent | undefined;
-                    for (const candidate of events) {
-                        const score = eventMatchScore(candidate, targetLeft, targetTop);
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestEvent = candidate;
-                        }
-                    }
-                    if (bestScore > 0) event = bestEvent;
-                }
-
-                if (event) break;
             }
 
             if (!event || !event.competitions?.[0]) {
