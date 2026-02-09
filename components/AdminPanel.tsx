@@ -48,6 +48,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
   const [isDragAssigning, setIsDragAssigning] = useState(false);
+  const isDragAssigningRef = useRef(false);
   const dragAssignedIndicesRef = useRef<Set<number>>(new Set());
 
   // Auto-save status: 'saved' | 'saving' | 'error'
@@ -400,7 +401,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   };
 
   const endDragAssign = () => {
-    if (!isDragAssigning) return;
+    if (!isDragAssigningRef.current) return;
+    isDragAssigningRef.current = false;
     setIsDragAssigning(false);
 
     const draggedIndices = Array.from(dragAssignedIndicesRef.current);
@@ -424,12 +426,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     const next = new Set<number>();
     next.add(index);
     dragAssignedIndicesRef.current = next;
+    isDragAssigningRef.current = true;
     setSelectedCellIndices(new Set(next));
     setIsDragAssigning(true);
   };
 
-  const continueDragAssign = (index: number) => {
-    if (!isAssignMode || !isDragAssigning) return;
+  const continueDragAssign = (index: number, isPrimaryDown: boolean) => {
+    if (!isAssignMode || !isDragAssigningRef.current || !isPrimaryDown) return;
     if (!assignLabel.trim()) return;
 
     if (!dragAssignedIndicesRef.current.has(index)) {
@@ -450,6 +453,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       window.removeEventListener('pointerup', handleWindowPointerUp);
     };
   }, [isDragAssigning]);
+
+  useEffect(() => {
+    if (isAssignMode) return;
+    isDragAssigningRef.current = false;
+    setIsDragAssigning(false);
+    dragAssignedIndicesRef.current = new Set();
+    setSelectedCellIndices(new Set());
+  }, [isAssignMode]);
 
   // --- Manual Grid Editor Sync Functions ---
 
@@ -907,6 +918,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <button
                     onClick={() => {
                       setIsAssignMode(!isAssignMode);
+                      isDragAssigningRef.current = false;
                       setIsDragAssigning(false);
                       dragAssignedIndicesRef.current = new Set();
                       setSelectedCellIndices(new Set());
@@ -951,6 +963,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     <button
                       onClick={() => {
                         setIsAssignMode(false);
+                        isDragAssigningRef.current = false;
                         setIsDragAssigning(false);
                         dragAssignedIndicesRef.current = new Set();
                         setSelectedCellIndices(new Set());
@@ -1082,8 +1095,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                   e.preventDefault();
                                   beginDragAssign(cellIdx);
                                 }}
-                                onPointerEnter={() => {
-                                  continueDragAssign(cellIdx);
+                                onPointerEnter={(e) => {
+                                  continueDragAssign(cellIdx, e.buttons === 1);
                                 }}
                                 onPointerUp={() => {
                                   if (!isAssignMode) return;
