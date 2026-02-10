@@ -437,7 +437,7 @@ const Scoreboard: React.FC<{
   onRefresh?: () => void;
   isRefreshing?: boolean;
   liveStatus?: string;
-}> = ({ game, live, onRefresh, isRefreshing, liveStatus }) => {
+}> = ({ game, live, onRefresh, isRefreshing, liveStatus: _liveStatus }) => {
   const isOvertime = live?.period && live.period > 4;
   const isFinal = live?.state === 'post';
   const finalHeader = isOvertime ? 'Final/OT' : 'Final';

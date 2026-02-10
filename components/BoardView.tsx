@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { createCheckoutSession } from '../services/stripe';
 // @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
-import { GameState, BoardData, WinnerHighlights } from '../types';
-import { SAMPLE_BOARD, NFL_TEAMS } from '../constants';
+import { WinnerHighlights } from '../types';
+import { SAMPLE_BOARD } from '../constants';
 
 // Lazy load heavy components
 const AdminPanel = lazy(() => import('./AdminPanel'));
@@ -18,7 +17,7 @@ import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 
 // Custom Hooks
-import { usePoolData, INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
+import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
 import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { useBoardActions } from '../hooks/useBoardActions';
@@ -27,22 +26,6 @@ import { useBoardActions } from '../hooks/useBoardActions';
 import { WizardModal } from './BoardWizard/WizardModal';
 
 const API_URL = `${window.location.origin}/api/pools`;
-
-/**
- * Get axis for a specific quarter (dynamic boards) or standard axis
- */
-const getAxisForQuarter = (
-    board: BoardData,
-    side: 'left' | 'top',
-    quarter?: string
-): (number | null)[] => {
-    if (!board.isDynamic || !quarter) {
-        return side === 'left' ? board.bearsAxis : board.oppAxis;
-    }
-    const qKey = (quarter === 'Final' ? 'Q4' : quarter) as 'Q1' | 'Q2' | 'Q3' | 'Q4';
-    const axes = side === 'left' ? board.bearsAxisByQuarter : board.oppAxisByQuarter;
-    return axes?.[qKey] || (side === 'left' ? board.bearsAxis : board.oppAxis);
-};
 
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -54,15 +37,15 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const poolData = usePoolData();
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId,
-        ownerId, loadingPool, dataReady, error: poolError, loadPoolData,
+        ownerId, loadingPool, dataReady, loadPoolData,
         isActivated, isPaid
     } = poolData;
 
     const liveScoring = useLiveScoring(game, dataReady, loadingPool);
-    const { liveData, liveStatus, isSynced, isRefreshing, lastUpdated } = liveScoring;
+    const { liveData, liveStatus, isSynced, lastUpdated } = liveScoring;
 
     const auth = useAuth();
-    const { adminToken, setAdminToken, logout: authLogout } = auth;
+    const { adminToken, setAdminToken } = auth;
 
     // Require auth only for explicit admin flows; shared pool links remain public read-only.
     const requiresAuthForRoute = !demoMode && (forceAdmin || !urlPoolId);
@@ -113,8 +96,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         activePoolId,
         API_URL,
         setAdminToken,
-        setShowAdminView,
-        setActivePoolId
+        setShowAdminView
     });
 
     // 4. Derived State
@@ -496,7 +478,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 setBoard={setBoard}
                 onPublish={handlePublish}
                 API_URL={API_URL}
-                onSuccess={(newId) => {
+                onSuccess={(_newId) => {
                     setIsInitialized(true);
                     setIsPreviewMode(false);
                     setShowAdminView(true);
@@ -532,7 +514,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {!loadingPool && showLanding ? (
-                <LandingPage onCreate={openSetupWizard} onDemo={() => navigate('/demo')} onLogin={() => navigate('/login')} />
+                <LandingPage onCreate={openSetupWizard} onLogin={() => navigate('/login')} />
             ) : !loadingPool && (
                 <>
                     <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
@@ -584,9 +566,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                             initialTab={adminStartTab}
                             onApply={(g, b) => { setGame(g); setBoard(b); }}
                             onPublish={handlePublish}
-                            onClose={() => handleTogglePreview(true)}
                             onLogout={handleLogout}
-                            onPreview={() => handleTogglePreview(true)}
                             isActivated={isActivated}
                             renderPreview={() => (
                                 <div className="flex-1 flex flex-col relative z-50 w-full h-full">

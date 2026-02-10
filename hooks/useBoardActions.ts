@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from './useAuth';
 import { usePoolData } from './usePoolData';
-import { GameState, BoardData, LiveGameData } from '../types';
+import { GameState, BoardData } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { withRetry } from '../utils/retry';
 
 interface UseBoardActionsProps {
     game: GameState;
@@ -11,7 +12,6 @@ interface UseBoardActionsProps {
     API_URL: string;
     setAdminToken: (token: string) => void;
     setShowAdminView: (show: boolean) => void;
-    setActivePoolId: (id: string) => void;
 }
 
 export const useBoardActions = ({
@@ -20,8 +20,7 @@ export const useBoardActions = ({
     activePoolId,
     API_URL,
     setAdminToken,
-    setShowAdminView,
-    setActivePoolId
+    setShowAdminView
 }: UseBoardActionsProps) => {
     const auth = useAuth();
     const navigate = useNavigate();
@@ -45,7 +44,7 @@ export const useBoardActions = ({
                 // A stricter check would be comparing auth.user.id === pool.owner_id passed in props
                 // For now, we rely on the `updatePool` RLS to fail if they aren't the owner.
                 if (currentUser) {
-                    const success = await updatePool(activePoolId, { game: g, board: b }, token);
+                    const success = await updatePool(activePoolId, { game: g, board: b });
                     if (!success) throw new Error("Failed to save changes to Supabase");
                     console.log("Changes saved to Supabase successfully");
                     return activePoolId;
@@ -59,12 +58,22 @@ export const useBoardActions = ({
                     board: b,
                     adminEmail: currentData?.adminEmail
                 };
-                const res = await fetch(`${API_URL}/${activePoolId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal
-                });
+                const res = await withRetry(
+                    () => fetch(`${API_URL}/${activePoolId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    }),
+                    {
+                        retries: 2,
+                        shouldRetry: (error) => {
+                            if (!(error instanceof Error)) return false;
+                            const msg = error.message.toLowerCase();
+                            return msg.includes('network') || msg.includes('timeout') || msg.includes('abort');
+                        },
+                    }
+                );
                 clearTimeout(timeoutId);
 
                 if (!res.ok) {
@@ -79,7 +88,7 @@ export const useBoardActions = ({
                     const errJson = await res.json().catch(() => ({}));
                     throw new Error(errJson.message || `Server Error: ${res.status}`);
                 }
-                const result = await res.json();
+                await res.json();
                 return activePoolId;
             }
 
@@ -125,7 +134,17 @@ export const useBoardActions = ({
         const targetId = joinInput.trim().toUpperCase();
         setIsJoining(true);
         try {
-            const res = await fetch(`${API_URL}/${targetId}`);
+            const res = await withRetry(
+                () => fetch(`${API_URL}/${targetId}`),
+                {
+                    retries: 2,
+                    shouldRetry: (error) => {
+                        if (!(error instanceof Error)) return false;
+                        const msg = error.message.toLowerCase();
+                        return msg.includes('network') || msg.includes('timeout');
+                    },
+                }
+            );
             if (!res.ok) throw new Error("League Code not found in stadium databases.");
 
             const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');

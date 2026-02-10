@@ -1,8 +1,8 @@
 import Stripe from 'stripe';
 
-type PagesFunction<T = any> = any;
+type PagesFunction = any;
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction = async (context) => {
     try {
         if (!context.env.STRIPE_SECRET_KEY) {
             console.error('Missing STRIPE_SECRET_KEY env var');
@@ -48,9 +48,3 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }
 };
-
-interface Env {
-    STRIPE_SECRET_KEY: string;
-    STRIPE_PRICE_ID: string;
-    PUBLIC_SITE_URL: string;
-}

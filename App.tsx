@@ -25,18 +25,17 @@ const Root = () => {
   }
 
   return (
-    <LandingPage
-      onCreate={() => {
-        if (user) {
-          navigate('/create');
+      <LandingPage
+        onCreate={() => {
+          if (user) {
+            navigate('/create');
         } else {
           // Direct to sign up, but return to create page after
           navigate('/login?mode=signup&returnTo=/create');
         }
-      }}
-      onLogin={() => navigate('/login?mode=signin')}
-      onDemo={() => navigate('/demo')}
-    />
+        }}
+        onLogin={() => navigate('/login?mode=signin')}
+      />
   );
 };
 

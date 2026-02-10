@@ -1,16 +1,16 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/geminiService';
-import { NFL_TEAMS, SAMPLE_BOARD } from '../constants';
+import { NFL_TEAMS } from '../constants';
 import { GameState, BoardData } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 
 const CreateContest: React.FC = () => {
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     // Wizard State
@@ -147,8 +147,6 @@ const CreateContest: React.FC = () => {
             setIsLoading(false);
         }
     };
-
-    if (authLoading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
     if (successPoolId) {
         return (

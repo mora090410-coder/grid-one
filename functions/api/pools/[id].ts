@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 type KVNamespace = any;
-type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
+type PagesFunction = (context: any) => Promise<Response> | Response;
 
 interface Env {
   POOLS: KVNamespace; // Kept to avoid build errors if bindings exist
@@ -68,7 +68,7 @@ export const onRequestOptions: PagesFunction = async (context) => {
 /**
  * Public Access Route - Read from Supabase
  */
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+export const onRequestGet: PagesFunction = async (context) => {
   const poolId = context.params.id as string;
   const supabase = getSupabase(context.env);
 
@@ -103,7 +103,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
  * Authentication Verification Route
  * Verifies password against Supabase `password_hash` column
  */
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction = async (context) => {
   const poolId = context.params.id as string;
   const authHeader = context.request.headers.get('Authorization');
   const token = authHeader?.replace('Bearer ', '');
@@ -150,7 +150,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 /**
  * Protected Update Route - Writes to Supabase
  */
-export const onRequestPut: PagesFunction<Env> = async (context) => {
+export const onRequestPut: PagesFunction = async (context) => {
   const poolId = context.params.id as string;
   const authHeader = context.request.headers.get('Authorization');
   const token = authHeader?.replace('Bearer ', '');

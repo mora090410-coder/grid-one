@@ -82,9 +82,6 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
   // Helper to create cell ID from digits
   const getCellId = (topDigit: number, leftDigit: number) => `${topDigit}:${leftDigit}`;
 
-  // Helper for live score matching (still uses dash format for backwards compat)
-  const getLiveScoreKey = (topScore: number, leftScore: number) => `${topScore % 10}-${leftScore % 10}`;
-
   return (
     <div className="flex flex-col items-center justify-center w-full h-full gap-3 md:gap-4">
       {/* Quarter Selector for Dynamic Boards */}

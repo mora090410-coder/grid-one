@@ -4,7 +4,7 @@ import { Plus, Trash2, Trophy, Save, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData';
-import { GameState, BoardData } from '../types';
+import { GameState } from '../types';
 import EmptyState from '../components/empty/EmptyState';
 import FullScreenLoading from '../components/loading/FullScreenLoading';
 
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
         }
     }, [user]);
 
-    const handleDelete = async (e: React.MouseEvent, contestId: string, contestTitle: string) => {
+    const handleDelete = async (e: React.MouseEvent, contestId: string) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -337,7 +337,7 @@ const Dashboard: React.FC = () => {
                                 </div>
 
                                 <button
-                                    onClick={(e) => handleDelete(e, contest.id, contest.title)}
+                                    onClick={(e) => handleDelete(e, contest.id)}
                                     className={`absolute top-4 right-4 z-20 p-2 rounded-full backdrop-blur-md border transition-all ${deleteConfirmId === contest.id ? 'bg-red-500 text-white border-red-400 w-auto px-3' : 'bg-black/40 text-white/40 border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/40 w-8 h-8 flex items-center justify-center'}`}
                                 >
                                     {deleteConfirmId === contest.id ? (

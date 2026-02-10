@@ -1,4 +1,4 @@
-import { BoardData, LiveGameData, WinnerHighlights, QuarterScores } from '../types';
+import { BoardData, LiveGameData, WinnerHighlights } from '../types';
 
 /**
  * Get axis for a specific quarter (dynamic boards) or standard axis

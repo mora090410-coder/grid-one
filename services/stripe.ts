@@ -1,9 +1,23 @@
+import { withRetry } from '../utils/retry';
+
 export const createCheckoutSession = async (contestId: string): Promise<void> => {
     console.log('Stripe Service v2.1 init');
     try {
         // 1. Diagnostics: Check API Health
         try {
-            const health = await fetch('/api/health');
+            const health = await withRetry(
+                () => fetch('/api/health'),
+                {
+                    retries: 2,
+                    shouldRetry: (error) => {
+                        if (error instanceof Error) {
+                            const msg = error.message.toLowerCase();
+                            return msg.includes('network') || msg.includes('timeout');
+                        }
+                        return false;
+                    },
+                }
+            );
             if (!health.ok) {
                 console.error('Health check failed:', health.status);
                 throw new Error('API Backend appears offline. Are you using "npm run local" or deploying?');
@@ -15,13 +29,23 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
         }
 
         // 2. Attempt Checkout
-        const response = await fetch('/api/stripe/create-checkout-session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ contestId }),
-        });
+        const response = await withRetry(
+            () => fetch('/api/stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ contestId }),
+            }),
+            {
+                retries: 2,
+                shouldRetry: (error) => {
+                    if (!(error instanceof Error)) return false;
+                    const msg = error.message.toLowerCase();
+                    return msg.includes('network') || msg.includes('timeout');
+                },
+            }
+        );
 
         const text = await response.text();
         let data;

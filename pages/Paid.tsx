@@ -25,7 +25,7 @@ const Paid: React.FC = () => {
                 attempts++;
                 setStatus(`Activating your board... (${attempts})`);
 
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('contests')
                     .select('is_activated')
                     .eq('id', contestId)

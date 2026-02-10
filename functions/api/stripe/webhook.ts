@@ -1,9 +1,9 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-type PagesFunction<T = any> = any;
+type PagesFunction = any;
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction = async (context) => {
     const stripe = new Stripe(context.env.STRIPE_SECRET_KEY, {
         apiVersion: '2025-12-15.clover',
         httpClient: Stripe.createFetchHttpClient(),
@@ -73,11 +73,3 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return new Response(`Webhook Error: ${err.message}`, { status: 400 });
     }
 };
-
-interface Env {
-    STRIPE_SECRET_KEY: string;
-    STRIPE_WEBHOOK_SECRET: string;
-    STRIPE_PRICE_ID: string;
-    SUPABASE_URL: string;
-    SUPABASE_SERVICE_ROLE_KEY: string;
-}

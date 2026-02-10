@@ -25,7 +25,7 @@ Object.defineProperty(globalThis, 'crypto', {
             return arr;
         },
         subtle: {
-            digest: async (algorithm: string, data: ArrayBuffer) => {
+            digest: async (_algorithm: string, data: ArrayBuffer) => {
                 // Simple mock hash for testing
                 const view = new Uint8Array(data);
                 const hash = new Uint8Array(32);

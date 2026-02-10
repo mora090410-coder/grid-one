@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import { useContestEntries } from '../hooks/useContestEntries';
@@ -7,8 +7,6 @@ import { GameState, BoardData, EntryMeta, LiveGameData } from '../types';
 import { supabase } from '../services/supabase';
 import { NFL_TEAMS } from '../constants';
 import { parseBoardImage } from '../services/geminiService';
-import { getContrastYIQ } from '../utils/theme';
-import { calculateWinnerHighlights } from '../utils/winnerLogic';
 
 import { createCheckoutSession } from '../services/stripe';
 
@@ -20,19 +18,16 @@ interface AdminPanelProps {
   liveData: LiveGameData | null;
   onApply: (game: GameState, board: BoardData) => void;
   onPublish: (token: string, currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
-  onClose: () => void;
   onLogout: () => void;
-  onPreview: () => void;
   isActivated: boolean;
   initialTab?: 'overview' | 'edit' | 'preview';
   renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onClose, onLogout, onPreview, isActivated, initialTab = 'overview', renderPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanStatus, setScanStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
@@ -172,8 +167,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   const applyScanResult = (newBoard: BoardData) => {
     setLocalBoard(newBoard);
-    setScanStatus("SCAN SUCCESSFUL: GRID MAPPED");
-    setTimeout(() => setScanStatus(null), 5000);
   };
 
   const handleClear = async () => {
@@ -199,8 +192,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       if (error) console.error("Failed to clear cloud metadata", error);
     }
 
-    setScanStatus("Board Cleared");
-    setTimeout(() => setScanStatus(null), 3000);
   };
 
   const toggleBoardType = () => {
@@ -262,7 +253,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     if (!file) return;
 
     setIsScanning(true);
-    setScanStatus("AI ANALYZING GRID...");
 
     try {
       const reader = new FileReader();
@@ -275,9 +265,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       applyScanResult(newBoardData);
     } catch (err: unknown) {
       console.error("OCR Failure:", err);
-      const errMsg = err instanceof Error ? err.message : "Check API Key";
-      setScanStatus(errMsg.includes('overloaded') ? "AI Overloaded. Trying again..." : `Scan Failed: ${errMsg}`);
-      setTimeout(() => setScanStatus(null), 6000);
     } finally {
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -420,7 +407,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
     const draggedIndices = Array.from(dragAssignedIndicesRef.current);
     dragAssignedIndicesRef.current = new Set();
-    const dragStartCell = dragStartCellRef.current;
     dragStartCellRef.current = null;
     const didDragAcrossCells = dragHasMovedRef.current;
     dragHasMovedRef.current = false;
@@ -493,13 +479,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   }, [selectedCellIndices]);
 
   // --- Manual Grid Editor Sync Functions ---
-
-  const handleGridCellChange = (cellIndex: number, value: string) => {
-    const newBoard = { ...localBoard, squares: [...localBoard.squares] };
-    const names = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    newBoard.squares[cellIndex] = names;
-    setLocalBoard(newBoard);
-  };
 
   const handleAxisChange = (axis: 'bearsAxis' | 'oppAxis', index: number, value: string) => {
     const newBoard = { ...localBoard };
@@ -738,7 +717,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
           board={localBoard}
           entryMetaByIndex={entryMetaByIndex}
           liveData={liveData}
-          onOpenSquareDetails={(idx) => setEditingMetaIndex(idx)}
           onBulkStatusUpdate={(indices, status) => {
             // Re-using the bulk update logic pattern
             const metaUpdates: any[] = [];
@@ -1232,7 +1210,7 @@ const MetadataModal: React.FC<{
 }> = ({ cellIndex, currentName, currentMeta, onSave, onClose }) => {
   const [name, setName] = useState(currentName);
   const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status && currentMeta.paid_status !== 'unknown' ? currentMeta.paid_status : 'unpaid');
-  const [notifyOptIn, setNotifyOptIn] = useState(currentMeta?.notify_opt_in || false);
+  const [notifyOptIn] = useState(currentMeta?.notify_opt_in || false);
   const [contactType, setContactType] = useState<EntryMeta['contact_type']>(currentMeta?.contact_type || 'email');
   const [contactValue, setContactValue] = useState(currentMeta?.contact_value || '');
 

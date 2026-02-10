@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 type KVNamespace = any;
-type PagesFunction<T = any> = (context: any) => Promise<Response> | Response;
+type PagesFunction = (context: any) => Promise<Response> | Response;
 
 interface Env {
   POOLS: KVNamespace;
@@ -130,7 +130,7 @@ export const onRequestOptions: PagesFunction = async (context) => {
   });
 };
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost: PagesFunction = async (context) => {
   try {
     // Rate limiting
     const clientIP = context.request.headers.get('CF-Connecting-IP') || 'unknown';

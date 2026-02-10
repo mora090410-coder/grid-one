@@ -2,7 +2,7 @@
  * usePoolData Hook
  * Manages pool loading, saving, and state
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { GameState, BoardData } from '../types';
 import { supabase } from '../services/supabase';
 
@@ -35,8 +35,6 @@ const EMPTY_BOARD: BoardData = {
     isDynamic: false
 };
 
-const API_URL = `${window.location.origin}/api/pools`;
-
 interface PoolDataState {
     game: GameState;
     board: BoardData;
@@ -55,7 +53,7 @@ interface UsePoolDataReturn extends PoolDataState {
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
     publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
-    updatePool: (poolId: string, data: { game: GameState; board: BoardData }, adminToken?: string) => Promise<boolean>;
+    updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
     migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
 }
@@ -164,8 +162,7 @@ export function usePoolData(): UsePoolDataReturn {
     // Update existing pool in Supabase
     const updatePool = useCallback(async (
         poolId: string,
-        data: { game: GameState; board: BoardData },
-        adminToken?: string // Unused in RLS if we rely on auth session, but kept for signature
+        data: { game: GameState; board: BoardData }
     ): Promise<boolean> => {
         try {
             const { error } = await supabase

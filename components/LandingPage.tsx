@@ -4,11 +4,10 @@ import { Link } from 'react-router-dom';
 interface LandingPageProps {
   onCreate: () => void;
   onLogin: () => void;
-  onDemo: () => void;
 }
 
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin, onDemo }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   return (
     <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
       {/* Background */}

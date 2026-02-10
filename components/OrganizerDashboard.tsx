@@ -6,7 +6,6 @@ interface OrganizerDashboardProps {
     board: BoardData;
     entryMetaByIndex: Record<number, EntryMeta>;
     liveData: LiveGameData | null;
-    onOpenSquareDetails: (cellIndex: number) => void;
     onBulkStatusUpdate?: (indices: number[], status: 'paid' | 'unpaid') => void;
     gameTitle?: string;
 }
@@ -31,7 +30,6 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     board,
     entryMetaByIndex,
     liveData,
-    onOpenSquareDetails,
     onBulkStatusUpdate
 }) => {
     // 1. Coverage Stats
