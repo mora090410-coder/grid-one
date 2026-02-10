@@ -53,6 +53,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const dragAssignedIndicesRef = useRef<Set<number>>(new Set());
   const dragStartCellRef = useRef<number | null>(null);
   const dragHasMovedRef = useRef(false);
+  const justFinishedDragRef = useRef(false);
+  const isManualApplyRef = useRef(false);
 
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -305,6 +307,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   }
 
   const applyAssignToIndices = (indices: number[], options?: { keepAssignMode?: boolean; resetLabel?: boolean }) => {
+    if (!isManualApplyRef.current) {
+      return;
+    }
     if (!assignLabel.trim()) {
       alert("Please enter a label.");
       return;
@@ -402,7 +407,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   };
 
   const handleBulkApply = () => {
-    applyAssignToIndices(Array.from(selectedCellIndices), { keepAssignMode: false, resetLabel: true });
+    isManualApplyRef.current = true;
+    applyAssignToIndices(Array.from(selectedCellIndicesRef.current), { keepAssignMode: false, resetLabel: true });
+    isManualApplyRef.current = false;
   };
 
   const endDragAssign = () => {
@@ -421,17 +428,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       return;
     }
 
-    // Single click toggles one cell. Drag adds a range to existing selections.
-    if (!didDragAcrossCells && dragStartCell !== null) {
-      toggleCellSelection(dragStartCell);
+    // Drag adds a range to existing selections. Single-click selection is handled by onClick.
+    if (didDragAcrossCells) {
+      justFinishedDragRef.current = true;
+      setSelectedCellIndices(prev => {
+        const next = new Set(prev);
+        draggedIndices.forEach(idx => next.add(idx));
+        return next;
+      });
+      window.setTimeout(() => {
+        justFinishedDragRef.current = false;
+      }, 0);
       return;
     }
-
-    setSelectedCellIndices(prev => {
-      const next = new Set(prev);
-      draggedIndices.forEach(idx => next.add(idx));
-      return next;
-    });
   };
 
   const beginDragAssign = (index: number) => {
@@ -471,6 +480,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     isDragAssigningRef.current = false;
     dragStartCellRef.current = null;
     dragHasMovedRef.current = false;
+    justFinishedDragRef.current = false;
     setIsDragAssigning(false);
     dragAssignedIndicesRef.current = new Set();
     setSelectedCellIndices(new Set());
@@ -939,6 +949,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       isDragAssigningRef.current = false;
                       dragStartCellRef.current = null;
                       dragHasMovedRef.current = false;
+                      justFinishedDragRef.current = false;
                       setIsDragAssigning(false);
                       dragAssignedIndicesRef.current = new Set();
                       setSelectedCellIndices(new Set());
@@ -987,6 +998,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           isDragAssigningRef.current = false;
                           dragStartCellRef.current = null;
                           dragHasMovedRef.current = false;
+                          justFinishedDragRef.current = false;
                           setIsDragAssigning(false);
                           dragAssignedIndicesRef.current = new Set();
                           setSelectedCellIndices(new Set());
@@ -1111,7 +1123,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                               {/* Unified Click Handler */}
                               <div
                                 onClick={() => {
-                                  if (isAssignMode) return;
+                                  if (isAssignMode) {
+                                    if (justFinishedDragRef.current) return;
+                                    toggleCellSelection(cellIdx);
+                                    return;
+                                  }
                                   setEditingMetaIndex(cellIdx);
                                 }}
                                 onPointerDown={(e) => {
