@@ -1,60 +1,10 @@
 /**
  * useLiveScoring Hook
- * Manages live game data from ESPN API
+ * Manages live game data using Gemini AI with Search Grounding
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, LiveGameData } from '../types';
-
-const LIVE_PROXY_URL = import.meta.env.VITE_LIVE_PROXY_URL || 'https://wandering-flower-f1de.anthony-mora13.workers.dev';
-
-const TEAM_ALIAS_MAP: Record<string, string> = {
-    WAS: 'WAS',
-    WSH: 'WAS',
-    LA: 'LAR',
-    LAR: 'LAR',
-    STL: 'LAR',
-    LV: 'LV',
-    OAK: 'LV',
-    LAC: 'LAC',
-    SD: 'LAC',
-    ARI: 'ARI',
-    ARZ: 'ARI',
-    JAX: 'JAX',
-    JAC: 'JAX',
-    NO: 'NO',
-    NOS: 'NO',
-    SF: 'SF',
-    SFO: 'SF',
-    GB: 'GB',
-    GNB: 'GB',
-    KC: 'KC',
-    KCC: 'KC',
-    TB: 'TB',
-    TAM: 'TB',
-    NE: 'NE',
-    NWE: 'NE',
-};
-
-const normalizeTeamKey = (value: string | undefined): string => {
-    if (!value) return '';
-    const cleaned = value.toUpperCase().replace(/[^A-Z]/g, '').trim();
-    return TEAM_ALIAS_MAP[cleaned] || cleaned;
-};
-
-const formatDateKey = (isoDate: string): string => isoDate.replace(/-/g, '');
-
-const shiftIsoDate = (isoDate: string, offsetDays: number): string => {
-    const d = new Date(`${isoDate}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + offsetDays);
-    return d.toISOString().slice(0, 10);
-};
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const normalizeGameState = (value: string | undefined): 'pre' | 'in' | 'post' => {
-    if (value === 'pre' || value === 'in' || value === 'post') return value;
-    return 'pre';
-};
+import { fetchLiveScore } from '../services/scoreService';
 
 interface UseLiveScoringReturn {
     liveData: LiveGameData | null;
@@ -64,82 +14,6 @@ interface UseLiveScoringReturn {
     lastUpdated: string;
     fetchLive: () => Promise<void>;
 }
-
-// Basic ESPN API types
-interface Competitor {
-    score: string;
-    team: {
-        abbreviation: string;
-        shortDisplayName?: string;
-        displayName?: string;
-        name?: string;
-        location?: string;
-    };
-    linescores?: Array<{ value: number }>;
-}
-
-interface Competition {
-    competitors: Competitor[];
-    status: {
-        displayClock: string;
-        period: number;
-        type: {
-            state: string;
-            detail: string;
-        };
-    };
-}
-
-interface ESPNEvent {
-    competitions: Competition[];
-}
-
-const getTeamTotalScore = (team?: Competitor): number => {
-    const raw = Number(team?.score);
-    const linescoreTotal = (team?.linescores || []).reduce((sum, ls) => sum + Number(ls?.value || 0), 0);
-    if (!Number.isFinite(raw)) return linescoreTotal;
-    // Historical ESPN payloads occasionally lag `score` while linescores are complete.
-    return Math.max(raw, linescoreTotal);
-};
-
-const competitorMatchesTeam = (competitor: Competitor, target: string): boolean => {
-    if (!target) return false;
-    const keys = [
-        normalizeTeamKey(competitor.team?.abbreviation),
-        normalizeTeamKey(competitor.team?.shortDisplayName),
-        normalizeTeamKey(competitor.team?.displayName),
-        normalizeTeamKey(competitor.team?.name),
-        normalizeTeamKey(competitor.team?.location),
-    ];
-    return keys.some(k => k === target);
-};
-
-const eventMatchScore = (event: ESPNEvent, leftTarget: string, topTarget: string): number => {
-    const competitors = event?.competitions?.[0]?.competitors || [];
-    let score = 0;
-    if (competitors.some(c => competitorMatchesTeam(c, leftTarget))) score += 1;
-    if (competitors.some(c => competitorMatchesTeam(c, topTarget))) score += 1;
-    return score;
-};
-
-const fetchScoreboardEvents = async (dateKey: string): Promise<ESPNEvent[]> => {
-    let attempt = 0;
-    while (attempt < 3) {
-        try {
-            // Send both keys for compatibility with deployed proxy variants.
-            const url = `${LIVE_PROXY_URL}?dates=${dateKey}&date=${dateKey}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            return Array.isArray(data?.events) ? data.events : [];
-        } catch (err) {
-            attempt += 1;
-            if (attempt >= 3) throw err;
-            await sleep(250 * Math.pow(2, attempt - 1));
-        }
-    }
-    return [];
-};
 
 export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool: boolean): UseLiveScoringReturn {
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
@@ -183,72 +57,17 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
         setIsRefreshing(true);
 
         try {
-            const targetLeft = normalizeTeamKey(game.leftAbbr);
-            const targetTop = normalizeTeamKey(game.topAbbr);
-            let event: ESPNEvent | undefined;
+            const data = await fetchLiveScore(
+                game.leftName || game.leftAbbr,
+                game.topName || game.topAbbr,
+                game.dates
+            );
 
-            const exactDateKey = formatDateKey(game.dates);
-            const exactEvents = await fetchScoreboardEvents(exactDateKey);
-            event = exactEvents.find((e: ESPNEvent) => eventMatchScore(e, targetLeft, targetTop) === 2);
+            setLiveData(data);
 
-            // Only check adjacent dates when the selected date has no events at all.
-            // If the date has events but no exact matchup, report no match.
-            if (!event && exactEvents.length === 0) {
-                const fallbackDateKeys = [
-                    formatDateKey(shiftIsoDate(game.dates, -1)),
-                    formatDateKey(shiftIsoDate(game.dates, 1)),
-                ];
-                for (const dateKey of fallbackDateKeys) {
-                    const events = await fetchScoreboardEvents(dateKey);
-                    event = events.find((e: ESPNEvent) => eventMatchScore(e, targetLeft, targetTop) === 2);
-                    if (event) break;
-                }
-            }
-
-            if (!event || !event.competitions?.[0]) {
-                setLiveStatus('NO MATCH FOUND');
-                setIsSynced(false);
-                setLiveData(null);
-                return;
-            }
-
-            const comp = event.competitions[0];
-            const leftTeam = comp.competitors.find((c: Competitor) => competitorMatchesTeam(c, targetLeft));
-            const topTeam = comp.competitors.find((c: Competitor) => competitorMatchesTeam(c, targetTop));
-            const resolvedLeftTeam = leftTeam || comp.competitors.find((c: Competitor) => c !== topTeam);
-            const resolvedTopTeam = topTeam || comp.competitors.find((c: Competitor) => c !== resolvedLeftTeam);
-
-            if (!resolvedLeftTeam || !resolvedTopTeam) {
-                setLiveStatus('NO MATCH FOUND');
-                setIsSynced(false);
-                setLiveData(null);
-                return;
-            }
-
-            const status = comp.status;
-            const gameState = normalizeGameState(status?.type?.state);
-
-            setLiveData({
-                leftScore: getTeamTotalScore(resolvedLeftTeam),
-                topScore: getTeamTotalScore(resolvedTopTeam),
-                quarterScores: {
-                    Q1: { left: Number(resolvedLeftTeam?.linescores?.[0]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[0]?.value || 0) },
-                    Q2: { left: Number(resolvedLeftTeam?.linescores?.[1]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[1]?.value || 0) },
-                    Q3: { left: Number(resolvedLeftTeam?.linescores?.[2]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[2]?.value || 0) },
-                    Q4: { left: Number(resolvedLeftTeam?.linescores?.[3]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[3]?.value || 0) },
-                    OT: { left: Number(resolvedLeftTeam?.linescores?.[4]?.value || 0), top: Number(resolvedTopTeam?.linescores?.[4]?.value || 0) },
-                },
-                clock: status.displayClock || '',
-                period: Number(status.period || 0),
-                state: gameState,
-                detail: status.type.detail || '',
-                isOvertime: Number(status.period) > 4,
-                isManual: false
-            });
-
-            if (gameState === 'post') {
+            if (data.state === 'post') {
                 setLiveStatus('FINAL');
-            } else if (gameState === 'in') {
+            } else if (data.state === 'in') {
                 setLiveStatus('LIVE');
             } else {
                 setLiveStatus('PRE-GAME');
@@ -256,6 +75,7 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             setIsSynced(true);
             setLastUpdated(new Date().toLocaleTimeString());
         } catch (err: unknown) {
+            console.error("Live Scoring Error:", err);
             setLiveStatus('OFFLINE');
             setIsSynced(false);
         } finally {
@@ -268,7 +88,7 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
         if (!dataReady) return;
 
         fetchLive();
-        pollRef.current = setInterval(fetchLive, 30000);
+        pollRef.current = setInterval(fetchLive, 60000); // 1 minute interval for AI calls to manage quota
 
         return () => {
             if (pollRef.current) clearInterval(pollRef.current);
