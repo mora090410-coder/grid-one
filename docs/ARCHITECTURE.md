@@ -6,7 +6,7 @@
 - Data store: Supabase (`contests`, `contest_entries`) via `/Users/amm13/00-Projects/GridOneApp/services/supabase.ts`.
 - Edge/API layer: Cloudflare Pages Functions under `/Users/amm13/00-Projects/GridOneApp/functions/api`.
 - Payment: Stripe checkout + webhook activation.
-- Live scoring: ESPN scoreboard through proxy (`VITE_LIVE_PROXY_URL`) consumed by `/Users/amm13/00-Projects/GridOneApp/hooks/useLiveScoring.ts`.
+- Live scoring: Gemini 3 Search Grounding through `scoreService.ts` consumed by `hooks/useLiveScoring.ts`.
 
 ## Frontend Boundaries
 - Pages (`/Users/amm13/00-Projects/GridOneApp/pages`) handle route-level orchestration.
