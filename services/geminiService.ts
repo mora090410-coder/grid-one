@@ -33,9 +33,9 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
                  - Bears Axis (Vertical/Left): Extract the 10 digits from top to bottom.
                  - Opp Axis (Horizontal/Top): Extract the 10 digits from left to right.
               3. SCAN EVERY CELL (100 TOTAL):
-                 - You must traverse the grid row-by-row, from top-left (Row 0, Col 0) to bottom-right (Row 9, Col 9).
-                 - For each of the 100 cells, extract the handwritten name or text.
-                 - IMPORTANT: Do not stop after the first row. Continue scanning all 10 rows.
+                 - Analyze the grid as 10 rows (Row 0 to Row 9).
+                 - In each row, extract the 10 cells from left to right.
+                 - Extract the handwritten name or text from each cell.
                  - If a cell is blank, use "".
                  - If a cell is unreadable, use "???".
               
@@ -43,7 +43,12 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               {
                 "bearsAxis": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
                 "oppAxis": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
-                "squaresGrid": ["Name R0C0", "Name R0C1", ..., "Name R9C9"]
+                "squaresGrid": [
+                  ["Name R0C0", "Name R0C1", ..., "Name R0C9"],
+                  ["Name R1C0", ...],
+                  ...
+                  ["Name R9C0", ..., "Name R9C9"]
+                ]
               }`
             },
             {
@@ -91,8 +96,11 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               },
               squaresGrid: {
                 type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "Flat array of 100 cell contents."
+                items: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING }
+                },
+                description: "10 rows, each containing 10 cell strings."
               }
             },
             required: ["bearsAxis", "oppAxis", "squaresGrid"]
@@ -125,11 +133,23 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
   try {
     const rawData = JSON.parse(text);
 
+    // Flatten 2D grid into the 1D flat array (length 100) expected by the UI.
+    // Each cell must be string[] as per BoardData.
+    const flatSquares: string[][] = [];
+    const rows = rawData.squaresGrid || [];
+
+    for (let r = 0; r < 10; r++) {
+      const row = rows[r] || [];
+      for (let c = 0; c < 10; c++) {
+        const cell = row[c] || "";
+        flatSquares.push(cell ? [cell] : []);
+      }
+    }
+
     return {
       bearsAxis: rawData.bearsAxis?.slice(0, 10),
       oppAxis: rawData.oppAxis?.slice(0, 10),
-      // Map flat strings to string[] per cell as expected by components
-      squares: (rawData.squaresGrid || []).map((s: string) => s ? [s] : []),
+      squares: flatSquares,
       isDynamic: !!rawData.bearsAxisByQuarter || !!rawData.oppAxisByQuarter,
       bearsAxisByQuarter: rawData.bearsAxisByQuarter,
       oppAxisByQuarter: rawData.oppAxisByQuarter
