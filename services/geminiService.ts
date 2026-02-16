@@ -28,24 +28,23 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               text: `Analyze this image of a football squares board. Return ONLY a valid JSON object.
               
               PRECISION OCR INSTRUCTIONS:
-              1. DETECT GRID: Locate the main 10x10 grid of cells.
-              2. DETECT AXIS NUMBERS: 
-                 - Look for the 10 digits (0-9) positioned directly above the top edge of the grid.
-                 - Look for the 10 digits (0-9) positioned directly to the left edge of the grid.
-                 - These digits are often in small, distinct boxes. Ignore any other numbers like dates, prices, or year labels.
-              3. DATA EXTRACTION:
-                 - 'bearsAxis': The 10 vertical digits (left side), ordered from top to bottom.
-                 - 'oppAxis': The 10 horizontal digits (top side), ordered from left to right.
-                 - 'squaresGrid': A flat array of EXACTLY 100 strings, ordered row-by-row (row 0 then row 1...). Each string contains the name/initials in that cell. Use an empty string for blank cells.
+              1. DETECT GRID: Locate the main 10x10 grid of squares.
+              2. AXIS DIGITS:
+                 - Bears Axis (Vertical/Left): Extract the 10 digits from top to bottom.
+                 - Opp Axis (Horizontal/Top): Extract the 10 digits from left to right.
+              3. SCAN EVERY CELL (100 TOTAL):
+                 - You must traverse the grid row-by-row, from top-left (Row 0, Col 0) to bottom-right (Row 9, Col 9).
+                 - For each of the 100 cells, extract the handwritten name or text.
+                 - IMPORTANT: Do not stop after the first row. Continue scanning all 10 rows.
+                 - If a cell is blank, use "".
+                 - If a cell is unreadable, use "???".
               
-              Structure:
+              JSON Structure:
               {
-                "bearsAxis": number[],
-                "oppAxis": number[],
-                "squaresGrid": string[]
-              }
-              
-              If a cell is unreadable, use "???". If a digit is unreadable, use -1.`
+                "bearsAxis": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+                "oppAxis": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+                "squaresGrid": ["Name R0C0", "Name R0C1", ..., "Name R9C9"]
+              }`
             },
             {
               inlineData: {
