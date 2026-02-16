@@ -36,13 +36,13 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               3. DATA EXTRACTION:
                  - 'bearsAxis': The 10 vertical digits (left side), ordered from top to bottom.
                  - 'oppAxis': The 10 horizontal digits (top side), ordered from left to right.
-                 - 'squaresGrid': A 10x10 array of strings representing the names or initials in each cell. Use an empty string for blank cells.
+                 - 'squaresGrid': A flat array of EXACTLY 100 strings, ordered row-by-row (row 0 then row 1...). Each string contains the name/initials in that cell. Use an empty string for blank cells.
               
               Structure:
               {
                 "bearsAxis": number[],
                 "oppAxis": number[],
-                "squaresGrid": string[][]
+                "squaresGrid": string[]
               }
               
               If a cell is unreadable, use "???". If a digit is unreadable, use -1.`
@@ -92,11 +92,8 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
               },
               squaresGrid: {
                 type: Type.ARRAY,
-                items: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING }
-                },
-                description: "10x10 array of cell contents."
+                items: { type: Type.STRING },
+                description: "Flat array of 100 cell contents."
               }
             },
             required: ["bearsAxis", "oppAxis", "squaresGrid"]
@@ -132,7 +129,8 @@ export async function parseBoardImage(base64Image: string): Promise<BoardData> {
     return {
       bearsAxis: rawData.bearsAxis?.slice(0, 10),
       oppAxis: rawData.oppAxis?.slice(0, 10),
-      squares: rawData.squaresGrid,
+      // Map flat strings to string[] per cell as expected by components
+      squares: (rawData.squaresGrid || []).map((s: string) => s ? [s] : []),
       isDynamic: !!rawData.bearsAxisByQuarter || !!rawData.oppAxisByQuarter,
       bearsAxisByQuarter: rawData.bearsAxisByQuarter,
       oppAxisByQuarter: rawData.oppAxisByQuarter
