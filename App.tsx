@@ -9,6 +9,8 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
+import { RunYourPoolAlternative } from './pages/RunYourPoolAlternative';
+import { HowToRunSquares } from './pages/HowToRunSquares';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -25,17 +27,17 @@ const Root = () => {
   }
 
   return (
-      <LandingPage
-        onCreate={() => {
-          if (user) {
-            navigate('/create');
+    <LandingPage
+      onCreate={() => {
+        if (user) {
+          navigate('/create');
         } else {
           // Direct to sign up, but return to create page after
           navigate('/login?mode=signup&returnTo=/create');
         }
-        }}
-        onLogin={() => navigate('/login?mode=signin')}
-      />
+      }}
+      onLogin={() => navigate('/login?mode=signin')}
+    />
   );
 };
 
@@ -80,6 +82,8 @@ const App: React.FC = () => {
               />
 
               <Route path="/paid" element={<Layout><Paid /></Layout>} />
+              <Route path="/articles/run-your-pool-alternative" element={<RunYourPoolAlternative />} />
+              <Route path="/articles/how-to-run-super-bowl-squares" element={<HowToRunSquares />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 

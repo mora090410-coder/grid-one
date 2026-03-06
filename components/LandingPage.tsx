@@ -115,10 +115,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 
               <div className="flex items-center gap-3 sm:ml-2">
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=11" alt="User 1" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-gray-500 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=32" alt="User 2" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=68" alt="User 3" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-[#22C55E] border-2 border-[#060607] flex items-center justify-center text-[10px] font-bold text-white shadow-sm">+2k</div>
+                  <div className="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=11" alt="GridOne Trusted Organizer Avatar 1" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-gray-500 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=32" alt="GridOne Trusted Organizer Avatar 2" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=68" alt="GridOne Trusted Organizer Avatar 3" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-[#22C55E] border-2 border-[#060607] flex items-center justify-center text-[10px] font-bold text-white shadow-sm" aria-label="Over 2000 trusted organizers">+2k</div>
                 </div>
                 <div className="text-xs text-white/70 leading-tight">
                   <span className="text-white font-semibold flex items-center gap-1">
@@ -263,16 +263,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               <div
                 key={x.title}
                 className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 backdrop-blur hover:bg-white/[0.07] transition-colors"
+                itemScope itemType="https://schema.org/HowToStep"
               >
-                <div className="text-sm font-semibold text-white">{x.title}</div>
-                <div className="mt-2 text-sm leading-relaxed text-white/70">{x.desc}</div>
+                <h3 className="text-sm font-semibold text-white" itemProp="name">{x.title}</h3>
+                <div className="mt-2 text-sm leading-relaxed text-white/70" itemProp="text">{x.desc}</div>
               </div>
             ))}
           </div>
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="mt-32">
+        <section id="faq" className="mt-32" itemScope itemType="https://schema.org/FAQPage">
           <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <Faq
@@ -300,9 +301,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 
         {/* Footer */}
         <footer className="mt-32 border-t border-white/10 pt-8 text-xs text-white/55">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>© {new Date().getFullYear()} GridOne.</div>
-            <div className="flex gap-6">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+            <div>
+              <div className="mb-2">© {new Date().getFullYear()} GridOne.</div>
+              <div className="flex flex-col gap-1 mt-4">
+                <div className="text-white/80 font-semibold mb-1">Guides</div>
+                <Link to="/articles/how-to-run-super-bowl-squares" className="hover:text-white transition-colors">How to Run Super Bowl Squares</Link>
+                <Link to="/articles/run-your-pool-alternative" className="hover:text-white transition-colors">RunYourPool Alternative</Link>
+              </div>
+            </div>
+            <div className="flex gap-6 mt-4 md:mt-0">
               <Link to="/privacy" className="hover:text-white transition-colors">
                 Privacy
               </Link>
@@ -323,9 +331,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 // Internal Helper Components
 function Faq({ q, a }: { q: string; a: string }) {
   return (
-    <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors">
-      <div className="text-sm font-semibold text-white">{q}</div>
-      <div className="mt-2 text-sm leading-relaxed text-white/70">{a}</div>
+    <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+      <h3 className="text-sm font-semibold text-white" itemProp="name">{q}</h3>
+      <div className="mt-2 text-sm leading-relaxed text-white/70" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+        <span itemProp="text">{a}</span>
+      </div>
     </div>
   );
 }
