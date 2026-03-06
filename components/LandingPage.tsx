@@ -100,11 +100,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Join the <span className="text-white font-medium">2026 Pool</span>. Upload a board, share one link, and let everyone see live winners and scenarios. 
+              Join the <span className="text-white font-medium">2026 Pool</span>. Upload a board, share one link, and let everyone see live winners and scenarios.
               Totally free for the Super Bowl.
             </p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
                 onClick={onCreate}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-[#8F1D2C]/20 transition-all active:scale-95"
@@ -113,7 +113,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <span className="text-white/80">→</span>
               </button>
 
-
+              <div className="flex items-center gap-3 sm:ml-2">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=11" alt="User 1" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-gray-500 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=32" alt="User 2" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=68" alt="User 3" className="w-full h-full object-cover" /></div>
+                  <div className="w-8 h-8 rounded-full bg-[#22C55E] border-2 border-[#060607] flex items-center justify-center text-[10px] font-bold text-white shadow-sm">+2k</div>
+                </div>
+                <div className="text-xs text-white/70 leading-tight">
+                  <span className="text-white font-semibold flex items-center gap-1">
+                    <svg className="w-3 h-3 text-[#FFC72C]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    4.9/5
+                  </span>
+                  Trusted by organizers
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/55">
@@ -262,8 +276,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <Faq
+              q="Is GridOne really free?"
+              a="Yes! Creating a basic board and sharing it with unlimited viewers is 100% free. We may introduce premium features for organizers later, but sharing and viewing will always be free."
+            />
+            <Faq
               q="Do players need an account?"
-              a="No. Players open the viewer link. Only organizers need an account to create and manage boards."
+              a="No. Players simply open the viewer link. Only organizers need an account to create and manage boards."
             />
             <Faq
               q="Can I upload a handwritten board?"

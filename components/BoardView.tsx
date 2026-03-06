@@ -413,6 +413,19 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Viral Watermark / CTA */}
+                                    <div className="flex justify-center mt-8 pb-4 animate-in fade-in duration-500 delay-300">
+                                        <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all group">
+                                            <span className="text-xs text-white/50 font-medium group-hover:text-white/70 transition-colors">Powered by</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                                <span className="text-xs font-bold text-white tracking-tight group-hover:text-[#FFC72C] transition-colors">GridOne</span>
+                                            </div>
+                                            <div className="w-px h-3 bg-white/10 mx-1"></div>
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#FFC72C]/70 group-hover:text-[#FFC72C] transition-colors">Create Yours Free &rarr;</span>
+                                        </a>
+                                    </div>
                                 </div>
                             )}
                         </div>
