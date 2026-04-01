@@ -1,22 +1,33 @@
 # GridOne Architecture
 
 ## System Overview
-- Frontend: React + TypeScript + Vite.
-- Routing: `react-router-dom` in `/Users/amm13/00-Projects/GridOneApp/App.tsx`.
-- Data store: Supabase (`contests`, `contest_entries`) via `/Users/amm13/00-Projects/GridOneApp/services/supabase.ts`.
-- Edge/API layer: Cloudflare Pages Functions under `/Users/amm13/00-Projects/GridOneApp/functions/api`.
-- Payment: Stripe checkout + webhook activation.
-- Live scoring: Gemini 3 Search Grounding through `scoreService.ts` consumed by `hooks/useLiveScoring.ts`.
+
+- **Frontend:** React 19 + TypeScript + Vite, served as a SPA from Cloudflare Pages.
+- **Routing:** `react-router-dom` v7 in `App.tsx`.
+- **Data store:** Supabase (`contests`, `contest_entries` tables) via `services/supabase.ts`. Row Level Security enforced on all tables.
+- **API layer:** Cloudflare Pages Functions under `functions/api/`. Each function is a separate edge handler.
+- **Payment:** Stripe checkout session creation + webhook-based activation.
+- **Live scoring:** Google Gemini Search Grounding via `services/geminiService.ts`, consumed by `hooks/useLiveScoring.ts`.
 
 ## Frontend Boundaries
-- Pages (`/Users/amm13/00-Projects/GridOneApp/pages`) handle route-level orchestration.
-- Components (`/Users/amm13/00-Projects/GridOneApp/components`) are UI modules.
-- Hooks (`/Users/amm13/00-Projects/GridOneApp/hooks`) contain stateful behavior:
-  - `usePoolData`: contest read/write + migration flows.
+
+- `pages/` handles route-level orchestration.
+- `components/` contains UI modules.
+- `hooks/` contains stateful behavior:
+  - `usePoolData`: contest read/write.
   - `useLiveScoring`: live game synchronization and polling.
   - `useBoardActions`: publish/join actions and fallback API path.
-- Services (`/Users/amm13/00-Projects/GridOneApp/services`) encapsulate external SDK/API calls.
-- Utilities (`/Users/amm13/00-Projects/GridOneApp/utils`) provide pure logic/reusable infra (`retry`, winner logic, theme helpers).
+- `services/` encapsulates external SDK/API calls.
+- `utils/` provides pure logic/reusable infra (`retry`, winner logic, theme helpers).
+
+## Auth Flow
+
+1. User authenticates via Supabase Auth (email/password or OAuth).
+2. Supabase issues a JWT stored in the browser session.
+3. Frontend passes the JWT as `Authorization: Bearer <token>` to Cloudflare Pages Functions.
+4. Functions call `supabase.auth.getUser(token)` to resolve the user identity server-side.
+5. All Supabase queries (both client-side and server-side via anon key) are subject to Row Level Security — policies ensure users can only read/write their own contests.
+6. Guest flows (unauthenticated users who start creating a board) are redirected to `/login` before any data is written. Draft state is persisted to `sessionStorage` and restored after login.
 
 ## Backend/API Boundaries
 - `functions/api/pools.ts`: create route (legacy-compatible path, Supabase-backed).
