@@ -146,7 +146,7 @@ const Dashboard: React.FC = () => {
         return (
             <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-[#9D2235] animate-spin"></div>
+                    <div className="w-12 h-12 rounded-full border-4 border-white/10 border-t-cardinal animate-spin"></div>
                     <p className="text-sm text-gray-400 font-medium tracking-wide">LOADING STADIUM...</p>
                 </div>
             </div>
@@ -264,7 +264,7 @@ const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     {contests.length > 0 && (
-                        <Link to="/create" className="group relative aspect-video bg-[#1c1c1e]/40 border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all hover:bg-[#1c1c1e]/60 flex flex-col items-center justify-center gap-4 cursor-pointer">
+                        <Link to="/create" className="group relative aspect-video bg-surface/40 border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all hover:bg-surface/60 flex flex-col items-center justify-center gap-4 cursor-pointer">
                             <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors border border-white/5 group-hover:scale-110 duration-300">
                                 <Plus className="w-8 h-8 text-white/40 group-hover:text-white" strokeWidth={1.5} />
                             </div>
@@ -275,10 +275,10 @@ const Dashboard: React.FC = () => {
                     {pendingGuestBoard && !showMigratedToast && (
                         <div
                             onClick={handleManualMigration}
-                            className="group relative aspect-video bg-[#9D2235]/10 border border-[#9D2235]/50 border-dashed rounded-2xl overflow-hidden hover:bg-[#9D2235]/20 transition-all flex flex-col cursor-pointer animate-in fade-in"
+                            className="group relative aspect-video bg-cardinal/10 border border-cardinal/50 border-dashed rounded-2xl overflow-hidden hover:bg-cardinal/20 transition-all flex flex-col cursor-pointer animate-in fade-in"
                         >
                             <div className="absolute top-4 left-4 z-20">
-                                <span className="px-2 py-1 rounded bg-[#9D2235] text-white text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1">
+                                <span className="px-2 py-1 rounded bg-cardinal text-white text-[10px] font-bold uppercase tracking-wider shadow-lg flex items-center gap-1">
                                     <Save className="w-3 h-3" />
                                     Unsaved Board
                                 </span>
@@ -289,21 +289,21 @@ const Dashboard: React.FC = () => {
                                     <img src={pendingGuestBoard.game.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all duration-500" alt="Cover" />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <Trophy className="w-12 h-12 text-[#9D2235]/40" />
+                                        <Trophy className="w-12 h-12 text-cardinal/40" />
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
 
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                                    <span className="px-4 py-2 bg-white text-[#9D2235] rounded-full text-xs font-black uppercase tracking-widest shadow-xl">
+                                    <span className="px-4 py-2 bg-white text-cardinal rounded-full text-xs font-black uppercase tracking-widest shadow-xl">
                                         {migrating ? 'Saving...' : 'Click to Save'}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="p-4 border-t border-[#9D2235]/20 bg-[#9D2235]/5 relative z-10">
+                            <div className="p-4 border-t border-cardinal/20 bg-cardinal/5 relative z-10">
                                 <h3 className="text-base font-bold text-white truncate mb-1">{pendingGuestBoard.game.title || 'My New Board'}</h3>
-                                <p className="text-xs text-[#9D2235] font-medium">Guest Board Found • 100 Squares</p>
+                                <p className="text-xs text-cardinal font-medium">Guest Board Found • 100 Squares</p>
                             </div>
                         </div>
                     )}
@@ -321,13 +321,13 @@ const Dashboard: React.FC = () => {
                     )}
 
                     {contests.map(contest => (
-                        <Link key={contest.id} to={`/?poolId=${contest.id}&forceAdmin=true`} className="group relative aspect-video bg-[#1c1c1e] border border-white/10 rounded-2xl overflow-hidden hover:border-[#9D2235]/50 transition-all hover:shadow-2xl hover:shadow-[#9D2235]/10 flex flex-col">
+                        <Link key={contest.id} to={`/?poolId=${contest.id}&forceAdmin=true`} className="group relative aspect-video bg-surface border border-white/10 rounded-2xl overflow-hidden hover:border-cardinal/50 transition-all hover:shadow-2xl hover:shadow-cardinal/10 flex flex-col">
 
                             <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-gray-900 to-black">
                                 {contest.settings.coverImage ? (
                                     <img src={contest.settings.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700" alt="Cover" />
                                 ) : (
-                                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#9D2235]/20 via-transparent to-transparent"></div>
+                                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cardinal/20 via-transparent to-transparent"></div>
                                 )}
 
                                 <div className="absolute top-4 left-4 flex items-center gap-2">
@@ -357,11 +357,11 @@ const Dashboard: React.FC = () => {
                                 )}
                             </div>
 
-                            <div className="p-4 bg-[#1c1c1e] border-t border-white/5 relative z-10 group-hover:bg-[#252527] transition-colors">
-                                <h3 className="text-base font-bold text-white truncate mb-1 group-hover:text-[#9D2235] transition-colors">{contest.title}</h3>
+                            <div className="p-4 bg-surface border-t border-white/5 relative z-10 group-hover:bg-surface/80 transition-colors">
+                                <h3 className="text-base font-bold text-white truncate mb-1 group-hover:text-cardinal transition-colors">{contest.title}</h3>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs text-gray-500 font-medium">{new Date(contest.created_at).toLocaleDateString()}</span>
-                                    <span className="text-[10px] uppercase font-bold text-[#9D2235] opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">Open Board &rarr;</span>
+                                    <span className="text-[10px] uppercase font-bold text-cardinal opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">Open Board &rarr;</span>
                                 </div>
                             </div>
                         </Link>

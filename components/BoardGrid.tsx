@@ -86,7 +86,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
     <div className="flex flex-col items-center justify-center w-full h-full gap-3 md:gap-4">
       {/* Quarter Selector for Dynamic Boards */}
       {board.isDynamic && (
-        <div className="flex items-center gap-1 bg-[#1c1c1e]/92 p-1 rounded-xl border border-white/10 shadow-lg">
+        <div className="flex items-center gap-1 bg-surface/90 p-1 rounded-xl border border-white/10 shadow-lg">
           <span className="text-[10px] uppercase font-semibold text-white/40 px-2 tracking-wide">Axis:</span>
           {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
             <button
@@ -104,7 +104,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
       )}
 
       {/* Main Board Container */}
-      <div className={`relative rounded-2xl overflow-visible bg-[#1c1c1e]/62 border w-full max-w-[920px] aspect-square mx-auto transition-all duration-200 ${
+      <div className={`relative rounded-2xl overflow-visible bg-surface/60 border w-full max-w-[920px] aspect-square mx-auto transition-all duration-200 ${
         isFilteringByPlayer
           ? 'border-[#64D2FF]/45 shadow-[0_0_0_1px_rgba(100,210,255,0.15),0_18px_40px_rgba(10,132,255,0.12)]'
           : 'border-white/[0.08]'
@@ -212,13 +212,13 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                     cellClass += "z-50 bg-white/10 ring-1 ring-inset ring-white/80 ";
                   } else if (isLiveScore) {
                     // Current winning cell - thin gold outline + subtle gold fill
-                    cellClass += "z-40 bg-[#FFC72C]/12 ring-1 ring-inset ring-[#FFC72C] ";
+                    cellClass += "z-40 bg-gold/[0.12] ring-1 ring-inset ring-gold ";
                   } else if (hasSelectedPlayer) {
                     // Player search match - prominent iOS-like blue highlight
                     cellClass += "z-30 bg-[#0A84FF]/22 ring-2 ring-inset ring-[#64D2FF] shadow-[0_0_0_1px_rgba(100,210,255,0.25),0_10px_20px_rgba(10,132,255,0.18)] ";
                   } else if (hasFinishedWinner) {
                     // Past winner cell - subtle gold hint  
-                    cellClass += "z-30 bg-[#FFC72C]/8 ring-1 ring-inset ring-[#FFC72C]/50 ";
+                    cellClass += "z-30 bg-gold/[0.08] ring-1 ring-inset ring-gold/50 ";
                   }
 
                   return (
@@ -228,7 +228,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                     >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
-                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-[#FFC72C] font-bold' : hasSelectedPlayer ? 'text-white font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
+                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-gold font-bold' : hasSelectedPlayer ? 'text-white font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
                             }`}
                           style={{ fontSize: 'clamp(10px, 1.35vw, 14px)' }}
                         >
@@ -238,7 +238,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
                       {/* Small gold dot indicator for current winning cell only */}
                       {isLiveScore && (
-                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-[#FFC72C] pointer-events-none" />
+                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-gold pointer-events-none" />
                       )}
 
                       {/* Custom tooltip - appears on hover */}
@@ -250,7 +250,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                           {lDigit}/{tDigit}
                         </div>
                         {winningLabels.length > 0 && (
-                          <div className="text-[10px] text-[#FFC72C] font-medium mt-0.5">
+                          <div className="text-[10px] text-gold font-medium mt-0.5">
                             Won: {winningLabels.map(l => l === 'Q2' ? 'Half' : l).join(', ')}
                           </div>
                         )}

@@ -18,7 +18,7 @@ const ScenarioCard: React.FC<{
   onHover: (coords: { left: number, top: number } | null) => void;
 }> = ({ label, top, left, names, payout, onHover }) => (
   <div
-    className="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-[#9D2235]/30 transition-all cursor-pointer group hover:border-gold-glass hover:shadow-[0_0_15px_rgba(157,34,53,0.3)] backdrop-blur-sm"
+    className="bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-cardinal/30 transition-all cursor-pointer group hover:border-gold-glass hover:shadow-[0_0_15px_rgba(157,34,53,0.3)] backdrop-blur-sm"
     onMouseEnter={() => onHover({ left, top })}
     onMouseLeave={() => onHover(null)}
     onTouchStart={() => onHover({ left, top })}
