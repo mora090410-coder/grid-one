@@ -87,8 +87,7 @@ export function usePoolData(): UsePoolDataReturn {
 
             setActivePoolId(poolId);
             setOwnerId(data.owner_id);
-            // Force activation to true for all boards (Paywall Removal)
-            setIsActivated(true);
+            setIsActivated(Boolean(data.is_activated));
 
             // Map database fields to app state
             // settings has GameState, board_data has BoardData
@@ -238,7 +237,7 @@ export function usePoolData(): UsePoolDataReturn {
         migrateGuestBoard,
         clearError,
         isActivated,
-        isPaid: isActivated // Alias for clarity per requirements
+        isPaid: isActivated
     };
 }
 

@@ -1,6 +1,6 @@
 {
-  "name": "SBXPRO",
-  "description": "Professional-grade football squares pool with live ESPN sync and automatic quarter-winner tracking.",
+  "name": "GridOne",
+  "description": "Upload a football squares board, edit it cleanly, and unlock one share link with live winners and scoreboard views.",
   "requestFramePermissions": [
     "camera"
   ]
