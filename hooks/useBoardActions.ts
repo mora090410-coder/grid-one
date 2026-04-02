@@ -54,7 +54,7 @@ export const useBoardActions = ({
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 12000);
                 const payload = {
-                    game: { ...g, title: g.title || "SBXPRO Pool", coverImage: g.coverImage || "" },
+                    game: { ...g, title: g.title || "GridOne Pool", coverImage: g.coverImage || "" },
                     board: b,
                     adminEmail: currentData?.adminEmail
                 };
@@ -78,9 +78,9 @@ export const useBoardActions = ({
 
                 if (!res.ok) {
                     if (res.status === 401 || res.status === 403) {
-                        const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+                        const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
                         if (activePoolId) delete storedTokens[activePoolId];
-                        localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+                        localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
                         setAdminToken('');
                         setShowAdminView(false);
                         throw new Error('Unauthorized: Admin Password Incorrect or Expired.');
@@ -112,8 +112,8 @@ export const useBoardActions = ({
                     console.log("Guest Creation detected. Saving to local storage and redirecting...");
 
                     const guestGameStr = JSON.stringify({ ...g, adminPasscode: token });
-                    localStorage.setItem('sbxpro_guest_game', guestGameStr);
-                    localStorage.setItem('sbxpro_guest_board', JSON.stringify(b));
+                    localStorage.setItem('gridone_guest_game', guestGameStr);
+                    localStorage.setItem('gridone_guest_board', JSON.stringify(b));
 
                     navigate('/login?mode=signup');
                     return;
@@ -147,7 +147,7 @@ export const useBoardActions = ({
             );
             if (!res.ok) throw new Error("League Code not found in stadium databases.");
 
-            const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('poolId', targetId);
 

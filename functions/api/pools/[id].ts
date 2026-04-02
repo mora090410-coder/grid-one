@@ -1,11 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-type KVNamespace = any;
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
 interface Env {
-  POOLS: KVNamespace; // Kept to avoid build errors if bindings exist
   PUBLIC_SITE_URL?: string;
   VITE_SUPABASE_URL: string;
   VITE_SUPABASE_ANON_KEY: string;
@@ -41,7 +39,6 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:8788',
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://sbxpro.pages.dev',
   'https://getgridone.com',
   'https://www.getgridone.com',
 ];
