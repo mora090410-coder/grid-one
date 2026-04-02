@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
@@ -23,7 +23,19 @@ const CreateContest: React.FC = () => {
     const [scanSuccess, setScanSuccess] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // Auth redirect removed to allow guest creation
+    // Restore wizard draft if user was redirected away from /create for auth
+    useEffect(() => {
+        const savedGame = sessionStorage.getItem('gridone_draft_game');
+        const savedBoard = sessionStorage.getItem('gridone_draft_board');
+        if (savedGame) {
+            try { setGame(JSON.parse(savedGame)); } catch { /* corrupt data */ }
+            sessionStorage.removeItem('gridone_draft_game');
+        }
+        if (savedBoard) {
+            try { setBoard(JSON.parse(savedBoard)); } catch { /* corrupt data */ }
+            sessionStorage.removeItem('gridone_draft_board');
+        }
+    }, []); // Run once on mount
 
     const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
         const team = NFL_TEAMS.find(t => t.abbr === abbr);
@@ -73,43 +85,19 @@ const CreateContest: React.FC = () => {
         const finalBoard = manualBoard || board;
         const leagueTitle = game.title?.trim();
 
-        // 1. GUEST FLOW: If not logged in, save to local storage and redirect
         if (!user) {
-            if (!leagueTitle) {
-                setError("League Name is required.");
-                return;
-            }
-
             try {
-                setIsLoading(true);
-                // Mock a quick delay to feel like "Processing"
-                await new Promise(r => setTimeout(r, 800));
-
-                console.log("Attempting guest save...", {
-                    gameTitle: game.title,
-                    boardSquares: finalBoard.squares.length
-                });
-
-                // Save to Local Storage
-                localStorage.setItem('squares_game', JSON.stringify({ ...game, title: leagueTitle }));
-                localStorage.setItem('squares_board', JSON.stringify(finalBoard));
-
-                console.log("Guest save successful. Storage length:", localStorage.getItem('squares_game')?.length);
-
-                // Redirect to Signup (which triggers MigrationWrapper)
-                navigate('/login?mode=signup');
-                return;
-            } catch (err) {
-                console.error("Guest Save Error", err);
-                // Explicitly alert the user so they know it failed before redirecting
-                alert("Failed to save board to device storage. Please check if your storage is full.");
-                setError("Failed to save board locally.");
-                setIsLoading(false);
-                return;
+                sessionStorage.setItem('gridone_draft_game', JSON.stringify(game));
+                sessionStorage.setItem('gridone_draft_board', JSON.stringify(finalBoard));
+            } catch {
+                // sessionStorage unavailable — user will lose draft state on redirect
             }
+            const returnTo = encodeURIComponent('/create');
+            navigate(`/login?mode=signup&returnTo=${returnTo}`);
+            return;
         }
 
-        // 2. AUTH FLOW: Proceed with Supabase Insert
+        // Proceed with Supabase Insert
         setIsLoading(true);
         setError(null);
 
@@ -135,9 +123,9 @@ const CreateContest: React.FC = () => {
             if (!data) throw new Error("No data returned from insert.");
 
             // Store token locally for immediate access (Legacy compat)
-            const storedTokens = JSON.parse(localStorage.getItem('sbxpro_tokens') || '{}');
+            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
             storedTokens[data.id] = "auth-owner";
-            localStorage.setItem('sbxpro_tokens', JSON.stringify(storedTokens));
+            localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
 
             setSuccessPoolId(data.id);
         } catch (err: any) {
@@ -150,12 +138,12 @@ const CreateContest: React.FC = () => {
 
     if (successPoolId) {
         return (
-            <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-500">
+            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-500">
                 <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6">
                     <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Contest Ready!</h1>
-                <p className="text-gray-400 mb-8 max-w-md">Your board has been created and is ready for players.</p>
+                <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Board Ready!</h1>
+                <p className="text-gray-400 mb-8 max-w-md">Your board is saved. Review it, clean it up, and unlock sharing when you are ready to publish it.</p>
                 <div className="flex gap-4">
                     <button onClick={() => navigate('/dashboard')} className="btn-secondary px-8 py-3 rounded-full uppercase font-bold text-xs tracking-widest">
                         Back to Dashboard
@@ -169,7 +157,7 @@ const CreateContest: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 font-sans">
+        <div className="min-h-screen bg-background text-white p-6 font-sans">
             <div className="max-w-2xl mx-auto pt-10">
 
                 {/* Header */}
@@ -179,7 +167,7 @@ const CreateContest: React.FC = () => {
                     </button>
                     <div className="flex gap-2">
                         {[1, 2, 3].map(s => (
-                            <div key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-[#9D2235]' : 'bg-white/10'}`}></div>
+                            <div key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-cardinal' : 'bg-white/10'}`}></div>
                         ))}
                     </div>
                 </div>
@@ -205,7 +193,7 @@ const CreateContest: React.FC = () => {
                         <div className="space-y-6">
                             <div>
                                 <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Name your board</h1>
-                                <p className="text-gray-400 text-sm">Give your contest a catchy name.</p>
+                                <p className="text-gray-400 text-sm">This is the title your group will see after you unlock sharing.</p>
                             </div>
 
                             <div className="space-y-4">
@@ -245,7 +233,7 @@ const CreateContest: React.FC = () => {
                                 <div className="space-y-1">
                                     <label className="text-label">Left Team</label>
                                     <div className="relative">
-                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none bg-[#1c1c1e] text-white">
+                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
                                             {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
                                         </select>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
@@ -254,7 +242,7 @@ const CreateContest: React.FC = () => {
                                 <div className="space-y-1">
                                     <label className="text-label">Top Team</label>
                                     <div className="relative">
-                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none bg-[#1c1c1e] text-white">
+                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
                                             {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
                                         </select>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
@@ -279,7 +267,7 @@ const CreateContest: React.FC = () => {
                         <div className="space-y-6">
                             <div>
                                 <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Bring your board</h1>
-                                <p className="text-gray-400 text-sm">Upload a photo to scan, or start fresh.</p>
+                                <p className="text-gray-400 text-sm">Upload a board photo to discover the magic, or start with a blank grid and fill it in yourself.</p>
                             </div>
 
                             <div onClick={() => !isLoading && fileRef.current?.click()} className={`border border-dashed border-white/20 rounded-2xl h-[240px] relative overflow-hidden group transition-all ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 hover:border-white/30 cursor-pointer'} flex flex-col items-center justify-center`}>
@@ -316,7 +304,7 @@ const CreateContest: React.FC = () => {
                                     disabled={isLoading || !game.coverImage || !!error || !scanSuccess}
                                     className={`w-full btn-cardinal py-3 rounded-xl uppercase font-black text-sm tracking-widest shadow-lg ${(!game.coverImage || isLoading || !!error || !scanSuccess) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 transition-all'}`}
                                 >
-                                    {isLoading ? 'Processing...' : error ? 'Scan Failed' : 'Launch Scanned Board'}
+                                    {isLoading ? 'Processing...' : error ? 'Scan Failed' : 'Save scanned board'}
                                 </button>
 
                                 <button
@@ -324,7 +312,7 @@ const CreateContest: React.FC = () => {
                                     onClick={() => handlePublish(EMPTY_BOARD)}
                                     className="w-full text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors py-2"
                                 >
-                                    Skip & Start with Blank Board
+                                    Skip & save a blank board
                                 </button>
                             </div>
                         </div>
