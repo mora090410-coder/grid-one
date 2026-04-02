@@ -101,6 +101,8 @@ const Login: React.FC = () => {
                 msg = 'Account already exists. Please sign in.';
             } else if (msg.includes('Invalid login credentials')) {
                 msg = 'No account found or incorrect password. Create one?';
+            } else if (msg === 'Load failed' || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
+                msg = 'Unable to connect. Please check your connection and try again.';
             }
             setError(msg);
         } finally {
