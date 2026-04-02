@@ -7,14 +7,43 @@ interface LandingPageProps {
 }
 
 
+const FEATURE_BULLETS = [
+  'Upload a board photo and turn it into an editable GridOne board',
+  'Set teams, payouts, and clean up names before you spend a dollar',
+  'Unlock one share link for up to 100 viewers when your board is ready',
+];
+
+const FAQ_ITEMS = [
+  {
+    q: 'How does pricing work?',
+    a: 'Creating and editing a board is free. When you are ready to share it with your group, unlock that board for $14.99 and share it with up to 100 viewers.',
+  },
+  {
+    q: 'Who needs an account?',
+    a: 'Only the organizer needs an account. Viewers open the share link and see the board, live score state, and winner scenarios in read-only mode.',
+  },
+  {
+    q: 'Can I upload a handwritten board?',
+    a: 'Yes. Upload a board image, let GridOne scan it, then fix any names or squares before you unlock sharing.',
+  },
+  {
+    q: 'What exactly unlocks after I pay?',
+    a: 'Payment unlocks the share link for that board. Before payment you can build, edit, preview, and test the board. After payment you can publish it to your group.',
+  },
+  {
+    q: 'Do viewers get edit access?',
+    a: 'No. Organizers can edit the board. Viewers are read-only and can follow the board, scoreboard, and live winner scenarios.',
+  },
+];
+
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   return (
-    <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
       {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         {/* Colorful Orbs */}
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[#8F1D2C]/25 blur-[120px]" />
-        <div className="absolute -bottom-48 left-1/3 h-[560px] w-[760px] -translate-x-1/2 rounded-full bg-[#FFC72C]/14 blur-[140px]" />
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-cardinal/25 blur-[120px]" />
+        <div className="absolute -bottom-48 left-1/3 h-[560px] w-[760px] -translate-x-1/2 rounded-full bg-gold/14 blur-[140px]" />
 
         {/* Radial sheen */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_55%)]" />
@@ -38,7 +67,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         <nav className="flex items-center justify-between">
           {/* Logo Area */}
           <div className="flex items-center gap-3">
-            <img src="/icons/gridone-icon-256.png" alt="GridOne Logo" className="h-9 w-9 rounded-xl shadow-lg shadow-[#8F1D2C]/10 ring-1 ring-[#FFC72C]/50" />
+            <img src="/icons/gridone-icon-256.png" alt="GridOne Logo" className="h-9 w-9 rounded-xl shadow-lg shadow-cardinal/10 ring-1 ring-gold/50" />
             <div className="leading-tight">
               <div className="text-sm font-semibold tracking-tight">GridOne</div>
               <div className="text-[11px] text-white/60">Squares</div>
@@ -72,7 +101,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             </button>
             <button
               onClick={onCreate}
-              className="rounded-full bg-[#FFC72C] px-4 py-2 text-sm font-semibold text-black hover:brightness-95 transition-all shadow-lg shadow-[#FFC72C]/20"
+              className="rounded-full bg-gold px-4 py-2 text-sm font-semibold text-black hover:brightness-95 transition-all shadow-lg shadow-gold/20"
             >
               Create board
             </button>
@@ -87,47 +116,45 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           {/* Hero Copy (Left) */}
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10 backdrop-blur-sm mb-5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-              Live winners + scenarios, in one link
+              <span className="h-1.5 w-1.5 rounded-full bg-live animate-pulse" />
+              Build the board first. Unlock sharing when it is ready.
             </div>
 
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
-              Squares, made{" "}
-              <span className="text-[#FFC72C]">
-                Free & Simple
-              </span>
-              .
+              Run football squares without the
+              <span className="text-gold"> spreadsheet chaos</span>.
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Join the <span className="text-white font-medium">2026 Pool</span>. Upload a board, share one link, and let everyone see live winners and scenarios.
-              Totally free for the Super Bowl.
+              Upload your board, clean up the names, set the teams, and preview the live experience before you pay. When you are ready to share it, unlock that board for <span className="text-white font-medium">$14.99</span> and send one read-only link to up to 100 viewers.
             </p>
+
+            <div className="mt-6 space-y-3 max-w-xl">
+              {FEATURE_BULLETS.map((bullet) => (
+                <div key={bullet} className="flex items-start gap-3 text-sm text-white/70">
+                  <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/10">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-gold"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                  </span>
+                  <span>{bullet}</span>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
                 onClick={onCreate}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-[#8F1D2C]/20 transition-all active:scale-95"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-cardinal px-6 py-3 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-cardinal/20 transition-all active:scale-95"
               >
-                Create Free Board
+                Build your board
                 <span className="text-white/80">→</span>
               </button>
 
-              <div className="flex items-center gap-3 sm:ml-2">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-600 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=11" alt="GridOne Trusted Organizer Avatar 1" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-gray-500 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=32" alt="GridOne Trusted Organizer Avatar 2" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-[#060607] overflow-hidden"><img src="https://i.pravatar.cc/100?img=68" alt="GridOne Trusted Organizer Avatar 3" className="w-full h-full object-cover" /></div>
-                  <div className="w-8 h-8 rounded-full bg-[#22C55E] border-2 border-[#060607] flex items-center justify-center text-[10px] font-bold text-white shadow-sm" aria-label="Over 2000 trusted organizers">+2k</div>
-                </div>
-                <div className="text-xs text-white/70 leading-tight">
-                  <span className="text-white font-semibold flex items-center gap-1">
-                    <svg className="w-3 h-3 text-[#FFC72C]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                    4.9/5
-                  </span>
-                  Trusted by organizers
-                </div>
-              </div>
+              <button
+                onClick={onLogin}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all active:scale-95"
+              >
+                Sign in
+              </button>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-white/55">
@@ -161,7 +188,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               {/* Top Bar for Mock */}
               <div className="flex items-center justify-between rounded-2xl bg-black/40 px-4 py-3 ring-1 ring-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#8F1D2C]/90 ring-1 ring-white/10 flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-xl bg-cardinal/90 ring-1 ring-white/10 flex items-center justify-center">
                     <span className="text-[10px] font-bold text-white">FF</span>
                   </div>
                   <div>
@@ -170,7 +197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-live" />
                   Updating
                 </div>
               </div>
@@ -223,7 +250,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               </div>
 
               {/* Share Bottom Bar */}
-              <div className="mt-4 rounded-2xl bg-gradient-to-r from-[#8F1D2C]/25 via-white/5 to-[#FFC72C]/20 p-4 ring-1 ring-white/10 transition-all hover:ring-white/20">
+              <div className="mt-4 rounded-2xl bg-gradient-to-r from-cardinal/25 via-white/5 to-gold/20 p-4 ring-1 ring-white/10 transition-all hover:ring-white/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-semibold text-white">One link for everyone</div>
@@ -239,7 +266,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             </div>
 
             {/* Ambient Glow Behind Mock */}
-            <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[40px] bg-gradient-to-br from-[#8F1D2C]/20 to-[#FFC72C]/10 blur-3xl opacity-60" />
+            <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[40px] bg-gradient-to-br from-cardinal/20 to-gold/10 blur-3xl opacity-60" />
           </div>
         </div>
 
@@ -248,16 +275,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                title: "1) Create",
-                desc: "Name your board and pick the matchup. Start clean or upload an image to parse into an editable grid.",
+                title: "1) Build your board",
+                desc: "Create a GridOne board, upload a photo if you have one, and clean up names before you share anything.",
               },
               {
-                title: "2) Share",
-                desc: "Activate and get one viewer link. Send it anywhere—everyone sees the same source of truth.",
+                title: "2) Unlock sharing",
+                desc: "When the board is ready, unlock that board for $14.99 and get one share link for up to 100 viewers.",
               },
               {
-                title: "3) Enjoy",
-                desc: "Live winners, quarter milestones, and “what-if” scenarios update automatically as the score changes.",
+                title: "3) Let everyone follow live",
+                desc: "Viewers get a clean, read-only board plus live winners and next-score scenarios on any phone.",
               },
             ].map((x) => (
               <div
@@ -276,26 +303,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         <section id="faq" className="mt-32" itemScope itemType="https://schema.org/FAQPage">
           <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <Faq
-              q="Is GridOne really free?"
-              a="Yes! Creating a basic board and sharing it with unlimited viewers is 100% free. We may introduce premium features for organizers later, but sharing and viewing will always be free."
-            />
-            <Faq
-              q="Do players need an account?"
-              a="No. Players simply open the viewer link. Only organizers need an account to create and manage boards."
-            />
-            <Faq
-              q="Can I upload a handwritten board?"
-              a="Yes. You can upload an image and parse it into an editable grid, then correct anything quickly."
-            />
-            <Faq
-              q="Does it work on mobile?"
-              a="Yes. The viewer link is designed for phones first; organizers can manage from mobile or desktop."
-            />
-            <Faq
-              q="Can I run multiple boards?"
-              a="Yes. Organizers can create and manage multiple boards; viewers use a link per board."
-            />
+            {FAQ_ITEMS.map((item) => (
+              <Faq key={item.q} q={item.q} a={item.a} />
+            ))}
           </div>
         </section>
 

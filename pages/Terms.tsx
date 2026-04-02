@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 const Terms: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#060607] text-white font-sans">
+    <div className="min-h-screen bg-background text-white font-sans">
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back link */}
         <Link
@@ -25,7 +25,7 @@ const Terms: React.FC = () => {
               GridOne is a tracking and visualization tool for football squares contests. We help organizers manage their boards, share live results, and calculate "what-if" scenarios—all in one shareable link.
             </p>
             <p className="mt-3 p-4 bg-white/5 rounded-xl border border-white/10">
-              <strong className="text-[#FFC72C]">Important:</strong> GridOne is NOT a gambling or betting platform. We do not collect money on behalf of players, process wagers, or facilitate any form of gambling. We are purely a visualization and organizational tool.
+              <strong className="text-gold">Important:</strong> GridOne is NOT a gambling or betting platform. We do not collect money on behalf of players, process wagers, or facilitate any form of gambling. We are purely a visualization and organizational tool.
             </p>
           </section>
 
@@ -61,11 +61,11 @@ const Terms: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">5. Payments</h2>
             <p>
-              GridOne charges a one-time fee to activate boards for sharing (currently $9.99 per board or $29.99 for a Founding Pass). Payments are processed securely via Stripe.
+              GridOne charges a one-time fee to unlock sharing for each board (currently $14.99 per board, including up to 100 viewers). Payments are processed securely via Stripe.
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>All sales are final—no refunds once a board is activated.</li>
-              <li>Founding Pass pricing and benefits are subject to change for future purchasers.</li>
+              <li>All sales are final once a board has been unlocked for sharing.</li>
+              <li>Viewer access is read-only; organizer edit controls remain tied to the organizer account.</li>
             </ul>
           </section>
 
@@ -103,7 +103,7 @@ const Terms: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">10. Contact</h2>
             <p>
-              Questions about these terms? Email us at <a href="mailto:support@getgridone.com" className="text-[#FFC72C] hover:underline">support@getgridone.com</a>.
+              Questions about these terms? Email us at <a href="mailto:support@getgridone.com" className="text-gold hover:underline">support@getgridone.com</a>.
             </p>
           </section>
         </div>

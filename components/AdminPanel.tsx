@@ -518,7 +518,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
         {/* LEFT: Brand + Title */}
         <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
-          <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden ring-1 ring-[#FFC72C]/50">
+          <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="min-w-0 hidden md:block">
@@ -611,7 +611,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                 {/* Menu dropdown - positioned via ref */}
                 <div
-                  className="fixed w-56 py-1.5 bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="fixed w-56 py-1.5 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-top-2 duration-150"
                   style={{
                     top: menuButtonRef.current ? menuButtonRef.current.getBoundingClientRect().bottom + 8 : 0,
                     right: menuButtonRef.current ? window.innerWidth - menuButtonRef.current.getBoundingClientRect().right : 0,
@@ -621,6 +621,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     onClick={async () => {
                       if (!isActivated && activePoolId) {
                         await createCheckoutSession(activePoolId);
+                        setShowMenu(false);
                       } else {
                         navigator.clipboard.writeText(`${window.location.origin}/?poolId=${activePoolId}`);
                         setShowMenu(false);
@@ -633,7 +634,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Activate Board ($9.99)
+                        Unlock sharing ($14.99)
                       </>
                     ) : (
                       <>
@@ -803,7 +804,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       <label className="text-label">Left Team</label>
                       <div className="relative">
                         <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-surface">{t.abbr}</option>)}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -814,7 +815,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       <label className="text-label">Top Team</label>
                       <div className="relative">
                         <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-[#1c1c1e]">{t.abbr}</option>)}
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-surface">{t.abbr}</option>)}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -953,13 +954,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       value={assignLabel}
                       onChange={(e) => setAssignLabel(e.target.value)}
                       placeholder="e.g. Mora"
-                      className="w-full bg-[#1c1c1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                      className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
                     />
                     </div>
 
                     <div className="md:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Payment Status</label>
-                    <div className="w-full flex bg-[#1c1c1e] rounded-lg p-1 border border-white/10">
+                    <div className="w-full flex bg-surface rounded-lg p-1 border border-white/10">
                       {(['unpaid', 'paid'] as const).map(status => (
                         <button
                           key={status}
@@ -1023,7 +1024,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                               <select
                                 value={val ?? ''}
                                 onChange={(e) => handleAxisChange('oppAxis', idx, e.target.value)}
-                                className="w-full h-10 bg-[#1c1c1e] border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
+                                className="w-full h-10 bg-surface border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
                               >
                                 <option value="" className="text-gray-500">?</option>
                                 {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
@@ -1084,7 +1085,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                             <select
                               value={val ?? ''}
                               onChange={(e) => handleAxisChange('bearsAxis', idx, e.target.value)}
-                              className={`w-full h-12 bg-[#1c1c1e] border rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5 ${currentBearsAxis.length > 10 ? 'border-red-500/50' : 'border-white/10'}`}
+                              className={`w-full h-12 bg-surface border rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5 ${currentBearsAxis.length > 10 ? 'border-red-500/50' : 'border-white/10'}`}
                             >
                               <option value="" className="text-gray-500">?</option>
                               {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
@@ -1191,7 +1192,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
       {/* PREVIEW TAB CONTENT */}
       {activeTab === 'preview' && renderPreview && (
-        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-[#09090b] border border-white/10 relative shadow-2xl">
+        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-background border border-white/10 relative shadow-2xl">
           {renderPreview()}
         </div>
       )}
@@ -1232,7 +1233,7 @@ const MetadataModal: React.FC<{
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-sm bg-surface border border-white/10 rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
 
         {/* Header */}
         <div className="flex justify-between items-center">

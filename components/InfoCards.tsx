@@ -78,7 +78,7 @@ const LiveStrip: React.FC<{
             <span className="text-[10px] text-white/50 font-medium">{game.topAbbr}</span>
             <span className="text-base font-bold text-white tabular-nums">{topDigit}</span>
           </div>
-          {isSynced && <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="Live sync"></span>}
+          {isSynced && <span className="w-2 h-2 rounded-full bg-live shadow-[0_0_8px_var(--color-live)]" title="Live sync"></span>}
         </div>
 
         {/* Live|Board Toggle - Desktop only, integrated into strip */}
@@ -392,7 +392,7 @@ const PayoutsAccordion: React.FC<{
             <div className="text-xs text-white/40 mt-0.5">{winners.join(', ')}</div>
           )}
         </div>
-        <div className={`text-sm font-semibold ${isFinal ? 'text-[#FFC72C]' : 'text-white/60'}`}>${amount}</div>
+        <div className={`text-sm font-semibold ${isFinal ? 'text-gold' : 'text-white/60'}`}>${amount}</div>
       </div>
     );
   };
@@ -614,7 +614,7 @@ const Payouts: React.FC<{
       <div className={`group flex flex-col gap-1 transition-all duration-300 ${isFinal ? 'mt-4 pt-4 border-t border-white/10' : 'pb-4 border-b border-white/5 last:border-0'}`}>
         <div className="flex justify-between items-center text-sm">
           <span className={`font-bold uppercase tracking-wide text-gray-400 group-hover:text-white transition-colors`}>{label}</span>
-          <span className={`font-black tracking-tight ${isFinal ? 'text-[#FFC72C] text-lg' : 'text-white'}`}>{amount}</span>
+          <span className={`font-black tracking-tight ${isFinal ? 'text-gold text-lg' : 'text-white'}`}>{amount}</span>
         </div>
 
         {/* Status Area */}
@@ -625,7 +625,7 @@ const Payouts: React.FC<{
           </div>
         ) : winnerData ? (
           <div className={`flex flex-col mt-2 p-3 rounded-2xl border backdrop-blur-md transition-all duration-500 ${isActive
-            ? 'bg-gradient-to-r from-[#9D2235]/20 to-transparent border-[#9D2235]/30 shadow-sm'
+            ? 'bg-gradient-to-r from-cardinal/20 to-transparent border-cardinal/30 shadow-sm'
             : 'bg-white/5 border-white/5'
             }`}>
 
@@ -635,7 +635,7 @@ const Payouts: React.FC<{
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                 </span>}
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-red-400' : 'text-[#FFC72C]'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-red-400' : 'text-gold'}`}>
                   {winnerData.statusText}
                 </span>
               </div>

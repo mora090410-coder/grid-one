@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 const Privacy: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#060607] text-white font-sans">
+    <div className="min-h-screen bg-background text-white font-sans">
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back link */}
         <Link
@@ -80,7 +80,7 @@ const Privacy: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">6. Contact</h2>
             <p>
-              Questions? Email us at <a href="mailto:support@getgridone.com" className="text-[#FFC72C] hover:underline">support@getgridone.com</a>.
+              Questions? Email us at <a href="mailto:support@getgridone.com" className="text-gold hover:underline">support@getgridone.com</a>.
             </p>
           </section>
         </div>

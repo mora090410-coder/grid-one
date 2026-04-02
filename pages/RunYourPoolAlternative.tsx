@@ -4,16 +4,16 @@ import Header from '../components/layout/Header';
 
 export const RunYourPoolAlternative: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#060607] text-white font-sans selection:bg-[#FFC72C]/30 flex flex-col overflow-x-hidden">
+        <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
             <Header />
             <main className="mx-auto w-full max-w-4xl px-5 py-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
-                <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-[#FFC72C] ring-1 ring-[#FFC72C]/20 backdrop-blur-sm">
+                <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-gold ring-1 ring-gold/20 backdrop-blur-sm">
                     Comparison Guide
                 </div>
 
                 <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white mb-6">
-                    The Best Free <span className="text-[#8F1D2C]">RunYourPool Alternative</span> for 2026
+                    A Better <span className="text-cardinal">RunYourPool Alternative</span> for 2026
                 </h1>
 
                 <p className="text-xl text-white/70 mb-12 leading-relaxed">
@@ -27,10 +27,10 @@ export const RunYourPoolAlternative: React.FC = () => {
                     </p>
 
                     <div className="my-12 grid gap-6 md:grid-cols-2">
-                        <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-[#FFC72C]/20">
-                            <h3 className="text-xl font-bold text-[#FFC72C] mb-4">GridOne (The Modern Way)</h3>
+                        <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-gold/20">
+                            <h3 className="text-xl font-bold text-gold mb-4">GridOne (The Modern Way)</h3>
                             <ul className="space-y-3 text-sm text-white/80">
-                                <li className="flex items-center gap-2">✓ <strong>100% Free</strong> for basic boards and unlimited viewers</li>
+                                <li className="flex items-center gap-2">✓ <strong>Free to build</strong> your board before you unlock sharing</li>
                                 <li className="flex items-center gap-2">✓ <strong>Live Scoring:</strong> Updates instantly on every device</li>
                                 <li className="flex items-center gap-2">✓ <strong>Scenario Engine:</strong> "If KC scores a TD, who wins?"</li>
                                 <li className="flex items-center gap-2">✓ <strong>Mobile-First:</strong> Beautiful 'liquid glass' UI on phones</li>
@@ -59,10 +59,10 @@ export const RunYourPoolAlternative: React.FC = () => {
                     </p>
 
                     <div className="mt-16 text-center">
-                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#8F1D2C] px-8 py-4 text-lg font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg transition-all active:scale-95">
-                            Create Your Free Board Now →
+                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-cardinal px-8 py-4 text-lg font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg transition-all active:scale-95">
+                            Build Your Board Now →
                         </Link>
-                        <p className="mt-4 text-sm text-white/50">No credit card required. Takes 30 seconds.</p>
+                        <p className="mt-4 text-sm text-white/50">Create and edit first. Unlock sharing for $14.99 when you are ready.</p>
                     </div>
                 </article>
             </main>

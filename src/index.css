@@ -1,35 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-    /* Colors */
-    --color-background: #0B0C0F;
-    --color-cardinal: #8F1D2C;
-    --color-cardinal-subtle: rgba(143, 29, 44, 0.15);
-    --color-cardinal-hover: #7A1622;
+    /* Core design tokens */
+    --gridone-color-background: #0B0C0F;
+    --gridone-color-surface: #1c1c1e;
+    --gridone-color-surface-hover: #2c2c2e;
+    --gridone-color-surface-glass: rgba(28, 28, 30, 0.6);
 
-    --color-gold: #FFC72C;
-    --color-gold-dim: rgba(255, 199, 44, 0.3);
-    --color-gold-glow: rgba(255, 199, 44, 0.4);
+    --gridone-color-brand-primary: #8F1D2C;
+    --gridone-color-brand-primary-hover: #7A1622;
+    --gridone-color-brand-primary-subtle: rgba(143, 29, 44, 0.15);
+    --gridone-color-brand-accent: #FFC72C;
+    --gridone-color-brand-accent-dim: rgba(255, 199, 44, 0.3);
+    --gridone-color-brand-accent-glow: rgba(255, 199, 44, 0.4);
 
-    --color-surface: #1c1c1e;
-    --color-surface-hover: #2c2c2e;
-    --color-surface-glass: rgba(28, 28, 30, 0.6);
+    --gridone-color-live: #22C55E;
 
-    --color-text-primary: #FFFFFF;
-    --color-text-secondary: rgba(235, 235, 245, 0.6);
-    --color-text-tertiary: rgba(235, 235, 245, 0.3);
+    --gridone-color-text-primary: #FFFFFF;
+    --gridone-color-text-secondary: rgba(235, 235, 245, 0.6);
+    --gridone-color-text-tertiary: rgba(235, 235, 245, 0.3);
 
-    /* Fonts */
-    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --gridone-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --gridone-spacing-18: 4.5rem;
+    --gridone-spacing-22: 5.5rem;
+    --gridone-radius-xl: 12px;
+    --gridone-radius-2xl: 16px;
+    --gridone-radius-3xl: 24px;
 
-    /* Spacing */
-    --spacing-18: 4.5rem;
-    --spacing-22: 5.5rem;
-
-    /* Radii */
-    --radius-xl: 12px;
-    --radius-2xl: 16px;
-    --radius-3xl: 24px;
+    /* App aliases so current styling stays visually stable */
+    --color-background: var(--gridone-color-background);
+    --color-cardinal: var(--gridone-color-brand-primary);
+    --color-cardinal-subtle: var(--gridone-color-brand-primary-subtle);
+    --color-cardinal-hover: var(--gridone-color-brand-primary-hover);
+    --color-gold: var(--gridone-color-brand-accent);
+    --color-gold-dim: var(--gridone-color-brand-accent-dim);
+    --color-gold-glow: var(--gridone-color-brand-accent-glow);
+    --color-live: var(--gridone-color-live);
+    --color-surface: var(--gridone-color-surface);
+    --color-surface-hover: var(--gridone-color-surface-hover);
+    --color-surface-glass: var(--gridone-color-surface-glass);
+    --color-text-primary: var(--gridone-color-text-primary);
+    --color-text-secondary: var(--gridone-color-text-secondary);
+    --color-text-tertiary: var(--gridone-color-text-tertiary);
+    --font-sans: var(--gridone-font-sans);
+    --spacing-18: var(--gridone-spacing-18);
+    --spacing-22: var(--gridone-spacing-22);
+    --radius-xl: var(--gridone-radius-xl);
+    --radius-2xl: var(--gridone-radius-2xl);
+    --radius-3xl: var(--gridone-radius-3xl);
 }
 
 @layer base {

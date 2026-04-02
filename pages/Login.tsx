@@ -53,19 +53,19 @@ const Login: React.FC = () => {
                 if (password.length < 6) {
                     throw new Error('Password must be at least 6 characters');
                 }
-                if (!firstName.trim() || !lastName.trim()) {
-                    throw new Error('First and last name are required');
-                }
+                const trimmedFirstName = firstName.trim();
+                const trimmedLastName = lastName.trim();
+                const fullName = [trimmedFirstName, trimmedLastName].filter(Boolean).join(' ').trim();
 
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
-                            first_name: firstName.trim(),
-                            last_name: lastName.trim(),
-                            full_name: `${firstName.trim()} ${lastName.trim()}`,
-                            campaign: 'superbowl_2026_free' // Tag for marketing
+                            first_name: trimmedFirstName || null,
+                            last_name: trimmedLastName || null,
+                            full_name: fullName || email,
+                            campaign: 'gridone_paid_unlock'
                         }
                     }
                 });
@@ -110,8 +110,8 @@ const Login: React.FC = () => {
 
     if (successMessage) {
         return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 text-center">
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 text-center">
                     <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
                         <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -131,15 +131,15 @@ const Login: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-[#1c1c1e]/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 transition-all">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 transition-all">
                 <div className="text-center mb-8">
-                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-[#8F1D2C]/20 mx-auto mb-4 hover:scale-105 transition-transform ring-1 ring-[#FFC72C]/50" />
+                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-cardinal/20 mx-auto mb-4 hover:scale-105 transition-transform ring-1 ring-gold/50" />
                     <h1 className="text-2xl font-bold text-white tracking-tight">
-                        {isSignUp ? 'Create Free Account' : (isClaim ? 'Sign In to Claim' : 'Welcome Back')}
+                        {isSignUp ? 'Create your organizer account' : (isClaim ? 'Sign in to continue' : 'Welcome back')}
                     </h1>
                     <p className="text-sm text-gray-400 mt-2">
-                        {isSignUp ? 'Join the 2026 Pool - It’s Free' : 'Login to manage your contests'}
+                        {isSignUp ? 'Build your board, edit it freely, and unlock sharing when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
                     </p>
                 </div>
 
@@ -153,25 +153,23 @@ const Login: React.FC = () => {
                     {isSignUp && (
                         <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">First Name</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">First Name <span className="text-gray-600 normal-case">(optional)</span></label>
                                 <input
                                     type="text"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
                                     className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
                                     placeholder="John"
-                                    required
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Last Name</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Last Name <span className="text-gray-600 normal-case">(optional)</span></label>
                                 <input
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
                                     className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
                                     placeholder="Doe"
-                                    required
                                 />
                             </div>
                         </div>

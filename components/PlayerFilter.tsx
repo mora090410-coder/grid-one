@@ -34,8 +34,7 @@ const PlayerFilter: React.FC<PlayerFilterProps> = ({ board, selected, setSelecte
           <select 
             value={selected} 
             onChange={(e) => setSelected(e.target.value)}
-            className="w-full bg-transparent border-none text-xs text-white focus:ring-0 outline-none appearance-none font-bold"
-            style={{ color: selected ? '#FFC72C' : 'white' }}
+            className={`w-full bg-transparent border-none text-xs focus:ring-0 outline-none appearance-none font-bold ${selected ? 'text-gold' : 'text-white'}`}
           >
             <option value="">-- Show All --</option>
             {playerList.map(p => <option key={p} value={p} className="bg-black text-white">{p}</option>)}
@@ -47,7 +46,7 @@ const PlayerFilter: React.FC<PlayerFilterProps> = ({ board, selected, setSelecte
       </div>
       
       {stats && (
-        <div className="flex items-center gap-3 bg-[#9D2235]/30 px-3 py-1 rounded-full border border-gold-glass">
+        <div className="flex items-center gap-3 bg-cardinal-subtle px-3 py-1 rounded-full border border-gold-glass">
           <span className="text-[10px] text-white font-bold">{stats.count} SQUARES</span>
           <span className="w-px h-3 bg-white/20"></span>
           <span className="text-[10px] text-gold font-bold">${stats.investment}</span>

@@ -49,7 +49,7 @@ const Paid: React.FC = () => {
     }, [contestId, sessionId, navigate]);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-6 text-center">
             <div className="w-16 h-16 rounded-full border-4 border-green-500/30 border-t-green-500 animate-spin mb-6"></div>
             <h1 className="text-2xl font-bold mb-2">Processing Activation</h1>
             <p className="text-gray-400">{status}</p>

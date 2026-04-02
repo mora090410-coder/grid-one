@@ -33,7 +33,7 @@ const Header: React.FC = () => {
     // We'll focus on the Authenticated/App layout needs based on Dashboard/Create being the targets.
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-[#0B0C0F]/95 backdrop-blur-md border-b border-white/5 h-16 transition-all duration-300">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-white/5 h-16 transition-all duration-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
 
                 {/* Brand */}
@@ -44,7 +44,7 @@ const Header: React.FC = () => {
                     <img
                         src="/icons/gridone-icon-256.png"
                         alt="GridOne"
-                        className="h-8 w-8 rounded-lg shadow-lg shadow-[#8F1D2C]/20 group-hover:scale-105 transition-transform duration-300 ring-1 ring-[#FFC72C]/50"
+                        className="h-8 w-8 rounded-lg shadow-lg shadow-cardinal/20 group-hover:scale-105 transition-transform duration-300 ring-1 ring-gold/50"
                     />
                     <div className="flex flex-col leading-none">
                         <span className="text-white font-bold tracking-tight text-sm">GridOne</span>
@@ -60,7 +60,7 @@ const Header: React.FC = () => {
                             to={item.path}
                             className={({ isActive }) =>
                                 `text-sm font-medium transition-all duration-200 hover:text-white ${isActive
-                                    ? 'text-white border-b-2 border-[#8F1D2C]'
+                                    ? 'text-white border-b-2 border-cardinal'
                                     : 'text-white/60 border-b-2 border-transparent'
                                 }`
                             }
@@ -80,7 +80,7 @@ const Header: React.FC = () => {
                             </span>
                             <button
                                 onClick={handleLogout}
-                                className="text-xs font-bold uppercase tracking-wider text-[#8F1D2C] hover:text-[#ff2e4d] transition-colors"
+                                className="text-xs font-bold uppercase tracking-wider text-cardinal hover:text-cardinal transition-colors"
                             >
                                 Log Out
                             </button>
@@ -116,7 +116,7 @@ const Header: React.FC = () => {
 
             {/* Mobile/Drawer Menu */}
             <div
-                className={`md:hidden absolute top-16 left-0 right-0 bg-[#0B0C0F] border-b border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+                className={`md:hidden absolute top-16 left-0 right-0 bg-background border-b border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
                 <div className="px-4 py-6 space-y-4 flex flex-col">
@@ -126,7 +126,7 @@ const Header: React.FC = () => {
                             to={item.path}
                             onClick={() => setIsMenuOpen(false)}
                             className={({ isActive }) =>
-                                `text-base font-medium transition-colors ${isActive ? 'text-white pl-2 border-l-2 border-[#8F1D2C]' : 'text-white/60 pl-2 border-l-2 border-transparent'
+                                `text-base font-medium transition-colors ${isActive ? 'text-white pl-2 border-l-2 border-cardinal' : 'text-white/60 pl-2 border-l-2 border-transparent'
                                 }`
                             }
                         >
@@ -142,7 +142,7 @@ const Header: React.FC = () => {
                                     handleLogout();
                                     setIsMenuOpen(false);
                                 }}
-                                className="text-xs font-bold uppercase tracking-wider text-[#8F1D2C]"
+                                className="text-xs font-bold uppercase tracking-wider text-cardinal"
                             >
                                 Log Out
                             </button>
