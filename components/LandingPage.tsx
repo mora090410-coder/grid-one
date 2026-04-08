@@ -10,13 +10,13 @@ interface LandingPageProps {
 const FEATURE_BULLETS = [
   'Upload a board photo and turn it into an editable GridOne board',
   'Set teams, payouts, and clean up names before you spend a dollar',
-  'Unlock one share link for up to 100 viewers when your board is ready',
+  'Unlock unlimited share links for up to 100 viewers per board when you are ready',
 ];
 
 const FAQ_ITEMS = [
   {
     q: 'How does pricing work?',
-    a: 'Creating and editing a board is free. When you are ready to share it with your group, unlock that board for $14.99 and share it with up to 100 viewers.',
+    a: 'Creating and editing boards is free. When you are ready to share with your group, a flat $14.99 unlocks unlimited boards and sharing for up to 100 viewers per board.',
   },
   {
     q: 'Who needs an account?',
@@ -28,7 +28,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What exactly unlocks after I pay?',
-    a: 'Payment unlocks the share link for that board. Before payment you can build, edit, preview, and test the board. After payment you can publish it to your group.',
+    a: 'Payment unlocks unlimited share links for all your boards. Before payment you can build, edit, preview, and test as many boards as you like. After payment you can publish them to your groups.',
   },
   {
     q: 'Do viewers get edit access?',
@@ -126,7 +126,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Upload your board, clean up the names, set the teams, and preview the live experience before you pay. When you are ready to share it, unlock that board for <span className="text-white font-medium">$14.99</span> and send one read-only link to up to 100 viewers.
+              Upload your boards, clean up the names, set the teams, and preview the live experience before you pay. When you are ready to share, unlock <span className="text-white font-medium">unlimited boards</span> for a flat <span className="text-white font-medium">$14.99</span> and send share links to up to 100 viewers per board.
             </p>
 
             <div className="mt-6 space-y-3 max-w-xl">
@@ -279,8 +279,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 desc: "Create a GridOne board, upload a photo if you have one, and clean up names before you share anything.",
               },
               {
-                title: "2) Unlock sharing",
-                desc: "When the board is ready, unlock that board for $14.99 and get one share link for up to 100 viewers.",
+                title: "2) Unlock unlimited sharing",
+                desc: "When you are ready, a flat $14.99 unlocks unlimited boards and share links for up to 100 viewers per board.",
               },
               {
                 title: "3) Let everyone follow live",
