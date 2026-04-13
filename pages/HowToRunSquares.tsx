@@ -46,7 +46,7 @@ export const HowToRunSquares: React.FC = () => {
                                 <div className="flex-none flex h-10 w-10 items-center justify-center rounded-full bg-cardinal font-bold text-white shadow-lg">2</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-white">Unlock and share</h4>
-                                    <p className="mt-2 text-sm text-white/70">Once the board is ready, unlock sharing and send the viewer link to your friends, family, or coworkers. They get a clean read-only board with live updates.</p>
+                                    <p className="mt-2 text-sm text-white/70">Once the board is ready, unlock sharing and send the viewer link to your friends, family, or coworkers. This season, $14.99 unlocks at least 20 boards, and viewers get a clean read-only board with live updates.</p>
                                 </div>
                             </div>
 

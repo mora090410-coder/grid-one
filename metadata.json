@@ -1,6 +1,6 @@
 {
   "name": "GridOne",
-  "description": "Upload a football squares board, edit it cleanly, and unlock one share link with live winners and scoreboard views.",
+  "description": "Run football squares and Super Bowl squares online for fundraisers, office pools, watch parties, and community groups with one clean live board link.",
   "requestFramePermissions": [
     "camera"
   ]

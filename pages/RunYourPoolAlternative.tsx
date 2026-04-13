@@ -62,7 +62,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-cardinal px-8 py-4 text-lg font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg transition-all active:scale-95">
                             Build Your Board Now →
                         </Link>
-                        <p className="mt-4 text-sm text-white/50">Create and edit first. Unlock sharing for $14.99 when you are ready.</p>
+                        <p className="mt-4 text-sm text-white/50">Create and edit first. This season, $14.99 unlocks at least 20 boards when you are ready.</p>
                     </div>
                 </article>
             </main>

@@ -6,17 +6,16 @@ interface LandingPageProps {
   onLogin: () => void;
 }
 
-
 const FEATURE_BULLETS = [
-  'Upload a board photo and turn it into an editable GridOne board',
-  'Set teams, payouts, and clean up names before you spend a dollar',
-  'Unlock unlimited share links for up to 100 viewers per board when you are ready',
+  'Run football squares online for fundraisers, offices, watch parties, and community groups',
+  'Upload a board photo, clean up names, set teams and payouts, and get everything ready before you pay',
+  'Share one live board link so your group can follow winners and next-score scenarios on any phone',
 ];
 
 const FAQ_ITEMS = [
   {
     q: 'How does pricing work?',
-    a: 'Creating and editing boards is free. When you are ready to share with your group, a flat $14.99 unlocks unlimited boards and sharing for up to 100 viewers per board.',
+    a: 'Creating and editing boards is free. For this season, $14.99 unlocks at least 20 boards. Build everything first, then pay when your boards are ready to share.',
   },
   {
     q: 'Who needs an account?',
@@ -28,44 +27,38 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What exactly unlocks after I pay?',
-    a: 'Payment unlocks unlimited share links for all your boards. Before payment you can build, edit, preview, and test as many boards as you like. After payment you can publish them to your groups.',
+    a: 'Before payment you can build, edit, preview, and test your boards. After payment, this season\'s $14.99 unlock gives you at least 20 boards you can publish with live viewer links so everyone can follow along without edit access.',
   },
   {
     q: 'Do viewers get edit access?',
     a: 'No. Organizers can edit the board. Viewers are read-only and can follow the board, scoreboard, and live winner scenarios.',
+  },
+  {
+    q: 'Is GridOne good for fundraisers or team groups?',
+    a: 'Yes. GridOne is built for organizers running football squares for youth sports teams, booster clubs, office pools, watch parties, and local community fundraisers that need one simple live board link.',
   },
 ];
 
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   return (
     <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
-      {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-        {/* Colorful Orbs */}
         <div className="absolute -top-40 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-cardinal/25 blur-[120px]" />
         <div className="absolute -bottom-48 left-1/3 h-[560px] w-[760px] -translate-x-1/2 rounded-full bg-gold/14 blur-[140px]" />
-
-        {/* Radial sheen */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.08),transparent_55%)]" />
-
-        {/* Fade to black at bottom */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,6,7,0.3),rgba(6,6,7,1))]" />
-
-        {/* Speckle Texture */}
         <div
           className="absolute inset-0 opacity-[0.12]"
           style={{
             backgroundImage:
-              "radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
+              'radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
           }}
         />
       </div>
 
-      {/* Nav */}
       <header className="relative z-50 mx-auto w-full max-w-6xl px-5 pt-6">
         <nav className="flex items-center justify-between">
-          {/* Logo Area */}
           <div className="flex items-center gap-3">
             <img src="/icons/gridone-icon-256.png" alt="GridOne Logo" className="h-9 w-9 rounded-xl shadow-lg shadow-cardinal/10 ring-1 ring-gold/50" />
             <div className="leading-tight">
@@ -74,25 +67,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             </div>
           </div>
 
-          {/* Desktop Links */}
           <div className="hidden items-center gap-2 md:flex">
-            <a
-              href="#how"
-              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
-            >
+            <a href="#how" className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors">
               How it works
             </a>
-            <a
-              href="#faq"
-              className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors"
-            >
+            <a href="#faq" className="rounded-full px-3 py-2 text-sm text-white/70 hover:text-white transition-colors">
               FAQ
             </a>
           </div>
 
-          {/* Right Actions */}
           <div className="flex items-center gap-2">
-            {/* Removed Join button */}
             <button
               onClick={onLogin}
               className="rounded-full px-4 py-2 text-sm text-white/80 ring-1 ring-white/10 hover:bg-white/5 hover:text-white transition-all"
@@ -109,24 +93,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         </nav>
       </header>
 
-      {/* Hero Section */}
       <main className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-14 md:pt-20">
         <div className="grid gap-10 md:grid-cols-2 md:items-center">
-
-          {/* Hero Copy (Left) */}
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70 ring-1 ring-white/10 backdrop-blur-sm mb-5">
               <span className="h-1.5 w-1.5 rounded-full bg-live animate-pulse" />
-              Build the board first. Unlock sharing when it is ready.
+              Football squares for fundraisers, offices, and game-day groups.
             </div>
 
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl text-white">
-              Run football squares without the
+              Run football squares and
+              <span className="text-gold"> Super Bowl squares online</span> without the
               <span className="text-gold"> spreadsheet chaos</span>.
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-              Upload your boards, clean up the names, set the teams, and preview the live experience before you pay. When you are ready to share, unlock <span className="text-white font-medium">unlimited boards</span> for a flat <span className="text-white font-medium">$14.99</span> and send share links to up to 100 viewers per board.
+              GridOne helps organizers run football squares for <span className="text-white font-medium">youth sports fundraisers</span>, office pools, watch parties, and local community groups. Upload your board, clean up names, set the matchup, and preview the live experience before you pay. This season, <span className="text-white font-medium">$14.99 unlocks at least 20 boards</span> when you are ready to share.
             </p>
 
             <div className="mt-6 space-y-3 max-w-xl">
@@ -169,23 +151,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" /></svg>
                 </span>
-                Mobile-first viewer link
+                Mobile-friendly live viewer link
               </div>
               <div className="h-3 w-px bg-white/10 hidden sm:block" />
               <div className="inline-flex items-center gap-2">
                 <span className="h-5 w-5 rounded-full bg-white/10 ring-1 ring-white/10 flex items-center justify-center">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white/60"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z" /></svg>
                 </span>
-                Not a betting site
+                Fundraiser-friendly, not a betting site
               </div>
             </div>
           </div>
 
-          {/* Hero Preview (Right Column) */}
           <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
             <div className="rounded-3xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur-xl shadow-2xl shadow-black/50">
-
-              {/* Top Bar for Mock */}
               <div className="flex items-center justify-between rounded-2xl bg-black/40 px-4 py-3 ring-1 ring-white/10">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-xl bg-cardinal/90 ring-1 ring-white/10 flex items-center justify-center">
@@ -202,15 +181,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 </div>
               </div>
 
-              {/* Current Winners */}
               <div className="mt-4 rounded-2xl bg-black/40 p-4 ring-1 ring-white/10">
                 <div className="text-xs text-white/55 font-medium uppercase tracking-wider">Current winners</div>
                 <div className="mt-3 grid grid-cols-4 gap-2">
-                  {["Q1", "Half", "Q3", "Final"].map((label) => (
-                    <div
-                      key={label}
-                      className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10 flex flex-col items-center"
-                    >
+                  {['Q1', 'Half', 'Q3', 'Final'].map((label) => (
+                    <div key={label} className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10 flex flex-col items-center">
                       <div className="text-[10px] text-white/55">{label}</div>
                       <div className="mt-1 text-sm font-semibold text-white">—</div>
                       <div className="mt-1 text-[10px] text-white/45">$—</div>
@@ -219,27 +194,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 </div>
               </div>
 
-              {/* Scenarios */}
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {["If Away scores next…", "If Home scores next…"].map((t) => (
-                  <div
-                    key={t}
-                    className="rounded-2xl bg-black/40 p-4 ring-1 ring-white/10"
-                  >
+                {['If Away scores next…', 'If Home scores next…'].map((t) => (
+                  <div key={t} className="rounded-2xl bg-black/40 p-4 ring-1 ring-white/10">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-semibold text-white/80">{t}</div>
                       <div className="text-[10px] text-white/45 cursor-pointer hover:text-white transition-colors">View all</div>
                     </div>
                     <div className="mt-3 space-y-2">
                       {[
-                        { k: "FG (+3)", v: "Winner: Alex" },
-                        { k: "TD (+7)", v: "Winner: Sam" },
-                        { k: "Safety (+2)", v: "Winner: Jordan" },
+                        { k: 'FG (+3)', v: 'Winner: Alex' },
+                        { k: 'TD (+7)', v: 'Winner: Sam' },
+                        { k: 'Safety (+2)', v: 'Winner: Jordan' },
                       ].map((r) => (
-                        <div
-                          key={r.k}
-                          className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10"
-                        >
+                        <div key={r.k} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
                           <div className="text-[11px] text-white/60">{r.k}</div>
                           <div className="text-[11px] text-white/80 font-medium">{r.v}</div>
                         </div>
@@ -249,7 +217,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 ))}
               </div>
 
-              {/* Share Bottom Bar */}
               <div className="mt-4 rounded-2xl bg-gradient-to-r from-cardinal/25 via-white/5 to-gold/20 p-4 ring-1 ring-white/10 transition-all hover:ring-white/20">
                 <div className="flex items-center justify-between">
                   <div>
@@ -265,26 +232,52 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               </div>
             </div>
 
-            {/* Ambient Glow Behind Mock */}
             <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[40px] bg-gradient-to-br from-cardinal/20 to-gold/10 blur-3xl opacity-60" />
           </div>
         </div>
 
-        {/* How it works */}
+        <section className="mt-20">
+          <div className="grid gap-4 md:grid-cols-4">
+            {[
+              {
+                title: 'Youth sports fundraisers',
+                desc: 'Give parents and supporters one clean live board instead of passing around photos and group texts.',
+              },
+              {
+                title: 'Office pools',
+                desc: 'Run a football squares board online without spreadsheet confusion or viewer logins.',
+              },
+              {
+                title: 'Super Bowl parties',
+                desc: 'Keep the whole room locked into every scoring play with live winners and next-score scenarios.',
+              },
+              {
+                title: 'Local community groups',
+                desc: 'Use one simple board link for booster clubs, neighborhood groups, bars, and church events.',
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 backdrop-blur hover:bg-white/[0.07] transition-colors">
+                <h2 className="text-base font-semibold text-white">{item.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-white/70">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section id="how" className="mt-32">
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                title: "1) Build your board",
-                desc: "Create a GridOne board, upload a photo if you have one, and clean up names before you share anything.",
+                title: '1) Build your board',
+                desc: 'Create your football squares board, upload a photo if you have one, and clean up names before anyone sees it.',
               },
               {
-                title: "2) Unlock unlimited sharing",
-                desc: "When you are ready, a flat $14.99 unlocks unlimited boards and share links for up to 100 viewers per board.",
+                title: '2) Unlock paid sharing',
+                desc: 'When you are ready, pay $14.99 for this season and unlock at least 20 boards your group can follow on any phone.',
               },
               {
-                title: "3) Let everyone follow live",
-                desc: "Viewers get a clean, read-only board plus live winners and next-score scenarios on any phone.",
+                title: '3) Let everyone follow live',
+                desc: 'Viewers get a read-only football squares board with live winners and next-score scenarios on any phone.',
               },
             ].map((x) => (
               <div
@@ -299,7 +292,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           </div>
         </section>
 
-        {/* FAQ */}
+        <section className="mt-32">
+          <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10 backdrop-blur">
+            <div className="grid gap-8 md:grid-cols-2 md:items-start">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-white">Why organizers switch to GridOne</h2>
+                <div className="mt-4 space-y-3 text-sm leading-relaxed text-white/70">
+                  <p>Paper boards, blurry photo updates, and spreadsheet texting chains fall apart once the game starts.</p>
+                  <p>GridOne gives organizers one live football squares board that is easier to share, easier to follow, and easier for the whole group to trust.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  'Better than paper photos and spreadsheet chaos',
+                  'No viewer login required',
+                  'Mobile-friendly for every parent, coworker, or guest',
+                  'Live winners and next-score scenarios reduce disputes',
+                ].map((point) => (
+                  <div key={point} className="rounded-2xl bg-black/30 p-4 text-sm text-white/75 ring-1 ring-white/10">{point}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="faq" className="mt-32" itemScope itemType="https://schema.org/FAQPage">
           <h2 className="text-2xl font-semibold tracking-tight text-white">FAQ</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -309,7 +325,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           </div>
         </section>
 
-        {/* Footer */}
+        <section className="mt-24">
+          <div className="rounded-3xl bg-gradient-to-r from-cardinal/20 via-white/5 to-gold/15 p-8 ring-1 ring-white/10">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-white">Learn how to run football squares better</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">Start with the playbook, then compare GridOne to older tools if you want the modern version of a football squares board online.</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link to="/articles/how-to-run-super-bowl-squares" className="rounded-full bg-cardinal px-5 py-3 text-sm font-semibold text-white hover:brightness-110 transition-all text-center">
+                  How to Run Super Bowl Squares
+                </Link>
+                <Link to="/articles/run-your-pool-alternative" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">
+                  RunYourPool Alternative
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <footer className="mt-32 border-t border-white/10 pt-8 text-xs text-white/55">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
@@ -338,7 +372,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   );
 };
 
-// Internal Helper Components
 function Faq({ q, a }: { q: string; a: string }) {
   return (
     <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
