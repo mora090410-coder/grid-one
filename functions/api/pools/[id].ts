@@ -10,6 +10,13 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
+const EMPTY_BOARD = {
+  bearsAxis: Array(10).fill(null),
+  oppAxis: Array(10).fill(null),
+  squares: Array(100).fill(null).map(() => []),
+  isDynamic: false,
+};
+
 // ============= INLINE CRYPTO UTILITIES =============
 async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -32,6 +39,11 @@ async function verifyPassword(password: string, storedHash: string, salt: string
 // ============= SUPABASE CLIENT =============
 function getSupabase(env: Env) {
   return createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+}
+
+function getSupabaseAdmin(env: Env) {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
+  return createClient(env.VITE_SUPABASE_URL, key);
 }
 
 // ============= CORS =============
@@ -68,26 +80,40 @@ export const onRequestOptions: PagesFunction = async (context) => {
 export const onRequestGet: PagesFunction = async (context) => {
   const poolId = context.params.id as string;
   const supabase = getSupabase(context.env);
+  const adminSupabase = getSupabaseAdmin(context.env);
+  const authHeader = context.request.headers.get('Authorization');
+  const bearer = authHeader?.replace('Bearer ', '') || '';
 
-  // Fetch merged data
-  const { data, error } = await supabase
+  let requesterId: string | null = null;
+  if (bearer) {
+    const { data: authData } = await supabase.auth.getUser(bearer);
+    requesterId = authData.user?.id || null;
+  }
+
+  const { data, error } = await adminSupabase
     .from('contests')
-    .select('settings, board_data, is_activated, activated_at')
+    .select('owner_id, settings, board_data, is_activated, activated_at')
     .eq('id', poolId)
     .single();
 
   if (error || !data) {
-    return new Response(JSON.stringify({ error: 'Pool not found', details: error }), {
+    return new Response(JSON.stringify({ error: 'Pool not found' }), {
       status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
     });
   }
 
-  // Construct response matching legacy KV structure
+  const isOwner = !!requesterId && requesterId === data.owner_id;
+  const isActivated = Boolean(data.is_activated);
+  const locked = !isActivated && !isOwner;
+  const safeSettings = data.settings || {};
+
   const responseData = {
-    ...(data.settings || {}),
-    board: data.board_data || {},
-    is_activated: data.is_activated,
-    activated_at: data.activated_at
+    ...(safeSettings || {}),
+    board: locked ? EMPTY_BOARD : (data.board_data || EMPTY_BOARD),
+    is_activated: isActivated,
+    activated_at: data.activated_at,
+    owner_id: isOwner ? data.owner_id : null,
+    locked,
   };
 
   return new Response(JSON.stringify(responseData), {

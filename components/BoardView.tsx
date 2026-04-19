@@ -43,7 +43,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId,
         ownerId, loadingPool, dataReady, loadPoolData,
-        isActivated, isPaid
+        isActivated, isPaid, isLocked
     } = poolData;
 
     const liveScoring = useLiveScoring(game, dataReady, loadingPool);
@@ -228,10 +228,29 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const renderMainContent = (previewMode = false) => {
         const effectiveTab = previewMode ? 'live' : activeTab;
         const handleTabChange = previewMode ? undefined : setActiveTab;
+        const showLockedOverlay = isLocked && !previewMode;
 
         return (
             <div className="flex-1 relative overflow-hidden flex flex-col pb-6">
                 <div className={`flex-1 flex flex-col h-full overflow-hidden ${isOwner && !isPaid ? 'blur-sm pointer-events-none select-none' : ''}`}>
+                    {showLockedOverlay && (
+                        <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/92 backdrop-blur-md p-6">
+                            <div className="max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 text-center shadow-2xl">
+                                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gold/15 ring-1 ring-gold/30">
+                                    <svg className="h-7 w-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-2xl font-semibold tracking-tight text-white">This board is not live yet</h2>
+                                <p className="mt-3 text-sm leading-relaxed text-white/70">
+                                    The organizer has created the board, but sharing is still locked until they unlock it for live viewing.
+                                </p>
+                                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 ring-1 ring-white/10">
+                                    Viewers get access once the board is activated
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <InfoCards.LiveStrip game={game} live={liveData} isSynced={isSynced} activeTab={effectiveTab} onTabChange={handleTabChange} />
 
                     <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">

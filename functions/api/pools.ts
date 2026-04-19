@@ -66,6 +66,10 @@ function validateCreatePool(data: any): { valid: true; data: CreatePoolPayload }
     return { valid: false, error: 'Valid email address is required for recovery' };
   }
 
+  if (!payload.adminPassword || typeof payload.adminPassword !== 'string' || payload.adminPassword.trim().length < 4) {
+    return { valid: false, error: 'Password must be at least 4 characters' };
+  }
+
   if (!payload.board || !Array.isArray(payload.board.squares) || payload.board.squares.length !== 100) {
     return { valid: false, error: 'Invalid board data' };
   }
@@ -141,19 +145,8 @@ export const onRequestPost: PagesFunction = async (context) => {
       });
     }
 
-    // Check Admin Password
     const authHeader = context.request.headers.get('Authorization');
-    const adminToken = authHeader?.replace('Bearer ', '') || '';
-
-    if (!adminToken || adminToken.length < 4) {
-      return new Response(JSON.stringify({
-        error: 'Weak password',
-        message: 'Password must be at least 4 characters'
-      }), {
-        status: 400,
-        headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-      });
-    }
+    const authToken = authHeader?.replace('Bearer ', '') || '';
 
     const rawData = await context.request.json();
     const validation = validateCreatePool(rawData);
@@ -190,16 +183,16 @@ export const onRequestPost: PagesFunction = async (context) => {
     }
 
     // Password Hashing
+    const adminPassword = (validation.data.adminPassword || '').trim();
     const salt = generateSalt();
-    const hashedPassword = await hashPassword(adminToken, salt);
+    const hashedPassword = await hashPassword(adminPassword, salt);
 
     // Insert into Supabase
     // Pool creation requires an authenticated Supabase user.
     // The Authorization header must carry a valid Supabase JWT.
     // Guest flows redirect to /login before reaching this endpoint.
 
-    const token = authHeader?.replace('Bearer ', '') || '';
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const { data: { user } } = await supabase.auth.getUser(authToken);
 
     if (!user) {
       // Legacy fallback: Can we insert without owner?

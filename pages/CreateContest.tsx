@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../services/supabase';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/geminiService';
 import { NFL_TEAMS } from '../constants';
@@ -10,7 +9,7 @@ import { GameState, BoardData } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 
 const CreateContest: React.FC = () => {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const navigate = useNavigate();
 
     // Wizard State
@@ -21,12 +20,15 @@ const CreateContest: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
     const [scanSuccess, setScanSuccess] = useState(false);
+    const [recoveryEmail, setRecoveryEmail] = useState('');
+    const [adminPasscode, setAdminPasscode] = useState('');
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Restore wizard draft if user was redirected away from /create for auth
     useEffect(() => {
         const savedGame = sessionStorage.getItem('gridone_draft_game');
         const savedBoard = sessionStorage.getItem('gridone_draft_board');
+        const savedMeta = sessionStorage.getItem('gridone_draft_meta');
         if (savedGame) {
             try { setGame(JSON.parse(savedGame)); } catch { /* corrupt data */ }
             sessionStorage.removeItem('gridone_draft_game');
@@ -34,6 +36,14 @@ const CreateContest: React.FC = () => {
         if (savedBoard) {
             try { setBoard(JSON.parse(savedBoard)); } catch { /* corrupt data */ }
             sessionStorage.removeItem('gridone_draft_board');
+        }
+        if (savedMeta) {
+            try {
+                const meta = JSON.parse(savedMeta);
+                setRecoveryEmail(meta.recoveryEmail || '');
+                setAdminPasscode(meta.adminPasscode || '');
+            } catch { /* corrupt data */ }
+            sessionStorage.removeItem('gridone_draft_meta');
         }
     }, []); // Run once on mount
 
@@ -89,6 +99,7 @@ const CreateContest: React.FC = () => {
             try {
                 sessionStorage.setItem('gridone_draft_game', JSON.stringify(game));
                 sessionStorage.setItem('gridone_draft_board', JSON.stringify(finalBoard));
+                sessionStorage.setItem('gridone_draft_meta', JSON.stringify({ recoveryEmail, adminPasscode }));
             } catch {
                 // sessionStorage unavailable — user will lose draft state on redirect
             }
@@ -103,31 +114,33 @@ const CreateContest: React.FC = () => {
 
         try {
             if (!leagueTitle) throw new Error("League Name is required.");
+            if (!recoveryEmail.includes('@')) throw new Error("Recovery email is required.");
+            if (adminPasscode.trim().length < 4) throw new Error("Organizer passcode must be at least 4 characters.");
+            if (!session?.access_token) throw new Error("You must be logged in to create a contest.");
 
-            // Create payload matching Supabase schema
-            const payload = {
-                owner_id: user.id,
-                title: leagueTitle,
-                settings: { ...game, title: leagueTitle }, // GameState goes into settings
-                board_data: finalBoard,
-                created_at: new Date().toISOString()
-            };
+            const response = await fetch('/api/pools', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    game: { ...game, title: leagueTitle },
+                    board: finalBoard,
+                    adminEmail: recoveryEmail,
+                    adminPassword: adminPasscode,
+                }),
+            });
 
-            const { data, error } = await supabase
-                .from('contests')
-                .insert([payload])
-                .select('id')
-                .single();
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || data.error || 'Failed to create contest.');
+            if (!data.poolId) throw new Error("No data returned from create flow.");
 
-            if (error) throw error;
-            if (!data) throw new Error("No data returned from insert.");
-
-            // Store token locally for immediate access (Legacy compat)
             const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
-            storedTokens[data.id] = "auth-owner";
+            storedTokens[data.poolId] = adminPasscode;
             localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
 
-            setSuccessPoolId(data.id);
+            setSuccessPoolId(data.poolId);
         } catch (err: any) {
             console.error("Publish Error:", err);
             setError(err.message || "Failed to create contest.");
@@ -194,6 +207,90 @@ const CreateContest: React.FC = () => {
                             <div>
                                 <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Name your board</h1>
                                 <p className="text-gray-400 text-sm">This is the title your group will see after you unlock sharing.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-label">Board Name</label>
+                                    <input
+                                        type="text"
+                                        value={game.title}
+                                        onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
+                                        className="w-full glass-input"
+                                        placeholder="e.g. Super Bowl LIX Party"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-label">Recovery Email</label>
+                                    <input
+                                        type="email"
+                                        value={recoveryEmail}
+                                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                                        className="w-full glass-input"
+                                        placeholder="commissioner@example.com"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-label">Organizer Passcode</label>
+                                    <input
+                                        type="password"
+                                        value={adminPasscode}
+                                        onChange={(e) => setAdminPasscode(e.target.value)}
+                                        className="w-full glass-input"
+                                        placeholder="Create a secure passcode"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4">
+                                <button
+                                    disabled={!game.title || !recoveryEmail.includes('@') || adminPasscode.trim().length < 4}
+                                    onClick={() => setStep(2)}
+                                    className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div className="space-y-6">
+                            <div>
+                                <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Pick the game</h1>
+                                <p className="text-gray-400 text-sm">Select teams and date.</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-label">Left Team</label>
+                                    <div className="relative">
+                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
+                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-label">Top Team</label>
+                                    <div className="relative">
+                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
+                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-label">Date (Optional)</label>
+                                <input type="date" value={game.dates} onChange={(e) => setGame(prev => ({ ...prev, dates: e.target.value }))}
+                                    className="w-full glass-input [color-scheme:dark]" />
+                            </div>
+
+                            <div className="pt-4 flex gap-4">
+                                <button onClick={() => setStep(1)} className="btn-secondary flex-1">Back</button>
                             </div>
 
                             <div className="space-y-4">

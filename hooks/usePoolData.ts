@@ -45,6 +45,7 @@ interface PoolDataState {
     error: string | null;
     isActivated: boolean;
     isPaid: boolean;
+    isLocked: boolean;
 }
 
 interface UsePoolDataReturn extends PoolDataState {
@@ -52,7 +53,7 @@ interface UsePoolDataReturn extends PoolDataState {
     setBoard: React.Dispatch<React.SetStateAction<BoardData>>;
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
-    publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
+    publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData; adminEmail?: string }) => Promise<string | void>;
     updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
     migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
@@ -67,33 +68,42 @@ export function usePoolData(): UsePoolDataReturn {
     const [dataReady, setDataReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isActivated, setIsActivated] = useState(false);
+    const [isLocked, setIsLocked] = useState(false);
 
 
-    // Load pool data from Supabase
+    // Load pool data through the API so unpaid boards can be masked for non-owners.
     const loadPoolData = useCallback(async (poolId: string) => {
         setLoadingPool(true);
         setError(null);
 
         try {
-            // Security: Select only safe columns to prevent leaking backend Stripe fields
-            const { data, error } = await supabase
-                .from('contests')
-                .select('id, owner_id, settings, board_data, is_activated, activated_at')
-                .eq('id', poolId)
-                .single();
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            const response = await fetch(`/api/pools/${poolId}`, {
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+            });
+            const data = await response.json();
 
-            if (error) throw error;
-            if (!data) throw new Error('Pool not found');
+            if (!response.ok) throw new Error(data.error || 'Pool not found');
 
             setActivePoolId(poolId);
-            setOwnerId(data.owner_id);
+            setOwnerId(data.owner_id || null);
             setIsActivated(Boolean(data.is_activated));
+            setIsLocked(Boolean(data.locked));
 
-            // Map database fields to app state
-            // settings has GameState, board_data has BoardData
-            setGame(data.settings || INITIAL_GAME);
-            setBoard(data.board_data || EMPTY_BOARD);
+            const nextGame = {
+                ...INITIAL_GAME,
+                ...data,
+                payouts: data.payouts || INITIAL_GAME.payouts,
+            };
+            delete (nextGame as any).board;
+            delete (nextGame as any).locked;
+            delete (nextGame as any).owner_id;
+            delete (nextGame as any).is_activated;
+            delete (nextGame as any).activated_at;
 
+            setGame(nextGame);
+            setBoard(data.board || EMPTY_BOARD);
             setDataReady(true);
         } catch (err: any) {
             console.error("Load Pool Error:", err);
@@ -104,53 +114,43 @@ export function usePoolData(): UsePoolDataReturn {
         }
     }, []);
 
-    // Publish new pool to Supabase
+    // Publish new pool through the API so passcodes are hashed server-side.
     const publishPool = useCallback(async (
         adminToken: string,
-        currentData?: { game: GameState; board: BoardData }
+        currentData?: { game: GameState; board: BoardData; adminEmail?: string }
     ): Promise<string | void> => {
-        // NOTE: New creation flow uses CreateContest.tsx directly.
-        // This function is kept for compatibility with BoardView's AdminPanel if needed,
-        // but typically BoardView uses this for "Wizard" inside the board.
-        // We should map this to Supabase insert.
-
         const g = currentData?.game || game;
         const b = currentData?.board || board;
 
-        // Note: adminToken is treated as the passcode here.
-        // If we are creating a new pool from BoardView wizard:
-
         try {
-            // We need an owner_id. BoardView might not have AuthContext user if anonymous?
-            // If user is not logged in, we might need anon auth or strict requirement.
-            // For now, let's assume this feature requires auth or we use a fallback?
-            // CreateContest.tsx handles the main flow. 
-            // If this is called, we'll try to insert. 
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (!accessToken) throw new Error("You must be logged in to publish a pool.");
 
-            // To properly support this, we really should use the user from AuthContext.
-            // But this hook doesn't have it.
-            // For now, let's throw if we can't get session, OR check if we can get it from supabase.auth
+            const response = await fetch('/api/pools', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    game: g,
+                    board: b,
+                    adminEmail: currentData?.adminEmail,
+                    adminPassword: adminToken,
+                }),
+            });
 
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("You must be logged in to publish a pool.");
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || data.error || 'Failed to create pool');
 
-            const payload = {
-                owner_id: user.id,
-                title: g.title,
-                settings: { ...g, adminPasscode: adminToken },
-                board_data: b
-            };
+            const poolId = data.poolId;
+            if (!poolId) throw new Error('No pool ID returned from server');
 
-            const { data, error } = await supabase
-                .from('contests')
-                .insert([payload])
-                .select('id')
-                .single();
-
-            if (error) throw error;
-
-            const poolId = data.id;
             setActivePoolId(poolId);
+            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
+            storedTokens[poolId] = adminToken;
+            localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
             return poolId;
         } catch (err: any) {
             setError(err.message);
@@ -237,7 +237,8 @@ export function usePoolData(): UsePoolDataReturn {
         migrateGuestBoard,
         clearError,
         isActivated,
-        isPaid: isActivated
+        isPaid: isActivated,
+        isLocked
     };
 }
 
