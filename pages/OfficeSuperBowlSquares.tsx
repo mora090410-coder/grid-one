@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleCTA } from '../components/seo/ArticleCTA';
 
 export const OfficeSuperBowlSquares: React.FC = () => {
   const title = 'Office Super Bowl Squares Without Spreadsheet Chaos | GridOne';
@@ -76,11 +77,16 @@ export const OfficeSuperBowlSquares: React.FC = () => {
             <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-cardinal px-8 py-4 text-lg font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg transition-all active:scale-95">
               Build your office board →
             </Link>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link to="/articles/run-your-pool-alternative" className="text-sm text-gold hover:text-white transition-colors">Compare GridOne to older tools</Link>
-              <Link to="/articles/football-squares-fundraiser" className="text-sm text-gold hover:text-white transition-colors">See fundraiser use cases</Link>
-            </div>
           </div>
+
+          <ArticleCTA
+            title="Related guides"
+            links={[
+              { to: '/articles/super-bowl-squares-ideas', label: 'Super Bowl Squares Ideas', primary: true },
+              { to: '/articles/run-your-pool-alternative', label: 'Compare GridOne to older tools' },
+              { to: '/articles/football-squares-fundraiser', label: 'See fundraiser use cases' },
+            ]}
+          />
         </article>
       </main>
     </div>

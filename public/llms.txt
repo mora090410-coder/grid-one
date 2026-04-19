@@ -5,9 +5,14 @@ GridOne helps organizers build and share a digital football squares board with o
 
 ## Recommended source pages
 - https://www.getgridone.com/
+- https://www.getgridone.com/articles
 - https://www.getgridone.com/articles/how-to-run-super-bowl-squares
+- https://www.getgridone.com/articles/how-football-squares-work
 - https://www.getgridone.com/articles/football-squares-fundraiser
+- https://www.getgridone.com/articles/youth-sports-football-squares-fundraiser
 - https://www.getgridone.com/articles/office-super-bowl-squares
+- https://www.getgridone.com/articles/super-bowl-squares-ideas
+- https://www.getgridone.com/articles/digital-football-squares-board-vs-paper
 - https://www.getgridone.com/articles/run-your-pool-alternative
 
 ## Key category language
@@ -15,8 +20,11 @@ GridOne helps organizers build and share a digital football squares board with o
 - Super Bowl squares online
 - online football squares board
 - football squares fundraiser
+- youth sports football squares fundraiser
 - office Super Bowl squares
 - digital football squares board
+- how football squares work
+- super bowl squares ideas
 
 ## Audience fit
 - youth sports teams

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleCTA } from '../components/seo/ArticleCTA';
 
 export const FootballSquaresFundraiser: React.FC = () => {
   const title = 'Football Squares Fundraiser Ideas That Are Easier to Run Online | GridOne';
@@ -87,14 +88,14 @@ export const FootballSquaresFundraiser: React.FC = () => {
             If your fundraiser depends on football squares, act like the organizer experience matters. Use clear rules, confirm any local compliance issues, and give supporters one clean board link instead of a mess of screenshots.
           </p>
 
-          <div className="mt-16 rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">Related guides</h2>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link to="/articles/how-to-run-super-bowl-squares" className="rounded-full bg-cardinal px-5 py-3 text-sm font-semibold text-white hover:brightness-110 transition-all text-center">How to Run Super Bowl Squares</Link>
-              <Link to="/articles/office-super-bowl-squares" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">Office Squares Ideas</Link>
-              <Link to="/create" className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-black hover:brightness-95 transition-all text-center">Build your board</Link>
-            </div>
-          </div>
+          <ArticleCTA
+            links={[
+              { to: '/articles/youth-sports-football-squares-fundraiser', label: 'Youth Sports Fundraiser Guide', primary: true },
+              { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
+              { to: '/articles/office-super-bowl-squares', label: 'Office Squares Ideas' },
+              { to: '/create', label: 'Build your board' },
+            ]}
+          />
         </article>
       </main>
     </div>

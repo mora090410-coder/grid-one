@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleCTA } from '../components/seo/ArticleCTA';
 
 export const HowToRunSquares: React.FC = () => {
     const title = 'How to Run Super Bowl Squares Online | GridOne';
@@ -112,11 +113,16 @@ export const HowToRunSquares: React.FC = () => {
                             Build Your 2026 Board →
                         </Link>
                         <p className="mt-4 text-sm text-white/50">Create and edit first. Unlock sharing when you're ready.</p>
-                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                            <Link to="/articles/football-squares-fundraiser" className="text-sm text-gold hover:text-white transition-colors">Football squares fundraiser ideas</Link>
-                            <Link to="/articles/run-your-pool-alternative" className="text-sm text-gold hover:text-white transition-colors">Compare GridOne to older tools</Link>
-                        </div>
                     </div>
+
+                    <ArticleCTA
+                        title="Related guides"
+                        links={[
+                            { to: '/articles/how-football-squares-work', label: 'How Football Squares Work', primary: true },
+                            { to: '/articles/football-squares-fundraiser', label: 'Football squares fundraiser ideas' },
+                            { to: '/articles/run-your-pool-alternative', label: 'Compare GridOne to older tools' },
+                        ]}
+                    />
                 </article>
             </main>
         </div>

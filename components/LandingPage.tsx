@@ -375,6 +375,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <Link to="/articles/run-your-pool-alternative" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">
                   RunYourPool Alternative
                 </Link>
+                <Link to="/articles" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">
+                  All Guides
+                </Link>
               </div>
             </div>
           </div>
@@ -390,6 +393,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <Link to="/articles/run-your-pool-alternative" className="hover:text-white transition-colors">RunYourPool Alternative</Link>
                 <Link to="/articles/football-squares-fundraiser" className="hover:text-white transition-colors">Football Squares Fundraiser Ideas</Link>
                 <Link to="/articles/office-super-bowl-squares" className="hover:text-white transition-colors">Office Super Bowl Squares</Link>
+                <Link to="/articles" className="hover:text-white transition-colors">All Guides</Link>
               </div>
             </div>
             <div className="flex gap-6 mt-4 md:mt-0">

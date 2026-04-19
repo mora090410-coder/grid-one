@@ -1,0 +1,66 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Header from '../components/layout/Header';
+import { PageMetadata } from '../components/seo/PageMetadata';
+import { ArticleCTA } from '../components/seo/ArticleCTA';
+
+export const HowFootballSquaresWork: React.FC = () => {
+  const title = 'How Football Squares Work, Simple Rules and Setup | GridOne';
+  const description = 'Learn how football squares work, how winners are determined, and how to set up a clean online football squares board.';
+
+  return (
+    <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+      <PageMetadata
+        title={title}
+        description={description}
+        path="/articles/how-football-squares-work"
+        type="article"
+        schema={{
+          '@type': 'Article',
+          headline: title,
+          description,
+          mainEntityOfPage: 'https://www.getgridone.com/articles/how-football-squares-work',
+          author: { '@type': 'Organization', name: 'GridOne' },
+          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+        }}
+      />
+      <Header />
+      <main className="mx-auto w-full max-w-4xl px-5 py-24">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-live ring-1 ring-live/20 backdrop-blur-sm">Explainer</div>
+        <h1 className="text-4xl font-semibold tracking-tight md:text-5xl text-white mb-6">How football squares work</h1>
+        <p className="text-xl text-white/70 mb-12 leading-relaxed">At its core, football squares is a 10x10 grid game. The fun part is simple. The messy part is usually the board management.</p>
+
+        <article className="prose prose-invert prose-lg max-w-none">
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">The basic setup</h2>
+          <p className="text-white/80 leading-relaxed mb-6">A football squares board has 100 squares. One team goes across the top and one team goes down the side. After all the squares are filled, each axis gets random numbers from 0 through 9.</p>
+          <p className="text-white/80 leading-relaxed mb-6">At the end of each quarter, you look at the last digit of each team score. Those two digits intersect on the board and that square wins.</p>
+
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Example</h2>
+          <p className="text-white/80 leading-relaxed mb-6">If one team has 17 and the other has 24, the winning square matches 7 and 4. That is it. The concept is easy. What people hate is bad execution, blurry board photos, and confusion about who actually won.</p>
+
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Best practices</h2>
+          <ul className="space-y-3 text-white/80">
+            <li>Do not assign the numbers until all the squares are filled.</li>
+            <li>Keep one organizer in charge of editing the board.</li>
+            <li>Make the board easy to read on phones.</li>
+            <li>Make sure everyone can see winners without asking for screenshots.</li>
+          </ul>
+
+          <p className="mt-10 text-white/80 leading-relaxed">If you want the structure without the chaos, use a digital football squares board that gives everyone one clean viewer link instead of a screenshot chain.</p>
+
+          <ArticleCTA
+            links={[
+              { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares', primary: true },
+              { to: '/articles/digital-football-squares-board-vs-paper', label: 'Digital vs Paper Board' },
+              { to: '/create', label: 'Build your board' },
+            ]}
+          />
+
+          <div className="mt-6 text-sm text-white/60">
+            Looking for fundraiser use cases? <Link to="/articles/football-squares-fundraiser" className="text-gold hover:text-white transition-colors">Start here.</Link>
+          </div>
+        </article>
+      </main>
+    </div>
+  );
+};
