@@ -18,6 +18,10 @@ import { HowFootballSquaresWork } from './pages/HowFootballSquaresWork';
 import { YouthSportsFootballSquaresFundraiser } from './pages/YouthSportsFootballSquaresFundraiser';
 import { SuperBowlSquaresIdeas } from './pages/SuperBowlSquaresIdeas';
 import { DigitalFootballSquaresBoardVsPaper } from './pages/DigitalFootballSquaresBoardVsPaper';
+import { BoosterClubFootballSquares } from './pages/BoosterClubFootballSquares';
+import { ChurchSchoolFundraiserSquares } from './pages/ChurchSchoolFundraiserSquares';
+import { NFLOpeningWeekSquares } from './pages/NFLOpeningWeekSquares';
+import { FootballSquaresApp } from './pages/FootballSquaresApp';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -98,6 +102,10 @@ const App: React.FC = () => {
               <Route path="/articles/youth-sports-football-squares-fundraiser" element={<YouthSportsFootballSquaresFundraiser />} />
               <Route path="/articles/super-bowl-squares-ideas" element={<SuperBowlSquaresIdeas />} />
               <Route path="/articles/digital-football-squares-board-vs-paper" element={<DigitalFootballSquaresBoardVsPaper />} />
+              <Route path="/articles/booster-club-football-squares" element={<BoosterClubFootballSquares />} />
+              <Route path="/articles/church-school-football-squares-fundraiser" element={<ChurchSchoolFundraiserSquares />} />
+              <Route path="/articles/nfl-opening-week-squares-pool" element={<NFLOpeningWeekSquares />} />
+              <Route path="/articles/football-squares-app" element={<FootballSquaresApp />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 

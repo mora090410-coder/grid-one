@@ -47,6 +47,30 @@ const ARTICLES = [
     tag: 'Comparison',
   },
   {
+    title: 'Booster Club Football Squares Fundraiser Guide',
+    desc: 'A strong-fit use case for booster clubs that need a cleaner football squares fundraiser flow.',
+    to: '/articles/booster-club-football-squares',
+    tag: 'Booster club',
+  },
+  {
+    title: 'Church and School Football Squares Fundraiser Ideas',
+    desc: 'A cleaner, trust-first version of football squares for school and church fundraising.',
+    to: '/articles/church-school-football-squares-fundraiser',
+    tag: 'School / church',
+  },
+  {
+    title: 'NFL Opening Week Squares Pool Ideas',
+    desc: 'Seasonal search coverage for opening week office pools, watch parties, and community events.',
+    to: '/articles/nfl-opening-week-squares-pool',
+    tag: 'NFL opening week',
+  },
+  {
+    title: 'Football Squares App',
+    desc: 'A direct category page for people searching for a football squares app.',
+    to: '/articles/football-squares-app',
+    tag: 'Category',
+  },
+  {
     title: 'RunYourPool Alternative',
     desc: 'Why organizers looking for a modern RunYourPool alternative end up wanting a cleaner mobile experience.',
     to: '/articles/run-your-pool-alternative',
