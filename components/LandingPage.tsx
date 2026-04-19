@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { PageMetadata } from './seo/PageMetadata';
 
 interface LandingPageProps {
   onCreate: () => void;
@@ -40,8 +41,40 @@ const FAQ_ITEMS = [
 ];
 
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
+  const title = 'Football Squares App for Super Bowl Squares, Fundraisers, and Group Pools | GridOne';
+  const description = 'Run football squares and Super Bowl squares online with GridOne. Built for fundraisers, office pools, watch parties, and community groups that want one clean live board link.';
+
   return (
     <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+      <PageMetadata
+        title={title}
+        description={description}
+        path="/"
+        type="website"
+        schema={[
+          {
+            '@type': 'WebSite',
+            name: 'GridOne',
+            url: 'https://www.getgridone.com/',
+          },
+          {
+            '@type': 'SoftwareApplication',
+            name: 'GridOne',
+            applicationCategory: 'SportsApplication',
+            operatingSystem: 'Any',
+            description,
+            offers: { '@type': 'Offer', price: '14.99', priceCurrency: 'USD' },
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: FAQ_ITEMS.map((item) => ({
+              '@type': 'Question',
+              name: item.q,
+              acceptedAnswer: { '@type': 'Answer', text: item.a },
+            })),
+          },
+        ]}
+      />
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div className="absolute -top-40 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-cardinal/25 blur-[120px]" />
         <div className="absolute -bottom-48 left-1/3 h-[560px] w-[760px] -translate-x-1/2 rounded-full bg-gold/14 blur-[140px]" />
@@ -332,9 +365,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <h2 className="text-2xl font-semibold tracking-tight text-white">Learn how to run football squares better</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70">Start with the playbook, then compare GridOne to older tools if you want the modern version of a football squares board online.</p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to="/articles/how-to-run-super-bowl-squares" className="rounded-full bg-cardinal px-5 py-3 text-sm font-semibold text-white hover:brightness-110 transition-all text-center">
                   How to Run Super Bowl Squares
+                </Link>
+                <Link to="/articles/football-squares-fundraiser" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">
+                  Fundraiser Ideas
                 </Link>
                 <Link to="/articles/run-your-pool-alternative" className="rounded-full bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/10 transition-all text-center">
                   RunYourPool Alternative
@@ -352,6 +388,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <div className="text-white/80 font-semibold mb-1">Guides</div>
                 <Link to="/articles/how-to-run-super-bowl-squares" className="hover:text-white transition-colors">How to Run Super Bowl Squares</Link>
                 <Link to="/articles/run-your-pool-alternative" className="hover:text-white transition-colors">RunYourPool Alternative</Link>
+                <Link to="/articles/football-squares-fundraiser" className="hover:text-white transition-colors">Football Squares Fundraiser Ideas</Link>
+                <Link to="/articles/office-super-bowl-squares" className="hover:text-white transition-colors">Office Super Bowl Squares</Link>
               </div>
             </div>
             <div className="flex gap-6 mt-4 md:mt-0">

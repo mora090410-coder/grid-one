@@ -1,10 +1,28 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
+import { PageMetadata } from '../components/seo/PageMetadata';
 
 export const RunYourPoolAlternative: React.FC = () => {
+    const title = 'RunYourPool Alternative for Football Squares | GridOne';
+    const description = 'GridOne is a modern RunYourPool alternative for football squares, with a cleaner mobile viewer experience, live scoring, and simpler sharing.';
+
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+            <PageMetadata
+                title={title}
+                description={description}
+                path="/articles/run-your-pool-alternative"
+                type="article"
+                schema={{
+                    '@type': 'Article',
+                    headline: title,
+                    description,
+                    mainEntityOfPage: 'https://www.getgridone.com/articles/run-your-pool-alternative',
+                    author: { '@type': 'Organization', name: 'GridOne' },
+                    publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+                }}
+            />
             <Header />
             <main className="mx-auto w-full max-w-4xl px-5 py-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
@@ -63,6 +81,10 @@ export const RunYourPoolAlternative: React.FC = () => {
                             Build Your Board Now →
                         </Link>
                         <p className="mt-4 text-sm text-white/50">Create and edit first. This season, $14.99 unlocks at least 20 boards when you are ready.</p>
+                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                            <Link to="/articles/how-to-run-super-bowl-squares" className="text-sm text-gold hover:text-white transition-colors">How to run Super Bowl squares</Link>
+                            <Link to="/articles/football-squares-fundraiser" className="text-sm text-gold hover:text-white transition-colors">Fundraiser use cases</Link>
+                        </div>
                     </div>
                 </article>
             </main>

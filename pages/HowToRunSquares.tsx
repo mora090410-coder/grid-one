@@ -1,10 +1,41 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
+import { PageMetadata } from '../components/seo/PageMetadata';
 
 export const HowToRunSquares: React.FC = () => {
+    const title = 'How to Run Super Bowl Squares Online | GridOne';
+    const description = 'Learn how to run Super Bowl squares online, share one live board link, and avoid paper-board confusion for fundraisers, offices, and watch parties.';
+
     return (
         <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+            <PageMetadata
+                title={title}
+                description={description}
+                path="/articles/how-to-run-super-bowl-squares"
+                type="article"
+                schema={[
+                    {
+                        '@type': 'Article',
+                        headline: title,
+                        description,
+                        mainEntityOfPage: 'https://www.getgridone.com/articles/how-to-run-super-bowl-squares',
+                        author: { '@type': 'Organization', name: 'GridOne' },
+                        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+                    },
+                    {
+                        '@type': 'HowTo',
+                        name: 'How to Run Super Bowl Squares Online',
+                        description,
+                        step: [
+                            { '@type': 'HowToStep', name: 'Build the board', text: 'Create your football squares board, upload a board photo if needed, and clean up names before sharing.' },
+                            { '@type': 'HowToStep', name: 'Unlock and share', text: 'Unlock sharing and send one live board link to your friends, family, or coworkers.' },
+                            { '@type': 'HowToStep', name: 'Draw the numbers', text: 'Randomize the numbers only after all squares are claimed.' },
+                            { '@type': 'HowToStep', name: 'Watch and win', text: 'Track winners by matching the last digit of each team score at the end of each quarter and final.' },
+                        ],
+                    },
+                ]}
+            />
             <Header />
             <main className="mx-auto w-full max-w-4xl px-5 py-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
@@ -81,6 +112,10 @@ export const HowToRunSquares: React.FC = () => {
                             Build Your 2026 Board →
                         </Link>
                         <p className="mt-4 text-sm text-white/50">Create and edit first. Unlock sharing when you're ready.</p>
+                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                            <Link to="/articles/football-squares-fundraiser" className="text-sm text-gold hover:text-white transition-colors">Football squares fundraiser ideas</Link>
+                            <Link to="/articles/run-your-pool-alternative" className="text-sm text-gold hover:text-white transition-colors">Compare GridOne to older tools</Link>
+                        </div>
                     </div>
                 </article>
             </main>

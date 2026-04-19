@@ -11,6 +11,8 @@ import BoardView from './components/BoardView';
 import LandingPage from './components/LandingPage';
 import { RunYourPoolAlternative } from './pages/RunYourPoolAlternative';
 import { HowToRunSquares } from './pages/HowToRunSquares';
+import { FootballSquaresFundraiser } from './pages/FootballSquaresFundraiser';
+import { OfficeSuperBowlSquares } from './pages/OfficeSuperBowlSquares';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -84,6 +86,8 @@ const App: React.FC = () => {
               <Route path="/paid" element={<Layout><Paid /></Layout>} />
               <Route path="/articles/run-your-pool-alternative" element={<RunYourPoolAlternative />} />
               <Route path="/articles/how-to-run-super-bowl-squares" element={<HowToRunSquares />} />
+              <Route path="/articles/football-squares-fundraiser" element={<FootballSquaresFundraiser />} />
+              <Route path="/articles/office-super-bowl-squares" element={<OfficeSuperBowlSquares />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 
