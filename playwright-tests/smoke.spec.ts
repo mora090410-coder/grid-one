@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-test('landing page reflects paid unlock model', async ({ page }) => {
+test('landing page leads with the live board and paid unlock model', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Run football squares and Super Bowl squares online without the spreadsheet chaos/i })).toBeVisible();
-  await expect(page.getByText(/Upload your board, clean up names, set the matchup/i).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /Build your board/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /keep score/i })).toBeVisible();
+  await expect(page.getByText(/Run football squares and Super Bowl squares on one live board/i).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Build a board/i }).first()).toBeVisible();
+  await expect(page.getByText(/\$14\.99 unlocks up to 20 boards/i).first()).toBeVisible();
 });
 
 test('demo board renders the sample game', async ({ page }) => {
