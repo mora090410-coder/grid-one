@@ -64,11 +64,12 @@ describe('winnerLogic', () => {
     expect(result.quarterWinners.Final).toBe('4-7');
   });
 
-  it('returns no quarter winners in manual mode', () => {
+  it('computes quarter winners from manual scores like live data', () => {
     const liveData = makeLiveData({ isManual: true, state: 'in', period: 2 });
     const result = calculateWinnerHighlights(liveData);
     expect(result.currentLabel).toBe('NOW');
-    expect(result.quarterWinners).toEqual({});
+    expect(result.quarterWinners.Q1).toBe('7-3');
+    expect(result.quarterWinners.Q2).toBeUndefined();
   });
 
   it('resolves current winner owners from board coordinates', () => {

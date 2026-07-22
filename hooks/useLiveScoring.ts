@@ -24,33 +24,50 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
     const pollRef = useRef<NodeJS.Timeout | null>(null);
 
     const fetchLive = useCallback(async () => {
-        if (!dataReady || loadingPool || !game.dates) {
+        if (!dataReady || loadingPool) {
             setLiveStatus('WAITING FOR DATA');
             return;
         }
 
-        // Manual scores mode
+        // Manual scores mode: the organizer is the source of truth, no date needed
         if (game.useManualScores) {
+            const zero = { left: 0, top: 0 };
+            const mq = game.manualQuarterScores;
+            const quarterScores = {
+                Q1: mq?.Q1 ?? zero,
+                Q2: mq?.Q2 ?? zero,
+                Q3: mq?.Q3 ?? zero,
+                Q4: mq?.Q4 ?? zero,
+                OT: mq?.OT ?? zero,
+            };
+            const total = (side: 'left' | 'top') =>
+                quarterScores.Q1[side] + quarterScores.Q2[side] + quarterScores.Q3[side] +
+                quarterScores.Q4[side] + quarterScores.OT[side];
+            // Boards saved before the quarter-entry UI only have single totals
+            const leftScore = mq ? total('left') : (game.manualLeftScore || 0);
+            const topScore = mq ? total('top') : (game.manualTopScore || 0);
+            const state = game.manualGameState ?? 'in';
+            const period = game.manualPeriod ?? 1;
+
             setLiveData({
-                leftScore: game.manualLeftScore || 0,
-                topScore: game.manualTopScore || 0,
-                quarterScores: {
-                    Q1: { left: 0, top: 0 },
-                    Q2: { left: 0, top: 0 },
-                    Q3: { left: game.manualLeftScore || 0, top: game.manualTopScore || 0 },
-                    Q4: { left: 0, top: 0 },
-                    OT: { left: 0, top: 0 },
-                },
+                leftScore,
+                topScore,
+                quarterScores,
                 clock: '',
-                period: 3,
-                state: 'in',
+                period,
+                state,
                 detail: 'Manual Entry',
-                isOvertime: false,
+                isOvertime: period > 4,
                 isManual: true
             });
-            setLiveStatus('MANUAL');
+            setLiveStatus(state === 'post' ? 'FINAL' : state === 'pre' ? 'PRE-GAME' : 'MANUAL');
             setIsSynced(true);
             setLastUpdated(new Date().toLocaleTimeString());
+            return;
+        }
+
+        if (!game.dates) {
+            setLiveStatus('WAITING FOR DATA');
             return;
         }
 

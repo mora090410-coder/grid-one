@@ -16,8 +16,17 @@ export interface GameState {
   lockMeta: boolean;
   // Manual Score Overrides
   useManualScores?: boolean;
-  manualLeftScore?: number;
-  manualTopScore?: number;
+  manualLeftScore?: number; // legacy single-total entry (pre-quarter UI boards)
+  manualTopScore?: number;  // legacy single-total entry (pre-quarter UI boards)
+  manualQuarterScores?: {
+    Q1: QuarterScores;
+    Q2: QuarterScores;
+    Q3: QuarterScores;
+    Q4: QuarterScores;
+    OT: QuarterScores;
+  };
+  manualPeriod?: number; // 1-4 = quarter, 5 = OT
+  manualGameState?: 'pre' | 'in' | 'post';
   coverImage?: string; // Base64 image string for board cover
   payouts?: {
     Q1: number;

@@ -21,9 +21,7 @@ export const calculateWinnerHighlights = (liveData: LiveGameData | null): Winner
     if (!liveData) return { quarterWinners: {}, currentLabel: 'NOW' };
 
     const qw: Record<string, string> = {};
-    const { period, state, quarterScores, leftScore, topScore, isManual } = liveData;
-
-    if (isManual) return { quarterWinners: {}, currentLabel: 'NOW' };
+    const { period, state, quarterScores, leftScore, topScore } = liveData;
 
     const getWinnerKey = (qIdx: number) => {
         let lSum = 0; let tSum = 0;
