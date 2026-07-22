@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAuth } from './useAuth';
 import { usePoolData } from './usePoolData';
 import { GameState, BoardData } from '../types';
@@ -25,7 +24,6 @@ export const useBoardActions = ({
     const auth = useAuth();
     const navigate = useNavigate();
     const { updatePool, publishPool } = usePoolData();
-    const [isJoining, setIsJoining] = useState(false);
 
     // Helper to check if current user is owner
     // This is a basic check; real security relies on RLS
@@ -129,42 +127,7 @@ export const useBoardActions = ({
         }
     };
 
-    const handleJoinSubmit = async (joinInput: string) => {
-        if (!joinInput) return;
-        const targetId = joinInput.trim().toUpperCase();
-        setIsJoining(true);
-        try {
-            const res = await withRetry(
-                () => fetch(`${API_URL}/${targetId}`),
-                {
-                    retries: 2,
-                    shouldRetry: (error) => {
-                        if (!(error instanceof Error)) return false;
-                        const msg = error.message.toLowerCase();
-                        return msg.includes('network') || msg.includes('timeout');
-                    },
-                }
-            );
-            if (!res.ok) throw new Error("League Code not found in stadium databases.");
-
-            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set('poolId', targetId);
-
-            if (storedTokens[targetId]) {
-                setAdminToken(storedTokens[targetId]);
-            }
-            window.location.href = newUrl.toString();
-        } catch (err: any) {
-            alert(err.message || "Verification Failed");
-        } finally {
-            setIsJoining(false);
-        }
-    };
-
     return {
-        handlePublish,
-        handleJoinSubmit,
-        isJoining
+        handlePublish
     };
 };

@@ -23,7 +23,7 @@ const PlayerFilter: React.FC<PlayerFilterProps> = ({ board, selected, setSelecte
     board.squares.forEach(names => {
       if (names.some(n => n.toLowerCase().includes(selected.toLowerCase()))) count++;
     });
-    return { count, investment: count * 50 };
+    return { count };
   }, [selected, board]);
 
   return (
@@ -48,8 +48,6 @@ const PlayerFilter: React.FC<PlayerFilterProps> = ({ board, selected, setSelecte
       {stats && (
         <div className="flex items-center gap-3 bg-cardinal-subtle px-3 py-1 rounded-full border border-gold-glass">
           <span className="text-[10px] text-white font-bold">{stats.count} SQUARES</span>
-          <span className="w-px h-3 bg-white/20"></span>
-          <span className="text-[10px] text-gold font-bold">${stats.investment}</span>
         </div>
       )}
     </div>

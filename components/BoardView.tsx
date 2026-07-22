@@ -15,11 +15,10 @@ import FullScreenLoading from './loading/FullScreenLoading';
 
 // Board sub-components
 import BoardHeader from './board/BoardHeader';
-import JoinModal from './board/JoinModal';
 import RecoveryModal from './board/RecoveryModal';
 import ShareModal from './board/ShareModal';
 import FindSquaresModal from './board/FindSquaresModal';
-import PayoutsModal from './board/PayoutsModal';
+import { calculateWinnerHighlights } from '../utils/winnerLogic';
 
 // Custom Hooks
 import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
@@ -47,7 +46,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     } = poolData;
 
     const liveScoring = useLiveScoring(game, dataReady, loadingPool);
-    const { liveData, liveStatus, isSynced, lastUpdated } = liveScoring;
+    const { liveData, liveStatus, isSynced } = liveScoring;
 
     const auth = useAuth();
     const { adminToken, setAdminToken } = auth;
@@ -62,20 +61,17 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [auth.loading, auth.user, loadingPool, navigate, requiresAuthForRoute]);
 
     if (requiresAuthForRoute && !auth.loading && !auth.user) {
-        return <FullScreenLoading message="Signing needed to view boards..." />;
+        return <FullScreenLoading message="Sign in to view your boards..." />;
     }
 
     // 2. UI State
     const [showShareModal, setShowShareModal] = useState(false);
-    const [showJoinModal, setShowJoinModal] = useState(false);
     const [showWizardModal, setShowWizardModal] = useState(false);
     const [showAdminView, setShowAdminView] = useState(false);
     const [showRecoveryModal, setShowRecoveryModal] = useState(false);
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
-    const [showPayoutsModal, setShowPayoutsModal] = useState(false);
 
     const [adminStartTab, setAdminStartTab] = useState<'overview' | 'edit'>('overview');
-    const [joinInput, setJoinInput] = useState('');
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
 
@@ -88,7 +84,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [highlightedCoords, setHighlightedCoords] = useState<{ left: number, top: number } | null>(null);
 
     // 3. Action Hooks
-    const { handlePublish, handleJoinSubmit, isJoining } = useBoardActions({
+    const { handlePublish } = useBoardActions({
         game, board, activePoolId, API_URL, setAdminToken, setShowAdminView
     });
 
@@ -96,13 +92,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const showLanding = !demoMode && !activePoolId && !urlPoolId && !loadingPool && !hasEnteredApp && !isInitialized;
     const isOwner = auth.user && ownerId && auth.user.id === ownerId;
     const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
-
-    const knownAdminToken = useMemo(() => {
-        const targetId = joinInput.trim().toUpperCase() || activePoolId;
-        if (!targetId || targetId.length < 4) return null;
-        const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
-        return storedTokens[targetId] || null;
-    }, [joinInput, activePoolId]);
 
     const isEmptyBoard = !board.squares.some(s => s.length > 0);
 
@@ -114,7 +103,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     useEffect(() => {
         if (demoMode) {
             setBoard(SAMPLE_BOARD);
-            setGame({ ...INITIAL_GAME, title: 'Demo: Super Bowl LIX', leftAbbr: 'KC', topAbbr: 'SF' });
+            setGame({
+                ...INITIAL_GAME,
+                title: 'Demo: Super Bowl LIX',
+                leftAbbr: 'KC',
+                leftName: 'Kansas City Chiefs',
+                topAbbr: 'PHI',
+                topName: 'Philadelphia Eagles',
+            });
             setIsInitialized(true);
             setHasEnteredApp(true);
             setActiveTab('board');
@@ -198,29 +194,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         }
     };
 
-    const highlights = useMemo<WinnerHighlights>(() => {
-        if (!liveData) return { quarterWinners: {}, currentLabel: 'NOW' };
-        const qw: Record<string, string> = {};
-        const { period, state, quarterScores, leftScore, topScore, isManual } = liveData;
-        if (isManual) return { quarterWinners: {}, currentLabel: 'NOW' };
-
-        const getWinnerKey = (qIdx: number) => {
-            let lSum = 0; let tSum = 0;
-            for (let i = 0; i <= qIdx; i++) {
-                const qKey = `Q${i + 1}` as keyof typeof quarterScores;
-                lSum += (quarterScores[qKey]?.left || 0);
-                tSum += (quarterScores[qKey]?.top || 0);
-            }
-            return `${tSum % 10}-${lSum % 10}`;
-        };
-
-        if (period > 1 || state === 'post') qw['Q1'] = getWinnerKey(0);
-        if (period > 2 || state === 'post') qw['Q2'] = getWinnerKey(1);
-        if (period > 3 || state === 'post') qw['Q3'] = getWinnerKey(2);
-        if (state === 'post') qw['Final'] = `${topScore % 10}-${leftScore % 10}`;
-
-        return { quarterWinners: qw, currentLabel: state === 'post' ? 'FINAL' : 'NOW' };
-    }, [liveData]);
+    const highlights = useMemo<WinnerHighlights>(() => calculateWinnerHighlights(liveData), [liveData]);
 
     const openSetupWizard = () => navigate('/create');
     const shareUrl = activePoolId ? `${window.location.origin}/?poolId=${activePoolId}` : window.location.href;
@@ -372,17 +346,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 />
             )}
 
-            {showJoinModal && (
-                <JoinModal
-                    joinInput={joinInput}
-                    onJoinInputChange={setJoinInput}
-                    onSubmit={handleJoinSubmit}
-                    onClose={() => setShowJoinModal(false)}
-                    isJoining={isJoining}
-                    showCommissionerEntry={!!knownAdminToken}
-                />
-            )}
-
             <WizardModal
                 isOpen={showWizardModal}
                 onClose={() => setShowWizardModal(false)}
@@ -411,9 +374,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
-            {!loadingPool && showLanding ? (
+            {/* Demo mode never loads a pool, so loadingPool stays true there */}
+            {(demoMode || !loadingPool) && showLanding ? (
                 <LandingPage onCreate={openSetupWizard} onLogin={() => navigate('/login')} />
-            ) : !loadingPool && (
+            ) : (demoMode || !loadingPool) && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-6xl mx-auto md:px-6 h-full">
                     <div className="flex-shrink-0 z-50 p-4 md:py-6">
                         <BoardHeader
@@ -442,18 +406,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     selectedPlayer={selectedPlayer}
                     onSelectPlayer={setSelectedPlayer}
                     onClose={() => setShowFindSquaresModal(false)}
-                />
-            )}
-
-            {showPayoutsModal && (
-                <PayoutsModal
-                    game={game}
-                    board={board}
-                    live={liveData}
-                    liveStatus={liveStatus}
-                    lastUpdated={lastUpdated}
-                    highlights={highlights}
-                    onClose={() => setShowPayoutsModal(false)}
                 />
             )}
 

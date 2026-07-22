@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(coderabbit --version)",
+      "Bash(coderabbit auth:*)",
+      "Bash(coderabbit review:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}
