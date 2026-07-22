@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Megaphone, Briefcase, Trophy, Users, Tv, Upload, Link2, Radio } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis from 'lenis';
 import { PageMetadata } from './seo/PageMetadata';
+import { getLenis } from '../lib/scrollRuntime';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,32 +17,26 @@ const display = { fontFamily: "'Archivo', system-ui, sans-serif" } as const;
 const mono = { fontFamily: "'Space Mono', ui-monospace, monospace" } as const;
 const hand = { fontFamily: "'Caveat', cursive" } as const;
 
+// Motion tuning: displacement controls wrinkle intensity, toss x/y sets the
+// landing corner, and pinScreens controls how much scroll drives the sequence.
+const HERO_MOTION = {
+  pinScreens: 2.2,
+  narrowBreakpoint: 480,
+  beats: { hold: 0, crumple: 0.4, toss: 0.7, winner: 0.9, end: 1 },
+  labels: ['01 — The old paper way', '02 — Crumple the paper', '03 — We have a winner'],
+  crumple: { displacement: 34, frequencyStart: 0.012, frequencyEnd: 0.018 },
+  toss: { x: '42vw', y: '-30vh', rotation: -160, scale: 0.12 },
+  winnerStagger: 0.08,
+} as const;
+
 const prefersReduced = () =>
   typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const m = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    if (!m) return;
-    const on = () => setReduced(m.matches);
-    on();
-    m.addEventListener?.('change', on);
-    return () => m.removeEventListener?.('change', on);
-  }, []);
-  return reduced;
-}
-
-const smooth = (x: number) => {
-  const t = Math.min(Math.max(x, 0), 1);
-  return t * t * (3 - 2 * t);
-};
 
 // Motion + cinematic layer (Material 3 Expressive / Neural Expressive): spring
 // easing, shape morphs, an ambient halo, and a scroll-scrubbed hero where a paper
 // board crumples away and the GridOne board builds itself. GPU transforms/opacity.
 const NE_CSS = `
-.ne-progress{position:fixed;top:0;left:0;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(var(--sp,0));background:linear-gradient(90deg,#8F1D2C,#FFC72C);z-index:70;box-shadow:0 0 12px rgba(255,199,44,.5)}
+.ne-progress{position:fixed;top:0;left:0;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#8F1D2C,#FFC72C);z-index:70;box-shadow:0 0 12px rgba(255,199,44,.5);will-change:transform}
 .ne-reveal{opacity:0;transform:translateY(30px) scale(.985);transition:opacity .7s cubic-bezier(.34,1.56,.64,1),transform .7s cubic-bezier(.34,1.56,.64,1);will-change:opacity,transform}
 .ne-reveal.is-in{opacity:1;transform:none}
 .ne-press{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,filter .2s ease}
@@ -55,15 +49,13 @@ const NE_CSS = `
 
 /* Cinematic hero */
 .stage{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(1rem,3vh,2rem);padding:5rem 1.25rem 2rem}
-.paper{transform-origin:50% 45%;transform:rotate(calc(-2deg + var(--pp,0)*42deg)) translate(calc(var(--pp,0)*160px),calc(var(--pp,0)*-140px)) scale(calc(1 - var(--pp,0)*0.82));opacity:calc(1 - var(--pp,0)*1.15);filter:blur(calc(var(--pp,0)*1.6px));will-change:transform,opacity}
-.paper-crease{opacity:calc(var(--pp,0)*0.85);mix-blend-mode:multiply}
-.clean{opacity:var(--bp,0);transform:scale(calc(.9 + var(--bp,0)*.1));will-change:transform,opacity}
-.clean-halo{opacity:calc(var(--wp,0)*.75);transition:opacity .5s ease}
-.cb-axis{opacity:calc((var(--np,0) - var(--t,0))*4)}
-.cb-name{opacity:calc((var(--mp,0) - var(--t,0))*4)}
-.cb-winfill{opacity:var(--wp,0)}
-.cb-score{opacity:var(--wp,0)}
-.cb-cta{opacity:var(--bp,0);transform:translateY(calc((1 - var(--bp,0))*18px));transition:none}
+.paper{transform-origin:50% 45%;will-change:transform,opacity}
+.paper-crease{mix-blend-mode:multiply}
+.clean{transform-origin:50% 55%;will-change:transform,opacity,filter}
+.clean-halo{will-change:opacity}
+.paper-ball{position:absolute;right:calc(-42vw + 50%);top:calc(-30vh + 50%);width:32px;height:30px;clip-path:polygon(13% 18%,38% 3%,63% 9%,91% 28%,96% 58%,75% 91%,43% 96%,14% 79%,2% 47%);background:linear-gradient(142deg,#fff9e8 0 19%,#cec3a9 20% 34%,#f0e8d3 35% 57%,#b7aa8f 58% 68%,#ddd2b9 69% 100%);box-shadow:0 8px 22px rgba(0,0,0,.38);opacity:0;visibility:hidden;transform:scale(.35) rotate(-24deg);will-change:transform,opacity}
+.paper-ball::before,.paper-ball::after{content:"";position:absolute;inset:5px 4px;border-top:1px solid rgba(76,66,47,.4);border-bottom:1px solid rgba(255,255,255,.5);transform:rotate(35deg)}
+.paper-ball::after{inset:7px 6px;transform:rotate(-42deg)}
 .ne-halo{animation:ne-drift 15s ease-in-out infinite alternate}
 @keyframes ne-drift{0%{transform:translate(-4%,-2%) scale(1)}100%{transform:translate(4%,3%) scale(1.09)}}
 @media (prefers-reduced-motion: reduce){
@@ -72,7 +64,7 @@ const NE_CSS = `
  .ne-progress{display:none}
  .paper{opacity:0}
  .clean{opacity:1;transform:none}
- .cb-cta{opacity:1;transform:none}
+ .paper-ball{display:none}
 }
 `;
 
@@ -124,65 +116,85 @@ const PaperBoard: React.FC = () => {
     [3, 0, 'Gus'], [5, 7, 'Ivy'],
   ] as const;
   return (
-    <div className="paper absolute inset-0" style={{ filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.55))' }}>
+    <div className="paper absolute inset-0" data-hero-paper style={{ filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.55))' }}>
       <svg viewBox="0 0 380 430" className="h-full w-full">
         <defs>
           <filter id="rough">
             <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7" result="n" />
             <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" />
           </filter>
+          <filter id="crumple" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence
+              data-crumple-noise
+              type="fractalNoise"
+              baseFrequency={HERO_MOTION.crumple.frequencyStart}
+              numOctaves="3"
+              seed="11"
+              result="crumpleNoise"
+            />
+            <feDisplacementMap
+              data-crumple-displacement
+              in="SourceGraphic"
+              in2="crumpleNoise"
+              scale="0"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+          <radialGradient id="pg" cx="30%" cy="18%" r="90%">
+            <stop offset="0%" stopColor="#fbf6e7" />
+            <stop offset="100%" stopColor="#e4d9bd" />
+          </radialGradient>
         </defs>
-        {/* paper */}
-        <rect x="6" y="6" width="368" height="418" rx="10" fill="#efe7d2" />
-        <rect x="6" y="6" width="368" height="418" rx="10" fill="url(#pg)" opacity="0.5" />
-        <radialGradient id="pg" cx="30%" cy="18%" r="90%">
-          <stop offset="0%" stopColor="#fbf6e7" />
-          <stop offset="100%" stopColor="#e4d9bd" />
-        </radialGradient>
-        {/* title */}
-        <text x="26" y="42" style={hand} fontSize="30" fill="#243a6b" fontWeight={700}>Friday Squares</text>
-        <text x="286" y="40" style={hand} fontSize="17" fill="#8a2b2b" transform="rotate(-6 286 40)">$5 ea!</text>
-        {/* grid lines (hand-drawn) */}
-        <g filter="url(#rough)" stroke="#33507e" strokeWidth="1.4" opacity="0.85">
-          {Array.from({ length: 11 }, (_, k) => (
-            <line key={`v${k}`} x1={G0 + k * CELL} y1={GT} x2={G0 + k * CELL} y2={GT + 10 * CELL} />
-          ))}
-          {Array.from({ length: 11 }, (_, k) => (
-            <line key={`h${k}`} x1={G0} y1={GT + k * CELL} x2={G0 + 10 * CELL} y2={GT + k * CELL} />
-          ))}
-        </g>
-        {/* axis numbers */}
-        <g style={hand} fill="#2b2b2b" fontSize="17">
-          {COL_AXIS.map((n, c) => (
-            <text key={`ct${c}`} x={G0 + c * CELL + CELL / 2 - 4} y={GT - 6} transform={`rotate(${((c * 7) % 5) - 2} ${G0 + c * CELL + 12} ${GT - 6})`}>{n}</text>
-          ))}
-          {ROW_AXIS.map((n, r) => (
-            <text key={`rt${r}`} x={G0 - 16} y={GT + r * CELL + CELL / 2 + 5} transform={`rotate(${((r * 5) % 5) - 2} ${G0 - 12} ${GT + r * CELL + 15})`}>{n}</text>
-          ))}
-        </g>
-        {/* handwritten names in cells */}
-        <g style={hand} fill="#1f1f1f" fontSize="15">
-          {scribbleNames.map(([r, c, txt], i) => (
-            <text
-              key={i}
-              x={G0 + (c as number) * CELL + 4}
-              y={GT + (r as number) * CELL + CELL / 2 + 5}
-              transform={`rotate(${((i * 11) % 9) - 4} ${G0 + (c as number) * CELL + 12} ${GT + (r as number) * CELL + 15})`}
-            >
-              {txt}
-            </text>
-          ))}
-          {/* a crossed-out name */}
-          <text x={G0 + 2 * CELL + 3} y={GT + 3 * CELL + 20} fill="#555">Deb</text>
-          <line x1={G0 + 2 * CELL} y1={GT + 3 * CELL + 15} x2={G0 + 3 * CELL - 4} y2={GT + 3 * CELL + 15} stroke="#8a2b2b" strokeWidth="1.6" />
-        </g>
-        {/* coffee ring for character */}
-        <circle cx="322" cy="360" r="26" fill="none" stroke="#7a5230" strokeWidth="5" opacity="0.18" />
-        {/* crease shading that intensifies as it crumples */}
-        <g className="paper-crease">
-          <polygon points="40,120 200,60 180,240 60,300" fill="#000" opacity="0.06" />
-          <polygon points="200,60 360,140 300,320 180,240" fill="#000" opacity="0.05" />
-          <polygon points="60,300 180,240 300,320 150,400" fill="#000" opacity="0.07" />
+        <g data-paper-crumple-group filter="none">
+          {/* paper */}
+          <rect x="6" y="6" width="368" height="418" rx="10" fill="#efe7d2" />
+          <rect x="6" y="6" width="368" height="418" rx="10" fill="url(#pg)" opacity="0.5" />
+          {/* title */}
+          <text x="26" y="42" style={hand} fontSize="30" fill="#243a6b" fontWeight={700}>Friday Squares</text>
+          <text x="286" y="40" style={hand} fontSize="17" fill="#8a2b2b" transform="rotate(-6 286 40)">$5 ea!</text>
+          {/* grid lines (hand-drawn) */}
+          <g filter="url(#rough)" stroke="#33507e" strokeWidth="1.4" opacity="0.85">
+            {Array.from({ length: 11 }, (_, k) => (
+              <line key={`v${k}`} x1={G0 + k * CELL} y1={GT} x2={G0 + k * CELL} y2={GT + 10 * CELL} />
+            ))}
+            {Array.from({ length: 11 }, (_, k) => (
+              <line key={`h${k}`} x1={G0} y1={GT + k * CELL} x2={G0 + 10 * CELL} y2={GT + k * CELL} />
+            ))}
+          </g>
+          {/* axis numbers */}
+          <g style={hand} fill="#2b2b2b" fontSize="17">
+            {COL_AXIS.map((n, c) => (
+              <text key={`ct${c}`} x={G0 + c * CELL + CELL / 2 - 4} y={GT - 6} transform={`rotate(${((c * 7) % 5) - 2} ${G0 + c * CELL + 12} ${GT - 6})`}>{n}</text>
+            ))}
+            {ROW_AXIS.map((n, r) => (
+              <text key={`rt${r}`} x={G0 - 16} y={GT + r * CELL + CELL / 2 + 5} transform={`rotate(${((r * 5) % 5) - 2} ${G0 - 12} ${GT + r * CELL + 15})`}>{n}</text>
+            ))}
+          </g>
+          {/* handwritten names in cells */}
+          <g style={hand} fill="#1f1f1f" fontSize="15">
+            {scribbleNames.map(([r, c, txt], i) => (
+              <text
+                key={i}
+                x={G0 + (c as number) * CELL + 4}
+                y={GT + (r as number) * CELL + CELL / 2 + 5}
+                transform={`rotate(${((i * 11) % 9) - 4} ${G0 + (c as number) * CELL + 12} ${GT + (r as number) * CELL + 15})`}
+              >
+                {txt}
+              </text>
+            ))}
+            {/* a crossed-out name */}
+            <text x={G0 + 2 * CELL + 3} y={GT + 3 * CELL + 20} fill="#555">Deb</text>
+            <line x1={G0 + 2 * CELL} y1={GT + 3 * CELL + 15} x2={G0 + 3 * CELL - 4} y2={GT + 3 * CELL + 15} stroke="#8a2b2b" strokeWidth="1.6" />
+          </g>
+          {/* coffee ring for character */}
+          <circle cx="322" cy="360" r="26" fill="none" stroke="#7a5230" strokeWidth="5" opacity="0.18" />
+          {/* crease shading that intensifies as it crumples */}
+          <g className="paper-crease">
+            <polygon points="40,120 200,60 180,240 60,300" fill="#000" opacity="0.06" />
+            <polygon points="200,60 360,140 300,320 180,240" fill="#000" opacity="0.05" />
+            <polygon points="60,300 180,240 300,320 150,400" fill="#000" opacity="0.07" />
+          </g>
         </g>
       </svg>
     </div>
@@ -191,9 +203,10 @@ const PaperBoard: React.FC = () => {
 
 // ── The GridOne board that builds itself as you scroll ─────────────────────────
 const CleanBoard: React.FC = () => (
-  <div className="clean absolute inset-0">
+  <div className="clean absolute inset-0" data-hero-clean>
     <div
       className="clean-halo pointer-events-none absolute -inset-6 -z-10 rounded-[40px] blur-3xl"
+      data-clean-halo
       style={{ background: 'radial-gradient(60% 60% at 55% 45%, rgba(255,199,44,0.28), rgba(143,29,44,0.18) 60%, transparent)' }}
     />
     <div className="flex h-full flex-col rounded-[24px] border border-[#EDEAE0]/12 bg-[#121317] p-4 shadow-2xl shadow-black/60 sm:p-5">
@@ -202,21 +215,21 @@ const CleanBoard: React.FC = () => (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-live/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-live" style={mono}>
           <span className="h-1.5 w-1.5 rounded-full bg-live" /> FINAL
         </span>
-        <div className="cb-score flex items-center gap-3 text-sm font-bold text-[#EDEAE0]" style={mono}>
+        <div className="cb-live-score flex items-center gap-3 text-sm font-bold text-[#EDEAE0]" data-hero-live-score style={mono}>
           <span>KC <span className="text-gold">24</span></span>
           <span className="text-[#EDEAE0]/25">·</span>
           <span>PHI <span className="text-gold">20</span></span>
         </div>
       </div>
 
-      <div className="grid flex-1 gap-[3px]" style={{ gridTemplateColumns: 'clamp(1rem,3.4vw,1.5rem) repeat(10, 1fr)' }}>
+      <div className="grid min-h-0 flex-1 gap-[3px]" style={{ gridTemplateColumns: 'clamp(1rem,3.4vw,1.5rem) repeat(10, 1fr)', gridTemplateRows: 'repeat(11, minmax(0, 1fr))' }}>
         <div />
         {COL_AXIS.map((n, c) => (
-          <div key={`c${c}`} className={`cb-axis flex aspect-square items-center justify-center text-[9px] font-bold sm:text-[11px] ${c === WIN_COL ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', ((c / 20) * 0.55).toFixed(3)) }}>{n}</div>
+          <div key={`c${c}`} className={`cb-axis flex items-center justify-center text-[9px] font-bold sm:text-[11px] ${c === WIN_COL ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', ((c / 20) * 0.55).toFixed(3)) }}>{n}</div>
         ))}
         {ROW_AXIS.map((rn, r) => (
           <React.Fragment key={`r${r}`}>
-            <div className={`cb-axis flex aspect-square items-center justify-center text-[9px] font-bold sm:text-[11px] ${r === WIN_ROW ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', (((r + 10) / 20) * 0.55).toFixed(3)) }}>{rn}</div>
+            <div className={`cb-axis flex items-center justify-center text-[9px] font-bold sm:text-[11px] ${r === WIN_ROW ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', (((r + 10) / 20) * 0.55).toFixed(3)) }}>{rn}</div>
             {COL_AXIS.map((_, c) => {
               const idx = r * 10 + c;
               const isWinner = r === WIN_ROW && c === WIN_COL;
@@ -224,11 +237,11 @@ const CleanBoard: React.FC = () => (
               return (
                 <div
                   key={idx}
-                  className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-[3px] border ${inLane ? 'border-gold/20 bg-gold/[0.05]' : 'border-[#EDEAE0]/[0.06] bg-[#EDEAE0]/[0.02]'}`}
+                  className={`relative flex min-h-0 items-center justify-center overflow-hidden rounded-[3px] border ${inLane ? 'border-gold/20 bg-gold/[0.05]' : 'border-[#EDEAE0]/[0.06] bg-[#EDEAE0]/[0.02]'}`}
                 >
                   <span className={`cb-name text-[7px] font-semibold sm:text-[9px] ${isWinner ? 'text-[#EDEAE0]/40' : inLane ? 'text-[#EDEAE0]/40' : 'text-[#EDEAE0]/25'}`} style={{ ...mono, ...csv('--t', ((idx / 100) * 0.82).toFixed(3)) }}>{cellInitials(idx)}</span>
                   {isWinner && (
-                    <span className="cb-winfill absolute inset-0 flex items-center justify-center bg-gold text-[7px] font-bold text-black shadow-[0_0_18px_rgba(255,199,44,0.6)] sm:text-[9px]" style={mono}>{cellInitials(idx)}</span>
+                    <span className="cb-winfill absolute inset-0 flex items-center justify-center bg-gold text-[7px] font-bold text-black shadow-[0_0_18px_rgba(255,199,44,0.6)] sm:text-[9px]" data-hero-winner style={mono}>{cellInitials(idx)}</span>
                   )}
                 </div>
               );
@@ -237,7 +250,7 @@ const CleanBoard: React.FC = () => (
         ))}
       </div>
 
-      <div className="cb-score mt-3 flex items-center justify-between rounded-2xl border border-[#EDEAE0]/10 bg-black/30 px-4 py-2.5">
+      <div className="mt-3 flex items-center justify-between rounded-2xl border border-[#EDEAE0]/10 bg-black/30 px-4 py-2.5">
         <div className="min-w-0">
           <div className="truncate text-[13px] font-semibold text-[#EDEAE0]">One link, everyone watching</div>
           <div className="truncate text-[11px] text-[#EDEAE0]/50" style={mono}>getgridone.com/?board=FRIDAY</div>
@@ -247,8 +260,6 @@ const CleanBoard: React.FC = () => (
     </div>
   </div>
 );
-
-const NARRATION = ['The old paper way', 'Drawing the grid', 'Adding the players', 'We have a winner'];
 
 const FEATURED_USES = [
   { label: 'Booster clubs', Icon: Megaphone },
@@ -276,85 +287,199 @@ const FAQ_ITEMS = [
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   const title = 'Football Squares App for Super Bowl Squares, Fundraisers, and Group Pools | GridOne';
   const description = 'Run football squares and Super Bowl squares online with GridOne. Built for fundraisers, office pools, watch parties, and community groups that want one clean live board link.';
-  const reduced = useReducedMotion();
   const heroRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<Lenis | null>(null);
-  const [phase, setPhase] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const hero = heroRef.current;
     const stage = stageRef.current;
-    if (!hero || !stage) return;
-    if (prefersReduced()) {
-      // Show the finished board; skip the scrub and smooth scroll.
-      (['--pp', '--bp', '--np', '--mp', '--wp'] as const).forEach((k) => hero.style.setProperty(k, '1'));
-      setPhase(3);
-      (window as { __ready?: boolean }).__ready = true;
-      return;
-    }
+    const progressBar = progressRef.current;
+    if (!hero || !stage || !progressBar) return;
 
-    const root = document.documentElement;
-    const lenis = new Lenis({ duration: 1.1 });
-    lenisRef.current = lenis;
+    window.__ready = false;
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
 
-    // Lenis drives ScrollTrigger; velocity feeds the ambient "thinking" glow.
-    lenis.on('scroll', ScrollTrigger.update);
-    lenis.on('scroll', (e: { scroll: number; limit: number; velocity: number }) => {
-      root.style.setProperty('--sp', (e.limit > 0 ? e.scroll / e.limit : 0).toFixed(4));
-      root.style.setProperty('--ne-glow', (0.4 + Math.min(Math.abs(e.velocity) / 40, 1) * 0.6).toFixed(3));
-    });
-    const raf = (time: number) => lenis.raf(time * 1000);
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
+      mm.add(
+        {
+          reduced: '(prefers-reduced-motion: reduce)',
+          desktop: `(min-width: ${HERO_MOTION.narrowBreakpoint}px) and (prefers-reduced-motion: no-preference)`,
+          narrow: `(max-width: ${HERO_MOTION.narrowBreakpoint - 1}px) and (prefers-reduced-motion: no-preference)`,
+        },
+        (mediaContext) => {
+          const conditions = mediaContext.conditions as { reduced?: boolean; desktop?: boolean; narrow?: boolean };
+          const q = gsap.utils.selector(hero);
+          const paper = q<HTMLElement>('[data-hero-paper]')[0];
+          const paperArt = q<SVGGElement>('[data-paper-crumple-group]')[0];
+          const turbulence = q<SVGFETurbulenceElement>('[data-crumple-noise]')[0];
+          const displacement = q<SVGFEDisplacementMapElement>('[data-crumple-displacement]')[0];
+          const crease = q<SVGGElement>('.paper-crease')[0];
+          const clean = q<HTMLElement>('[data-hero-clean]')[0];
+          const halo = q<HTMLElement>('[data-clean-halo]')[0];
+          const winner = q<HTMLElement>('[data-hero-winner]')[0];
+          const liveScore = q<HTMLElement>('[data-hero-live-score]')[0];
+          const cta = q<HTMLElement>('.cb-cta')[0];
+          const narration = q<HTMLElement>('[data-hero-narr]')[0];
+          const narrationDot = q<HTMLElement>('[data-hero-narr-dot]')[0];
+          const paperBall = q<HTMLElement>('[data-paper-ball]')[0];
 
-    let lastPhase = -1;
-    const st = ScrollTrigger.create({
-      trigger: stage,
-      start: 'top top',
-      end: () => '+=' + window.innerHeight * 2.2,
-      pin: true,
-      scrub: true,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => {
-        const p = self.progress;
-        hero.style.setProperty('--pp', smooth((p - 0.06) / 0.20).toFixed(4)); // paper crumples
-        hero.style.setProperty('--bp', smooth((p - 0.24) / 0.14).toFixed(4)); // clean board in
-        hero.style.setProperty('--np', smooth((p - 0.40) / 0.16).toFixed(4)); // numbers
-        hero.style.setProperty('--mp', smooth((p - 0.56) / 0.22).toFixed(4)); // names
-        hero.style.setProperty('--wp', smooth((p - 0.80) / 0.15).toFixed(4)); // winner
-        const ph = p < 0.24 ? 0 : p < 0.56 ? 1 : p < 0.80 ? 2 : 3;
-        if (ph !== lastPhase) { lastPhase = ph; setPhase(ph); }
-      },
-    });
+          const setNarration = (progress: number) => {
+            const label = progress < HERO_MOTION.beats.crumple
+              ? HERO_MOTION.labels[0]
+              : progress < HERO_MOTION.beats.winner
+                ? HERO_MOTION.labels[1]
+                : HERO_MOTION.labels[2];
+            if (narration.textContent !== label) narration.textContent = label;
+            const winnerPhase = progress >= HERO_MOTION.beats.winner;
+            narrationDot.classList.toggle('bg-gold', winnerPhase);
+            narrationDot.classList.toggle('bg-live', !winnerPhase);
+            narrationDot.classList.toggle('animate-pulse', !winnerPhase);
+          };
 
-    // Settle layout so the pin spacer height is known before any jump.
-    ScrollTrigger.refresh();
-    lenis.resize();
+          paperArt.setAttribute('filter', 'none');
 
-    // Dev/verify contract: ?jump=<px> lands pre-scrolled, __ready fires when settled.
-    (window as { __lenis?: Lenis }).__lenis = lenis;
-    const jump = new URLSearchParams(window.location.search).get('jump');
-    if (jump) { lenis.scrollTo(parseFloat(jump), { immediate: true }); ScrollTrigger.update(); }
-    requestAnimationFrame(() => { (window as { __ready?: boolean }).__ready = true; });
+          if (conditions.reduced) {
+            gsap.set(paper, { autoAlpha: 0 });
+            gsap.set(clean, { autoAlpha: 1, x: 0, y: 0, scale: 1, filter: 'none' });
+            gsap.set([winner, liveScore, halo], { autoAlpha: 1, x: 0, y: 0, scale: 1 });
+            gsap.set(cta, { autoAlpha: 1, x: 0, y: 0 });
+            gsap.set(paperBall, { autoAlpha: 0 });
+            gsap.set(progressBar, { scaleX: 1 });
+            setNarration(1);
+            hero.dataset.heroProgress = '1.0000';
+            window.__heroProgress = 1;
+            delete window.__heroScrollTo;
+            requestAnimationFrame(() => { window.__ready = true; });
+            return;
+          }
+
+          const useDisplacement = !!conditions.desktop;
+          let filterActive = false;
+          const timeline = gsap.timeline({ paused: true });
+
+          gsap.set(paper, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: -2, force3D: true });
+          gsap.set(clean, { autoAlpha: 0, y: 18, scale: 0.94, filter: 'blur(6px)', force3D: true });
+          gsap.set([winner, liveScore], { autoAlpha: 0, scale: 0.72, transformOrigin: '50% 50%' });
+          gsap.set(cta, { autoAlpha: 1, y: 0 });
+          gsap.set(halo, { autoAlpha: 0 });
+          gsap.set(crease, { opacity: 0.35 });
+          gsap.set(paperBall, { autoAlpha: 0, scale: 0.35, rotation: -24 });
+          gsap.set(displacement, { attr: { scale: 0 } });
+          gsap.set(turbulence, { attr: { baseFrequency: HERO_MOTION.crumple.frequencyStart } });
+
+          timeline
+            .to(paper, { scale: 0.45, rotation: -28, duration: 3, ease: 'power2.in' }, 4)
+            .to(crease, { opacity: 1, duration: 3, ease: 'power2.in' }, 4)
+            .to(paper, { x: -8, y: -14, rotation: -34, duration: 0.25, ease: 'power2.out' }, 7)
+            .to(paper, {
+              x: HERO_MOTION.toss.x,
+              y: HERO_MOTION.toss.y,
+              rotation: HERO_MOTION.toss.rotation,
+              scale: HERO_MOTION.toss.scale,
+              autoAlpha: 0,
+              duration: 1.75,
+              ease: 'power3.in',
+            }, 7.25)
+            .to(clean, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.75, ease: 'power2.out' }, 7.25)
+            .to([winner, liveScore], {
+              autoAlpha: 1,
+              scale: 1,
+              duration: 0.65,
+              stagger: HERO_MOTION.winnerStagger,
+              ease: 'back.out(1.4)',
+            }, 9)
+            .to(halo, { autoAlpha: 0.75, duration: 0.65, ease: 'power2.out' }, 9.35);
+
+          if (useDisplacement) {
+            timeline
+              .to(displacement, { attr: { scale: HERO_MOTION.crumple.displacement }, duration: 3, ease: 'power2.in' }, 4)
+              .to(turbulence, { attr: { baseFrequency: HERO_MOTION.crumple.frequencyEnd }, duration: 3, ease: 'power2.in' }, 4)
+              .to(paperBall, { autoAlpha: 1, scale: 1, rotation: 8, duration: 0.07, ease: 'back.out(1.4)' }, 8.85)
+              .to(paperBall, { autoAlpha: 0, scale: 0.72, duration: 0.08, ease: 'power2.in' }, 8.92);
+          }
+
+          const updatePresentation = () => {
+            const progress = timeline.progress();
+            const shouldFilter = useDisplacement
+              && progress >= HERO_MOTION.beats.crumple
+              && progress < HERO_MOTION.beats.toss;
+            if (shouldFilter !== filterActive) {
+              filterActive = shouldFilter;
+              paperArt.setAttribute('filter', filterActive ? 'url(#crumple)' : 'none');
+            }
+            setNarration(progress);
+            gsap.set(progressBar, { scaleX: progress });
+            hero.dataset.heroProgress = progress.toFixed(4);
+            window.__heroProgress = progress;
+          };
+          timeline.eventCallback('onUpdate', updatePresentation);
+          updatePresentation();
+
+          const trigger = ScrollTrigger.create({
+            id: 'gridone-hero',
+            trigger: stage,
+            animation: timeline,
+            start: 'top top',
+            end: () => `+=${window.innerHeight * HERO_MOTION.pinScreens}`,
+            pin: true,
+            scrub: 0.5,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          });
+
+          const seekHero = (requestedProgress: number) => {
+            const progress = gsap.utils.clamp(0, 1, requestedProgress);
+            const scrollY = trigger.start + (trigger.end - trigger.start) * progress;
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(scrollY, { immediate: true });
+            else window.scrollTo({ top: scrollY, behavior: 'auto' });
+            ScrollTrigger.update();
+            trigger.getTween()?.progress(1);
+            timeline.progress(progress);
+            updatePresentation();
+          };
+          window.__heroScrollTo = seekHero;
+
+          // Measure the pin spacer before Lenis calculates its scroll limit.
+          ScrollTrigger.refresh();
+          getLenis()?.resize();
+
+          const jump = new URLSearchParams(window.location.search).get('jump');
+          if (jump) {
+            const scrollY = Number.parseFloat(jump);
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(scrollY, { immediate: true });
+            else window.scrollTo({ top: scrollY, behavior: 'auto' });
+            ScrollTrigger.update();
+            trigger.getTween()?.progress(1);
+          }
+          requestAnimationFrame(() => { window.__ready = true; });
+
+          return () => {
+            if (window.__heroScrollTo === seekHero) delete window.__heroScrollTo;
+            paperArt.setAttribute('filter', 'none');
+          };
+        },
+      );
+    }, hero);
 
     return () => {
-      st.kill();
-      gsap.ticker.remove(raf);
-      lenis.destroy();
-      lenisRef.current = null;
+      ctx.revert();
+      delete window.__heroScrollTo;
+      delete window.__heroProgress;
     };
-  }, [reduced]);
+  }, []);
 
   const smoothTo = (sel: string) => (e: React.MouseEvent) => {
-    const lenis = lenisRef.current;
+    const lenis = getLenis();
     if (lenis) { e.preventDefault(); lenis.scrollTo(sel, { offset: -16 }); }
   };
 
   return (
     <div className="min-h-screen bg-background text-[#EDEAE0] font-sans selection:bg-gold/30 flex flex-col overflow-x-clip">
       <style>{NE_CSS}</style>
-      <div className="ne-progress" aria-hidden="true" />
+      <div ref={progressRef} className="ne-progress" data-hero-progress aria-hidden="true" />
       <PageMetadata
         title={title}
         description={description}
@@ -391,10 +516,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 
       {/* ── Cinematic scroll hero (GSAP ScrollTrigger pin + Lenis smooth scroll) ── */}
       <section ref={heroRef} className="relative z-10">
-        <div ref={stageRef} className="stage">
+        <div ref={stageRef} className="stage" data-hero-stage>
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#EDEAE0]/50" style={mono}>
-            <span className={`h-1.5 w-1.5 rounded-full ${phase === 3 ? 'bg-gold' : 'bg-live animate-pulse'}`} />
-            <span className="narr">{String(phase + 1).padStart(2, '0')} — {NARRATION[phase]}</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-live animate-pulse" data-hero-narr-dot />
+            <span className="narr" data-hero-narr>{HERO_MOTION.labels[0]}</span>
           </div>
 
           <h1 className="text-center text-[2.5rem] font-extrabold uppercase leading-[0.9] tracking-tight text-[#EDEAE0] sm:text-6xl" style={display}>
@@ -404,6 +529,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           <div className="relative aspect-[380/430] w-[min(86vw,400px)]" aria-hidden="true">
             <PaperBoard />
             <CleanBoard />
+            <span className="paper-ball" data-paper-ball />
           </div>
 
           <div className="cb-cta flex flex-col items-center gap-4">
