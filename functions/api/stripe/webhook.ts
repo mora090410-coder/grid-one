@@ -47,7 +47,7 @@ export const onRequestPost: PagesFunction = async (context) => {
                 );
 
                 // Update Contest
-                const { error } = await supabase
+                const { data: contest, error } = await supabase
                     .from('contests')
                     .update({
                         is_activated: true,
@@ -57,11 +57,33 @@ export const onRequestPost: PagesFunction = async (context) => {
                         stripe_customer_id: session.customer as string,
                         activation_price_id: context.env.STRIPE_PRICE_ID, // Store which price ID unlocked it
                     })
-                    .eq('id', contestId);
+                    .eq('id', contestId)
+                    .select('owner_id')
+                    .single();
 
                 if (error) {
                     console.error('Failed to update contest:', error);
                     return new Response('Database update failed', { status: 500 });
+                }
+
+                // Season pass: the payment also grants the organizer an
+                // allowance of board activations (default 20). Idempotent via
+                // the unique stripe_checkout_session_id.
+                if (contest?.owner_id) {
+                    const { error: entitlementError } = await supabase
+                        .from('entitlements')
+                        .upsert({
+                            owner_id: contest.owner_id,
+                            stripe_checkout_session_id: session.id,
+                            stripe_payment_intent_id: session.payment_intent as string,
+                            stripe_customer_id: session.customer as string,
+                            price_id: context.env.STRIPE_PRICE_ID,
+                        }, { onConflict: 'stripe_checkout_session_id', ignoreDuplicates: true });
+
+                    if (entitlementError) {
+                        // The paid board is already activated; log and continue
+                        console.error('Failed to record entitlement:', entitlementError);
+                    }
                 }
             }
         }

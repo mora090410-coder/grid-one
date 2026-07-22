@@ -8,7 +8,7 @@ import { supabase } from '../services/supabase';
 import { NFL_TEAMS } from '../constants';
 import { parseBoardImage } from '../services/geminiService';
 
-import { createCheckoutSession } from '../services/stripe';
+import { createCheckoutSession, activateWithEntitlement } from '../services/stripe';
 
 interface AdminPanelProps {
   game: GameState;
@@ -237,6 +237,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   const updateField = (field: keyof GameState, val: string | number | boolean) => {
     setLocalGame(prev => ({ ...prev, [field]: val }));
+  };
+
+  const EMPTY_MANUAL_SCORES = { Q1: { left: 0, top: 0 }, Q2: { left: 0, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } };
+
+  const updateManualQuarter = (q: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', side: 'left' | 'top', val: number) => {
+    setLocalGame(prev => {
+      const base = prev.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
+      return { ...prev, manualQuarterScores: { ...base, [q]: { ...base[q], [side]: Math.max(0, val) } } };
+    });
   };
 
   const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
@@ -620,8 +629,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <button
                     onClick={async () => {
                       if (!isActivated && activePoolId) {
-                        await createCheckoutSession(activePoolId);
                         setShowMenu(false);
+                        // Season pass: a prior purchase covers up to 20 boards,
+                        // so try the free activation before Stripe checkout.
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (session?.access_token) {
+                            const result = await activateWithEntitlement(activePoolId, session.access_token);
+                            if (result.activated) {
+                              alert('Board unlocked — covered by your season pass.');
+                              window.location.reload();
+                              return;
+                            }
+                          }
+                        } catch (e) {
+                          console.error('Entitlement check failed, falling back to checkout:', e);
+                        }
+                        await createCheckoutSession(activePoolId);
                       } else {
                         navigator.clipboard.writeText(`${window.location.origin}/?poolId=${activePoolId}`);
                         setShowMenu(false);
@@ -634,7 +658,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Unlock sharing ($14.99)
+                        Unlock sharing ($14.99 covers 20 boards)
                       </>
                     ) : (
                       <>
@@ -874,6 +898,110 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Live Scoring */}
+                  <div className="border-t border-white/5 pt-6 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Live Scoring</h5>
+                      <div className="flex rounded-full bg-white/5 p-1 border border-white/10">
+                        <button
+                          onClick={() => updateField('useManualScores', false)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                        >
+                          Auto
+                        </button>
+                        <button
+                          onClick={() => updateField('useManualScores', true)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                        >
+                          Manual
+                        </button>
+                      </div>
+                    </div>
+
+                    {!localGame.useManualScores ? (
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        Scores update automatically during the game. Switch to Manual to enter quarter scores yourself — the most reliable option on game day.
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-label">Game Status</label>
+                            <div className="relative">
+                              <select
+                                value={localGame.manualGameState ?? 'in'}
+                                onChange={(e) => updateField('manualGameState', e.target.value)}
+                                className="w-full glass-input appearance-none bg-surface text-white"
+                              >
+                                <option value="pre">Scheduled</option>
+                                <option value="in">In progress</option>
+                                <option value="post">Final</option>
+                              </select>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-label">Current Period</label>
+                            <div className="relative">
+                              <select
+                                value={localGame.manualPeriod ?? 1}
+                                onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
+                                disabled={(localGame.manualGameState ?? 'in') !== 'in'}
+                                className="w-full glass-input appearance-none bg-surface text-white disabled:opacity-40"
+                              >
+                                <option value={1}>Q1</option>
+                                <option value={2}>Q2</option>
+                                <option value={3}>Q3</option>
+                                <option value={4}>Q4</option>
+                                <option value={5}>Overtime</option>
+                              </select>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
+                            <span></span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">{localGame.leftAbbr}</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">{localGame.topAbbr}</span>
+                          </div>
+                          {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).map((q) => (
+                            <div key={q} className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
+                              <span className="text-xs font-bold text-white/60">{q}</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={localGame.manualQuarterScores?.[q]?.left ?? 0}
+                                onChange={(e) => updateManualQuarter(q, 'left', parseInt(e.target.value) || 0)}
+                                className="w-full glass-input text-center"
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                value={localGame.manualQuarterScores?.[q]?.top ?? 0}
+                                onChange={(e) => updateManualQuarter(q, 'top', parseInt(e.target.value) || 0)}
+                                className="w-full glass-input text-center"
+                              />
+                            </div>
+                          ))}
+                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-white/5">
+                            <span className="text-xs font-bold text-gold">Total</span>
+                            <span className="text-sm font-bold text-white text-center">
+                              {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.left ?? 0), 0)}
+                            </span>
+                            <span className="text-sm font-bold text-white text-center">
+                              {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.top ?? 0), 0)}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed">
+                          Enter each quarter's points (not running totals). Winners highlight as you advance the period, and the Final winner locks in when status is set to Final.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Board Actions */}

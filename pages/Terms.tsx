@@ -61,7 +61,7 @@ const Terms: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">5. Payments</h2>
             <p>
-              GridOne charges a one-time fee to unlock sharing for each board (currently $14.99 per board, including up to 100 viewers). Payments are processed securely via Stripe.
+              GridOne charges a one-time fee to unlock board sharing (currently $14.99, which covers activation of up to 20 boards on your account, each including up to 100 viewers). Payments are processed securely via Stripe.
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>All sales are final once a board has been unlocked for sharing.</li>

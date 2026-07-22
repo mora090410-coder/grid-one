@@ -1,5 +1,28 @@
 import { withRetry } from '../utils/retry';
 
+/**
+ * Tries to unlock a board using the organizer's season-pass allowance
+ * (granted by a prior purchase). Returns needsPayment when the allowance is
+ * used up (or none exists) so the caller can fall back to Stripe checkout.
+ */
+export const activateWithEntitlement = async (
+    contestId: string,
+    accessToken: string
+): Promise<{ activated: boolean; needsPayment?: boolean }> => {
+    const res = await fetch('/api/pools/activate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ contestId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.activated) return { activated: true };
+    if (res.status === 402) return { activated: false, needsPayment: true };
+    throw new Error(data.error || `Activation failed (status ${res.status})`);
+};
+
 export const createCheckoutSession = async (contestId: string): Promise<void> => {
     console.log('Stripe Service v2.1 init');
     try {
