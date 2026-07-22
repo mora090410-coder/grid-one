@@ -22,6 +22,18 @@ export const RunYourPoolAlternative: React.FC = () => {
                     mainEntityOfPage: 'https://www.getgridone.com/articles/run-your-pool-alternative',
                     author: { '@type': 'Organization', name: 'GridOne' },
                     publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+                    mainEntity: [
+                        {
+                            '@type': 'Question',
+                            name: 'What is the best RunYourPool alternative for football squares?',
+                            acceptedAnswer: { '@type': 'Answer', text: 'The best RunYourPool alternative depends on the pool you are running. GridOne is built for football squares organizers who want a mobile-first board, live scoring, simple sharing, and no account requirement for players viewing the board.' },
+                        },
+                        {
+                            '@type': 'Question',
+                            name: 'Can players view a GridOne football squares board without logging in?',
+                            acceptedAnswer: { '@type': 'Answer', text: 'Yes. Players can open a shared GridOne board link without creating an account, which makes it easier to share a football squares board with friends, coworkers, parents, or supporters.' },
+                        },
+                    ],
                 }}
             />
             <Header />
@@ -75,6 +87,16 @@ export const RunYourPoolAlternative: React.FC = () => {
                     </p>
                     <p className="text-white/80 leading-relaxed mb-8">
                         GridOne answers this instantly. It sits next to the live scoreboard, completely eliminating the need to manually cross-reference the grid axis.
+                    </p>
+
+                    <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Who GridOne is best for</h2>
+                    <p className="text-white/80 leading-relaxed mb-6">
+                        GridOne fits organizers who care most about football squares: a clean board link, readable mobile layout, live scoring, and fast sharing with people who do not want another account just to check their square.
+                    </p>
+
+                    <h2 className="text-2xl font-semibold text-white mt-12 mb-6">When a legacy pool platform may still fit</h2>
+                    <p className="text-white/80 leading-relaxed mb-8">
+                        If you need a broad office-pool suite across many different sports formats, a larger legacy platform may still be the right tool. If your job is to run a football squares board that people can actually follow during the game, GridOne is focused on that experience.
                     </p>
 
                     <div className="mt-16 text-center">

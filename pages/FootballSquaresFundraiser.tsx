@@ -3,6 +3,22 @@ import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
+import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
+
+const faqs: FAQItem[] = [
+  {
+    question: 'Is a football squares fundraiser legal everywhere?',
+    answer: 'Rules vary by state and organization, so confirm your local fundraiser and gaming rules before collecting money.',
+  },
+  {
+    question: 'Why run football squares online instead of on paper?',
+    answer: 'An online football squares board is easier to share, easier to read on phones, and reduces disputes about winners and score updates.',
+  },
+  {
+    question: 'What groups use football squares for fundraising?',
+    answer: 'Football squares fundraisers are commonly used by youth sports teams, booster clubs, school groups, churches, and community organizations because the format is familiar and easy to explain.',
+  },
+];
 
 export const FootballSquaresFundraiser: React.FC = () => {
   const title = 'Football Squares Fundraiser Ideas That Are Easier to Run Online | GridOne';
@@ -24,21 +40,7 @@ export const FootballSquaresFundraiser: React.FC = () => {
             author: { '@type': 'Organization', name: 'GridOne' },
             publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
           },
-          {
-            '@type': 'FAQPage',
-            mainEntity: [
-              {
-                '@type': 'Question',
-                name: 'Is a football squares fundraiser legal everywhere?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Rules vary by state and organization, so confirm your local fundraiser and gaming rules before collecting money.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Why run football squares online instead of on paper?',
-                acceptedAnswer: { '@type': 'Answer', text: 'An online football squares board is easier to share, easier to read on phones, and reduces disputes about winners and score updates.' },
-              },
-            ],
-          },
+          faqPageSchema(faqs),
         ]}
       />
       <Header />
@@ -83,10 +85,20 @@ export const FootballSquaresFundraiser: React.FC = () => {
             <li>Office or local business charity pool</li>
           </ul>
 
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">A simple fundraiser plan</h2>
+          <ol className="space-y-3 text-white/80">
+            <li>Pick the game, board size, spot price, and payout rules before sharing the board.</li>
+            <li>Share one GridOne viewer link with parents, members, coworkers, or supporters.</li>
+            <li>Keep one organizer responsible for edits so names, numbers, and payouts stay clean.</li>
+            <li>Use the live board during the game so supporters can follow winners without waiting for screenshots.</li>
+          </ol>
+
           <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Keep it clean</h2>
           <p className="text-white/80 leading-relaxed mb-6">
             If your fundraiser depends on football squares, act like the organizer experience matters. Use clear rules, confirm any local compliance issues, and give supporters one clean board link instead of a mess of screenshots.
           </p>
+
+          <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
             links={[

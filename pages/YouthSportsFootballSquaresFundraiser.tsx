@@ -2,6 +2,18 @@ import React from 'react';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
+import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
+
+const faqs: FAQItem[] = [
+  {
+    question: 'How do youth sports teams run football squares fundraisers?',
+    answer: 'Most youth sports teams sell squares before a football game, draw numbers after the board fills, publish the rules, and let supporters follow quarter winners during the game.',
+  },
+  {
+    question: 'What makes a youth sports football squares fundraiser easier to manage?',
+    answer: 'A single live board link, clear payout rules, mobile-friendly viewing, and organizer-only editing reduce the manual updates and text-thread confusion that usually slow parent volunteers down.',
+  },
+];
 
 export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
   const title = 'Youth Sports Football Squares Fundraiser Guide | GridOne';
@@ -14,14 +26,17 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
         description={description}
         path="/articles/youth-sports-football-squares-fundraiser"
         type="article"
-        schema={{
-          '@type': 'Article',
-          headline: title,
-          description,
-          mainEntityOfPage: 'https://www.getgridone.com/articles/youth-sports-football-squares-fundraiser',
-          author: { '@type': 'Organization', name: 'GridOne' },
-          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-        }}
+        schema={[
+          {
+            '@type': 'Article',
+            headline: title,
+            description,
+            mainEntityOfPage: 'https://www.getgridone.com/articles/youth-sports-football-squares-fundraiser',
+            author: { '@type': 'Organization', name: 'GridOne' },
+            publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+          },
+          faqPageSchema(faqs),
+        ]}
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
@@ -42,8 +57,18 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
             <li>Less confusion during the game</li>
           </ul>
 
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">A simple team rollout</h2>
+          <ul className="space-y-3 text-white/80">
+            <li>Pick one game and one clear price per square.</li>
+            <li>Share the GridOne board link in the team chat, parent email, or booster club page.</li>
+            <li>Close sales, draw numbers, and publish the final board before kickoff.</li>
+            <li>Use the live board during the game so supporters can check winners without asking the organizer.</li>
+          </ul>
+
           <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Keep it trustworthy</h2>
           <p className="text-white/80 leading-relaxed mb-6">Draw the numbers after all the spots are filled, explain payout rules clearly, and confirm any local fundraising rules before collecting money. The cleaner the process feels, the easier it is for families to trust it.</p>
+
+          <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
             links={[

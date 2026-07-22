@@ -2,6 +2,18 @@ import React from 'react';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
+import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
+
+const faqs: FAQItem[] = [
+  {
+    question: 'Are football squares a good booster club fundraiser?',
+    answer: 'Football squares can work well for booster clubs because supporters usually understand the format quickly, but organizers should confirm local fundraising and gaming rules before collecting money.',
+  },
+  {
+    question: 'How can a booster club make football squares easier to manage?',
+    answer: 'Use one organizer-controlled board, publish one live viewer link, explain the payout rules before kickoff, and let supporters check winners from their phones instead of asking for screenshots.',
+  },
+];
 
 export const BoosterClubFootballSquares: React.FC = () => {
   const title = 'Booster Club Football Squares Fundraiser Guide | GridOne';
@@ -14,14 +26,17 @@ export const BoosterClubFootballSquares: React.FC = () => {
         description={description}
         path="/articles/booster-club-football-squares"
         type="article"
-        schema={{
-          '@type': 'Article',
-          headline: title,
-          description,
-          mainEntityOfPage: 'https://www.getgridone.com/articles/booster-club-football-squares',
-          author: { '@type': 'Organization', name: 'GridOne' },
-          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-        }}
+        schema={[
+          {
+            '@type': 'Article',
+            headline: title,
+            description,
+            mainEntityOfPage: 'https://www.getgridone.com/articles/booster-club-football-squares',
+            author: { '@type': 'Organization', name: 'GridOne' },
+            publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+          },
+          faqPageSchema(faqs),
+        ]}
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
@@ -43,6 +58,16 @@ export const BoosterClubFootballSquares: React.FC = () => {
 
           <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Better booster-club setup</h2>
           <p className="text-white/80 leading-relaxed mb-6">Use one organizer-controlled board, publish one live board link, and make sure everyone can follow winners from their phone without edit access. That is the real upgrade.</p>
+
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">A cleaner volunteer handoff</h2>
+          <ol className="space-y-3 text-white/80">
+            <li>Name one board owner before the fundraiser is announced.</li>
+            <li>Publish the square price, payout rules, and close time in the same message as the board link.</li>
+            <li>Draw numbers only after the board is filled or sales are closed.</li>
+            <li>Keep the live board link pinned in the team chat, booster page, or event thread through the final whistle.</li>
+          </ol>
+
+          <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
             links={[

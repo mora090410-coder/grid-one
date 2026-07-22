@@ -2,6 +2,18 @@ import React from 'react';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { ArticleCTA } from '../components/seo/ArticleCTA';
+import { ArticleFAQ, faqPageSchema, FAQItem } from '../components/seo/ArticleFAQ';
+
+const faqs: FAQItem[] = [
+  {
+    question: 'Can churches and schools use football squares for fundraising?',
+    answer: 'Churches and schools can use football squares as a familiar event-based fundraiser where local rules allow it, but organizers should confirm their organization policies and local fundraising requirements first.',
+  },
+  {
+    question: 'What makes a church or school football squares fundraiser feel trustworthy?',
+    answer: 'Clear rules, one organizer, a published board link, visible winner tracking, and a simple explanation of how numbers and payouts work help supporters trust the fundraiser.',
+  },
+];
 
 export const ChurchSchoolFundraiserSquares: React.FC = () => {
   const title = 'Church and School Football Squares Fundraiser Ideas | GridOne';
@@ -14,14 +26,17 @@ export const ChurchSchoolFundraiserSquares: React.FC = () => {
         description={description}
         path="/articles/church-school-football-squares-fundraiser"
         type="article"
-        schema={{
-          '@type': 'Article',
-          headline: title,
-          description,
-          mainEntityOfPage: 'https://www.getgridone.com/articles/church-school-football-squares-fundraiser',
-          author: { '@type': 'Organization', name: 'GridOne' },
-          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
-        }}
+        schema={[
+          {
+            '@type': 'Article',
+            headline: title,
+            description,
+            mainEntityOfPage: 'https://www.getgridone.com/articles/church-school-football-squares-fundraiser',
+            author: { '@type': 'Organization', name: 'GridOne' },
+            publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+          },
+          faqPageSchema(faqs),
+        ]}
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
@@ -43,6 +58,16 @@ export const ChurchSchoolFundraiserSquares: React.FC = () => {
 
           <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Do the trust-building work</h2>
           <p className="text-white/80 leading-relaxed mb-6">Explain how winners are determined, publish the rules up front, and make sure anyone participating can follow along without having to ask for an updated screenshot every quarter.</p>
+
+          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">A simple rollout for community groups</h2>
+          <ol className="space-y-3 text-white/80">
+            <li>Pick one game that already has attention in the community.</li>
+            <li>Set the square price, winner schedule, and beneficiary before sharing.</li>
+            <li>Use one GridOne link in newsletters, parent messages, group texts, or event pages.</li>
+            <li>Keep winner updates visible during the game so supporters do not need to chase the organizer.</li>
+          </ol>
+
+          <ArticleFAQ faqs={faqs} />
 
           <ArticleCTA
             links={[
