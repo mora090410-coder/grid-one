@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "local": "wrangler pages dev -- npm run dev",
+    "local": "wrangler pages dev --port 8788 & npm run dev",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
