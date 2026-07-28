@@ -14,6 +14,20 @@ export default defineConfig({
       '/api': 'http://localhost:8788',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router')) return 'framework';
+          if (id.includes('/@supabase/')) return 'supabase';
+          if (id.includes('/gsap/') || id.includes('/lenis/')) return 'motion';
+          if (id.includes('/lucide-react/')) return 'icons';
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

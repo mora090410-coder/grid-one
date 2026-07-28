@@ -33,7 +33,7 @@ const Header: React.FC = () => {
     // We'll focus on the Authenticated/App layout needs based on Dashboard/Create being the targets.
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-white/5 h-16 transition-all duration-300">
+        <header className="oa-root fixed top-0 left-0 right-0 z-50 bg-broadcast-white border-b-[3px] border-ink h-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
 
                 {/* Brand */}
@@ -44,11 +44,11 @@ const Header: React.FC = () => {
                     <img
                         src="/icons/gridone-icon-256.png"
                         alt="GridOne"
-                        className="h-8 w-8 rounded-lg shadow-lg shadow-cardinal/20 group-hover:scale-105 transition-transform duration-300 ring-1 ring-gold/50"
+                        className="h-8 w-8 transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="flex flex-col leading-none">
-                        <span className="text-white font-bold tracking-tight text-sm">GridOne</span>
-                        <span className="text-[10px] text-white/50 tracking-widest uppercase">Squares</span>
+                        <span className="oa-slab text-ink text-sm">GridOne</span>
+                        <span className="oa-slab text-[10px] text-ink/50">Squares</span>
                     </div>
                 </div>
 
@@ -59,9 +59,9 @@ const Header: React.FC = () => {
                             key={item.path}
                             to={item.path}
                             className={({ isActive }) =>
-                                `text-sm font-medium transition-all duration-200 hover:text-white ${isActive
-                                    ? 'text-white border-b-2 border-cardinal'
-                                    : 'text-white/60 border-b-2 border-transparent'
+                                `oa-slab transition-colors hover:text-ink ${isActive
+                                    ? 'text-ink border-b-2 border-cardinal'
+                                    : 'text-ink/60 border-b-2 border-transparent'
                                 }`
                             }
                         >
@@ -70,17 +70,17 @@ const Header: React.FC = () => {
                     ))}
 
                     {user && (
-                        <div className="h-4 w-px bg-white/10 mx-2" />
+                        <div className="h-4 w-px bg-ink/20 mx-2" />
                     )}
 
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <span className="text-xs text-white/40 font-medium hidden lg:block">
+                            <span className="oa-data text-xs text-ink/50 hidden lg:block">
                                 {user.email}
                             </span>
                             <button
                                 onClick={handleLogout}
-                                className="text-xs font-bold uppercase tracking-wider text-cardinal hover:text-cardinal transition-colors"
+                                className="oa-slab text-cardinal hover:text-cardinal-deep transition-colors"
                             >
                                 Log Out
                             </button>
@@ -89,7 +89,7 @@ const Header: React.FC = () => {
                         !isLanding && !isLoginPage && (
                             <button
                                 onClick={() => navigate('/login')}
-                                className="text-sm font-medium text-white/70 hover:text-white transition-colors"
+                                className="oa-slab text-ink/70 hover:text-ink transition-colors"
                             >
                                 Log In
                             </button>
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
                 {/* Mobile Menu Button */}
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
+                    className="md:hidden p-2 text-ink/70 hover:text-ink transition-colors"
                     aria-label="Toggle menu"
                     aria-expanded={isMenuOpen}
                 >
@@ -116,7 +116,7 @@ const Header: React.FC = () => {
 
             {/* Mobile/Drawer Menu */}
             <div
-                className={`md:hidden absolute top-16 left-0 right-0 bg-background border-b border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+                className={`md:hidden absolute top-16 left-0 right-0 bg-broadcast-white border-b-[3px] border-ink overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
                     }`}
             >
                 <div className="px-4 py-6 space-y-4 flex flex-col">
@@ -126,7 +126,7 @@ const Header: React.FC = () => {
                             to={item.path}
                             onClick={() => setIsMenuOpen(false)}
                             className={({ isActive }) =>
-                                `text-base font-medium transition-colors ${isActive ? 'text-white pl-2 border-l-2 border-cardinal' : 'text-white/60 pl-2 border-l-2 border-transparent'
+                                `oa-slab transition-colors ${isActive ? 'text-ink pl-2 border-l-2 border-cardinal' : 'text-ink/60 pl-2 border-l-2 border-transparent'
                                 }`
                             }
                         >
@@ -135,14 +135,14 @@ const Header: React.FC = () => {
                     ))}
 
                     {user ? (
-                        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                            <span className="text-xs text-white/40 truncate max-w-[150px]">{user.email}</span>
+                        <div className="pt-4 border-t border-newsprint flex items-center justify-between">
+                            <span className="oa-data text-xs text-ink/50 truncate max-w-[150px]">{user.email}</span>
                             <button
                                 onClick={() => {
                                     handleLogout();
                                     setIsMenuOpen(false);
                                 }}
-                                className="text-xs font-bold uppercase tracking-wider text-cardinal"
+                                className="oa-slab text-cardinal"
                             >
                                 Log Out
                             </button>
@@ -154,7 +154,7 @@ const Header: React.FC = () => {
                                     navigate('/login');
                                     setIsMenuOpen(false);
                                 }}
-                                className="text-sm font-medium text-white/70 hover:text-white text-left pl-2"
+                                className="oa-slab text-ink/70 hover:text-ink text-left pl-2"
                             >
                                 Log In
                             </button>

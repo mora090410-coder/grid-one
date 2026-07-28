@@ -27,27 +27,27 @@ const PlayerFilter: React.FC<PlayerFilterProps> = ({ board, selected, setSelecte
   }, [selected, board]);
 
   return (
-    <div className="w-full flex items-center justify-between gap-4 px-4 py-2 liquid-glass border-none shadow-none bg-white/5 rounded-full">
+    <div className="w-full flex items-center justify-between gap-4 px-4 py-2 bg-broadcast-white ring-1 ring-inset ring-ink">
       <div className="flex items-center gap-2 flex-1">
-        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Find Player:</label>
+        <label className="oa-slab text-ink/60 whitespace-nowrap">Find Player:</label>
         <div className="relative flex-1 max-w-xs">
-          <select 
-            value={selected} 
+          <select
+            value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className={`w-full bg-transparent border-none text-xs focus:ring-0 outline-none appearance-none font-bold ${selected ? 'text-gold' : 'text-white'}`}
+            className={`oa-data min-h-11 w-full bg-transparent border-none text-xs focus:ring-0 outline-none appearance-none font-bold ${selected ? 'text-cardinal' : 'text-ink'}`}
           >
             <option value="">-- Show All --</option>
-            {playerList.map(p => <option key={p} value={p} className="bg-black text-white">{p}</option>)}
+            {playerList.map(p => <option key={p} value={p} className="bg-broadcast-white text-ink">{p}</option>)}
           </select>
         </div>
         {selected && (
-          <button onClick={() => setSelected('')} className="text-[10px] text-red-400 hover:text-red-300 uppercase font-bold">X</button>
+          <button onClick={() => setSelected('')} className="oa-slab min-h-11 min-w-11 text-cardinal hover:text-cardinal-deep" aria-label="Clear player filter">X</button>
         )}
       </div>
-      
+
       {stats && (
-        <div className="flex items-center gap-3 bg-cardinal-subtle px-3 py-1 rounded-full border border-gold-glass">
-          <span className="text-[10px] text-white font-bold">{stats.count} SQUARES</span>
+        <div className="flex items-center gap-3 bg-cardinal px-3 py-1">
+          <span className="oa-slab text-broadcast-white">{stats.count} SQUARES</span>
         </div>
       )}
     </div>

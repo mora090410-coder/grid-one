@@ -84,17 +84,17 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full gap-3 md:gap-4">
-      {/* Quarter Selector for Dynamic Boards */}
+      {/* Quarter Selector for Dynamic Boards — hard segmented control */}
       {board.isDynamic && (
-        <div className="flex items-center gap-1 bg-surface/90 p-1 rounded-xl border border-white/10 shadow-lg">
-          <span className="text-[10px] uppercase font-semibold text-white/40 px-2 tracking-wide">Axis:</span>
+        <div className="flex items-center gap-px bg-ink p-px border border-ink">
+          <span className="oa-slab text-ink/50 px-3 bg-broadcast-white self-stretch flex items-center">Axis</span>
           {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
             <button
               key={q}
               onClick={() => setViewQuarter(q)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewQuarter === q
-                ? 'bg-white text-black shadow-sm'
-                : 'text-white/60 hover:text-white hover:bg-white/10'
+              className={`oa-slab px-4 py-2 transition-colors ${viewQuarter === q
+                ? 'bg-cardinal text-broadcast-white'
+                : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'
                 }`}
             >
               {q === 'Q4' ? 'Final' : q}
@@ -103,11 +103,11 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
         </div>
       )}
 
-      {/* Main Board Container */}
-      <div className={`relative rounded-2xl overflow-visible bg-surface/60 border w-full max-w-[920px] aspect-square mx-auto transition-all duration-200 ${
+      {/* Main Board Container — hard rect, 3px ink rule, no radius/shadow */}
+      <div className={`relative overflow-visible bg-broadcast-white w-full max-w-[920px] aspect-square mx-auto ${
         isFilteringByPlayer
-          ? 'border-[#64D2FF]/45 shadow-[0_0_0_1px_rgba(100,210,255,0.15),0_18px_40px_rgba(10,132,255,0.12)]'
-          : 'border-white/[0.08]'
+          ? 'ring-[3px] ring-inset ring-cardinal'
+          : 'ring-[3px] ring-inset ring-ink'
       }`}>
 
         <table className="border-collapse table-fixed w-full h-full">
@@ -118,26 +118,22 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
           </colgroup>
 
           <thead>
-            {/* Top Team Header - Compact */}
+            {/* Top Team Header — opaque chyron slab */}
             <tr className="h-8 md:h-10">
               <th colSpan={2} className="bg-transparent border-none sticky top-0 z-40"></th>
-              <th colSpan={10} className="bg-[#232327]/95 backdrop-blur-sm border-b border-white/[0.08] text-center align-middle p-1 sticky top-0 z-40">
-                <span className="font-bold tracking-wider uppercase text-white/80" style={{ fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)' }}>
-                  {topTeamName}
-                </span>
+              <th colSpan={10} className="oa-slab bg-chyron text-broadcast-white text-center align-middle p-1 sticky top-0 z-40">
+                {topTeamName}
               </th>
             </tr>
             {/* Top Axis Numbers */}
             <tr className="h-9 md:h-11">
               <th className="bg-transparent border-none sticky top-8 md:top-10 z-40"></th>
-              <th className="bg-[#232327]/95 backdrop-blur-sm text-white/30 text-[7px] md:text-[9px] font-medium border-r border-b border-white/[0.08] relative p-0 sticky top-8 md:top-10 z-40">
-                <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg] opacity-50">TOP</div>
+              <th className="oa-board-axis bg-cardinal-deep text-broadcast-white/40 border-r border-b border-cardinal-deep relative p-0 sticky top-8 md:top-10 z-40">
+                <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg]">TOP</div>
               </th>
               {currentOppAxis.map((n, i) => (
-                <th key={i} className="bg-[#232327]/95 backdrop-blur-sm border-b border-r border-white/[0.08] last:border-r-0 align-middle transition-colors hover:bg-white/[0.08] sticky top-8 md:top-10 z-40">
-                  <div className="flex items-center justify-center h-9 md:h-11 w-full">
-                    <span className="font-bold text-white/95" style={{ fontSize: 'clamp(0.85rem, 2vh, 1.5rem)' }}>{n}</span>
-                  </div>
+                <th key={i} className="oa-board-axis bg-cardinal-deep text-broadcast-white border-b border-r border-cardinal last:border-r-0 align-middle sticky top-8 md:top-10 z-40">
+                  <div className="flex items-center justify-center h-9 md:h-11 w-full">{n}</div>
                 </th>
               ))}
             </tr>
@@ -145,17 +141,13 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
           <tbody>
             {currentBearsAxis.map((leftDigit, rowIndex) => (
               <tr key={rowIndex} className="h-[8.6%] md:h-auto">
-                {/* Left Team Header - Compact */}
+                {/* Left Team Header — opaque chyron slab, vertical */}
                 {rowIndex === 0 && (
-                  <th rowSpan={10} className="bg-white/[0.03] border-r border-white/[0.08] text-center relative p-0 overflow-hidden">
+                  <th rowSpan={10} className="bg-chyron border-r border-ink text-center relative p-0 overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div
-                        className="whitespace-nowrap font-bold tracking-wider uppercase text-white/80"
-                        style={{
-                          writingMode: 'vertical-rl',
-                          transform: 'rotate(180deg)',
-                          fontSize: 'clamp(0.65rem, 1.5vh, 1.2rem)',
-                        }}
+                        className="oa-slab whitespace-nowrap text-broadcast-white"
+                        style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                       >
                         {leftTeamName}
                       </div>
@@ -164,10 +156,8 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                 )}
 
                 {/* Left Axis Numbers */}
-                <th className="bg-white/[0.04] border-r border-b border-white/[0.08] last:border-b-0 align-middle transition-colors hover:bg-white/[0.08]">
-                  <div className="flex items-center justify-center h-full w-full">
-                    <span className="font-bold text-white/95" style={{ fontSize: 'clamp(0.85rem, 2vh, 1.5rem)' }}>{leftDigit}</span>
-                  </div>
+                <th className="oa-board-axis bg-cardinal-deep text-broadcast-white border-r border-b border-cardinal last:border-b-0 align-middle">
+                  <div className="flex items-center justify-center h-full w-full">{leftDigit}</div>
                 </th>
 
                 {/* The Squares */}
@@ -197,65 +187,67 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                     tDigit === (highlightedCoords.top % 10) &&
                     lDigit === (highlightedCoords.left % 10);
 
-                  // Clean cell styling - Apple-clean, minimal
-                  let cellClass = "relative border-r border-b border-white/[0.06] last:border-r-0 transition-all duration-200 p-0.5 cursor-pointer ";
+                  // On Air cell — opaque planes, hard rules, gold = resolved
+                  let cellClass = "oa-q relative border-r border-b border-newsprint last:border-r-0 p-0.5 cursor-pointer ";
 
                   if (isFilteringByPlayer && !hasSelectedPlayer) {
-                    cellClass += "bg-black/55 opacity-20 ";
+                    // Dimmed out of filter — a flat newsprint knockout, no black wash
+                    cellClass += "bg-newsprint opacity-40 ";
                   } else {
-                    cellClass += "bg-white/[0.02] hover:bg-white/[0.05] ";
+                    cellClass += "bg-broadcast-white hover:bg-newsprint ";
                   }
 
-                  // Highlight states - thin outlines, subtle fills
+                  // Highlight states — opaque fills + inset key lines, never glow
                   if (isHighlightedScenario) {
-                    // Scenario hover - white outline
-                    cellClass += "z-50 bg-white/10 ring-1 ring-inset ring-white/80 ";
+                    // Scenario hover — ink key line
+                    cellClass += "z-50 bg-newsprint ring-[3px] ring-inset ring-ink ";
                   } else if (isLiveScore) {
-                    // Current winning cell - thin gold outline + subtle gold fill
-                    cellClass += "z-40 bg-gold/[0.12] ring-1 ring-inset ring-gold ";
+                    // Current winning cell — gold fill, the resolution color live
+                    cellClass += "z-40 bg-gold ring-[3px] ring-inset ring-gold-deep ";
                   } else if (hasSelectedPlayer) {
-                    // Player search match - prominent iOS-like blue highlight
-                    cellClass += "z-30 bg-[#0A84FF]/22 ring-2 ring-inset ring-[#64D2FF] shadow-[0_0_0_1px_rgba(100,210,255,0.25),0_10px_20px_rgba(10,132,255,0.18)] ";
+                    // Player search match — cardinal key line (off-system blue removed)
+                    cellClass += "z-30 bg-cardinal-subtle ring-[3px] ring-inset ring-cardinal ";
                   } else if (hasFinishedWinner) {
-                    // Past winner cell - subtle gold hint  
-                    cellClass += "z-30 bg-gold/[0.08] ring-1 ring-inset ring-gold/50 ";
+                    // Past winner cell — settled gold
+                    cellClass += "z-30 bg-gold ring-1 ring-inset ring-gold-deep ";
                   }
+
+                  const isWonCell = isLiveScore || hasFinishedWinner;
 
                   return (
                     <td
                       key={colIndex}
-                      className={`${cellClass} group`}
+                      className={`${cellClass} group focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-cardinal`}
+                      tabIndex={0}
+                      aria-label={`${players.length > 0 ? players.join(', ') : 'Unassigned square'}, ${topTeamName} ${tDigit}, ${leftTeamName} ${lDigit}${winningLabels.length ? `, winner for ${winningLabels.join(', ')}` : ''}`}
                     >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
-                          className={`text-center leading-tight flex items-center justify-center w-full transition-colors ${isLiveScore ? 'text-gold font-bold' : hasSelectedPlayer ? 'text-white font-bold' : hasFinishedWinner || isHighlightedScenario ? 'text-white font-semibold' : 'text-white/60 font-medium'
+                          className={`oa-board-name text-center flex items-center justify-center w-full ${isWonCell ? 'text-ink font-bold' : hasSelectedPlayer ? 'text-ink font-bold' : isHighlightedScenario ? 'text-ink font-bold' : 'text-ink/70'
                             }`}
-                          style={{ fontSize: 'clamp(10px, 1.35vw, 14px)' }}
                         >
                           {formatCellDisplay(players)}
                         </div>
                       </div>
 
-                      {/* Small gold dot indicator for current winning cell only */}
+                      {/* Live winning cell — a small opaque gold-deep square marker */}
                       {isLiveScore && (
-                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-gold pointer-events-none" />
+                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-gold-deep pointer-events-none" />
                       )}
 
-                      {/* Custom tooltip - appears on hover */}
-                      <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-[#2c2c2e] border border-white/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none whitespace-nowrap">
-                        <div className="text-[11px] font-semibold text-white">
+                      {/* Tooltip — opaque chyron slab, hard corners */}
+                      <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-chyron ring-[3px] ring-ink opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity duration-150 pointer-events-none whitespace-nowrap">
+                        <div className="oa-slab text-broadcast-white">
                           {players.length > 0 ? players.join(', ') : 'Empty'}
                         </div>
-                        <div className="text-[10px] text-white/50 font-mono">
+                        <div className="oa-data text-[10px] text-broadcast-white/60">
                           {lDigit}/{tDigit}
                         </div>
                         {winningLabels.length > 0 && (
-                          <div className="text-[10px] text-gold font-medium mt-0.5">
+                          <div className="oa-slab text-[10px] text-gold mt-0.5">
                             Won: {winningLabels.map(l => l === 'Q2' ? 'Half' : l).join(', ')}
                           </div>
                         )}
-                        {/* Arrow */}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2c2c2e]" />
                       </div>
                     </td>
                   );

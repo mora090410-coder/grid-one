@@ -45,4 +45,4 @@ GridOne helps organizers build and share a digital football squares board with o
 ## Notes
 - GridOne is organizer-first.
 - Viewers use a read-only board link.
-- This season, $14.99 unlocks at least 20 boards.
+- The introductory 2026 season pass is $4.99 once and unlocks up to 20 boards.

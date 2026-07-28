@@ -1,31 +1,33 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import CreateContest from './pages/CreateContest';
-import Paid from './pages/Paid';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import BoardView from './components/BoardView';
-import LandingPage from './components/LandingPage';
-import { RunYourPoolAlternative } from './pages/RunYourPoolAlternative';
-import { HowToRunSquares } from './pages/HowToRunSquares';
-import { FootballSquaresFundraiser } from './pages/FootballSquaresFundraiser';
-import { OfficeSuperBowlSquares } from './pages/OfficeSuperBowlSquares';
-import { ArticlesHub } from './pages/ArticlesHub';
-import { HowFootballSquaresWork } from './pages/HowFootballSquaresWork';
-import { YouthSportsFootballSquaresFundraiser } from './pages/YouthSportsFootballSquaresFundraiser';
-import { SuperBowlSquaresIdeas } from './pages/SuperBowlSquaresIdeas';
-import { DigitalFootballSquaresBoardVsPaper } from './pages/DigitalFootballSquaresBoardVsPaper';
-import { BoosterClubFootballSquares } from './pages/BoosterClubFootballSquares';
-import { ChurchSchoolFundraiserSquares } from './pages/ChurchSchoolFundraiserSquares';
-import { NFLOpeningWeekSquares } from './pages/NFLOpeningWeekSquares';
-import { FootballSquaresApp } from './pages/FootballSquaresApp';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
+
+const Login = React.lazy(() => import('./pages/Login'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const CreateContest = React.lazy(() => import('./pages/CreateContest'));
+const Paid = React.lazy(() => import('./pages/Paid'));
+const Privacy = React.lazy(() => import('./pages/Privacy'));
+const Terms = React.lazy(() => import('./pages/Terms'));
+const BoardView = React.lazy(() => import('./components/BoardView'));
+const LandingPage = React.lazy(() => import('./components/LandingPage'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+const ArticlesHub = React.lazy(() => import('./pages/ArticlesHub').then((module) => ({ default: module.ArticlesHub })));
+const RunYourPoolAlternative = React.lazy(() => import('./pages/RunYourPoolAlternative').then((module) => ({ default: module.RunYourPoolAlternative })));
+const HowToRunSquares = React.lazy(() => import('./pages/HowToRunSquares').then((module) => ({ default: module.HowToRunSquares })));
+const FootballSquaresFundraiser = React.lazy(() => import('./pages/FootballSquaresFundraiser').then((module) => ({ default: module.FootballSquaresFundraiser })));
+const OfficeSuperBowlSquares = React.lazy(() => import('./pages/OfficeSuperBowlSquares').then((module) => ({ default: module.OfficeSuperBowlSquares })));
+const HowFootballSquaresWork = React.lazy(() => import('./pages/HowFootballSquaresWork').then((module) => ({ default: module.HowFootballSquaresWork })));
+const YouthSportsFootballSquaresFundraiser = React.lazy(() => import('./pages/YouthSportsFootballSquaresFundraiser').then((module) => ({ default: module.YouthSportsFootballSquaresFundraiser })));
+const SuperBowlSquaresIdeas = React.lazy(() => import('./pages/SuperBowlSquaresIdeas').then((module) => ({ default: module.SuperBowlSquaresIdeas })));
+const DigitalFootballSquaresBoardVsPaper = React.lazy(() => import('./pages/DigitalFootballSquaresBoardVsPaper').then((module) => ({ default: module.DigitalFootballSquaresBoardVsPaper })));
+const BoosterClubFootballSquares = React.lazy(() => import('./pages/BoosterClubFootballSquares').then((module) => ({ default: module.BoosterClubFootballSquares })));
+const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSchoolFundraiserSquares').then((module) => ({ default: module.ChurchSchoolFundraiserSquares })));
+const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
+const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
 
 const Root = () => {
   const [searchParams] = useSearchParams();
@@ -61,6 +63,15 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<Root />} />
               <Route path="/demo" element={<BoardView demoMode={true} />} />
+              <Route path="/b/:shareCode" element={<BoardView />} />
+              <Route
+                path="/boards/:boardId"
+                element={
+                  <RequireAuth>
+                    <BoardView />
+                  </RequireAuth>
+                }
+              />
               <Route
                 path="/login"
                 element={
@@ -109,8 +120,7 @@ const App: React.FC = () => {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 
-              {/* Catch-all */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </React.Suspense>
         </AuthProvider>

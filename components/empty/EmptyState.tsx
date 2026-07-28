@@ -31,28 +31,28 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         switch (variant) {
             case 'error':
                 return {
-                    bg: 'bg-red-500/5',
-                    border: 'border-red-500/20',
-                    iconBg: 'bg-red-500/10',
-                    iconColor: 'text-red-500',
-                    titleColor: 'text-red-400'
+                    bg: 'bg-cardinal-subtle',
+                    border: 'border-cardinal',
+                    iconBg: 'bg-cardinal',
+                    iconColor: 'text-broadcast-white',
+                    titleColor: 'text-cardinal'
                 };
             case 'first-time':
                 return {
-                    bg: 'bg-surface-glass',
-                    border: 'border-white/10',
-                    iconBg: 'bg-white/5',
-                    iconColor: 'text-gold',
-                    titleColor: 'text-white'
+                    bg: 'bg-broadcast-white',
+                    border: 'border-ink',
+                    iconBg: 'bg-gold',
+                    iconColor: 'text-ink',
+                    titleColor: 'text-ink'
                 };
             case 'no-results':
             default:
                 return {
                     bg: 'bg-transparent',
                     border: 'border-transparent',
-                    iconBg: 'bg-white/5',
-                    iconColor: 'text-text-secondary',
-                    titleColor: 'text-text-secondary'
+                    iconBg: 'bg-newsprint',
+                    iconColor: 'text-ink/60',
+                    titleColor: 'text-ink/70'
                 };
         }
     };
@@ -72,10 +72,10 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     };
 
     return (
-        <div className={`rounded-3xl p-12 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500 ${styles.bg} ${variant !== 'no-results' ? `border ${styles.border}` : ''}`}>
+        <div className={`oa-root p-12 flex flex-col items-center justify-center text-center ${styles.bg} ${variant !== 'no-results' ? `border ${styles.border}` : ''}`}>
 
             {/* Icon */}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${styles.iconBg} ${styles.iconColor}`}>
+            <div className={`w-16 h-16 flex items-center justify-center mb-6 border border-ink ${styles.iconBg} ${styles.iconColor}`}>
                 {getDefaultIcon()}
             </div>
 
@@ -95,14 +95,14 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                     action.to ? (
                         <Link
                             to={action.to}
-                            className={`px-8 py-3 rounded-full text-button shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
+                            className="oa-btn oa-btn-primary"
                         >
                             {action.label}
                         </Link>
                     ) : (
                         <button
                             onClick={action.onClick}
-                            className={`px-8 py-3 rounded-full text-button shadow-lg transition-transform hover:scale-105 active:scale-95 ${variant === 'error' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'btn-cardinal'}`}
+                            className="oa-btn oa-btn-primary"
                         >
                             {action.label}
                         </button>
@@ -112,7 +112,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 {secondaryAction && (
                     <button
                         onClick={secondaryAction.onClick}
-                        className="px-6 py-3 rounded-full text-button text-gray-500 hover:text-white transition-colors"
+                        className="oa-btn oa-btn-ghost"
                     >
                         {secondaryAction.label}
                     </button>

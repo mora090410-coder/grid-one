@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
@@ -10,235 +9,186 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
-const EMPTY_BOARD = {
-  bearsAxis: Array(10).fill(null),
-  oppAxis: Array(10).fill(null),
-  squares: Array(100).fill(null).map(() => []),
-  isDynamic: false,
-};
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const sharePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
-// ============= INLINE CRYPTO UTILITIES =============
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + salt);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-async function verifyPassword(password: string, storedHash: string, salt: string): Promise<boolean> {
-  const computedHash = await hashPassword(password, salt);
-  if (computedHash.length !== storedHash.length) return false;
-  let result = 0;
-  for (let i = 0; i < computedHash.length; i++) {
-    result |= computedHash.charCodeAt(i) ^ storedHash.charCodeAt(i);
-  }
-  return result === 0;
-}
-
-// ============= SUPABASE CLIENT =============
-function getSupabase(env: Env) {
-  return createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
-}
-
-function getSupabaseAdmin(env: Env) {
-  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY;
-  return createClient(env.VITE_SUPABASE_URL, key);
-}
-
-// ============= CORS =============
-const DEFAULT_ALLOWED_ORIGINS = [
-  'http://localhost:8788',
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://getgridone.com',
-  'https://www.getgridone.com',
-];
-
-function getCorsHeaders(request: Request, extraOrigin?: string): Record<string, string> {
+const responseHeaders = (request: Request, siteOrigin?: string) => {
   const origin = request.headers.get('Origin') || '';
-  const allowed = [...DEFAULT_ALLOWED_ORIGINS];
-  if (extraOrigin) allowed.push(extraOrigin);
-
-  const isAllowed = allowed.some(a => origin.startsWith(a)) || origin === '';
-
+  const allowed = new Set([
+    'http://localhost:8788',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:49575',
+    'https://getgridone.com',
+    'https://www.getgridone.com',
+    ...(siteOrigin ? [new URL(siteOrigin).origin] : []),
+  ]);
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin || '*' : allowed[0],
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': allowed.has(origin) ? origin : 'https://www.getgridone.com',
+    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
-}
-
-export const onRequestOptions: PagesFunction = async (context) => {
-  return new Response(null, { status: 204, headers: getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL) });
 };
 
-/**
- * Public Access Route - Read from Supabase
- */
-export const onRequestGet: PagesFunction = async (context) => {
-  const poolId = context.params.id as string;
-  const supabase = getSupabase(context.env);
-  const adminSupabase = getSupabaseAdmin(context.env);
-  const authHeader = context.request.headers.get('Authorization');
-  const bearer = authHeader?.replace('Bearer ', '') || '';
+const json = (request: Request, body: unknown, status: number, siteOrigin?: string) =>
+  new Response(JSON.stringify(body), { status, headers: responseHeaders(request, siteOrigin) });
 
-  let requesterId: string | null = null;
-  if (bearer) {
-    const { data: authData } = await supabase.auth.getUser(bearer);
-    requesterId = authData.user?.id || null;
-  }
-
-  const { data, error } = await adminSupabase
-    .from('contests')
-    .select('owner_id, settings, board_data, is_activated, activated_at')
-    .eq('id', poolId)
-    .single();
-
-  if (error || !data) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  const isOwner = !!requesterId && requesterId === data.owner_id;
-  const isActivated = Boolean(data.is_activated);
-  const locked = !isActivated && !isOwner;
-  const safeSettings = data.settings || {};
-
-  const responseData = {
-    ...(safeSettings || {}),
-    board: locked ? EMPTY_BOARD : (data.board_data || EMPTY_BOARD),
-    is_activated: isActivated,
-    activated_at: data.activated_at,
-    owner_id: isOwner ? data.owner_id : null,
-    locked,
-  };
-
-  return new Response(JSON.stringify(responseData), {
-    status: 200,
-    headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+const requireServiceClient = (env: Env) => {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Server configuration is incomplete.');
+  return createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 };
 
-/**
- * Authentication Verification Route
- * Verifies password against Supabase `password_hash` column
- */
-export const onRequestPost: PagesFunction = async (context) => {
-  const poolId = context.params.id as string;
-  const authHeader = context.request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '');
-
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  const supabase = getSupabase(context.env);
-
-  // Also check if adminToken matches? 
-  // For legacy support, we check `password_hash` column.
-  const { data, error } = await supabase
-    .from('contests')
-    .select('password_hash, password_salt')
-    .eq('id', poolId)
-    .single();
-
-  if (error || !data) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  // Verify
-  let isValid = false;
-  if (data.password_hash && data.password_salt) {
-    isValid = await verifyPassword(token, data.password_hash, data.password_salt);
-  }
-
-  if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Password' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  return new Response(JSON.stringify({ success: true, message: 'Authentication Verified' }), {
-    status: 200, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' },
+const requester = async (request: Request, env: Env) => {
+  const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  if (!bearer) return { bearer: null, userId: null };
+  const client = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${bearer}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data } = await client.auth.getUser(bearer);
+  return { bearer, userId: data.user?.id || null };
 };
 
-/**
- * Protected Update Route - Writes to Supabase
- */
-export const onRequestPut: PagesFunction = async (context) => {
-  const poolId = context.params.id as string;
-  const authHeader = context.request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '');
+export const onRequestOptions: PagesFunction = ({ request, env }) =>
+  new Response(null, { status: 204, headers: responseHeaders(request, env.PUBLIC_SITE_URL) });
 
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Missing Token' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  const supabase = getSupabase(context.env);
-
-  // 1. Verify Auth First
-  const { data: existing, error: fetchError } = await supabase
-    .from('contests')
-    .select('password_hash, password_salt')
-    .eq('id', poolId)
-    .single();
-
-  if (fetchError || !existing) {
-    return new Response(JSON.stringify({ error: 'Pool not found' }), {
-      status: 404, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  let isValid = false;
-  if (existing.password_hash && existing.password_salt) {
-    isValid = await verifyPassword(token, existing.password_hash, existing.password_salt);
-  }
-
-  if (!isValid) {
-    return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), {
-      status: 401, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  }
-
-  // 2. Perform Update
+export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
+  const id = String(params.id || '').toUpperCase();
   try {
-    const rawBody = await context.request.json() as any;
+    const admin = requireServiceClient(env);
+    const auth = await requester(request, env);
 
-    // Check structure. If it's the full nested object or flat?
-    // Standardize: { game: ..., board: ... }
+    if (uuidPattern.test(id) && auth.userId) {
+      const { data, error } = await admin
+        .from('contests')
+        .select('id, share_code, owner_id, title, status, revision, settings, board_data, published_at, board_activations(id)')
+        .eq('id', id)
+        .eq('owner_id', auth.userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return json(request, { error: 'Board not found.' }, 404, env.PUBLIC_SITE_URL);
+      const { data: publicSnapshot } = await admin
+        .from('public_board_snapshots')
+        .select('winner_history')
+        .eq('contest_id', data.id)
+        .maybeSingle();
+      return json(request, {
+        id: data.id,
+        share_code: data.share_code,
+        owner_id: data.owner_id,
+        title: data.title,
+        status: data.status,
+        revision: data.revision,
+        ...(data.settings || {}),
+        board: data.board_data,
+        is_activated: Array.isArray(data.board_activations) && data.board_activations.length > 0,
+        locked: Boolean(data.published_at),
+        published_at: data.published_at,
+        winner_history: publicSnapshot?.winner_history || [],
+      }, 200, env.PUBLIC_SITE_URL);
+    }
 
-    const updatePayload: any = {
-      updated_at: new Date().toISOString()
-    };
+    if (!sharePattern.test(id)) {
+      return json(request, { error: 'This board link is invalid.' }, 404, env.PUBLIC_SITE_URL);
+    }
 
-    if (rawBody.game) updatePayload.settings = rawBody.game;
-    if (rawBody.board) updatePayload.board_data = rawBody.board;
+    const { data, error } = await admin
+      .from('public_board_snapshots')
+      .select('share_code, revision, board_title, matchup, board, score, winner_history, payout_labels, published_at, updated_at')
+      .eq('share_code', id)
+      .is('withdrawn_at', null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return json(request, { error: 'This board is unavailable or has not been published.' }, 404, env.PUBLIC_SITE_URL);
 
-    // Safe Update
-    const { error: updateError } = await supabase
+    const matchup = data.matchup || {};
+    return json(request, {
+      share_code: data.share_code,
+      title: data.board_title,
+      revision: data.revision,
+      published_at: data.published_at,
+      updated_at: data.updated_at,
+      leftAbbr: matchup.sideTeamAbbr,
+      leftName: matchup.sideTeamName,
+      topAbbr: matchup.topTeamAbbr,
+      topName: matchup.topTeamName,
+      dates: matchup.gameDate,
+      board: data.board,
+      score: data.score,
+      winner_history: data.winner_history,
+      payout_labels: data.payout_labels,
+      is_activated: true,
+      locked: true,
+    }, 200, env.PUBLIC_SITE_URL);
+  } catch (error: any) {
+    const message = error?.message || 'Unable to load the board.';
+    return json(request, { error: message }, /configuration/i.test(message) ? 503 : 500, env.PUBLIC_SITE_URL);
+  }
+};
+
+export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
+  const id = String(params.id || '');
+  if (!uuidPattern.test(id)) return json(request, { error: 'Invalid board ID.' }, 400, env.PUBLIC_SITE_URL);
+
+  try {
+    const auth = await requester(request, env);
+    if (!auth.bearer || !auth.userId) {
+      return json(request, { error: 'Sign in to edit this board.' }, 401, env.PUBLIC_SITE_URL);
+    }
+    const body = await request.json() as { game?: Record<string, unknown>; board?: Record<string, unknown>; revision?: number };
+    if (!body.game && !body.board) return json(request, { error: 'No board changes were provided.' }, 400, env.PUBLIC_SITE_URL);
+    if (!Number.isInteger(body.revision) || Number(body.revision) < 1) {
+      return json(request, { error: 'A current board revision is required.' }, 409, env.PUBLIC_SITE_URL);
+    }
+
+    const client = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${auth.bearer}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: currentContest, error: currentError } = await client
       .from('contests')
-      .update(updatePayload)
-      .eq('id', poolId);
+      .select('published_at, board_data')
+      .eq('id', id)
+      .eq('owner_id', auth.userId)
+      .maybeSingle();
+    if (currentError) throw currentError;
+    if (!currentContest) return json(request, { error: 'Board not found.' }, 404, env.PUBLIC_SITE_URL);
+    if (
+      currentContest.published_at
+      && body.board
+      && JSON.stringify(body.board) !== JSON.stringify(currentContest.board_data)
+    ) {
+      return json(request, {
+        error: 'Published assignments and number axes are locked.',
+        code: 'BOARD_LOCKED',
+      }, 409, env.PUBLIC_SITE_URL);
+    }
+    const updates: Record<string, unknown> = {};
+    if (body.game) updates.settings = body.game;
+    if (body.board) updates.board_data = body.board;
 
-    if (updateError) throw updateError;
-
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
-  } catch (err: any) {
-    console.error('Pool update error:', err);
-    return new Response(JSON.stringify({ error: 'Failed to update pool', message: err.message }), {
-      status: 500, headers: { ...getCorsHeaders(context.request, context.env.PUBLIC_SITE_URL), 'Content-Type': 'application/json' }
-    });
+    const { data, error } = await client
+      .from('contests')
+      .update(updates)
+      .eq('id', id)
+      .eq('owner_id', auth.userId)
+      .eq('revision', body.revision)
+      .select('id, revision, updated_at')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      return json(request, {
+        error: 'This board changed in another session. Reload before saving again.',
+        code: 'REVISION_CONFLICT',
+      }, 409, env.PUBLIC_SITE_URL);
+    }
+    return json(request, { ok: true, revision: data.revision, updatedAt: data.updated_at }, 200, env.PUBLIC_SITE_URL);
+  } catch (error: any) {
+    return json(request, { error: error?.message || 'Unable to save the board.' }, 500, env.PUBLIC_SITE_URL);
   }
 };

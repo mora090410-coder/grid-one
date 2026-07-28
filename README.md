@@ -5,8 +5,9 @@ Football squares board builder and live scoring viewer. Organizers create and sh
 ## Product model
 
 - Organizer creates an account and builds or uploads a board
-- Organizer unlocks sharing for **$14.99 per board**
-- One unlocked board supports up to 100 viewers
+- Building, editing, and previewing boards is **free**; payment gates sharing only
+- **$4.99 unlocks up to 20 boards** for the 2026 season (one-time, not per board, not a subscription)
+- Each unlocked board provides one read-only viewer link
 - Viewers get read-only access to the board, scoreboard, and winner highlights
 
 ## Tech stack
@@ -75,7 +76,7 @@ Create `.env.local` with the following variables:
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (frontend) |
 | `STRIPE_SECRET_KEY` | Stripe secret key (Cloudflare Functions only) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `VITE_GEMINI_API_KEY` | Google Gemini API key for live scoring |
+| `GEMINI_API_KEY` | Server-only Gemini key for score grounding and beta paper-board import |
 | `PUBLIC_SITE_URL` | Canonical site URL — `https://www.getgridone.com` in production |
 
 See `.env.example` for a template.

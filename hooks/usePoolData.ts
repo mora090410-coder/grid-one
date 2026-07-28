@@ -3,7 +3,7 @@
  * Manages pool loading, saving, and state
  */
 import { useState, useCallback } from 'react';
-import { GameState, BoardData } from '../types';
+import { GameState, BoardData, WinnerResolution } from '../types';
 import { supabase } from '../services/supabase';
 
 const INITIAL_GAME: GameState = {
@@ -39,6 +39,8 @@ interface PoolDataState {
     game: GameState;
     board: BoardData;
     activePoolId: string | null;
+    shareCode: string | null;
+    revision: number | null;
     ownerId: string | null;
     loadingPool: boolean;
     dataReady: boolean;
@@ -46,6 +48,8 @@ interface PoolDataState {
     isActivated: boolean;
     isPaid: boolean;
     isLocked: boolean;
+    isPublished: boolean;
+    winnerHistory: WinnerResolution[];
 }
 
 interface UsePoolDataReturn extends PoolDataState {
@@ -53,7 +57,7 @@ interface UsePoolDataReturn extends PoolDataState {
     setBoard: React.Dispatch<React.SetStateAction<BoardData>>;
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
-    publishPool: (adminToken: string, currentData?: { game: GameState; board: BoardData; adminEmail?: string }) => Promise<string | void>;
+    publishPool: (_legacyToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
     updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
     migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
@@ -63,12 +67,16 @@ export function usePoolData(): UsePoolDataReturn {
     const [game, setGame] = useState<GameState>(INITIAL_GAME);
     const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
     const [activePoolId, setActivePoolId] = useState<string | null>(null);
+    const [shareCode, setShareCode] = useState<string | null>(null);
+    const [revision, setRevision] = useState<number | null>(null);
     const [ownerId, setOwnerId] = useState<string | null>(null);
     const [loadingPool, setLoadingPool] = useState(true);
     const [dataReady, setDataReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isActivated, setIsActivated] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>([]);
 
 
     // Load pool data through the API so unpaid boards can be masked for non-owners.
@@ -86,15 +94,20 @@ export function usePoolData(): UsePoolDataReturn {
 
             if (!response.ok) throw new Error(data.error || 'Pool not found');
 
-            setActivePoolId(poolId);
+            setActivePoolId(data.id || poolId);
+            setShareCode(data.share_code || (poolId.length === 8 ? poolId : null));
+            setRevision(Number.isInteger(data.revision) ? data.revision : null);
             setOwnerId(data.owner_id || null);
             setIsActivated(Boolean(data.is_activated));
             setIsLocked(Boolean(data.locked));
+            setIsPublished(Boolean(data.published_at));
+            setWinnerHistory(Array.isArray(data.winner_history) ? data.winner_history : []);
 
             const nextGame = {
                 ...INITIAL_GAME,
                 ...data,
                 payouts: data.payouts || INITIAL_GAME.payouts,
+                scoreSnapshot: data.score || null,
             };
             delete (nextGame as any).board;
             delete (nextGame as any).locked;
@@ -103,7 +116,7 @@ export function usePoolData(): UsePoolDataReturn {
             delete (nextGame as any).activated_at;
 
             setGame(nextGame);
-            setBoard(data.board || EMPTY_BOARD);
+            setBoard(data.board ? { ...data.board, isDynamic: false } : EMPTY_BOARD);
             setDataReady(true);
         } catch (err: any) {
             console.error("Load Pool Error:", err);
@@ -114,10 +127,10 @@ export function usePoolData(): UsePoolDataReturn {
         }
     }, []);
 
-    // Publish new pool through the API so passcodes are hashed server-side.
+    // Create a board through the authenticated API.
     const publishPool = useCallback(async (
-        adminToken: string,
-        currentData?: { game: GameState; board: BoardData; adminEmail?: string }
+        _legacyToken: string,
+        currentData?: { game: GameState; board: BoardData }
     ): Promise<string | void> => {
         const g = currentData?.game || game;
         const b = currentData?.board || board;
@@ -136,21 +149,18 @@ export function usePoolData(): UsePoolDataReturn {
                 body: JSON.stringify({
                     game: g,
                     board: b,
-                    adminEmail: currentData?.adminEmail,
-                    adminPassword: adminToken,
                 }),
             });
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || data.error || 'Failed to create pool');
 
-            const poolId = data.poolId;
+            const poolId = data.boardId || data.poolId;
             if (!poolId) throw new Error('No pool ID returned from server');
 
             setActivePoolId(poolId);
-            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
-            storedTokens[poolId] = adminToken;
-            localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
+            setShareCode(data.shareCode || null);
+            setRevision(Number.isInteger(data.revision) ? data.revision : null);
             return poolId;
         } catch (err: any) {
             setError(err.message);
@@ -164,23 +174,25 @@ export function usePoolData(): UsePoolDataReturn {
         data: { game: GameState; board: BoardData }
     ): Promise<boolean> => {
         try {
-            const { error } = await supabase
-                .from('contests')
-                .update({
-                    settings: data.game,
-                    board_data: data.board,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', poolId);
-
-            if (error) throw error;
+            if (!revision) throw new Error('Reload this board before saving.');
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Sign in before saving.');
+            const response = await fetch(`/api/pools/${poolId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ ...data, revision }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Unable to save the board.');
+            setRevision(result.revision);
             return true;
         } catch (err: any) {
             console.error("Update Pool Error:", err);
             setError(err.message);
             return false;
         }
-    }, []);
+    }, [revision]);
 
     // Migrate guest board to Supabase
     const migrateGuestBoard = useCallback(async (
@@ -224,6 +236,8 @@ export function usePoolData(): UsePoolDataReturn {
         game,
         board,
         activePoolId,
+        shareCode,
+        revision,
         ownerId,
         loadingPool,
         dataReady,
@@ -238,7 +252,9 @@ export function usePoolData(): UsePoolDataReturn {
         clearError,
         isActivated,
         isPaid: isActivated,
-        isLocked
+        isLocked,
+        isPublished,
+        winnerHistory
     };
 }
 

@@ -1,10 +1,15 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+/**
+ * THESIS: GridOne proves it replaces paper by letting one board travel through the whole game-day horizon—not by stacking feature cards.
+ * OWN-WORLD: Broadcast-white setup light falls into ink live fields; cardinal carries identity, gold carries commitment and resolved outcomes.
+ * STORY: See the board fill, lock its draw, run live, and settle; then create a board or open the demonstration.
+ * FIRST VIEWPORT: A Split Stage product artifact dominates beside one concise promise and one create action; the horizon connects both.
+ * FORM: Game-Day Horizon, Composition C Split Stage, chosen staging from stagecraft cyclorama; seed 356916de.
+ */
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Megaphone, Briefcase, Trophy, Users, Tv, Upload, Link2, Radio } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { PageMetadata } from './seo/PageMetadata';
-import { getLenis } from '../lib/scrollRuntime';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -13,473 +18,221 @@ interface LandingPageProps {
   onLogin: () => void;
 }
 
-const display = { fontFamily: "'Archivo', system-ui, sans-serif" } as const;
-const mono = { fontFamily: "'Space Mono', ui-monospace, monospace" } as const;
-const hand = { fontFamily: "'Caveat', cursive" } as const;
-
-// Motion tuning: displacement controls wrinkle intensity, toss x/y sets the
-// landing corner, and pinScreens controls how much scroll drives the sequence.
-const HERO_MOTION = {
-  pinScreens: 2.2,
-  narrowBreakpoint: 480,
-  beats: { hold: 0, crumple: 0.4, toss: 0.7, winner: 0.9, end: 1 },
-  labels: ['01 — The old paper way', '02 — Crumple the paper', '03 — We have a winner'],
-  crumple: { displacement: 34, frequencyStart: 0.012, frequencyEnd: 0.018 },
-  toss: { x: '42vw', y: '-30vh', rotation: -160, scale: 0.12 },
-  winnerStagger: 0.08,
-} as const;
-
-const prefersReduced = () =>
-  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-// Motion + cinematic layer (Material 3 Expressive / Neural Expressive): spring
-// easing, shape morphs, an ambient halo, and a scroll-scrubbed hero where a paper
-// board crumples away and the GridOne board builds itself. GPU transforms/opacity.
-const NE_CSS = `
-.ne-progress{position:fixed;top:0;left:0;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#8F1D2C,#FFC72C);z-index:70;box-shadow:0 0 12px rgba(255,199,44,.5);will-change:transform}
-.ne-reveal{opacity:0;transform:translateY(30px) scale(.985);transition:opacity .7s cubic-bezier(.34,1.56,.64,1),transform .7s cubic-bezier(.34,1.56,.64,1);will-change:opacity,transform}
-.ne-reveal.is-in{opacity:1;transform:none}
-.ne-press{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,filter .2s ease}
-.ne-press:active{transform:scale(.94)}
-.ne-chip{transition:border-radius .45s cubic-bezier(.34,1.56,.64,1),border-color .3s,box-shadow .3s,transform .35s cubic-bezier(.34,1.56,.64,1),background .3s}
-.ne-chip:hover{border-radius:12px;transform:translateY(-3px);border-color:rgba(255,199,44,.55);box-shadow:0 10px 30px rgba(255,199,44,.14)}
-.ne-chip:hover .ne-chip-ico{color:#FFC72C}
-.ne-faq{transition:border-radius .5s cubic-bezier(.34,1.56,.64,1),border-color .3s,box-shadow .4s,transform .4s cubic-bezier(.34,1.56,.64,1)}
-.ne-faq:hover{border-radius:6px;border-color:rgba(255,199,44,.32);box-shadow:0 12px 32px rgba(0,0,0,.4);transform:translateY(-3px)}
-
-/* Cinematic hero */
-.stage{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(1rem,3vh,2rem);padding:5rem 1.25rem 2rem}
-.paper{transform-origin:50% 45%;will-change:transform,opacity}
-.paper-crease{mix-blend-mode:multiply}
-.clean{transform-origin:50% 55%;will-change:transform,opacity,filter}
-.clean-halo{will-change:opacity}
-.paper-ball{position:absolute;right:calc(-42vw + 50%);top:calc(-30vh + 50%);width:32px;height:30px;clip-path:polygon(13% 18%,38% 3%,63% 9%,91% 28%,96% 58%,75% 91%,43% 96%,14% 79%,2% 47%);background:linear-gradient(142deg,#fff9e8 0 19%,#cec3a9 20% 34%,#f0e8d3 35% 57%,#b7aa8f 58% 68%,#ddd2b9 69% 100%);box-shadow:0 8px 22px rgba(0,0,0,.38);opacity:0;visibility:hidden;transform:scale(.35) rotate(-24deg);will-change:transform,opacity}
-.paper-ball::before,.paper-ball::after{content:"";position:absolute;inset:5px 4px;border-top:1px solid rgba(76,66,47,.4);border-bottom:1px solid rgba(255,255,255,.5);transform:rotate(35deg)}
-.paper-ball::after{inset:7px 6px;transform:rotate(-42deg)}
-.ne-halo{animation:ne-drift 15s ease-in-out infinite alternate}
-@keyframes ne-drift{0%{transform:translate(-4%,-2%) scale(1)}100%{transform:translate(4%,3%) scale(1.09)}}
-@media (prefers-reduced-motion: reduce){
- .ne-reveal{opacity:1!important;transform:none!important;transition:none}
- .ne-halo{animation:none}
- .ne-progress{display:none}
- .paper{opacity:0}
- .clean{opacity:1;transform:none}
- .paper-ball{display:none}
-}
-`;
-
-const Reveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = '', delay = 0 }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    if (prefersReduced()) { setInView(true); return; }
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setInView(true); io.disconnect(); } },
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className={`ne-reveal ${inView ? 'is-in' : ''} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
-      {children}
-    </div>
-  );
-};
-
-// The board's real axis assignments (0-9 shuffled): the winning square is where
-// the row team's last digit meets the column team's.
-const ROW_AXIS = [3, 7, 0, 4, 9, 1, 6, 2, 8, 5]; // KC (down the left)
-const COL_AXIS = [9, 4, 7, 1, 2, 0, 5, 8, 3, 6]; // PHI (across the top)
-const WIN_ROW = ROW_AXIS.indexOf(4); // KC 24 -> 4
-const WIN_COL = COL_AXIS.indexOf(0); // PHI 20 -> 0
-
-const INITIALS = [
-  'JM', 'AL', 'KO', 'RW', 'DP', 'SB', 'TN', 'MC', 'GR', 'JD',
-  'LE', 'BU', 'ZA', 'MO', 'RE', 'CJ', 'PK', 'NV', 'HS', 'WT',
+/* ── Demonstration data. SYNTHETIC — not real boards, users, or results.
+      Quarter winners are derived from the last digit of each score, the
+      way a real squares board resolves. ── */
+const DEMO_NAMES = [
+  'RIVERA', 'OKAFOR', 'NGUYEN', 'GARCIA', 'WHITMORE',
+  'PATEL', 'BRENNAN', 'ADEYEMI', 'CHEN', 'JOHNSON',
+  'LEE', 'DAVIS', 'HAYES', 'KIM', 'WILSON',
+  'MARTINEZ', 'NOVAK', 'HALVORSEN', 'MBEKI', 'TANAKA',
+  'FONTAINE', 'ABBOTT', 'SANTOS', 'KRAMER', 'ESPOSITO',
+  'DIALLO', 'PETROV', 'HOLLAND', 'BAUER', 'MORALES',
 ];
-const cellInitials = (i: number) => (i % 9 === 4 ? '' : INITIALS[(i * 7 + 3) % INITIALS.length]);
 
-const csv = (k: string, v: string | number): React.CSSProperties => ({ [k]: v } as React.CSSProperties);
+const QUARTERS = [
+  { label: 'Q1', home: 7, away: 3, clock: 'END 1ST' },
+  { label: 'Q2', home: 14, away: 10, clock: 'HALF' },
+  { label: 'Q3', home: 21, away: 10, clock: 'END 3RD' },
+  { label: 'Q4', home: 24, away: 17, clock: 'FINAL' },
+] as const;
 
-// ── The messy handwritten paper board (the "old way") ──────────────────────────
-const PaperBoard: React.FC = () => {
-  const G0 = 46; // grid start x
-  const GT = 84; // grid start y
-  const CELL = 31;
-  const scribbleNames = [
-    [0, 1, 'Sam'], [1, 3, 'Mia'], [2, 0, 'Deb'], [0, 5, 'Al'], [3, 6, 'Jo'],
-    [4, 2, 'Ken'], [1, 7, 'Ray'], [5, 4, 'Pat'], [6, 8, 'Lee'], [2, 9, 'Bo'],
-    [7, 1, 'Cam'], [8, 5, 'Van'], [4, 8, 'Tim'], [6, 3, 'Nate'], [8, 9, 'Wes'],
-    [3, 0, 'Gus'], [5, 7, 'Ivy'],
-  ] as const;
-  return (
-    <div className="paper absolute inset-0" data-hero-paper style={{ filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.55))' }}>
-      <svg viewBox="0 0 380 430" className="h-full w-full">
-        <defs>
-          <filter id="rough">
-            <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7" result="n" />
-            <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" />
-          </filter>
-          <filter id="crumple" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence
-              data-crumple-noise
-              type="fractalNoise"
-              baseFrequency={HERO_MOTION.crumple.frequencyStart}
-              numOctaves="3"
-              seed="11"
-              result="crumpleNoise"
-            />
-            <feDisplacementMap
-              data-crumple-displacement
-              in="SourceGraphic"
-              in2="crumpleNoise"
-              scale="0"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-          <radialGradient id="pg" cx="30%" cy="18%" r="90%">
-            <stop offset="0%" stopColor="#fbf6e7" />
-            <stop offset="100%" stopColor="#e4d9bd" />
-          </radialGradient>
-        </defs>
-        <g data-paper-crumple-group filter="none">
-          {/* paper */}
-          <rect x="6" y="6" width="368" height="418" rx="10" fill="#efe7d2" />
-          <rect x="6" y="6" width="368" height="418" rx="10" fill="url(#pg)" opacity="0.5" />
-          {/* title */}
-          <text x="26" y="42" style={hand} fontSize="30" fill="#243a6b" fontWeight={700}>Friday Squares</text>
-          <text x="286" y="40" style={hand} fontSize="17" fill="#8a2b2b" transform="rotate(-6 286 40)">$5 ea!</text>
-          {/* grid lines (hand-drawn) */}
-          <g filter="url(#rough)" stroke="#33507e" strokeWidth="1.4" opacity="0.85">
-            {Array.from({ length: 11 }, (_, k) => (
-              <line key={`v${k}`} x1={G0 + k * CELL} y1={GT} x2={G0 + k * CELL} y2={GT + 10 * CELL} />
-            ))}
-            {Array.from({ length: 11 }, (_, k) => (
-              <line key={`h${k}`} x1={G0} y1={GT + k * CELL} x2={G0 + 10 * CELL} y2={GT + k * CELL} />
-            ))}
-          </g>
-          {/* axis numbers */}
-          <g style={hand} fill="#2b2b2b" fontSize="17">
-            {COL_AXIS.map((n, c) => (
-              <text key={`ct${c}`} x={G0 + c * CELL + CELL / 2 - 4} y={GT - 6} transform={`rotate(${((c * 7) % 5) - 2} ${G0 + c * CELL + 12} ${GT - 6})`}>{n}</text>
-            ))}
-            {ROW_AXIS.map((n, r) => (
-              <text key={`rt${r}`} x={G0 - 16} y={GT + r * CELL + CELL / 2 + 5} transform={`rotate(${((r * 5) % 5) - 2} ${G0 - 12} ${GT + r * CELL + 15})`}>{n}</text>
-            ))}
-          </g>
-          {/* handwritten names in cells */}
-          <g style={hand} fill="#1f1f1f" fontSize="15">
-            {scribbleNames.map(([r, c, txt], i) => (
-              <text
-                key={i}
-                x={G0 + (c as number) * CELL + 4}
-                y={GT + (r as number) * CELL + CELL / 2 + 5}
-                transform={`rotate(${((i * 11) % 9) - 4} ${G0 + (c as number) * CELL + 12} ${GT + (r as number) * CELL + 15})`}
-              >
-                {txt}
-              </text>
-            ))}
-            {/* a crossed-out name */}
-            <text x={G0 + 2 * CELL + 3} y={GT + 3 * CELL + 20} fill="#555">Deb</text>
-            <line x1={G0 + 2 * CELL} y1={GT + 3 * CELL + 15} x2={G0 + 3 * CELL - 4} y2={GT + 3 * CELL + 15} stroke="#8a2b2b" strokeWidth="1.6" />
-          </g>
-          {/* coffee ring for character */}
-          <circle cx="322" cy="360" r="26" fill="none" stroke="#7a5230" strokeWidth="5" opacity="0.18" />
-          {/* crease shading that intensifies as it crumples */}
-          <g className="paper-crease">
-            <polygon points="40,120 200,60 180,240 60,300" fill="#000" opacity="0.06" />
-            <polygon points="200,60 360,140 300,320 180,240" fill="#000" opacity="0.05" />
-            <polygon points="60,300 180,240 300,320 150,400" fill="#000" opacity="0.07" />
-          </g>
-        </g>
-      </svg>
-    </div>
-  );
-};
+const winnerCell = (q: (typeof QUARTERS)[number]) => ({ row: q.home % 10, col: q.away % 10 });
 
-// ── The GridOne board that builds itself as you scroll ─────────────────────────
-const CleanBoard: React.FC = () => (
-  <div className="clean absolute inset-0" data-hero-clean>
-    <div
-      className="clean-halo pointer-events-none absolute -inset-6 -z-10 rounded-[40px] blur-3xl"
-      data-clean-halo
-      style={{ background: 'radial-gradient(60% 60% at 55% 45%, rgba(255,199,44,0.28), rgba(143,29,44,0.18) 60%, transparent)' }}
-    />
-    <div className="flex h-full flex-col rounded-[24px] border border-[#EDEAE0]/12 bg-[#121317] p-4 shadow-2xl shadow-black/60 sm:p-5">
-      {/* Scoreboard */}
-      <div className="mb-3 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-live/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-live" style={mono}>
-          <span className="h-1.5 w-1.5 rounded-full bg-live" /> FINAL
-        </span>
-        <div className="cb-live-score flex items-center gap-3 text-sm font-bold text-[#EDEAE0]" data-hero-live-score style={mono}>
-          <span>KC <span className="text-gold">24</span></span>
-          <span className="text-[#EDEAE0]/25">·</span>
-          <span>PHI <span className="text-gold">20</span></span>
-        </div>
-      </div>
-
-      <div className="grid min-h-0 flex-1 gap-[3px]" style={{ gridTemplateColumns: 'clamp(1rem,3.4vw,1.5rem) repeat(10, 1fr)', gridTemplateRows: 'repeat(11, minmax(0, 1fr))' }}>
-        <div />
-        {COL_AXIS.map((n, c) => (
-          <div key={`c${c}`} className={`cb-axis flex items-center justify-center text-[9px] font-bold sm:text-[11px] ${c === WIN_COL ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', ((c / 20) * 0.55).toFixed(3)) }}>{n}</div>
-        ))}
-        {ROW_AXIS.map((rn, r) => (
-          <React.Fragment key={`r${r}`}>
-            <div className={`cb-axis flex items-center justify-center text-[9px] font-bold sm:text-[11px] ${r === WIN_ROW ? 'text-gold' : 'text-[#EDEAE0]/45'}`} style={{ ...mono, ...csv('--t', (((r + 10) / 20) * 0.55).toFixed(3)) }}>{rn}</div>
-            {COL_AXIS.map((_, c) => {
-              const idx = r * 10 + c;
-              const isWinner = r === WIN_ROW && c === WIN_COL;
-              const inLane = r === WIN_ROW || c === WIN_COL;
-              return (
-                <div
-                  key={idx}
-                  className={`relative flex min-h-0 items-center justify-center overflow-hidden rounded-[3px] border ${inLane ? 'border-gold/20 bg-gold/[0.05]' : 'border-[#EDEAE0]/[0.06] bg-[#EDEAE0]/[0.02]'}`}
-                >
-                  <span className={`cb-name text-[7px] font-semibold sm:text-[9px] ${isWinner ? 'text-[#EDEAE0]/40' : inLane ? 'text-[#EDEAE0]/40' : 'text-[#EDEAE0]/25'}`} style={{ ...mono, ...csv('--t', ((idx / 100) * 0.82).toFixed(3)) }}>{cellInitials(idx)}</span>
-                  {isWinner && (
-                    <span className="cb-winfill absolute inset-0 flex items-center justify-center bg-gold text-[7px] font-bold text-black shadow-[0_0_18px_rgba(255,199,44,0.6)] sm:text-[9px]" data-hero-winner style={mono}>{cellInitials(idx)}</span>
-                  )}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between rounded-2xl border border-[#EDEAE0]/10 bg-black/30 px-4 py-2.5">
-        <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-[#EDEAE0]">One link, everyone watching</div>
-          <div className="truncate text-[11px] text-[#EDEAE0]/50" style={mono}>getgridone.com/?board=FRIDAY</div>
-        </div>
-        <span className="shrink-0 rounded-full bg-[#EDEAE0]/10 px-3 py-1 text-[11px] font-semibold text-[#EDEAE0]">Copy</span>
-      </div>
-    </div>
-  </div>
-);
-
-const FEATURED_USES = [
-  { label: 'Booster clubs', Icon: Megaphone },
-  { label: 'Office pools', Icon: Briefcase },
-  { label: 'Super Bowl parties', Icon: Trophy },
-  { label: 'Youth sports', Icon: Users },
-  { label: 'Watch parties', Icon: Tv },
-];
+const FEATURED_USES = ['Booster clubs', 'Office pools', 'Super Bowl parties', 'Youth sports', 'Watch parties'];
 
 const STEPS = [
-  { k: 'Build the board', d: 'Upload a photo or start blank, then clean up names in seconds.', Icon: Upload },
-  { k: 'Share one link', d: 'No logins for viewers. It opens clean on every phone.', Icon: Link2 },
-  { k: 'Watch it live', d: 'Scores update, winners light up, and the arguments stop.', Icon: Radio },
+  { k: 'Build the board', d: 'Start with a native 10×10 board. If you already used paper, the optional beta scan gives you an editable first pass.' },
+  { k: 'Share one link', d: 'No logins for viewers. Anyone with the private board link gets the same read-only game-day view.' },
+  { k: 'Watch it settle', d: 'Automatic beta score checks update the board; the organizer can take over instantly if the source is late or wrong.' },
 ];
 
 const FAQ_ITEMS = [
-  { q: 'How does pricing work?', a: 'Creating and editing boards is free. For this season, $14.99 unlocks up to 20 boards. Build everything first, then pay when your boards are ready to share.' },
+  { q: 'How does pricing work?', a: 'Creating and editing boards is free. The introductory 2026 season pass is $4.99 once and unlocks up to 20 boards. Build everything first, then pay when your boards are ready to share.' },
   { q: 'Who needs an account?', a: 'Only the organizer needs an account. Viewers open the share link and see the board, live score state, and winner scenarios in read-only mode.' },
   { q: 'Can I upload a handwritten board?', a: 'Yes. Upload a board image, let GridOne scan it, then fix any names or squares before you unlock sharing.' },
-  { q: 'What exactly unlocks after I pay?', a: 'Before payment you can build, edit, preview, and test your boards. After payment, this season\'s $14.99 unlock gives you up to 20 boards you can publish with live viewer links so everyone can follow along without edit access.' },
+  { q: 'What exactly unlocks after I pay?', a: 'Before payment you can build, edit, preview, and test your boards. The $4.99 introductory 2026 season pass lets you publish up to 20 boards with read-only viewer links.' },
   { q: 'Do viewers get edit access?', a: 'No. Organizers can edit the board. Viewers are read-only and can follow the board, scoreboard, and live winner scenarios.' },
   { q: 'Is GridOne good for fundraisers or team groups?', a: 'Yes. GridOne is built for organizers running football squares for youth sports teams, booster clubs, office pools, watch parties, and local community fundraisers that need one simple live board link.' },
 ];
 
-const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
-  const title = 'Football Squares App for Super Bowl Squares, Fundraisers, and Group Pools | GridOne';
-  const description = 'Run football squares and Super Bowl squares online with GridOne. Built for fundraisers, office pools, watch parties, and community groups that want one clean live board link.';
-  const heroRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
+const TICKER = [
+  'DEMONSTRATION BOARD — SYNTHETIC DATA',
+  'BUILDING AND EDITING IS FREE',
+  '$4.99 UNLOCKS UP TO 20 BOARDS IN 2026',
+  'READ-ONLY VIEWER LINK',
+  'VIEWERS NEED NO ACCOUNT',
+  'NOT A BETTING SITE',
+  'AUTOMATIC SCORE CHECKS · MANUAL FALLBACK',
+];
 
-  useLayoutEffect(() => {
-    const hero = heroRef.current;
-    const stage = stageRef.current;
-    const progressBar = progressRef.current;
-    if (!hero || !stage || !progressBar) return;
+/* ── Digit roll. Each column is a 0-9 strip translated to its value. ── */
+const Roll: React.FC<{ value: number }> = ({ value }) => (
+  <span className="oa-roll" aria-hidden>
+    {String(value).split('').map((d, i) => (
+      <span key={i} className="oa-roll-col">
+        <span className="oa-roll-strip" style={{ transform: `translateY(-${Number(d)}em)` }}>
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <span key={n} className="oa-roll-d">{n}</span>
+          ))}
+        </span>
+      </span>
+    ))}
+  </span>
+);
 
-    window.__ready = false;
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
+/* One orchestrated entrance for the whole page: wipe from the leading edge.
+   Elements are visible by default and only hidden once JS confirms it can
+   reveal them, so a failed script never costs content. */
+const useWipe = () => {
+  const ref = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const targets = Array.from(root.querySelectorAll<HTMLElement>('[data-wipe]'));
+    targets.forEach((el) => el.classList.add('oa-wipe'));
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-in');
+          io.unobserve(e.target);
+        }
+      }),
+      { rootMargin: '0px 0px -12% 0px' },
+    );
+    targets.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  return ref;
+};
 
-      mm.add(
-        {
-          reduced: '(prefers-reduced-motion: reduce)',
-          desktop: `(min-width: ${HERO_MOTION.narrowBreakpoint}px) and (prefers-reduced-motion: no-preference)`,
-          narrow: `(max-width: ${HERO_MOTION.narrowBreakpoint - 1}px) and (prefers-reduced-motion: no-preference)`,
-        },
-        (mediaContext) => {
-          const conditions = mediaContext.conditions as { reduced?: boolean; desktop?: boolean; narrow?: boolean };
-          const q = gsap.utils.selector(hero);
-          const paper = q<HTMLElement>('[data-hero-paper]')[0];
-          const paperArt = q<SVGGElement>('[data-paper-crumple-group]')[0];
-          const turbulence = q<SVGFETurbulenceElement>('[data-crumple-noise]')[0];
-          const displacement = q<SVGFEDisplacementMapElement>('[data-crumple-displacement]')[0];
-          const crease = q<SVGGElement>('.paper-crease')[0];
-          const clean = q<HTMLElement>('[data-hero-clean]')[0];
-          const halo = q<HTMLElement>('[data-clean-halo]')[0];
-          const winner = q<HTMLElement>('[data-hero-winner]')[0];
-          const liveScore = q<HTMLElement>('[data-hero-live-score]')[0];
-          const cta = q<HTMLElement>('.cb-cta')[0];
-          const narration = q<HTMLElement>('[data-hero-narr]')[0];
-          const narrationDot = q<HTMLElement>('[data-hero-narr-dot]')[0];
-          const paperBall = q<HTMLElement>('[data-paper-ball]')[0];
+/* ── Score bug: the system's anchor. Opaque, fixed height, never fades. ── */
+const ScoreBug: React.FC<{ q: number }> = ({ q }) => {
+  const live = q > 0 && q < 4;
+  const state = q === 0 ? { home: 0, away: 0, clock: 'PREGAME' } : QUARTERS[q - 1];
+  return (
+    <div className="flex h-14 w-full items-stretch md:w-auto" role="status" aria-live="polite">
+      <div className="flex items-center gap-3 bg-cardinal px-4 text-broadcast-white">
+        <span className="oa-slab">HOME</span>
+        <span className="oa-data text-xl"><Roll value={state.home} /><span className="sr-only">{state.home}</span></span>
+      </div>
+      <div className="flex items-center gap-3 bg-chyron px-4 text-broadcast-white">
+        <span className="oa-slab">AWAY</span>
+        <span className="oa-data text-xl"><Roll value={state.away} /><span className="sr-only">{state.away}</span></span>
+      </div>
+      <div className="oa-shear flex items-center gap-2 bg-ink pl-4 pr-7 text-broadcast-white">
+        {live && <span className="h-2 w-2 shrink-0 bg-live" aria-hidden />}
+        <span className="oa-data text-sm whitespace-nowrap">{'clock' in state ? state.clock : ''}</span>
+      </div>
+    </div>
+  );
+};
 
-          const setNarration = (progress: number) => {
-            const label = progress < HERO_MOTION.beats.crumple
-              ? HERO_MOTION.labels[0]
-              : progress < HERO_MOTION.beats.winner
-                ? HERO_MOTION.labels[1]
-                : HERO_MOTION.labels[2];
-            if (narration.textContent !== label) narration.textContent = label;
-            const winnerPhase = progress >= HERO_MOTION.beats.winner;
-            narrationDot.classList.toggle('bg-gold', winnerPhase);
-            narrationDot.classList.toggle('bg-live', !winnerPhase);
-            narrationDot.classList.toggle('animate-pulse', !winnerPhase);
-          };
-
-          paperArt.setAttribute('filter', 'none');
-
-          if (conditions.reduced) {
-            gsap.set(paper, { autoAlpha: 0 });
-            gsap.set(clean, { autoAlpha: 1, x: 0, y: 0, scale: 1, filter: 'none' });
-            gsap.set([winner, liveScore, halo], { autoAlpha: 1, x: 0, y: 0, scale: 1 });
-            gsap.set(cta, { autoAlpha: 1, x: 0, y: 0 });
-            gsap.set(paperBall, { autoAlpha: 0 });
-            gsap.set(progressBar, { scaleX: 1 });
-            setNarration(1);
-            hero.dataset.heroProgress = '1.0000';
-            window.__heroProgress = 1;
-            delete window.__heroScrollTo;
-            requestAnimationFrame(() => { window.__ready = true; });
-            return;
-          }
-
-          const useDisplacement = !!conditions.desktop;
-          let filterActive = false;
-          const timeline = gsap.timeline({ paused: true });
-
-          gsap.set(paper, { autoAlpha: 1, x: 0, y: 0, scale: 1, rotation: -2, force3D: true });
-          gsap.set(clean, { autoAlpha: 0, y: 18, scale: 0.94, filter: 'blur(6px)', force3D: true });
-          gsap.set([winner, liveScore], { autoAlpha: 0, scale: 0.72, transformOrigin: '50% 50%' });
-          gsap.set(cta, { autoAlpha: 1, y: 0 });
-          gsap.set(halo, { autoAlpha: 0 });
-          gsap.set(crease, { opacity: 0.35 });
-          gsap.set(paperBall, { autoAlpha: 0, scale: 0.35, rotation: -24 });
-          gsap.set(displacement, { attr: { scale: 0 } });
-          gsap.set(turbulence, { attr: { baseFrequency: HERO_MOTION.crumple.frequencyStart } });
-
-          timeline
-            .to(paper, { scale: 0.45, rotation: -28, duration: 3, ease: 'power2.in' }, 4)
-            .to(crease, { opacity: 1, duration: 3, ease: 'power2.in' }, 4)
-            .to(paper, { x: -8, y: -14, rotation: -34, duration: 0.25, ease: 'power2.out' }, 7)
-            .to(paper, {
-              x: HERO_MOTION.toss.x,
-              y: HERO_MOTION.toss.y,
-              rotation: HERO_MOTION.toss.rotation,
-              scale: HERO_MOTION.toss.scale,
-              autoAlpha: 0,
-              duration: 1.75,
-              ease: 'power3.in',
-            }, 7.25)
-            .to(clean, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.75, ease: 'power2.out' }, 7.25)
-            .to([winner, liveScore], {
-              autoAlpha: 1,
-              scale: 1,
-              duration: 0.65,
-              stagger: HERO_MOTION.winnerStagger,
-              ease: 'back.out(1.4)',
-            }, 9)
-            .to(halo, { autoAlpha: 0.75, duration: 0.65, ease: 'power2.out' }, 9.35);
-
-          if (useDisplacement) {
-            timeline
-              .to(displacement, { attr: { scale: HERO_MOTION.crumple.displacement }, duration: 3, ease: 'power2.in' }, 4)
-              .to(turbulence, { attr: { baseFrequency: HERO_MOTION.crumple.frequencyEnd }, duration: 3, ease: 'power2.in' }, 4)
-              .to(paperBall, { autoAlpha: 1, scale: 1, rotation: 8, duration: 0.07, ease: 'back.out(1.4)' }, 8.85)
-              .to(paperBall, { autoAlpha: 0, scale: 0.72, duration: 0.08, ease: 'power2.in' }, 8.92);
-          }
-
-          const updatePresentation = () => {
-            const progress = timeline.progress();
-            const shouldFilter = useDisplacement
-              && progress >= HERO_MOTION.beats.crumple
-              && progress < HERO_MOTION.beats.toss;
-            if (shouldFilter !== filterActive) {
-              filterActive = shouldFilter;
-              paperArt.setAttribute('filter', filterActive ? 'url(#crumple)' : 'none');
-            }
-            setNarration(progress);
-            gsap.set(progressBar, { scaleX: progress });
-            hero.dataset.heroProgress = progress.toFixed(4);
-            window.__heroProgress = progress;
-          };
-          timeline.eventCallback('onUpdate', updatePresentation);
-          updatePresentation();
-
-          const trigger = ScrollTrigger.create({
-            id: 'gridone-hero',
-            trigger: stage,
-            animation: timeline,
-            start: 'top top',
-            end: () => `+=${window.innerHeight * HERO_MOTION.pinScreens}`,
-            pin: true,
-            scrub: 0.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          });
-
-          const seekHero = (requestedProgress: number) => {
-            const progress = gsap.utils.clamp(0, 1, requestedProgress);
-            const scrollY = trigger.start + (trigger.end - trigger.start) * progress;
-            const lenis = getLenis();
-            if (lenis) lenis.scrollTo(scrollY, { immediate: true });
-            else window.scrollTo({ top: scrollY, behavior: 'auto' });
-            ScrollTrigger.update();
-            trigger.getTween()?.progress(1);
-            timeline.progress(progress);
-            updatePresentation();
-          };
-          window.__heroScrollTo = seekHero;
-
-          // Measure the pin spacer before Lenis calculates its scroll limit.
-          ScrollTrigger.refresh();
-          getLenis()?.resize();
-
-          const jump = new URLSearchParams(window.location.search).get('jump');
-          if (jump) {
-            const scrollY = Number.parseFloat(jump);
-            const lenis = getLenis();
-            if (lenis) lenis.scrollTo(scrollY, { immediate: true });
-            else window.scrollTo({ top: scrollY, behavior: 'auto' });
-            ScrollTrigger.update();
-            trigger.getTween()?.progress(1);
-          }
-          requestAnimationFrame(() => { window.__ready = true; });
-
-          return () => {
-            if (window.__heroScrollTo === seekHero) delete window.__heroScrollTo;
-            paperArt.setAttribute('filter', 'none');
-          };
-        },
-      );
-    }, hero);
-
-    return () => {
-      ctx.revert();
-      delete window.__heroScrollTo;
-      delete window.__heroProgress;
-    };
+/* ── The board, as an on-air graphic. Cells never round. ── */
+const Board: React.FC<{ q: number; compact?: boolean }> = ({ q, compact }) => {
+  const resolved = QUARTERS.slice(0, q).map(winnerCell);
+  /* A real board is mostly sold by kickoff. Fill ~76 of 100 squares
+     deterministically so the pattern reads as a genuine board, not a demo stub. */
+  const names = useMemo(() => {
+    const m = new Map<string, string>();
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 10; c++) {
+        if ((r * 37 + c * 53 + 11) % 100 < 76) {
+          m.set(`${r}-${c}`, DEMO_NAMES[(r * 7 + c * 3) % DEMO_NAMES.length]);
+        }
+      }
+    }
+    return m;
   }, []);
 
-  const smoothTo = (sel: string) => (e: React.MouseEvent) => {
-    const lenis = getLenis();
-    if (lenis) { e.preventDefault(); lenis.scrollTo(sel, { offset: -16 }); }
-  };
+  return (
+    <div className="overflow-x-auto border-y-[3px] border-ink" tabIndex={0} role="group" aria-label="Squares board, scrolls horizontally on small screens">
+    <table className="w-full min-w-[30rem] table-fixed border-collapse" aria-label="Demonstration squares board (synthetic data)">
+      <caption className="sr-only">
+        A 10 by 10 football squares board using synthetic demonstration data. Winning squares fill as each quarter ends.
+      </caption>
+      <thead>
+        <tr>
+          <th className="w-[7%] bg-transparent" />
+          {Array.from({ length: 10 }, (_, c) => (
+            <th key={c} scope="col" className="oa-board-axis bg-cardinal-deep py-1 text-broadcast-white">
+              {c}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Array.from({ length: 10 }, (_, r) => (
+          <tr key={r}>
+            <th scope="row" className="oa-board-axis bg-cardinal-deep px-1 text-broadcast-white">
+              {r}
+            </th>
+            {Array.from({ length: 10 }, (_, c) => {
+              const idx = resolved.findIndex((w) => w.row === r && w.col === c);
+              const won = idx >= 0;
+              const name = names.get(`${r}-${c}`);
+              return (
+                <td
+                  key={c}
+                  className={[
+                    'oa-q border border-cardinal-deep text-center align-middle',
+                    compact ? 'h-6' : 'h-[clamp(1.9rem,3.6vw,3.1rem)]',
+                    won ? 'oa-cell-won bg-gold text-ink' : name ? 'bg-broadcast-white text-ink' : 'bg-newsprint text-ink',
+                  ].join(' ')}
+                >
+                  {won ? (
+                    <span className="block leading-tight">
+                      <span className="oa-board-flag block">{QUARTERS[idx].label}</span>
+                      <span className="oa-board-name block truncate px-0.5 font-bold">{name ?? '—'}</span>
+                      <span className="sr-only">Winner, square {r}&ndash;{c}: {name ?? 'open square'}</span>
+                    </span>
+                  ) : (
+                    <span className="oa-board-name block truncate px-0.5">
+                      {name ?? ''}
+                      {!name && <span className="sr-only">Open square {r}&ndash;{c}</span>}
+                    </span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    </div>
+  );
+};
+
+const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
+  const title = 'GridOne — Live Football Squares Boards With Automatic Score Tracking';
+  const description =
+    'Run football squares and Super Bowl squares on one live board with automatic beta score tracking, a clear manual fallback, and no viewer accounts.';
+
+  const [q, setQ] = useState(0);
+  const arcRef = useRef<HTMLElement>(null);
+  const wipeRef = useWipe() as React.RefObject<HTMLDivElement>;
+
+  /* Scroll drives the game. Without JS or with reduced motion the page is
+     complete and every quarter is already shown. */
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !arcRef.current) {
+      setQ(4);
+      return;
+    }
+    const st = ScrollTrigger.create({
+      trigger: arcRef.current,
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: true,
+      onUpdate: (self) => setQ(Math.min(4, Math.floor(self.progress * 4.999))),
+    });
+    return () => st.kill();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background text-[#EDEAE0] font-sans selection:bg-gold/30 flex flex-col overflow-x-clip">
-      <style>{NE_CSS}</style>
-      <div ref={progressRef} className="ne-progress" data-hero-progress aria-hidden="true" />
+    <div ref={wipeRef} className="oa-root flex min-h-screen flex-col overflow-x-clip bg-broadcast-white text-ink">
       <PageMetadata
         title={title}
         description={description}
@@ -487,171 +240,250 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         type="website"
         schema={[
           { '@type': 'WebSite', name: 'GridOne', url: 'https://www.getgridone.com/' },
-          { '@type': 'SoftwareApplication', name: 'GridOne', applicationCategory: 'SportsApplication', operatingSystem: 'Any', description, offers: { '@type': 'Offer', price: '14.99', priceCurrency: 'USD' } },
+          {
+            '@type': 'SoftwareApplication',
+            name: 'GridOne',
+            applicationCategory: 'SportsApplication',
+            operatingSystem: 'Any',
+            description,
+            offers: { '@type': 'Offer', price: '4.99', priceCurrency: 'USD', description: '$4.99 introductory 2026 season pass for up to 20 boards' },
+          },
           { '@type': 'FAQPage', mainEntity: FAQ_ITEMS.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })) },
         ]}
       />
 
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="ne-halo absolute left-1/2 top-[-12%] h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-cardinal/16 blur-[130px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.05),transparent_55%)]" />
-      </div>
-
-      <header className="sticky top-0 z-50 border-b border-[#EDEAE0]/[0.06] bg-background/70 backdrop-blur-md">
-        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-4">
+      {/* ── Top chrome: the bug is pinned with the nav so it stays readable
+             at all times without ever occluding body copy. ── */}
+      <header className="sticky top-0 z-50 border-b-[3px] border-ink bg-broadcast-white">
+        <div className="flex flex-wrap items-stretch justify-between">
+          <ScoreBug q={q} />
+        </div>
+        <nav className="flex items-center justify-between gap-3 border-t border-newsprint px-4 py-3 sm:gap-8 sm:px-5">
           <div className="flex shrink-0 items-center gap-2.5">
-            <img src="/icons/gridone-icon-256.png" alt="GridOne" className="h-9 w-9 rounded-xl ring-1 ring-gold/50" />
-            <span className="text-base font-extrabold uppercase tracking-tight sm:text-lg" style={display}>GridOne</span>
+            <img src="/icons/gridone-icon-256.png" alt="" className="h-7 w-7" />
+            <span className="oa-slab text-base">GridOne</span>
           </div>
-          <div className="hidden items-center gap-1 md:flex" style={mono}>
-            <a href="#how" onClick={smoothTo('#how')} className="rounded-full px-3 py-2 text-[13px] text-[#EDEAE0]/60 transition-colors hover:text-[#EDEAE0]">How it works</a>
-            <a href="#faq" onClick={smoothTo('#faq')} className="rounded-full px-3 py-2 text-[13px] text-[#EDEAE0]/60 transition-colors hover:text-[#EDEAE0]">FAQ</a>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button onClick={onLogin} className="ne-press hidden whitespace-nowrap rounded-full px-4 py-2 text-sm text-[#EDEAE0]/80 ring-1 ring-[#EDEAE0]/12 transition-all hover:bg-[#EDEAE0]/5 hover:text-[#EDEAE0] sm:inline-flex">Sign in</button>
-            <button onClick={onCreate} className="ne-press whitespace-nowrap rounded-full bg-gold px-4 py-2 text-[13px] font-bold text-black shadow-lg shadow-gold/20 hover:brightness-95 sm:text-sm">Create board</button>
+          <div className="flex min-w-0 shrink items-center gap-1 whitespace-nowrap">
+            <a href="#how" className="oa-slab hidden px-3 py-2 hover:bg-newsprint md:inline-flex">How it works</a>
+            <a href="#faq" className="oa-slab hidden px-3 py-2 hover:bg-newsprint md:inline-flex">FAQ</a>
+            <button onClick={onLogin} className="oa-slab px-2 py-2 hover:bg-newsprint sm:px-3">Sign in</button>
+            <button onClick={onCreate} className="oa-btn oa-btn-primary !px-4 !py-3 sm:!px-5">Create board</button>
           </div>
         </nav>
       </header>
 
-      {/* ── Cinematic scroll hero (GSAP ScrollTrigger pin + Lenis smooth scroll) ── */}
-      <section ref={heroRef} className="relative z-10">
-        <div ref={stageRef} className="stage" data-hero-stage>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#EDEAE0]/50" style={mono}>
-            <span className="h-1.5 w-1.5 rounded-full bg-live animate-pulse" data-hero-narr-dot />
-            <span className="narr" data-hero-narr>{HERO_MOTION.labels[0]}</span>
-          </div>
-
-          <h1 className="text-center text-[2.5rem] font-extrabold uppercase leading-[0.9] tracking-tight text-[#EDEAE0] sm:text-6xl" style={display}>
-            Squares that <span className="text-gold">keep score.</span>
-          </h1>
-
-          <div className="relative aspect-[380/430] w-[min(86vw,400px)]" aria-hidden="true">
-            <PaperBoard />
-            <CleanBoard />
-            <span className="paper-ball" data-paper-ball />
-          </div>
-
-          <div className="cb-cta flex flex-col items-center gap-4">
+      <main className="flex-1">
+        {/* ── BAND 1 — thesis + the board ── */}
+        <section className="grid border-b-[3px] border-ink md:grid-cols-2">
+          <div className="flex min-w-0 flex-col justify-center gap-7 px-5 py-14 md:px-10 md:py-20">
+            <h1 className="oa-chyron text-ink">
+              The board<br />watches<br />the game
+            </h1>
+            <p className="oa-body max-w-md text-ink/80">
+              Football squares for booster clubs, teams, and church halls. Share one link and let
+              automatic beta scoring do the routine work, with a clear organizer fallback whenever it needs help.
+            </p>
+            <div className="oa-data flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-ink/70">
+              <span>FREE TO BUILD</span><span aria-hidden>/</span>
+              <span>$4.99 UNLOCKS UP TO 20 BOARDS IN 2026</span><span aria-hidden>/</span>
+              <span>VIEWERS NEED NO ACCOUNT</span><span aria-hidden>/</span>
+              <span>AUTO BETA + MANUAL FALLBACK</span>
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button onClick={onCreate} className="ne-press inline-flex items-center justify-center gap-2 rounded-full bg-cardinal px-7 py-3.5 text-sm font-bold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)] hover:brightness-110 hover:shadow-lg hover:shadow-cardinal/25">
-                Build a board <span aria-hidden>→</span>
-              </button>
-              <Link to="/demo" className="ne-press inline-flex items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-semibold text-[#EDEAE0]/80 ring-1 ring-[#EDEAE0]/12 transition-colors hover:bg-[#EDEAE0]/5 hover:text-[#EDEAE0]">See a live board</Link>
+              <button onClick={onCreate} className="oa-btn oa-btn-primary">Build your board</button>
+              <Link to="/demo" className="oa-btn oa-btn-ghost">See a live board</Link>
             </div>
-            <div className="flex items-center gap-2 text-[13px] text-[#EDEAE0]/55" style={mono}>
-              <span className="font-bold text-gold">Free to build.</span>
-              <span>$14.99 unlocks up to 20 boards.</span>
+          </div>
+
+          <div className="flex min-w-0 flex-col justify-center bg-cardinal">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 pb-2 pt-3">
+              <span className="oa-slab text-broadcast-white">Live board</span>
+              <span className="oa-board-axis text-broadcast-white/70">SYNTHETIC DEMONSTRATION DATA</span>
             </div>
+            <Board q={q} />
+          </div>
+        </section>
+
+        {/* ── BAND 2 — the game arc. The proof.
+               The board is sticky INSIDE this band so it is on screen at the
+               exact moment each quarter settles. ── */}
+        <section ref={arcRef} className="border-b-[3px] border-ink bg-ink px-5 py-16 md:min-h-[150vh] md:px-10 md:py-24">
+          <div className="mb-4 h-[3px] w-full bg-gold" aria-hidden data-wipe />
+          <h2 className="oa-chyron mb-5 text-broadcast-white" data-wipe>Automatic first.<br />Manual when needed.</h2>
+          <p className="oa-body mb-12 max-w-xl text-broadcast-white/70">
+            GridOne checks a grounded game source and fills completed-quarter winners. Every score shows its source and freshness, and the organizer can take over when needed.
+            Scroll to watch a synthetic game settle.
+          </p>
+
+          <div className="grid gap-10 md:min-h-[100vh] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
+            <div className="min-w-0 self-start bg-cardinal md:sticky md:top-[7.5rem]">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 pb-2 pt-3">
+                <span className="oa-slab text-broadcast-white">
+                  {q === 0 ? 'Board · pregame' : q === 4 ? 'Board · final' : `Board · through ${QUARTERS[q - 1].label}`}
+                </span>
+                <span className="oa-board-axis text-broadcast-white/70">SYNTHETIC DEMONSTRATION DATA</span>
+              </div>
+              <Board q={q} />
+            </div>
+
+            <ol className="grid min-w-0 gap-px self-start bg-broadcast-white/20 sm:grid-cols-2 md:grid-cols-1 md:sticky md:top-[7.5rem]">
+            {QUARTERS.map((quarter, i) => {
+              const active = q > i;
+              const cell = winnerCell(quarter);
+              return (
+                <li key={quarter.label} className={`oa-q flex flex-col gap-3 p-6 ${active ? 'bg-broadcast-white text-ink' : 'bg-ink text-broadcast-white/60'}`}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="oa-data text-5xl font-bold">{quarter.label}</span>
+                    <span className={`oa-data flex items-center gap-1 text-lg ${active ? '' : 'opacity-60'}`}>
+                      {active ? (
+                        <>
+                          <Roll value={quarter.home} />
+                          <span aria-hidden>&ndash;</span>
+                          <Roll value={quarter.away} />
+                          <span className="sr-only">{quarter.home} to {quarter.away}</span>
+                        </>
+                      ) : (
+                        <span aria-hidden>&mdash;</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="oa-slab flex items-center gap-2">
+                    {active ? (
+                      <>
+                        <span className="h-3 w-3 shrink-0 bg-gold" aria-hidden />
+                        <span>
+                          Square <span className="oa-data font-bold">{cell.row}&ndash;{cell.col}</span> settled
+                        </span>
+                      </>
+                    ) : (
+                      <span>Awaiting kickoff</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── BAND 3 — the strap. One dense chyron line, not a chip grid. ── */}
+        <section className="border-b-[3px] border-ink bg-chyron" aria-label="Made for">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 md:px-10">
+            <span className="oa-slab shrink-0 bg-gold px-3 py-2 text-ink" data-wipe>Made for</span>
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {FEATURED_USES.map((label) => (
+                <li key={label} className="oa-slab text-broadcast-white/85">{label}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── BAND 4 — the rundown. Ruled rows, not cards. ── */}
+        <section id="how" className="scroll-mt-32 border-b-[3px] border-ink px-5 py-16 md:px-10 md:py-24">
+          <h2 className="oa-chyron mb-12" data-wipe>How it works</h2>
+          <ol>
+            {STEPS.map((s, i) => (
+              <li
+                key={s.k}
+                className="grid grid-cols-[auto_1fr] items-baseline gap-x-5 gap-y-2 border-t border-ink py-8 last:border-b md:grid-cols-[7rem_minmax(0,22rem)_1fr] md:gap-x-10"
+                data-wipe
+              >
+                <span className="oa-data text-5xl text-cardinal md:text-7xl">{String(i + 1).padStart(2, '0')}</span>
+                <h3 className="oa-headline !text-2xl md:!text-3xl">{s.k}</h3>
+                <p className="oa-body col-span-2 max-w-2xl text-ink/75 md:col-span-1">{s.d}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ── BAND 5 — the ruled list. Same register as the rundown. ── */}
+        <section id="faq" className="scroll-mt-32 border-b-[3px] border-ink bg-newsprint px-5 py-16 md:px-10 md:py-24" itemScope itemType="https://schema.org/FAQPage">
+          <h2 className="oa-chyron mb-12" data-wipe>Questions</h2>
+          <div>
+            {FAQ_ITEMS.map((item) => (
+              <details
+                key={item.q}
+                className="group border-t border-ink last:border-b"
+                itemScope
+                itemProp="mainEntity"
+                itemType="https://schema.org/Question"
+              >
+                <summary className="oa-headline !text-xl flex cursor-pointer list-none items-baseline justify-between gap-6 py-6 marker:hidden md:!text-2xl">
+                  <span itemProp="name">{item.q}</span>
+                  <span className="oa-data shrink-0 text-3xl text-cardinal transition-transform duration-200 group-open:rotate-45" aria-hidden>+</span>
+                </summary>
+                <div className="oa-body max-w-3xl pb-7 text-ink/75" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                  <span itemProp="text">{item.a}</span>
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* ── BAND 6 — close ── */}
+        <section className="bg-cardinal px-5 py-16 md:px-10 md:py-20">
+          <div className="mb-6 h-[3px] w-full bg-gold" aria-hidden data-wipe />
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="oa-chyron !text-[clamp(2rem,6vw,4.5rem)] text-broadcast-white" data-wipe>Kickoff is closer<br />than you think</h2>
+              <p className="oa-body mt-4 max-w-lg text-broadcast-white/80">
+                Build the board now. Pay only when you are ready to share it.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <button onClick={onCreate} className="oa-btn oa-btn-primary">Build a board</button>
+              <Link to="/articles" className="oa-btn oa-btn-onred">Read the guides</Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* ── Footer ── */}
+      <footer className="bg-chyron px-5 py-12 text-broadcast-white md:px-10">
+        <div className="flex flex-col justify-between gap-10 md:flex-row">
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <img src="/icons/gridone-icon-256.png" alt="" className="h-6 w-6" />
+              <span className="oa-slab">GridOne</span>
+            </div>
+            <p className="oa-data text-[11px] text-broadcast-white/55">
+              © {new Date().getFullYear()} GRIDONE. NOT A BETTING SITE.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="oa-slab text-broadcast-white/50">Guides</span>
+            <Link to="/articles/how-to-run-super-bowl-squares" className="oa-body text-sm hover:text-gold">How to Run Super Bowl Squares</Link>
+            <Link to="/articles/football-squares-fundraiser" className="oa-body text-sm hover:text-gold">Football Squares Fundraiser Ideas</Link>
+            <Link to="/articles/run-your-pool-alternative" className="oa-body text-sm hover:text-gold">RunYourPool Alternative</Link>
+            <Link to="/articles" className="oa-body text-sm hover:text-gold">All Guides</Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="oa-slab text-broadcast-white/50">Company</span>
+            <Link to="/privacy" className="oa-body text-sm hover:text-gold">Privacy</Link>
+            <Link to="/terms" className="oa-body text-sm hover:text-gold">Terms</Link>
+            <a href="mailto:support@getgridone.com" className="oa-body text-sm hover:text-gold">Support</a>
           </div>
         </div>
-      </section>
+      </footer>
 
-      <main className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24">
-        {/* Subhead / keyword coverage */}
-        <Reveal>
-          <p className="mx-auto max-w-2xl text-center text-[15px] leading-relaxed text-[#EDEAE0]/70 md:text-lg">
-            Run football squares and Super Bowl squares on one live board — winners light up every quarter, and your whole group follows from their phones.
-          </p>
-        </Reveal>
-
-        {/* Made-for row: richer chips with icons */}
-        <Reveal className="mt-12">
-          <section className="flex flex-wrap items-center justify-center gap-3" aria-label="Made for">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#EDEAE0]/40" style={mono}>Made for</span>
-            {FEATURED_USES.map(({ label, Icon }) => (
-              <span key={label} className="ne-chip inline-flex items-center gap-2 rounded-full border border-[#EDEAE0]/10 bg-gradient-to-b from-[#EDEAE0]/[0.06] to-transparent px-4 py-2 text-[13px] font-medium text-[#EDEAE0]/80">
-                <Icon className="ne-chip-ico h-4 w-4 text-[#EDEAE0]/45 transition-colors" strokeWidth={2} />
-                {label}
-              </span>
-            ))}
-          </section>
-        </Reveal>
-
-        {/* How it works */}
-        <section id="how" className="mt-28 scroll-mt-24">
-          <Reveal><h2 className="mb-8 text-xs font-bold uppercase tracking-[0.2em] text-[#EDEAE0]/40" style={mono}>How it works</h2></Reveal>
-          <div className="grid gap-4 md:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <Reveal key={s.k} delay={i * 90}>
-                <div className="ne-faq relative h-full overflow-hidden rounded-2xl border border-[#EDEAE0]/10 bg-[#121317] p-7">
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gold/10 text-gold ring-1 ring-gold/20">
-                      <s.Icon className="h-5 w-5" strokeWidth={2} />
-                    </span>
-                    <span className="text-3xl font-extrabold text-[#EDEAE0]/12" style={mono}>{String(i + 1).padStart(2, '0')}</span>
-                  </div>
-                  <h3 className="mt-5 text-lg font-bold text-[#EDEAE0]" style={display}>{s.k}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#EDEAE0]/65">{s.d}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section id="faq" className="mt-28 scroll-mt-24" itemScope itemType="https://schema.org/FAQPage">
-          <Reveal><h2 className="mb-8 text-xs font-bold uppercase tracking-[0.2em] text-[#EDEAE0]/40" style={mono}>FAQ</h2></Reveal>
-          <div className="grid gap-3 md:grid-cols-2">
-            {FAQ_ITEMS.map((item, i) => (
-              <Reveal key={item.q} delay={(i % 2) * 70}>
-                <details className="ne-faq group h-full rounded-2xl border border-[#EDEAE0]/10 bg-[#121317] px-5 open:bg-[#16171c]" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-semibold text-[#EDEAE0] marker:hidden">
-                    <span itemProp="name">{item.q}</span>
-                    <span className="shrink-0 text-[#EDEAE0]/40 transition-transform duration-200 group-open:rotate-45" aria-hidden>+</span>
-                  </summary>
-                  <div className="pb-4 text-sm leading-relaxed text-[#EDEAE0]/65" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-                    <span itemProp="text">{item.a}</span>
-                  </div>
-                </details>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* Closing */}
-        <Reveal className="mt-28">
-          <section className="overflow-hidden rounded-3xl border border-[#EDEAE0]/10 bg-gradient-to-br from-cardinal/20 via-[#121317] to-gold/10 p-8 sm:p-10">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold uppercase tracking-tight text-[#EDEAE0] sm:text-3xl" style={display}>Kickoff is closer than you think</h2>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#EDEAE0]/65">Build your board now, or read the playbook on running football squares.</p>
-              </div>
-              <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
-                <button onClick={onCreate} className="ne-press rounded-full bg-cardinal px-6 py-3 text-sm font-bold text-white hover:brightness-110">Build a board</button>
-                <Link to="/articles" className="ne-press rounded-full px-6 py-3 text-center text-sm font-semibold text-[#EDEAE0] ring-1 ring-[#EDEAE0]/15 transition-colors hover:bg-[#EDEAE0]/5">Read the guides</Link>
-              </div>
-            </div>
-          </section>
-        </Reveal>
-
-        <Reveal className="mt-24">
-          <footer className="border-t border-[#EDEAE0]/10 pt-8 text-xs text-[#EDEAE0]/50">
-            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <img src="/icons/gridone-icon-256.png" alt="" className="h-6 w-6 rounded-lg ring-1 ring-gold/40" />
-                  <span className="font-extrabold uppercase tracking-tight text-[#EDEAE0]" style={display}>GridOne</span>
-                </div>
-                <div>© {new Date().getFullYear()} GridOne. Not a betting site.</div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="mb-1 font-bold uppercase tracking-wider text-[#EDEAE0]/70" style={mono}>Guides</div>
-                <Link to="/articles/how-to-run-super-bowl-squares" className="transition-colors hover:text-[#EDEAE0]">How to Run Super Bowl Squares</Link>
-                <Link to="/articles/football-squares-fundraiser" className="transition-colors hover:text-[#EDEAE0]">Football Squares Fundraiser Ideas</Link>
-                <Link to="/articles/run-your-pool-alternative" className="transition-colors hover:text-[#EDEAE0]">RunYourPool Alternative</Link>
-                <Link to="/articles" className="transition-colors hover:text-[#EDEAE0]">All Guides</Link>
-              </div>
-              <div className="flex gap-6">
-                <Link to="/privacy" className="transition-colors hover:text-[#EDEAE0]">Privacy</Link>
-                <Link to="/terms" className="transition-colors hover:text-[#EDEAE0]">Terms</Link>
-                <a href="mailto:support@getgridone.com" className="transition-colors hover:text-[#EDEAE0]">Support</a>
-              </div>
-            </div>
-          </footer>
-        </Reveal>
-      </main>
+      {/* ── Ticker ── */}
+      <div className="oa-ticker sticky bottom-0 z-40 overflow-hidden border-t-[3px] border-gold bg-ink py-2.5">
+        <div className="oa-ticker-track" aria-hidden>
+          {[0, 1].map((dup) => (
+            <span key={dup} className="flex shrink-0">
+              {TICKER.map((t) => (
+                <span key={t} className="oa-data flex items-center gap-4 px-5 text-[11px] text-broadcast-white/85">
+                  {t}
+                  <span className="text-gold">/</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+        <span className="sr-only">
+          Building and editing is free. The $4.99 introductory 2026 season pass unlocks up to 20 boards. Viewers need no account. GridOne does not handle square money or payouts.
+        </span>
+      </div>
     </div>
   );
 };

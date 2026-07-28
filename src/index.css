@@ -2,13 +2,13 @@
 
 @theme {
     /* Core design tokens */
-    --gridone-color-background: #0B0C0F;
-    --gridone-color-surface: #1c1c1e;
-    --gridone-color-surface-hover: #2c2c2e;
+    --gridone-color-background: #0E0F12;
+    --gridone-color-surface: #16181D;
+    --gridone-color-surface-hover: #6E1622;
     --gridone-color-surface-glass: rgba(28, 28, 30, 0.6);
 
     --gridone-color-brand-primary: #8F1D2C;
-    --gridone-color-brand-primary-hover: #7A1622;
+    --gridone-color-brand-primary-hover: #6E1622;
     --gridone-color-brand-primary-subtle: rgba(143, 29, 44, 0.15);
     --gridone-color-brand-accent: #FFC72C;
     --gridone-color-brand-accent-dim: rgba(255, 199, 44, 0.3);
@@ -16,7 +16,18 @@
 
     --gridone-color-live: #22C55E;
 
-    --gridone-color-text-primary: #FFFFFF;
+    /* ── "On Air" world — broadcast package on newsprint ground.
+       Scoped to redesigned surfaces (landing first); see DESIGN.md. ── */
+    --gridone-color-broadcast-white: #EFF0F1;
+    --gridone-color-newsprint: #DEE0E1;
+    --gridone-color-ink: #0E0F12;
+    --gridone-color-chyron: #16181D;
+    --gridone-color-brand-primary-deep: #6E1622;
+    --gridone-color-brand-accent-deep: #E0A600;
+    --gridone-font-condensed: "Archivo", "Helvetica Neue", "Arial Narrow", Arial, sans-serif;
+    --gridone-font-data: "Chivo Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --gridone-color-text-primary: #EFF0F1;
     --gridone-color-text-secondary: rgba(235, 235, 245, 0.6);
     --gridone-color-text-tertiary: rgba(235, 235, 245, 0.3);
 
@@ -36,6 +47,14 @@
     --color-gold-dim: var(--gridone-color-brand-accent-dim);
     --color-gold-glow: var(--gridone-color-brand-accent-glow);
     --color-live: var(--gridone-color-live);
+    --color-broadcast-white: var(--gridone-color-broadcast-white);
+    --color-newsprint: var(--gridone-color-newsprint);
+    --color-ink: var(--gridone-color-ink);
+    --color-chyron: var(--gridone-color-chyron);
+    --color-cardinal-deep: var(--gridone-color-brand-primary-deep);
+    --color-gold-deep: var(--gridone-color-brand-accent-deep);
+    --font-condensed: var(--gridone-font-condensed);
+    --font-data: var(--gridone-font-data);
     --color-surface: var(--gridone-color-surface);
     --color-surface-hover: var(--gridone-color-surface-hover);
     --color-surface-glass: var(--gridone-color-surface-glass);
@@ -58,7 +77,7 @@
 
 @layer components {
     .btn-cardinal {
-        @apply bg-cardinal text-white font-bold rounded-full px-6 py-2 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-cardinal/20;
+        @apply bg-cardinal text-broadcast-white font-bold rounded-none px-6 py-3 transition-colors hover:bg-cardinal-deep;
     }
 
     /* Typography System */
@@ -90,7 +109,983 @@
         @apply font-bold text-xs uppercase tracking-widest;
     }
 
-    .glass-panel {
-        @apply bg-surface-glass backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   "ON AIR" — broadcast graphics package. See DESIGN.md.
+   Invariants: 0px radius everywhere, no shadow, no gradient, no blur,
+   no translucency. Depth is opaque planes + 3px key lines.
+
+   Deliberately UNLAYERED. Tailwind's preflight (@layer base) resets
+   headings to `font-size: inherit`, and legacy public/premium.css is
+   itself unlayered — layered component rules lose to both. Unlayered
+   CSS wins the cascade regardless of layer order, so these hold.
+   ══════════════════════════════════════════════════════════════════ */
+
+    /* Game-Day Horizon surfaces opt into the light working field. */
+    body:has(.oa-root) {
+        background-color: var(--color-broadcast-white);
+        background-image: none;
+    }
+
+    /* On Air surfaces default bare text to Archivo (the body voice), not the
+       inherited Tailwind `font-sans` utility (ui-sans-serif) or legacy Inter.
+       Unlayered, so it wins over the `font-sans` utility on article roots.
+       Elements with oa-slab/oa-headline/oa-data set their own family. */
+    .oa-root {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 100;
+    }
+
+    /* Tailwind preflight resets <button> background to transparent, and in this
+       setup that reset wins over the layered bg-* utilities — so a bg-cardinal
+       button renders transparent (ink text on nothing). Re-assert the On Air
+       fills for buttons at element+class specificity so utilities paint them. */
+    button.bg-cardinal { background-color: var(--color-cardinal); }
+    button.bg-cardinal-deep { background-color: var(--gridone-color-brand-primary-deep); }
+    button.bg-broadcast-white { background-color: var(--color-broadcast-white); }
+    button.bg-newsprint { background-color: var(--color-newsprint); }
+    button.bg-gold { background-color: var(--color-gold); }
+    button.bg-ink { background-color: var(--color-ink); }
+    button.bg-chyron { background-color: var(--color-chyron); }
+
+    /* Typography ── width axis carries the hierarchy */
+    .oa-chyron {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 75;
+        font-weight: 900;
+        text-transform: uppercase;
+        line-height: 0.86;
+        letter-spacing: -0.02em;
+        font-size: clamp(2.5rem, 9vw, 8rem);
+    }
+
+    .oa-headline {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 82;
+        font-weight: 800;
+        text-transform: uppercase;
+        line-height: 1;
+        letter-spacing: -0.01em;
+        font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+    }
+
+    .oa-slab {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 100;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.8125rem;
+        line-height: 1;
+    }
+
+    .oa-data {
+        font-family: var(--font-data);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+    }
+
+    /* Board typography scales to the viewport, not the type ramp.
+       See "The Clamp-the-Grid Rule" in DESIGN.md. */
+    .oa-board-axis {
+        font-family: var(--font-data);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        font-size: clamp(0.6rem, 1.15vw, 0.9rem);
+        line-height: 1;
+    }
+
+    .oa-board-name {
+        font-family: var(--font-data);
+        font-weight: 400;
+        font-size: clamp(0.4rem, 0.78vw, 0.66rem);
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+    }
+
+    .oa-board-flag {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 100;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: clamp(0.5rem, 0.95vw, 0.78rem);
+        line-height: 1;
+        letter-spacing: 0.04em;
+    }
+
+    .oa-body {
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 100;
+        font-weight: 400;
+        font-size: 1.0625rem;
+        line-height: 1.5;
+    }
+
+    /* The one signature form: 7deg trailing shear, flattened below md */
+    .oa-shear {
+        clip-path: polygon(0 0, 100% 0, calc(100% - 0.85rem) 100%, 0 100%);
+    }
+
+    @media (max-width: 767px) {
+        .oa-shear {
+            clip-path: none;
+        }
+    }
+
+    /* Buttons ── color and rule shift only; never scale, never glow */
+    .oa-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-condensed);
+        font-variation-settings: 'wdth' 100;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.8125rem;
+        line-height: 1;
+        white-space: nowrap;
+        border-radius: 0;
+        padding: 18px 32px;
+        border: 0;
+        cursor: pointer;
+        transition: background-color 160ms linear, color 160ms linear, box-shadow 160ms linear;
+    }
+
+    .oa-btn-primary {
+        background: var(--color-gold);
+        color: var(--color-ink);
+    }
+
+    .oa-btn-primary:hover {
+        background: var(--color-gold-deep);
+        box-shadow: inset 3px 0 0 0 var(--color-ink);
+    }
+
+    .oa-btn-ghost {
+        background: var(--color-broadcast-white);
+        color: var(--color-ink);
+        border: 1px solid var(--color-ink);
+        padding: 17px 31px;
+    }
+
+    .oa-btn-ghost:hover {
+        background: var(--color-newsprint);
+    }
+
+    .oa-btn-onred {
+        background: transparent;
+        color: var(--color-broadcast-white);
+        border: 1px solid var(--color-broadcast-white);
+        padding: 17px 31px;
+    }
+
+    .oa-btn-onred:hover {
+        background: var(--color-broadcast-white);
+        color: var(--color-cardinal);
+    }
+
+    /* Focus is a system-wide 3px ink rule, not a per-component afterthought.
+       Inverts to gold on dark and cardinal grounds. */
+    a:focus-visible,
+    button:focus-visible,
+    summary:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 3px solid var(--color-ink);
+        outline-offset: 2px;
+    }
+
+    .bg-ink a:focus-visible,
+    .bg-ink button:focus-visible,
+    .bg-ink [tabindex]:focus-visible,
+    .bg-cardinal a:focus-visible,
+    .bg-cardinal button:focus-visible,
+    .bg-cardinal [tabindex]:focus-visible,
+    .bg-chyron a:focus-visible,
+    .bg-chyron button:focus-visible,
+    .oa-btn-onred:focus-visible {
+        outline-color: var(--color-gold);
+    }
+
+    /* Inputs ── asymmetric leading rule on focus, borrowed from the bug */
+    .oa-input {
+        border-radius: 0;
+        background: var(--color-broadcast-white);
+        color: var(--color-ink);
+        padding: 14px 16px;
+        box-shadow: inset 0 0 0 1px var(--color-ink);
+        outline: none;
+    }
+
+    .oa-input:focus {
+        box-shadow: inset 3px 0 0 0 var(--color-cardinal), inset 0 0 0 1px var(--color-ink);
+    }
+
+    /* Ticker ── pauses on hover and for reduced motion */
+    .oa-ticker-track {
+        display: inline-flex;
+        white-space: nowrap;
+        animation: oa-ticker 42s linear infinite;
+        will-change: transform;
+    }
+
+    .oa-ticker:hover .oa-ticker-track {
+        animation-play-state: paused;
+    }
+
+    @keyframes oa-ticker {
+        from { transform: translate3d(0, 0, 0); }
+        to   { transform: translate3d(-50%, 0, 0); }
+    }
+
+    /* ── Digit roll ──────────────────────────────────────────────────
+       Scores do not crossfade or pop; each digit column rolls to its new
+       value like a scoreboard wheel. Tabular figures keep the width fixed
+       so nothing reflows mid-roll. */
+    .oa-roll {
+        display: inline-flex;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .oa-roll-col {
+        height: 1em;
+        overflow: hidden;
+        line-height: 1;
+    }
+
+    .oa-roll-strip {
+        display: flex;
+        flex-direction: column;
+        transition: transform 460ms cubic-bezier(0.2, 0, 0, 1);
+        will-change: transform;
+    }
+
+    .oa-roll-d {
+        height: 1em;
+        line-height: 1;
+        text-align: center;
+    }
+
+    /* ── Slab slide ──────────────────────────────────────────────────
+       One orchestrated entrance for the whole page: elements wipe in from
+       the leading edge. No fades, no rises, no scattered hover effects. */
+    .oa-wipe {
+        clip-path: inset(0 100% 0 0);
+    }
+
+    .oa-wipe.is-in {
+        clip-path: inset(0 0 0 0);
+        transition: clip-path 620ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .oa-wipe-d1.is-in { transition-delay: 90ms; }
+    .oa-wipe-d2.is-in { transition-delay: 180ms; }
+
+    /* Scroll-driven quarter reveal. Static and complete without JS. */
+    .oa-q {
+        transition: background-color 240ms linear, color 240ms linear;
+    }
+
+    /* A settling square WIPES from the leading edge — it does not fade.
+       See "the lower third enters by wiping" in DESIGN.md. */
+    .oa-cell-won {
+        animation: oa-wipe 260ms cubic-bezier(0.2, 0, 0, 1) both;
+    }
+
+    @keyframes oa-wipe {
+        from { clip-path: inset(0 100% 0 0); }
+        to   { clip-path: inset(0 0 0 0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .oa-q { transition: none; }
+        .oa-cell-won { animation: none; clip-path: none; }
+        .oa-roll-strip { transition: none; }
+        .oa-wipe, .oa-wipe.is-in { clip-path: none; transition: none; }
+
+        /* Never animate — but never hide the facts either. The crawl
+           becomes a static wrapped block so every item stays readable. */
+        .oa-ticker-track {
+            animation: none;
+            transform: none;
+            flex-wrap: wrap;
+            white-space: normal;
+        }
+        .oa-ticker-track > :nth-child(2) { display: none; }
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+   GAME-DAY HORIZON — Composition C / Split Stage
+   The page-scale light field communicates phase. Product instruments
+   remain opaque, stable, and readable above it.
+   ══════════════════════════════════════════════════════════════════ */
+
+body:has(.gdh-root) {
+    background: var(--color-ink);
+}
+
+.gdh-root {
+    color-scheme: dark;
+}
+
+.gdh-stage {
+    --gdh-field: var(--color-ink);
+    --gdh-horizon: var(--color-cardinal);
+    --gdh-horizon-bright: var(--color-gold);
+    min-height: 100%;
+    color: var(--color-broadcast-white);
+    background-color: var(--gdh-field);
+    font-family: var(--font-condensed);
+}
+
+.gdh-stage.gdh-pregame {
+    --gdh-horizon: var(--color-chyron);
+    --gdh-horizon-bright: var(--color-cardinal);
+}
+
+.gdh-stage.gdh-live {
+    --gdh-horizon: var(--color-cardinal);
+    --gdh-horizon-bright: var(--color-gold);
+}
+
+.gdh-stage.gdh-final {
+    --gdh-field: var(--color-broadcast-white);
+    --gdh-horizon: var(--color-gold);
+    --gdh-horizon-bright: var(--color-broadcast-white);
+    color: var(--color-ink);
+}
+
+.gdh-score-field {
+    width: min(100%, 1180px);
+    margin-inline: auto;
+    padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.75rem);
+}
+
+.gdh-score-meta,
+.gdh-authority,
+.gdh-personal-row,
+.gdh-section-heading,
+.gdh-selected,
+.gdh-zoom {
+    display: flex;
+    align-items: center;
+}
+
+.gdh-score-meta {
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.gdh-kicker,
+.gdh-date,
+.gdh-authority,
+.gdh-current span,
+.gdh-current small,
+.gdh-team-score span,
+.gdh-scenario span,
+.gdh-scenario small,
+.gdh-zoom,
+.gdh-selected,
+.gdh-scenario-note {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+}
+
+.gdh-kicker {
+    margin: 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+}
+
+.gdh-date {
+    margin: 0;
+    color: color-mix(in srgb, currentColor 68%, transparent);
+    font-size: 0.75rem;
+}
+
+.gdh-score-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 1.5fr) minmax(0, 1fr);
+    align-items: stretch;
+    margin-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.gdh-team-score,
+.gdh-current {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.gdh-team-score {
+    gap: 0.35rem;
+}
+
+.gdh-team-score:first-child {
+    border-right: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.gdh-team-score:last-child {
+    border-left: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.gdh-team-score span,
+.gdh-current span,
+.gdh-current small {
+    color: color-mix(in srgb, currentColor 70%, transparent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+}
+
+.gdh-team-score strong {
+    font-family: var(--font-data);
+    font-size: clamp(3rem, 8vw, 6rem);
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+}
+
+.gdh-current {
+    gap: 0.55rem;
+    padding-inline: clamp(0.75rem, 3vw, 3rem);
+}
+
+.gdh-current strong {
+    font-size: clamp(1.7rem, 4vw, 3.3rem);
+    line-height: 0.92;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.gdh-current small {
+    line-height: 1.35;
+}
+
+.gdh-authority {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.85rem;
+    min-height: 44px;
+    margin-top: 1.25rem;
+    color: color-mix(in srgb, currentColor 72%, transparent);
+    font-size: 0.75rem;
+}
+
+.gdh-authority strong {
+    color: currentColor;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.gdh-live-dot,
+.gdh-status-mark {
+    width: 0.5rem;
+    height: 0.5rem;
+    background: currentColor;
+}
+
+.gdh-live-dot {
+    background: var(--color-live);
+}
+
+.gdh-personal-row {
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.gdh-personal-row > p {
+    max-width: 48ch;
+    margin: 0;
+    color: color-mix(in srgb, currentColor 68%, transparent);
+    line-height: 1.45;
+}
+
+.gdh-find-action,
+.gdh-selected button,
+.gdh-zoom button {
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 0;
+    font: 700 0.78rem/1 var(--font-condensed);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.gdh-find-action {
+    padding: 0.9rem 1.35rem;
+    color: var(--color-ink);
+    background: var(--color-gold);
+    box-shadow: none;
+}
+
+.gdh-find-action:hover {
+    background: var(--color-gold-deep);
+}
+
+.gdh-selected {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    color: currentColor;
+}
+
+.gdh-selected strong {
+    color: color-mix(in srgb, currentColor 70%, transparent);
+}
+
+.gdh-selected button {
+    padding-inline: 0.8rem;
+    color: currentColor;
+    background: transparent;
+    border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
+}
+
+.gdh-notify {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.9fr);
+    gap: 0.75rem 1.25rem;
+    align-items: center;
+    max-width: 58rem;
+    margin: 1.25rem auto 0;
+    padding: 1rem;
+    color: var(--color-ink);
+    background: var(--color-broadcast-white);
+    border: 1px solid var(--color-gold);
+}
+
+.gdh-notify > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.gdh-notify strong {
+    font-size: 0.95rem;
+}
+
+.gdh-notify span,
+.gdh-notify p {
+    margin: 0;
+    color: rgba(14, 15, 18, 0.68);
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.gdh-notify-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.gdh-notify input,
+.gdh-notify button {
+    min-height: 44px;
+    border-radius: 0;
+}
+
+.gdh-notify input {
+    min-width: 0;
+    padding: 0.75rem;
+    color: var(--color-ink);
+    background: white;
+    border: 1px solid var(--color-ink);
+}
+
+.gdh-notify button {
+    padding-inline: 1rem;
+    color: var(--color-ink);
+    background: var(--color-gold);
+    border: 1px solid var(--color-ink);
+    border-left: 0;
+    font: 700 0.75rem/1 var(--font-condensed);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.gdh-notify p {
+    grid-column: 1 / -1;
+}
+
+.gdh-notify p.is-error {
+    color: var(--color-cardinal);
+}
+
+.gdh-email-result {
+    margin: 0;
+    padding: 0.8rem clamp(1rem, 3vw, 2rem);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-gold) 45%, transparent);
+    background: color-mix(in srgb, var(--color-gold) 18%, var(--color-ink));
+    color: var(--color-broadcast-white);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+.gdh-email-result.is-error {
+    border-color: color-mix(in srgb, var(--color-cardinal) 55%, transparent);
+    background: color-mix(in srgb, var(--color-cardinal) 24%, var(--color-ink));
+}
+
+.gdh-horizon {
+    position: relative;
+    height: clamp(18px, 3vw, 38px);
+    overflow: hidden;
+    background: var(--gdh-field);
+}
+
+.gdh-horizon::before {
+    content: "";
+    position: absolute;
+    inset: -140% 0 -10%;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--gdh-horizon) 52%, transparent) 62%,
+        var(--gdh-horizon-bright) 93%,
+        var(--gdh-horizon-bright)
+    );
+}
+
+.gdh-horizon span {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--gdh-horizon-bright);
+    box-shadow: none;
+}
+
+.gdh-board-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(18rem, 0.75fr);
+    gap: clamp(1rem, 2.5vw, 2.25rem);
+    width: min(100%, 1320px);
+    margin-inline: auto;
+    padding: clamp(1rem, 3vw, 2.5rem);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--gdh-horizon) 18%, var(--color-ink)) 0, var(--color-ink) 13rem);
+}
+
+.gdh-board-work,
+.gdh-scenarios {
+    min-width: 0;
+}
+
+.gdh-board-work {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.gdh-scenarios {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.gdh-section-heading {
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.gdh-section-heading h2 {
+    margin: 0.25rem 0 0;
+    color: var(--color-broadcast-white);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+}
+
+.gdh-section-heading p:last-child {
+    max-width: 56ch;
+    margin: 0.5rem 0 0;
+    color: rgba(239, 240, 241, 0.68);
+    line-height: 1.4;
+}
+
+.gdh-zoom {
+    flex: 0 0 auto;
+    gap: 1px;
+    color: var(--color-broadcast-white);
+    background: rgba(239, 240, 241, 0.24);
+}
+
+.gdh-zoom button,
+.gdh-zoom output {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding-inline: 0.8rem;
+    color: var(--color-broadcast-white);
+    background: var(--color-chyron);
+}
+
+.gdh-zoom button:disabled {
+    color: rgba(239, 240, 241, 0.32);
+    cursor: not-allowed;
+}
+
+.gdh-board-viewport {
+    min-height: 30rem;
+    max-height: min(72vh, 58rem);
+    padding: clamp(0.65rem, 1.6vw, 1.25rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: var(--color-newsprint);
+    border: 1px solid rgba(239, 240, 241, 0.5);
+    scrollbar-color: var(--color-cardinal) var(--color-newsprint);
+}
+
+.gdh-board-scale {
+    min-width: 42rem;
+    margin-inline: auto;
+}
+
+.gdh-scenarios {
+    align-self: start;
+}
+
+.gdh-scenario-list {
+    display: grid;
+    gap: 1px;
+    background: rgba(239, 240, 241, 0.22);
+}
+
+.gdh-scenario {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+    min-height: 58px;
+    padding: 0.75rem 0.9rem;
+    color: var(--color-broadcast-white);
+    text-align: left;
+    background: var(--color-chyron);
+    border: 0;
+    border-radius: 0;
+}
+
+.gdh-scenario:hover,
+.gdh-scenario:focus-visible {
+    background: var(--color-cardinal-deep);
+}
+
+.gdh-scenario.is-mine {
+    color: var(--color-ink);
+    background: var(--color-gold);
+}
+
+.gdh-resolved {
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(239, 240, 241, 0.35);
+}
+
+.gdh-resolved h2 {
+    margin: 0.3rem 0 0.8rem;
+    color: var(--color-broadcast-white);
+    font: 750 1.45rem/1 var(--font-condensed);
+    text-transform: uppercase;
+}
+
+.gdh-resolved > p:last-child {
+    color: rgba(239, 240, 241, 0.65);
+}
+
+.gdh-resolved ol {
+    display: grid;
+    gap: 1px;
+    background: rgba(239, 240, 241, 0.28);
+}
+
+.gdh-resolved li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    min-height: 48px;
+    padding: 0.65rem 0.8rem;
+    color: var(--color-ink);
+    background: var(--color-gold);
+}
+
+.gdh-resolved span,
+.gdh-resolved small {
+    font: 700 0.72rem/1 var(--font-data);
+    text-transform: uppercase;
+}
+
+.gdh-scenario strong {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    font-family: var(--font-data);
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gdh-scenario span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+
+.gdh-scenario small {
+    color: color-mix(in srgb, currentColor 70%, transparent);
+    font-size: 0.68rem;
+}
+
+.gdh-scenario-note,
+.gdh-scenario-empty {
+    margin: 0.9rem 0 0;
+    color: rgba(239, 240, 241, 0.68);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+.gdh-empty-board,
+.gdh-unavailable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.gdh-empty-board {
+    min-height: 26rem;
+    gap: 0.6rem;
+    color: var(--color-ink);
+}
+
+.gdh-empty-board span {
+    color: rgba(14, 15, 18, 0.68);
+}
+
+.gdh-unavailable {
+    min-height: calc(100dvh - 8rem);
+    gap: 0.8rem;
+    padding: 2rem;
+    color: var(--color-ink);
+    background: var(--color-broadcast-white);
+}
+
+.gdh-unavailable h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+}
+
+.gdh-unavailable p {
+    max-width: 52ch;
+    margin: 0;
+    color: rgba(14, 15, 18, 0.72);
+    line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+    .gdh-board-field {
+        grid-template-columns: 1fr;
+    }
+
+    .gdh-board-work,
+    .gdh-scenarios {
+        grid-column: 1;
+        grid-row: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .gdh-score-field {
+        padding-inline: 1rem;
+    }
+
+    .gdh-score-meta {
+        align-items: flex-start;
+    }
+
+    .gdh-score-line {
+        grid-template-columns: 1fr 1.4fr 1fr;
+        margin-top: 1.5rem;
+    }
+
+    .gdh-team-score strong {
+        font-size: clamp(2.65rem, 17vw, 4.2rem);
+    }
+
+    .gdh-current {
+        padding-inline: 0.55rem;
+    }
+
+    .gdh-current strong {
+        font-size: 1.25rem;
+    }
+
+    .gdh-current small {
+        font-size: 0.62rem;
+    }
+
+    .gdh-personal-row,
+    .gdh-section-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .gdh-notify {
+        grid-template-columns: 1fr;
+    }
+
+    .gdh-find-action {
+        width: 100%;
+    }
+
+    .gdh-personal-row > p {
+        font-size: 0.92rem;
+    }
+
+    .gdh-board-field {
+        padding: 1rem 0;
+    }
+
+    .gdh-board-work,
+    .gdh-scenarios {
+        padding-inline: 1rem;
+    }
+
+    .gdh-board-viewport {
+        min-height: 27rem;
+        max-height: 68vh;
+        margin-inline: -1rem;
+        padding: 0.65rem 1rem;
+        border-inline: 0;
+    }
+
+    .gdh-board-scale {
+        min-width: 39rem;
+    }
+
+    .gdh-zoom {
+        align-self: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gdh-board-scale {
+        transition: none;
+    }
+
+    .gdh-horizon span {
+        box-shadow: none;
     }
 }

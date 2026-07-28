@@ -44,25 +44,25 @@ const LiveStrip: React.FC<{
   const isFinal = live?.state === 'post';
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
+    <div className="flex items-center justify-between px-4 py-3 bg-broadcast-white border-b-[3px] border-ink">
       {/* Matchup */}
       <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-white">{game.leftAbbr}</span>
-        <span className="text-xs text-white/40">vs</span>
-        <span className="text-sm font-semibold text-white">{game.topAbbr}</span>
+        <span className="oa-slab text-ink">{game.leftAbbr}</span>
+        <span className="oa-data text-xs text-ink/40">vs</span>
+        <span className="oa-slab text-ink">{game.topAbbr}</span>
       </div>
 
       {/* Status */}
       <div className="flex items-center gap-2">
         {isLive && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+          <span className="oa-slab flex items-center gap-1.5 text-live">
+            <span className="w-1.5 h-1.5 bg-live animate-pulse"></span>
             {live?.detail || live?.clock || 'Live'}
           </span>
         )}
-        {isFinal && <span className="text-xs font-semibold text-white/60">Final</span>}
+        {isFinal && <span className="oa-slab text-ink/60">Final</span>}
         {!isLive && !isFinal && live?.state === 'pre' && (
-          <span className="text-xs text-white/40">Waiting for kickoff{game.dates ? ` - ${formatGameDate(game.dates)}` : ''}</span>
+          <span className="oa-data text-xs text-ink/50">Waiting for kickoff{game.dates ? ` - ${formatGameDate(game.dates)}` : ''}</span>
         )}
       </div>
 
@@ -70,29 +70,29 @@ const LiveStrip: React.FC<{
       <div className="flex items-center gap-4">
         {/* Current digits */}
         <div className="hidden sm:flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10">
-            <span className="text-[10px] text-white/50 font-medium">{game.leftAbbr}</span>
-            <span className="text-base font-bold text-white tabular-nums">{leftDigit}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-newsprint">
+            <span className="oa-slab text-ink/50">{game.leftAbbr}</span>
+            <span className="oa-data text-base font-bold text-ink">{leftDigit}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10">
-            <span className="text-[10px] text-white/50 font-medium">{game.topAbbr}</span>
-            <span className="text-base font-bold text-white tabular-nums">{topDigit}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-newsprint">
+            <span className="oa-slab text-ink/50">{game.topAbbr}</span>
+            <span className="oa-data text-base font-bold text-ink">{topDigit}</span>
           </div>
-          {isSynced && <span className="w-2 h-2 rounded-full bg-live shadow-[0_0_8px_var(--color-live)]" title="Live sync"></span>}
+          {isSynced && <span className="w-2 h-2 bg-live" title="Live sync"></span>}
         </div>
 
         {/* Live|Board Toggle - Desktop only, integrated into strip */}
         {onTabChange && (
-          <div className="hidden md:flex p-0.5 bg-white/[0.06] border border-white/10 rounded-full">
+          <div className="hidden md:flex gap-px bg-ink p-px">
             <button
               onClick={() => onTabChange('live')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${activeTab === 'live' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`oa-slab px-3 py-1 transition-colors ${activeTab === 'live' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint'}`}
             >
               Live
             </button>
             <button
               onClick={() => onTabChange('board')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${activeTab === 'board' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`oa-slab px-3 py-1 transition-colors ${activeTab === 'board' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint'}`}
             >
               Board
             </button>
@@ -146,9 +146,9 @@ const WinnerHeroCard: React.FC<{
 }> = ({ game, board, live, highlights }) => {
   if (!live) {
     return (
-      <div className="p-8 rounded-[20px] bg-white/[0.03] border border-white/10 text-center">
-        <p className="text-lg font-medium text-white/40">Waiting for game to start</p>
-        <p className="text-sm text-white/25 mt-1">{game.dates || 'Date not set'}</p>
+      <div className="p-8 bg-broadcast-white ring-[3px] ring-ink text-center">
+        <p className="oa-headline !text-lg text-ink/50">Waiting for game to start</p>
+        <p className="oa-data text-sm text-ink/40 mt-1">{game.dates || 'Date not set'}</p>
       </div>
     );
   }
@@ -174,43 +174,44 @@ const WinnerHeroCard: React.FC<{
   const winners = getPlayersAtScoreForQuarter(board, currentKey, winnerQuarter);
 
   return (
-    <div className="p-6 md:p-8 rounded-[20px] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 relative overflow-hidden">
+    <div className="p-6 md:p-8 bg-cardinal relative overflow-hidden">
+      <div className="mb-4 h-[3px] w-full bg-gold" aria-hidden />
       <div className="relative z-10">
         {/* Label */}
         <div className="flex items-center justify-center gap-2 mb-4">
-          {isLive && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>}
-          <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+          {isLive && <span className="w-2 h-2 bg-live animate-pulse"></span>}
+          <span className="oa-slab text-broadcast-white/80">
             {getMilestoneLabel(currentMilestone, isLive)}
           </span>
         </div>
         {live.state === 'pre' && (
-          <p className="text-xs text-white/40 text-center mb-4">
+          <p className="oa-data text-xs text-broadcast-white/70 text-center mb-4">
             Game has not started yet. Waiting for kickoff{game.dates ? ` on ${formatGameDate(game.dates)}` : ''}.
           </p>
         )}
 
         {/* Winner name - hero size */}
-        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4 tracking-tight">
+        <h2 className="oa-headline !text-3xl md:!text-4xl text-broadcast-white text-center mb-4">
           {winners.length > 0 ? winners[0] : 'No owner'}
-          {winners.length > 1 && <span className="text-white/40 text-xl ml-2">+{winners.length - 1}</span>}
+          {winners.length > 1 && <span className="oa-data text-broadcast-white/60 text-xl ml-2">+{winners.length - 1}</span>}
         </h2>
 
         {/* Digits display */}
         <div className="flex items-center justify-center gap-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/20 border border-white/10">
+          <div className="flex items-center gap-2 px-4 py-2 bg-cardinal-deep">
             <img src={getLogoUrl(game.leftAbbr)} alt="" className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <span className="text-2xl font-bold text-white tabular-nums">{leftDigit}</span>
+            <span className="oa-data text-2xl font-bold text-broadcast-white">{leftDigit}</span>
           </div>
-          <span className="text-white/30 text-lg">/</span>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/20 border border-white/10">
+          <span className="oa-data text-broadcast-white/40 text-lg">/</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-cardinal-deep">
             <img src={getLogoUrl(game.topAbbr)} alt="" className="w-6 h-6 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <span className="text-2xl font-bold text-white tabular-nums">{topDigit}</span>
+            <span className="oa-data text-2xl font-bold text-broadcast-white">{topDigit}</span>
           </div>
         </div>
 
         {/* Coordinate key */}
         <div className="text-center mt-3">
-          <span className="text-xs font-mono text-white/30 px-2 py-1 rounded bg-black/20">{currentKey}</span>
+          <span className="oa-data text-xs text-broadcast-white/70 px-2 py-1 bg-cardinal-deep">{currentKey}</span>
         </div>
       </div>
     </div>
@@ -285,15 +286,15 @@ const WinnersMilestoneRow: React.FC<{
   if (!live) {
     // Show payouts even when game hasn't started
     return (
-      <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
-        <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+      <div className="bg-broadcast-white ring-[3px] ring-ink overflow-hidden">
+        <div className="grid grid-cols-4 gap-px bg-ink">
           {milestones.map(({ key, qKey }) => (
-            <div key={key} className="p-3 md:p-4 text-center opacity-50">
+            <div key={key} className="p-3 md:p-4 text-center bg-broadcast-white opacity-50">
               <div className="flex items-center justify-center gap-1.5 mb-1">
-                <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">{key === 'Half' ? 'Half' : key}</span>
+                <span className="oa-slab text-ink/50">{key === 'Half' ? 'Half' : key}</span>
               </div>
-              <p className="text-[11px] font-semibold text-white/40 mb-0.5">—</p>
-              <p className="text-[11px] font-semibold text-green-400/70">{getPayout(qKey)}</p>
+              <p className="oa-data text-[11px] text-ink/40 mb-0.5">—</p>
+              <p className="oa-data text-[11px] font-bold text-cardinal">{getPayout(qKey)}</p>
             </div>
           ))}
         </div>
@@ -302,30 +303,30 @@ const WinnersMilestoneRow: React.FC<{
   }
 
   return (
-    <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
-      <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
+    <div className="bg-broadcast-white ring-[3px] ring-ink overflow-hidden">
+      <div className="grid grid-cols-4 gap-px bg-ink">
         {milestones.map(({ key, qKey }) => {
           const data = getMilestoneData(key, qKey);
           return (
-            <div key={key} className={`p-3 md:p-4 text-center ${data.state === 'pending' ? 'opacity-40' : ''}`}>
+            <div key={key} className={`p-3 md:p-4 text-center bg-broadcast-white ${data.state === 'pending' ? 'opacity-40' : ''} ${data.state === 'locked' ? 'bg-gold' : ''}`}>
               {/* Label with state indicator */}
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 {data.state === 'live' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 bg-live animate-pulse"></span>
                 )}
                 {data.state === 'locked' && (
-                  <svg className="w-3 h-3 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
-                <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">{data.label}</span>
+                <span className={`oa-slab ${data.state === 'locked' ? 'text-ink' : 'text-ink/50'}`}>{data.label}</span>
               </div>
 
               {/* Winner name */}
-              <p className="text-xs md:text-sm font-semibold text-white truncate mb-0.5">{data.winner}</p>
+              <p className={`oa-slab truncate mb-0.5 ${data.state === 'locked' ? 'text-ink' : 'text-ink/90'}`}>{data.winner}</p>
 
               {/* Payout amount - always visible */}
-              <p className="text-[11px] font-semibold text-green-400/70">{getPayout(qKey)}</p>
+              <p className={`oa-data text-[11px] font-bold ${data.state === 'locked' ? 'text-ink' : 'text-cardinal'}`}>{getPayout(qKey)}</p>
             </div>
           );
         })}
@@ -385,41 +386,41 @@ const PayoutsAccordion: React.FC<{
     const winners = winnerKey ? getPlayersAtScoreForQuarter(board, winnerKey, qKey as WinnerQuarter) : [];
 
     return (
-      <div key={qKey} className={`flex items-center justify-between py-3 ${!isFinal ? 'border-b border-white/5' : ''}`}>
+      <div key={qKey} className={`flex items-center justify-between py-3 ${!isFinal ? 'border-b border-newsprint' : ''}`}>
         <div className="flex-1">
-          <div className="text-sm font-medium text-white/80">{label}</div>
+          <div className="oa-slab text-ink/80">{label}</div>
           {status !== 'blank' && status !== 'awaiting' && winners.length > 0 && (
-            <div className="text-xs text-white/40 mt-0.5">{winners.join(', ')}</div>
+            <div className="oa-data text-xs text-ink/50 mt-0.5">{winners.join(', ')}</div>
           )}
         </div>
-        <div className={`text-sm font-semibold ${isFinal ? 'text-gold' : 'text-white/60'}`}>${amount}</div>
+        <div className={`oa-data font-bold ${isFinal ? 'text-cardinal' : 'text-ink/70'}`}>${amount}</div>
       </div>
     );
   };
 
   return (
-    <div className="rounded-[20px] bg-white/[0.03] border border-white/10 overflow-hidden">
+    <div className="bg-broadcast-white ring-[3px] ring-ink overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 bg-broadcast-white hover:bg-newsprint transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-white/80">Payouts</span>
-          <span className="text-xs font-medium text-white/40">${total} total</span>
+          <span className="oa-slab text-ink/80">Payouts</span>
+          <span className="oa-data text-xs text-ink/50">${total} total</span>
         </div>
-        <svg className={`w-4 h-4 text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className={`w-4 h-4 text-ink/50 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="px-5 pb-4 border-t border-white/5">
+        <div className="px-5 pb-4 border-t border-ink">
           {renderRow('1st quarter', p.Q1, 'Q1')}
           {renderRow('2nd quarter', p.Q2, 'Q2')}
           {renderRow('3rd quarter', p.Q3, 'Q3')}
           {renderRow('Final score', p.Final, 'Final', true)}
 
-          <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5 text-xs text-white/30">
+          <div className="flex items-center justify-between pt-3 mt-2 border-t border-newsprint oa-data text-xs text-ink/50">
             <span>{liveStatus}</span>
             <span>{lastUpdated || 'Never synced'}</span>
           </div>
@@ -469,34 +470,30 @@ const Scoreboard: React.FC<{
   };
 
   return (
-    <div className="premium-glass p-6 md:p-8 rounded-3xl flex flex-col justify-between shadow-2xl relative overflow-hidden group">
-      {/* Subtle Team Glows (Background) */}
-      <div className="absolute top-[-50%] left-[-20%] w-[60%] h-[100%] bg-team-left blur-[120px] opacity-[0.07] group-hover:opacity-[0.1] transition-opacity duration-700 pointer-events-none"></div>
-      <div className="absolute bottom-[-50%] right-[-20%] w-[60%] h-[100%] bg-team-top blur-[120px] opacity-[0.07] group-hover:opacity-[0.1] transition-opacity duration-700 pointer-events-none"></div>
-
+    <div className="bg-broadcast-white ring-[3px] ring-ink p-6 md:p-8 flex flex-col justify-between relative overflow-hidden">
       <div className="flex justify-between items-start mb-8 relative z-10">
         <div className="flex-1">
-          <h4 className="text-xl md:text-2xl font-black uppercase tracking-tight flex items-center gap-3 drop-shadow-sm text-white">
+          <h4 className="oa-headline !text-xl md:!text-2xl flex items-center gap-3 text-ink">
             {game.title || `${game.leftAbbr} vs ${game.topAbbr}`}
             {live?.isManual && (
-              <span className="text-[10px] font-bold bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">MANUAL</span>
+              <span className="oa-slab bg-cardinal text-broadcast-white px-2 py-0.5">MANUAL</span>
             )}
           </h4>
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">{game.meta}</p>
+          <p className="oa-slab text-ink/50 mt-1">{game.meta}</p>
         </div>
         <div className="flex items-center gap-3">
           {live && (
-            <div className={`font-bold text-[10px] uppercase px-3 py-1.5 rounded-full tracking-widest shadow-sm border ${live.state === 'in' ? 'bg-green-500/10 border-green-500/20 text-green-400 animate-pulse' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+            <div className={`oa-slab px-3 py-1.5 ${live.state === 'in' ? 'bg-live text-ink animate-pulse' : 'bg-newsprint text-ink/60'}`}>
               {live.state === 'post' ? 'Final' : (live.isOvertime ? `OT ${live.clock}` : (live.detail || live.clock))}
             </div>
           )}
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className={`p-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
+            className={`p-2 bg-broadcast-white ring-1 ring-inset ring-ink text-ink hover:bg-newsprint transition-colors ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
             title="Refresh Live Scores"
           >
-            <svg className="w-4 h-4 text-gray-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
@@ -504,61 +501,55 @@ const Scoreboard: React.FC<{
       </div>
 
       {!game.dates && !live?.isManual && (
-        <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md relative z-10">
-          <p className="text-xs font-bold text-white uppercase tracking-widest">
+        <div className="mb-6 p-4 bg-newsprint text-center relative z-10">
+          <p className="oa-slab text-ink">
             Game Date Not Set
           </p>
-          <p className="text-[10px] text-gray-400 font-medium mt-1">
+          <p className="oa-data text-[11px] text-ink/60 mt-1">
             Organizer must set a date to enable live scores.
           </p>
         </div>
       )}
 
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-center text-gray-500 relative z-10">
+      <div className="mb-3 oa-slab text-center text-ink/50 relative z-10">
         Squares Scoreboard (Last Digit)
       </div>
 
       <table className="w-full text-center border-separate border-spacing-x-0 relative z-10">
         <thead>
-          <tr className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <tr className="oa-slab text-ink/50">
             <th className="text-left py-3 pl-4">Team</th>
             <th className="w-14">Q1</th>
             <th className="w-14">Q2</th>
             <th className="w-14">Q3</th>
-            <th className="w-20 text-white">{finalHeader}</th>
+            <th className="w-20 text-ink">{finalHeader}</th>
           </tr>
         </thead>
-        <tbody className="text-base font-medium">
+        <tbody>
           {/* Left Team Row */}
-          <tr className="group/row transition-colors hover:bg-white/5">
-            <td className="py-4 pl-4 text-left font-black uppercase tracking-tighter text-xl flex items-center gap-4 text-white rounded-l-2xl">
-              <img src={getLogoUrl(game.leftAbbr)} alt={game.leftAbbr} className="w-10 h-10 object-contain drop-shadow-lg" onError={(e) => (e.currentTarget.style.display = 'none')} />
-              <span className="relative">
-                {game.leftAbbr}
-                <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-team-left opacity-50 rounded-full"></div>
-              </span>
+          <tr className="group/row transition-colors hover:bg-newsprint">
+            <td className="oa-headline !text-xl py-4 pl-4 text-left flex items-center gap-4 text-ink">
+              <img src={getLogoUrl(game.leftAbbr)} alt={game.leftAbbr} className="w-10 h-10 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              {game.leftAbbr}
             </td>
-            <td className="font-bold text-xl text-white/90 border-b border-white/5 group-hover/row:border-transparent">{getSquaresDigit('left', 'Q1')}</td>
-            <td className="font-bold text-xl text-white/90 border-b border-white/5 group-hover/row:border-transparent">{getSquaresDigit('left', 'Q2')}</td>
-            <td className="font-bold text-xl text-white/90 border-b border-white/5 group-hover/row:border-transparent">{getSquaresDigit('left', 'Q3')}</td>
-            <td className={`font-black text-2xl text-white rounded-r-2xl transition-transform ${isFinal ? 'scale-110 drop-shadow-glow' : ''}`}>
+            <td className="oa-data font-bold text-xl text-ink/90 border-b border-newsprint">{getSquaresDigit('left', 'Q1')}</td>
+            <td className="oa-data font-bold text-xl text-ink/90 border-b border-newsprint">{getSquaresDigit('left', 'Q2')}</td>
+            <td className="oa-data font-bold text-xl text-ink/90 border-b border-newsprint">{getSquaresDigit('left', 'Q3')}</td>
+            <td className={`oa-data font-bold text-2xl ${isFinal ? 'bg-gold text-ink' : 'text-ink'}`}>
               {live?.isManual ? (live.leftScore % 10) : getSquaresDigit('left', 'Final')}
             </td>
           </tr>
 
           {/* Top Team Row */}
-          <tr className="group/row transition-colors hover:bg-white/5">
-            <td className="py-4 pl-4 text-left font-black uppercase tracking-tighter text-xl flex items-center gap-4 text-white rounded-l-2xl">
-              <img src={getLogoUrl(game.topAbbr)} alt={game.topAbbr} className="w-10 h-10 object-contain drop-shadow-lg" onError={(e) => (e.currentTarget.style.display = 'none')} />
-              <span className="relative">
-                {game.topAbbr}
-                <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-team-top opacity-50 rounded-full"></div>
-              </span>
+          <tr className="group/row transition-colors hover:bg-newsprint">
+            <td className="oa-headline !text-xl py-4 pl-4 text-left flex items-center gap-4 text-ink">
+              <img src={getLogoUrl(game.topAbbr)} alt={game.topAbbr} className="w-10 h-10 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              {game.topAbbr}
             </td>
-            <td className="font-bold text-xl text-white/90 border-t border-white/5 group-hover/row:border-transparent">{getSquaresDigit('top', 'Q1')}</td>
-            <td className="font-bold text-xl text-white/90 border-t border-white/5 group-hover/row:border-transparent">{getSquaresDigit('top', 'Q2')}</td>
-            <td className="font-bold text-xl text-white/90 border-t border-white/5 group-hover/row:border-transparent">{getSquaresDigit('top', 'Q3')}</td>
-            <td className={`font-black text-2xl text-white rounded-r-2xl transition-transform ${isFinal ? 'scale-110 drop-shadow-glow' : ''}`}>
+            <td className="oa-data font-bold text-xl text-ink/90 border-t border-newsprint">{getSquaresDigit('top', 'Q1')}</td>
+            <td className="oa-data font-bold text-xl text-ink/90 border-t border-newsprint">{getSquaresDigit('top', 'Q2')}</td>
+            <td className="oa-data font-bold text-xl text-ink/90 border-t border-newsprint">{getSquaresDigit('top', 'Q3')}</td>
+            <td className={`oa-data font-bold text-2xl ${isFinal ? 'bg-gold text-ink' : 'text-ink'}`}>
               {live?.isManual ? (live.topScore % 10) : getSquaresDigit('top', 'Final')}
             </td>
           </tr>
@@ -611,38 +602,32 @@ const Payouts: React.FC<{
     }
 
     return (
-      <div className={`group flex flex-col gap-1 transition-all duration-300 ${isFinal ? 'mt-4 pt-4 border-t border-white/10' : 'pb-4 border-b border-white/5 last:border-0'}`}>
-        <div className="flex justify-between items-center text-sm">
-          <span className={`font-bold uppercase tracking-wide text-gray-400 group-hover:text-white transition-colors`}>{label}</span>
-          <span className={`font-black tracking-tight ${isFinal ? 'text-gold text-lg' : 'text-white'}`}>{amount}</span>
+      <div className={`group flex flex-col gap-1 ${isFinal ? 'mt-4 pt-4 border-t border-ink' : 'pb-4 border-b border-newsprint last:border-0'}`}>
+        <div className="flex justify-between items-center">
+          <span className="oa-slab text-ink/60 group-hover:text-ink transition-colors">{label}</span>
+          <span className={`oa-data font-bold ${isFinal ? 'text-cardinal text-lg' : 'text-ink'}`}>{amount}</span>
         </div>
 
         {/* Status Area */}
         {status === 'awaiting' ? (
           <div className="flex items-center gap-2 mt-1 opacity-50">
-            <div className="w-1 h-1 rounded-full bg-gray-500"></div>
-            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Awaiting Kickoff</span>
+            <div className="w-1 h-1 bg-ink/50"></div>
+            <span className="oa-slab text-ink/50">Awaiting Kickoff</span>
           </div>
         ) : winnerData ? (
-          <div className={`flex flex-col mt-2 p-3 rounded-2xl border backdrop-blur-md transition-all duration-500 ${isActive
-            ? 'bg-gradient-to-r from-cardinal/20 to-transparent border-cardinal/30 shadow-sm'
-            : 'bg-white/5 border-white/5'
-            }`}>
+          <div className={`flex flex-col mt-2 p-3 ${isActive ? 'bg-cardinal' : 'bg-newsprint'}`}>
 
             <div className="flex justify-between items-center mb-1.5">
               <div className="flex items-center gap-2">
-                {isActive && <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>}
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-red-400' : 'text-gold'}`}>
+                {isActive && <span className="w-2 h-2 bg-live animate-pulse"></span>}
+                <span className={`oa-slab ${isActive ? 'text-broadcast-white' : 'text-ink/70'}`}>
                   {winnerData.statusText}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-gray-500 bg-black/20 px-2 py-0.5 rounded-lg border border-white/5">{winnerData.key}</span>
+              <span className={`oa-data text-[10px] px-2 py-0.5 ${isActive ? 'bg-cardinal-deep text-broadcast-white' : 'bg-broadcast-white text-ink/60'}`}>{winnerData.key}</span>
             </div>
 
-            <div className={`text-sm font-bold truncate ${isActive ? 'text-white' : 'text-gray-200'}`}>
+            <div className={`oa-slab truncate ${isActive ? 'text-broadcast-white' : 'text-ink'}`}>
               {winnerData.names.length > 0 ? winnerData.names.join(', ') : 'No Owner'}
             </div>
           </div>
@@ -656,8 +641,8 @@ const Payouts: React.FC<{
   const p = game.payouts || { Q1: 125, Q2: 125, Q3: 125, Final: 250 };
 
   return (
-    <div className="premium-glass p-6 md:p-8 rounded-3xl h-auto flex flex-col shadow-2xl">
-      <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6 px-1">Prize Structure</div>
+    <div className="bg-broadcast-white ring-[3px] ring-ink p-6 md:p-8 h-auto flex flex-col">
+      <div className="oa-slab text-ink/50 mb-6 px-1">Prize Structure</div>
       <div className="flex flex-col justify-start gap-1">
         {renderWinnerLine('1st Quarter', `$${p.Q1}`, getRowStatus(false, 1, currentStatus, currentPeriod), 'Q1')}
         {renderWinnerLine('2nd Quarter', `$${p.Q2}`, getRowStatus(false, 2, currentStatus, currentPeriod), 'Q2')}
@@ -665,12 +650,12 @@ const Payouts: React.FC<{
         {renderWinnerLine('Final Score', `$${p.Final}`, getRowStatus(true, 4, currentStatus, currentPeriod), 'Final', true)}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between opacity-50 hover:opacity-100 transition-opacity">
+      <div className="mt-6 pt-4 border-t border-newsprint flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${liveStatus.includes('Error') || liveStatus.includes('Required') ? 'bg-red-500' : 'bg-green-500 live-indicator'}`}></div>
-          <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{liveStatus}</span>
+          <div className={`w-1.5 h-1.5 ${liveStatus.includes('Error') || liveStatus.includes('Required') ? 'bg-cardinal' : 'bg-live'}`}></div>
+          <span className="oa-slab text-ink/60">{liveStatus}</span>
         </div>
-        <span className="text-[9px] text-gray-600 font-medium italic">Synced {lastUpdated || 'Never'}</span>
+        <span className="oa-data text-[10px] text-ink/50">Synced {lastUpdated || 'Never'}</span>
       </div>
     </div>
   );

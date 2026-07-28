@@ -1,4 +1,5 @@
 import { withRetry } from '../utils/retry';
+import { supabase } from './supabase';
 
 /**
  * Tries to unlock a board using the organizer's season-pass allowance
@@ -24,39 +25,16 @@ export const activateWithEntitlement = async (
 };
 
 export const createCheckoutSession = async (contestId: string): Promise<void> => {
-    console.log('Stripe Service v2.1 init');
     try {
-        // 1. Diagnostics: Check API Health
-        try {
-            const health = await withRetry(
-                () => fetch('/api/health'),
-                {
-                    retries: 2,
-                    shouldRetry: (error) => {
-                        if (error instanceof Error) {
-                            const msg = error.message.toLowerCase();
-                            return msg.includes('network') || msg.includes('timeout');
-                        }
-                        return false;
-                    },
-                }
-            );
-            if (!health.ok) {
-                console.error('Health check failed:', health.status);
-                throw new Error('API Backend appears offline. Are you using "npm run local" or deploying?');
-            }
-        } catch (e) {
-            console.error('Health check network error:', e);
-            // Don't block flow, but warn
-            console.warn('Skipping health check failure, attempting checkout anyway...');
-        }
-
-        // 2. Attempt Checkout
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('Sign in before checkout.');
         const response = await withRetry(
             () => fetch('/api/stripe/create-checkout-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ contestId }),
             }),
@@ -84,13 +62,15 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
             throw new Error(data.error || `Error ${response.status}: ${JSON.stringify(data)}`);
         }
 
-        if (data.url) {
+        if (data.alreadyEntitled && data.activated) {
+            window.location.href = `/?poolId=${encodeURIComponent(contestId)}&forceAdmin=true`;
+        } else if (data.url) {
             window.location.href = data.url;
         } else {
             throw new Error('No checkout URL returned from server');
         }
     } catch (error: any) {
         console.error('Checkout Error:', error);
-        alert(`Payment Error:\n${error.message}\n\n(Context: ${window.location.hostname})`);
+        throw error;
     }
 };

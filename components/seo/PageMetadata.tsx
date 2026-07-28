@@ -11,6 +11,7 @@ type Props = {
   type?: 'website' | 'article';
   image?: string;
   schema?: Record<string, any> | Array<Record<string, any>>;
+  noIndex?: boolean;
 };
 
 function upsertMeta(selector: string, attrs: Record<string, string>) {
@@ -38,12 +39,14 @@ export function PageMetadata({
   type = 'website',
   image = DEFAULT_IMAGE,
   schema,
+  noIndex = false,
 }: Props) {
   useEffect(() => {
     const canonicalUrl = new URL(path, `${SITE_URL}/`).toString();
     document.title = title;
 
     upsertMeta('meta[name="description"]', { name: 'description', content: description });
+    upsertMeta('meta[name="robots"]', { name: 'robots', content: noIndex ? 'noindex, nofollow' : 'index, follow' });
     upsertLink('link[rel="canonical"]', { rel: 'canonical', href: canonicalUrl });
 
     upsertMeta('meta[property="og:type"]', { property: 'og:type', content: type });
@@ -77,7 +80,7 @@ export function PageMetadata({
       const currentTag = document.head.querySelector('script[data-gridone-schema="page"]');
       if (currentTag) currentTag.remove();
     };
-  }, [title, description, path, type, image, schema]);
+  }, [title, description, path, type, image, schema, noIndex]);
 
   return null;
 }

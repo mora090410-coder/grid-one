@@ -20,7 +20,7 @@ export const BoosterClubFootballSquares: React.FC = () => {
   const description = 'Use football squares as a booster club fundraiser with cleaner board sharing, clearer organizer control, and one live link for supporters.';
 
   return (
-    <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
       <PageMetadata
         title={title}
         description={description}
@@ -40,27 +40,27 @@ export const BoosterClubFootballSquares: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-gold ring-1 ring-gold/20 backdrop-blur-sm">Booster club</div>
-        <h1 className="text-4xl font-semibold tracking-tight md:text-5xl text-white mb-6">Booster club football squares fundraiser guide</h1>
-        <p className="text-xl text-white/70 mb-12 leading-relaxed">Booster clubs are one of the best fits for GridOne. The audience already gets the format. The win is making it easier to organize and easier to trust.</p>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Booster club</div>
+        <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Booster club football squares fundraiser guide</h1>
+        <p className="text-xl text-ink/70 mb-12 leading-relaxed">Booster clubs are one of the best fits for GridOne. The audience already gets the format. The win is making it easier to organize and easier to trust.</p>
 
-        <article className="prose prose-invert prose-lg max-w-none">
-          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Why booster clubs use football squares</h2>
-          <p className="text-white/80 leading-relaxed mb-6">They are familiar, low-friction, and tied to games parents and supporters are already watching. That makes football squares easier to explain than most fundraiser mechanics.</p>
+        <article className="prose prose-lg max-w-none">
+          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Why booster clubs use football squares</h2>
+          <p className="text-ink/80 leading-relaxed mb-6">They are familiar, low-friction, and tied to games parents and supporters are already watching. That makes football squares easier to explain than most fundraiser mechanics.</p>
 
-          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">What usually goes wrong</h2>
-          <ul className="space-y-3 text-white/80">
+          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">What usually goes wrong</h2>
+          <ul className="space-y-3 text-ink/80">
             <li>One volunteer ends up manually sending updates all game.</li>
             <li>Board photos get buried in text threads.</li>
             <li>Supporters are not sure who won or what the payout rules were.</li>
             <li>Trust drops when the process feels sloppy.</li>
           </ul>
 
-          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Better booster-club setup</h2>
-          <p className="text-white/80 leading-relaxed mb-6">Use one organizer-controlled board, publish one live board link, and make sure everyone can follow winners from their phone without edit access. That is the real upgrade.</p>
+          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Better booster-club setup</h2>
+          <p className="text-ink/80 leading-relaxed mb-6">Use one organizer-controlled board, publish one live board link, and make sure everyone can follow winners from their phone without edit access. That is the real upgrade.</p>
 
-          <h2 className="text-2xl font-semibold text-white mt-12 mb-6">A cleaner volunteer handoff</h2>
-          <ol className="space-y-3 text-white/80">
+          <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">A cleaner volunteer handoff</h2>
+          <ol className="space-y-3 text-ink/80">
             <li>Name one board owner before the fundraiser is announced.</li>
             <li>Publish the square price, payout rules, and close time in the same message as the board link.</li>
             <li>Draw numbers only after the board is filled or sales are closed.</li>

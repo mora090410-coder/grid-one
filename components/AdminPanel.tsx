@@ -9,6 +9,20 @@ import { NFL_TEAMS } from '../constants';
 import { parseBoardImage } from '../services/geminiService';
 
 import { createCheckoutSession, activateWithEntitlement } from '../services/stripe';
+import { useDialogFocus } from '../hooks/useDialogFocus';
+
+export const secureShuffleDigits = () => {
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  for (let index = digits.length - 1; index > 0; index -= 1) {
+    const limit = Math.floor(0x1_0000_0000 / (index + 1)) * (index + 1);
+    let sample = 0;
+    do sample = crypto.getRandomValues(new Uint32Array(1))[0];
+    while (sample >= limit);
+    const target = sample % (index + 1);
+    [digits[index], digits[target]] = [digits[target], digits[index]];
+  }
+  return digits;
+};
 
 interface AdminPanelProps {
   game: GameState;
@@ -20,11 +34,13 @@ interface AdminPanelProps {
   onPublish: (token: string, currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
   onLogout: () => void;
   isActivated: boolean;
+  isPublished: boolean;
+  shareCode: string | null;
   initialTab?: 'overview' | 'edit' | 'preview';
   renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, initialTab = 'overview', renderPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -55,6 +71,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   // Auto-save status: 'saved' | 'saving' | 'error'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showMenu, setShowMenu] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [drawPreview, setDrawPreview] = useState<{ side: number[]; top: number[] } | null>(null);
+  const [clearArmed, setClearArmed] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const onPublishRef = useRef(onPublish);
   const isFirstRender = useRef(true);
@@ -85,7 +106,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
     if (error) {
       console.error("Error saving metadata:", error);
-      alert(`Failed to save metadata: ${error.message || 'Unknown error'}`);
+      setActionMessage(`Square details were not saved: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -166,17 +187,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
 
   const applyScanResult = (newBoard: BoardData) => {
+    if (isPublished) {
+      setActionMessage('This board is published. Its assignments and number draw are locked.');
+      return;
+    }
     setLocalBoard(newBoard);
   };
 
   const handleClear = async () => {
-    if (!confirm("Are you sure you want to clear all names from the board?")) return;
+    if (isPublished) {
+      setActionMessage('Published names and axis digits cannot be changed.');
+      return;
+    }
+    if (!clearArmed) {
+      setClearArmed(true);
+      setActionMessage('Clear is armed. Press “Confirm clear” to remove every purchaser name; axis digits stay in place.');
+      window.setTimeout(() => setClearArmed(false), 5000);
+      return;
+    }
+    setClearArmed(false);
 
     const emptyBoard: BoardData = {
-      bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      ...localBoard,
       squares: Array(100).fill(null).map(() => []),
-      isDynamic: false
     };
 
     setLocalBoard(emptyBoard);
@@ -248,6 +281,77 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     });
   };
 
+  const stageNumberDraw = () => {
+    if (isPublished) return;
+    const unassigned = localBoard.squares.filter((names) => !names.length).length;
+    if (unassigned) {
+      setActionMessage(`Assign all 100 squares before drawing numbers. ${unassigned} remain.`);
+      return;
+    }
+    setDrawPreview({ side: secureShuffleDigits(), top: secureShuffleDigits() });
+  };
+
+  const commitNumberDraw = () => {
+    if (!drawPreview || isPublished) return;
+    setLocalBoard((current) => ({
+      ...current,
+      bearsAxis: drawPreview.side,
+      oppAxis: drawPreview.top,
+      isDynamic: false,
+      bearsAxisByQuarter: undefined,
+      oppAxisByQuarter: undefined,
+    }));
+    setDrawPreview(null);
+    setActionMessage('Number draw committed to the draft. Publishing will lock these axes.');
+  };
+
+  const saveManualScore = async () => {
+    if (!activePoolId) return;
+    setScoreSaveStatus('saving');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Sign in before saving the score.');
+      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          quarterScores: localGame.manualQuarterScores ?? EMPTY_MANUAL_SCORES,
+          period: localGame.manualGameState === 'post' ? 4 : (localGame.manualPeriod ?? 1),
+          state: localGame.manualGameState ?? 'in',
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to save the score.');
+      setScoreSaveStatus('saved');
+      setActionMessage('Manual score is live. Completed-quarter winners were resolved once.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionMessage(error.message || 'Unable to save the score.');
+    }
+  };
+
+  const enableAutomaticScoring = async () => {
+    updateField('useManualScores', false);
+    if (!activePoolId) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Automatic scoring could not be enabled.');
+      }
+      setActionMessage('Automatic score checks are enabled.');
+    } catch (error: any) {
+      setActionMessage(error.message || 'Automatic scoring could not be enabled.');
+    }
+  };
+
   const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
     const team = NFL_TEAMS.find(t => t.abbr === abbr);
     setLocalGame(prev => ({
@@ -259,7 +363,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || isPublished) {
+      setActionMessage(isPublished ? 'Published board data cannot be replaced by a scan.' : null);
+      return;
+    }
 
     setIsScanning(true);
 
@@ -308,7 +415,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       return;
     }
     if (!assignLabel.trim()) {
-      alert("Please enter a label.");
+      setActionMessage('Enter a purchaser or seller label before applying squares.');
       return;
     }
     if (indices.length === 0) return;
@@ -316,11 +423,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     // Check for conflicts
     const conflicts = indices.filter(idx => localBoard.squares[idx] && localBoard.squares[idx].length > 0);
 
-    if (conflicts.length > 0) {
-      if (!confirm(`Replace names in ${conflicts.length} squares?`)) {
-        return;
-      }
-    }
+    if (conflicts.length > 0) setActionMessage(`Replaced existing names in ${conflicts.length} selected squares.`);
 
     const newBoard = {
       ...localBoard,
@@ -523,39 +626,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     <div className="space-y-6">
 
       {/* Top Header - Apple-clean 3-zone layout */}
-      <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-2 md:gap-4 animate-in slide-in-from-top-4 duration-500 mb-6 backdrop-blur-2xl">
+      <div className="bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-none flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
 
         {/* LEFT: Brand + Title */}
-        <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
-          <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
+        <Link to="/dashboard" className="flex min-h-11 items-center gap-3 min-w-0 group cursor-pointer">
+          <div className="w-9 h-9 rounded-none bg-newsprint group-hover:bg-newsprint flex items-center justify-center border border-newsprint hover:border-newsprint transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="min-w-0 hidden md:block">
-            <h3 className="text-base font-semibold text-white tracking-tight group-hover:text-gold transition-colors">Organizer</h3>
-            <p className="text-xs font-medium text-white/50 truncate group-hover:text-white/70 transition-colors">
+            <h3 className="text-base font-semibold text-ink tracking-tight group-hover:text-gold transition-colors">Organizer</h3>
+            <p className="text-xs font-medium text-ink/50 truncate group-hover:text-ink/70 transition-colors">
               {localGame.title || 'Untitled board'}
             </p>
           </div>
         </Link>
 
-        {/* CENTER: Tab Navigation */}
-        <div className="flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
+        {/* CENTER: Tab Navigation — hard segmented control, cardinal active */}
+        <div className="flex items-center gap-px bg-ink p-px">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'overview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'overview' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('edit')}
-            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'edit' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'edit' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Edit
           </button>
-          <div className="w-px h-3 bg-white/10 mx-0.5 md:mx-1"></div>
           <button
             onClick={() => setActiveTab('preview')}
-            className={`px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === 'preview' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
+            className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'preview' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Preview
           </button>
@@ -564,31 +666,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         {/* RIGHT: Status + Overflow Menu */}
         <div className="flex items-center gap-2 md:gap-3">
           {/* Status pill - compact (Hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10">
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-newsprint border border-newsprint">
             {saveStatus === 'saved' && (
               <>
-                <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-[13px] font-semibold text-white/50">Saved</span>
+                <span className="text-[13px] font-semibold text-ink/50">Saved</span>
               </>
             )}
             {saveStatus === 'saving' && (
               <>
-                <svg className="w-3.5 h-3.5 text-white/40 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-ink/40 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <span className="text-[13px] font-semibold text-white/50">Saving…</span>
+                <span className="text-[13px] font-semibold text-ink/50">Saving…</span>
               </>
             )}
             {saveStatus === 'error' && (
               <>
-                <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-cardinal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <span className="text-[13px] font-semibold text-red-400">Couldn't save</span>
-                <button onClick={handleRetry} className="text-[11px] font-bold text-white/70 hover:text-white underline underline-offset-2 ml-0.5">
+                <span className="text-[13px] font-semibold text-cardinal">Couldn't save</span>
+                <button onClick={handleRetry} className="min-h-11 px-2 text-[11px] font-bold text-ink/70 hover:text-ink underline underline-offset-2 ml-0.5">
                   Retry
                 </button>
               </>
@@ -604,7 +706,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
               aria-label="More options"
               aria-expanded={showMenu}
               aria-haspopup="true"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="min-w-11 min-h-11 flex items-center justify-center rounded-none bg-newsprint hover:bg-newsprint border border-newsprint text-ink/60 hover:text-ink transition-all focus:outline-none focus:ring-2 focus:ring-ink/20"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="6" r="1.5" />
@@ -620,12 +722,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
                 {/* Menu dropdown - positioned via ref */}
                 <div
-                  className="fixed w-56 py-1.5 bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-[9999] animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="fixed w-56 py-1.5 bg-broadcast-white border border-newsprint rounded-none z-[9999] duration-150"
                   style={{
                     top: menuButtonRef.current ? menuButtonRef.current.getBoundingClientRect().bottom + 8 : 0,
                     right: menuButtonRef.current ? window.innerWidth - menuButtonRef.current.getBoundingClientRect().right : 0,
                   }}
                 >
+                  {actionMessage && (
+                    <p className="mx-3 mb-2 bg-newsprint px-3 py-2 text-xs leading-5 text-ink" role="status">
+                      {actionMessage}
+                    </p>
+                  )}
                   <button
                     onClick={async () => {
                       if (!isActivated && activePoolId) {
@@ -637,7 +744,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           if (session?.access_token) {
                             const result = await activateWithEntitlement(activePoolId, session.access_token);
                             if (result.activated) {
-                              alert('Board unlocked — covered by your season pass.');
+                              setActionMessage('Board unlocked — covered by your season pass.');
                               window.location.reload();
                               return;
                             }
@@ -646,23 +753,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           console.error('Entitlement check failed, falling back to checkout:', e);
                         }
                         await createCheckoutSession(activePoolId);
-                      } else {
-                        navigator.clipboard.writeText(`${window.location.origin}/?poolId=${activePoolId}`);
-                        setShowMenu(false);
+                      } else if (!isPublished && activePoolId) {
+                        setActionMessage('Checking the board and publishing the viewer link…');
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const response = await fetch(`/api/pools/${activePoolId}/publish`, {
+                          method: 'POST',
+                          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+                        });
+                        const result = await response.json();
+                        if (!response.ok) {
+                          setActionMessage(result.error || 'The board could not be published.');
+                          return;
+                        }
+                        await navigator.clipboard.writeText(`${window.location.origin}${result.viewerUrl}`);
+                        setActionMessage('Published. The viewer link is copied.');
+                        setTimeout(() => window.location.reload(), 900);
+                      } else if (shareCode) {
+                        await navigator.clipboard.writeText(`${window.location.origin}/b/${shareCode}`);
+                        setActionMessage('Viewer link copied.');
                       }
                     }}
-                    className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-3 ${!isActivated ? 'text-green-400 hover:bg-green-500/10' : 'text-white/80 hover:bg-white/[0.08] hover:text-white'}`}
+                    className={`w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-3 ${!isActivated || !isPublished ? 'text-ink hover:bg-gold' : 'text-ink/80 hover:bg-newsprint hover:text-ink'}`}
                   >
                     {!isActivated ? (
                       <>
-                        <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Unlock sharing ($14.99 covers 20 boards)
+                        Unlock sharing ($4.99 covers 20 boards in 2026)
+                      </>
+                    ) : !isPublished ? (
+                      <>
+                        <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v14m-7-7h14" />
+                        </svg>
+                        Publish viewer link
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-ink/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                         Copy share link
@@ -670,23 +799,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     )}
                   </button>
 
-                  <div className="my-1.5 border-t border-white/[0.08]" />
+                  <div className="my-1.5 border-t border-newsprint" />
 
                   <div className="px-4 py-2.5">
-                    <div className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1">Board ID</div>
-                    <div className="text-xs font-mono text-white/50 break-all select-all">
+                    <div className="text-[10px] font-bold text-ink/30 uppercase tracking-wider mb-1">Board ID</div>
+                    <div className="text-xs font-mono text-ink/50 break-all select-all">
                       {activePoolId || 'Not saved'}
                     </div>
                   </div>
 
-                  <div className="my-1.5 border-t border-white/[0.08]" />
+                  <div className="my-1.5 border-t border-newsprint" />
 
                   <button
                     onClick={() => {
                       setShowMenu(false);
                       onLogout();
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-white/60 hover:bg-white/[0.08] hover:text-white transition-colors flex items-center gap-3"
+                    className="w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium text-ink/60 hover:bg-newsprint hover:text-ink transition-colors flex items-center gap-3"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -694,16 +823,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     Log out
                   </button>
 
-                  <div className="my-1.5 border-t border-white/[0.08]" />
+                  <div className="my-1.5 border-t border-newsprint" />
 
                   {/* Delete Contest Logic */}
                   <button
                     onClick={async () => {
                       if (!activePoolId) return;
-                      if (!confirm(`Are you sure you want to delete this contest?\nThis action cannot be undone.`)) {
-                        setShowMenu(false);
+                      if (!deleteArmed) {
+                        setDeleteArmed(true);
+                        setActionMessage('Delete is armed. Press “Confirm delete board” within five seconds. This cannot be undone.');
+                        window.setTimeout(() => setDeleteArmed(false), 5000);
                         return;
                       }
+                      setDeleteArmed(false);
 
                       try {
                         const { error } = await supabase
@@ -717,15 +849,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         window.location.href = '/dashboard';
                       } catch (err) {
                         console.error("Failed to delete contest:", err);
-                        alert("Failed to delete contest");
+                        setActionMessage('The board could not be deleted. Try again.');
                       }
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors flex items-center gap-3"
+                    className="w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium text-cardinal hover:bg-cardinal-subtle hover:text-cardinal transition-colors flex items-center gap-3"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    Delete Contest
+                    {deleteArmed ? 'Confirm delete board' : 'Delete board'}
                   </button>
                 </div >
               </>,
@@ -786,6 +918,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
             }
           }}
           gameTitle={localGame.title}
+          isActivated={isActivated}
+          isPublished={isPublished}
+          onOpenEditor={() => setActiveTab('edit')}
         />
       ) : null}
 
@@ -796,52 +931,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
             {/* Main Settings Area */}
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Left Column: Board Settings */}
-              <div className="premium-glass p-6 md:p-8 rounded-3xl space-y-6 h-fit">
+              <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none space-y-6 h-fit">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-semibold text-white">Board Settings</h4>
+                  <h4 className="text-lg font-semibold text-ink">Board Settings</h4>
 
-                  {/* Dynamic Board Toggle */}
-                  <div className="flex items-center gap-1 bg-black/20 p-1 rounded-full border border-white/5">
-                    <button
-                      onClick={() => localBoard.isDynamic && toggleBoardType()}
-                      className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${!localBoard.isDynamic ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-white'}`}
-                    >
-                      Standard
-                    </button>
-                    <button
-                      onClick={() => !localBoard.isDynamic && toggleBoardType()}
-                      className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${localBoard.isDynamic ? 'bg-white text-black shadow-md' : 'text-gray-500 hover:text-white'}`}
-                    >
-                      Dynamic
-                    </button>
-                  </div>
+                  <span className="oa-slab text-[10px] text-ink/50">One fixed draw · locked at publish</span>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-label">Board Name</label>
-                    <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full glass-input" />
+                    <label className="oa-slab text-ink/60">Board Name</label>
+                    <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full oa-input" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-label">Left Team</label>
+                      <label className="oa-slab text-ink/60">Left Team</label>
                       <div className="relative">
-                        <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-surface">{t.abbr}</option>)}
+                        <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full oa-input appearance-none cursor-pointer">
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-broadcast-white">{t.abbr}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </div>
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-label">Top Team</label>
+                      <label className="oa-slab text-ink/60">Top Team</label>
                       <div className="relative">
-                        <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-surface">{t.abbr}</option>)}
+                        <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full oa-input appearance-none cursor-pointer">
+                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-broadcast-white">{t.abbr}</option>)}
                         </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </div>
                       </div>
@@ -849,13 +970,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-label whitespace-nowrap">Game Date</label>
-                    <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full glass-input" />
+                    <label className="oa-slab text-ink/60 whitespace-nowrap">Game Date</label>
+                    <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full oa-input" />
                   </div>
 
                   <div className="pt-2">
-                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2">Location / Subtext</div>
-                    <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full glass-input" placeholder="e.g. 'Family Pool' or 'Las Vegas'" />
+                    <div className="text-[10px] text-ink/50 uppercase font-bold tracking-widest mb-2">Location / Subtext</div>
+                    <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full oa-input" placeholder="e.g. 'Family Pool' or 'Las Vegas'" />
                   </div>
                 </div>
 
@@ -863,57 +984,57 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
               {/* Right Column: Pool Configuration */}
               <div className="flex flex-col space-y-6">
-                <div className="premium-glass p-6 md:p-8 rounded-3xl flex-1">
-                  <h4 className="text-lg font-semibold text-white mb-6">Payout Configuration</h4>
+                <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex-1">
+                  <h4 className="text-lg font-semibold text-ink mb-6">Payout Configuration</h4>
 
                   {/* Payout Configuration */}
                   <div className="space-y-5 mb-8">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-label">Q1 Payout</label>
+                        <label className="oa-slab text-ink/60">Q1 Payout</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
+                          <input type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-label">Q2 Payout</label>
+                        <label className="oa-slab text-ink/60">Q2 Payout</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
+                          <input type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-label">Q3 Payout</label>
+                        <label className="oa-slab text-ink/60">Q3 Payout</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full glass-input pl-7" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
+                          <input type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-label text-gold">Final Payout</label>
+                        <label className="oa-slab text-ink/60 text-gold">Final Payout</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full glass-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
+                          <input type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Live Scoring */}
-                  <div className="border-t border-white/5 pt-6 mb-8">
+                  <div className="border-t border-newsprint pt-6 mb-8">
                     <div className="flex items-center justify-between mb-4">
-                      <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Live Scoring</h5>
-                      <div className="flex rounded-full bg-white/5 p-1 border border-white/10">
+                      <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
+                      <div className="flex rounded-none bg-newsprint p-1 border border-newsprint">
                         <button
-                          onClick={() => updateField('useManualScores', false)}
-                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                          onClick={enableAutomaticScoring}
+                          className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Auto
                         </button>
                         <button
                           onClick={() => updateField('useManualScores', true)}
-                          className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                          className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Manual
                         </button>
@@ -921,35 +1042,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     </div>
 
                     {!localGame.useManualScores ? (
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        Scores update automatically during the game. Switch to Manual to enter quarter scores yourself — the most reliable option on game day.
+                      <p className="text-xs text-ink/50 leading-relaxed">
+                        Automatic score checks are a beta convenience and always show their source and freshness. Switch to Manual whenever you want the organizer to be authoritative.
                       </p>
                     ) : (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="text-label">Game Status</label>
+                            <label className="oa-slab text-ink/60">Game Status</label>
                             <div className="relative">
                               <select
                                 value={localGame.manualGameState ?? 'in'}
                                 onChange={(e) => updateField('manualGameState', e.target.value)}
-                                className="w-full glass-input appearance-none bg-surface text-white"
+                                className="w-full oa-input appearance-none bg-broadcast-white text-ink"
                               >
                                 <option value="pre">Scheduled</option>
                                 <option value="in">In progress</option>
                                 <option value="post">Final</option>
                               </select>
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-label">Current Period</label>
+                            <label className="oa-slab text-ink/60">Current Period</label>
                             <div className="relative">
                               <select
                                 value={localGame.manualPeriod ?? 1}
                                 onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
                                 disabled={(localGame.manualGameState ?? 'in') !== 'in'}
-                                className="w-full glass-input appearance-none bg-surface text-white disabled:opacity-40"
+                                className="w-full oa-input appearance-none bg-broadcast-white text-ink disabled:opacity-40"
                               >
                                 <option value={1}>Q1</option>
                                 <option value={2}>Q2</option>
@@ -957,7 +1078,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                 <option value={4}>Q4</option>
                                 <option value={5}>Overtime</option>
                               </select>
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
                             </div>
                           </div>
                         </div>
@@ -965,94 +1086,90 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                         <div className="space-y-2">
                           <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
                             <span></span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">{localGame.leftAbbr}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">{localGame.topAbbr}</span>
+                            <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{localGame.leftAbbr}</span>
+                            <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{localGame.topAbbr}</span>
                           </div>
                           {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).map((q) => (
                             <div key={q} className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
-                              <span className="text-xs font-bold text-white/60">{q}</span>
+                              <span className="text-xs font-bold text-ink/60">{q}</span>
                               <input
                                 type="number"
                                 min={0}
                                 value={localGame.manualQuarterScores?.[q]?.left ?? 0}
                                 onChange={(e) => updateManualQuarter(q, 'left', parseInt(e.target.value) || 0)}
-                                className="w-full glass-input text-center"
+                                className="w-full oa-input text-center"
                               />
                               <input
                                 type="number"
                                 min={0}
                                 value={localGame.manualQuarterScores?.[q]?.top ?? 0}
                                 onChange={(e) => updateManualQuarter(q, 'top', parseInt(e.target.value) || 0)}
-                                className="w-full glass-input text-center"
+                                className="w-full oa-input text-center"
                               />
                             </div>
                           ))}
-                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-white/5">
+                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-newsprint">
                             <span className="text-xs font-bold text-gold">Total</span>
-                            <span className="text-sm font-bold text-white text-center">
+                            <span className="text-sm font-bold text-ink text-center">
                               {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.left ?? 0), 0)}
                             </span>
-                            <span className="text-sm font-bold text-white text-center">
+                            <span className="text-sm font-bold text-ink text-center">
                               {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.top ?? 0), 0)}
                             </span>
                           </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 leading-relaxed">
-                          Enter each quarter's points (not running totals). Winners highlight as you advance the period, and the Final winner locks in when status is set to Final.
+                        <p className="text-[11px] text-ink/50 leading-relaxed">
+                          Enter each quarter's points (not running totals). Save only after the period ends; that resolves its winner and sends verified emails once.
                         </p>
+                        <button
+                          type="button"
+                          onClick={saveManualScore}
+                          disabled={scoreSaveStatus === 'saving'}
+                          className="oa-btn oa-btn-primary w-full"
+                        >
+                          {scoreSaveStatus === 'saving' ? 'Publishing score…' : 'Publish manual score'}
+                        </button>
                       </div>
                     )}
                   </div>
 
                   {/* Board Actions */}
-                  <div className="border-t border-white/5 pt-6">
-                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Board Actions</h5>
+                  <div className="border-t border-newsprint pt-6">
+                    <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest mb-4">Board Actions</h5>
+                    {isPublished ? (
+                      <p className="oa-body border border-gold bg-gold/20 p-4 text-ink">
+                        Published board data is locked. Scanning, clearing names, and editing squares are disabled so winner history stays tied to the exact shared grid.
+                      </p>
+                    ) : (
                     <div className="flex gap-4">
-                      <label className={`flex-1 flex flex-col items-center justify-center gap-2 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 rounded-2xl p-4 cursor-pointer transition-all active:scale-[0.98] ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        <span className="text-xs font-bold text-white">{isScanning ? 'Processing...' : 'Scan Board'}</span>
+                      <label className={`flex-1 flex flex-col items-center justify-center gap-2 bg-newsprint border border-newsprint hover:border-newsprint hover:bg-newsprint rounded-none p-4 cursor-pointer transition-all active:scale-[0.98] ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <svg className="w-6 h-6 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <span className="text-xs font-bold text-ink">{isScanning ? 'Processing...' : 'Scan Board'}</span>
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                       </label>
 
-                      <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center gap-2 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 rounded-2xl p-4 transition-all active:scale-[0.98]">
-                        <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        <span className="text-xs font-bold text-red-400">Clear Board</span>
+                      <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center gap-2 bg-cardinal-subtle border border-cardinal hover:bg-cardinal-subtle rounded-none p-4 transition-all active:scale-[0.98]">
+                        <svg className="w-6 h-6 text-cardinal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        <span className="text-xs font-bold text-cardinal">{clearArmed ? 'Confirm clear' : 'Clear names'}</span>
                       </button>
                     </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Manual Grid Editor Section */}
-            <div className="premium-glass p-6 md:p-8 rounded-3xl flex flex-col space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
+            <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex flex-col space-y-6 duration-700">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-newsprint pb-6">
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-white tracking-tight">Grid Editor</h3>
-                  <p className="text-sm font-medium text-gray-400 mt-1">Tap any cell or axis to edit names and numbers manually.</p>
+                  <h3 className="text-xl font-semibold text-ink tracking-tight">Grid Editor</h3>
+                  <p className="text-sm font-medium text-ink/60 mt-1">Assign purchaser names, then run one random number draw. Publishing locks both axes.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {/* Dynamic Axis Selector */}
-                  {localBoard.isDynamic && (
-                    <div className="flex items-center bg-black/30 rounded-lg p-1 border border-white/5">
-                      {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map(q => (
-                        <button
-                          key={q}
-                          onClick={() => setActiveAxisQuarter(q)}
-                          className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeAxisQuarter === q
-                            ? 'bg-white/20 text-white shadow-sm'
-                            : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                          {q === 'Q4' ? 'Final' : q}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
                   {/* Bulk Assign Toggle */}
-                  <button
+                  {!isPublished && <button
                     onClick={() => {
                       setIsAssignMode(!isAssignMode);
                       isDragAssigningRef.current = false;
@@ -1064,36 +1181,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       dragBaseSelectionRef.current = new Set();
                       setSelectedCellIndices(new Set());
                     }}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isAssignMode ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                    className={`min-h-11 px-4 py-2 rounded-none text-xs font-bold transition-all ${isAssignMode ? 'bg-cardinal text-broadcast-white  ' : 'bg-newsprint text-ink/70 hover:bg-newsprint'}`}
                   >
                     {isAssignMode ? 'Done' : 'Assign Squares'}
-                  </button>
+                  </button>}
                 </div>
               </div>
 
               {/* Bulk Assign Panel */}
-              {isAssignMode && (
-                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 animate-in slide-in-from-top-2">
+              {isAssignMode && !isPublished && (
+                <div className="bg-cardinal-subtle border border-cardinal rounded-none p-4">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-5 space-y-1">
-                    <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Label to Apply</label>
+                    <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Label to Apply</label>
                     <input
                       type="text"
                       value={assignLabel}
                       onChange={(e) => setAssignLabel(e.target.value)}
                       placeholder="e.g. Mora"
-                      className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
+                      className="w-full bg-broadcast-white border border-newsprint rounded-none px-3 py-2 text-sm text-ink focus:border-cardinal outline-none"
                     />
                     </div>
 
                     <div className="md:col-span-3 space-y-1">
-                    <label className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Payment Status</label>
-                    <div className="w-full flex bg-surface rounded-lg p-1 border border-white/10">
+                    <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Payment Status</label>
+                    <div className="w-full flex bg-broadcast-white rounded-none p-1 border border-newsprint">
                       {(['unpaid', 'paid'] as const).map(status => (
                         <button
                           key={status}
                           onClick={() => setAssignPaidDefault(status)}
-                          className={`flex-1 px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-white'}`}
+                          className={`flex-1 min-h-11 px-3 py-2 rounded-none text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-cardinal text-broadcast-white' : 'text-ink/50 hover:text-ink'}`}
                         >
                           {status}
                         </button>
@@ -1114,27 +1231,74 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           dragBaseSelectionRef.current = new Set();
                           setSelectedCellIndices(new Set());
                         }}
-                        className="px-4 py-2 rounded-lg text-xs font-bold text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+                        className="min-h-11 px-4 py-2 rounded-none text-xs font-bold text-ink/50 hover:bg-newsprint hover:text-ink transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleBulkApply}
                         disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
-                        className="px-6 py-2 rounded-lg text-sm font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="min-h-11 px-6 py-2 rounded-none text-sm font-bold bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         Apply to {selectedCellIndices.size}
                       </button>
                     </div>
 
-                    <div className="md:col-span-12 text-[11px] text-indigo-200/80">
+                    <div className="md:col-span-12 text-[11px] text-cardinal">
                       Click cells to toggle selection, or click-drag to select a range. Then press Apply to update all selected squares.
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="overflow-x-auto custom-scrollbar bg-black/20 p-6 rounded-2xl border border-white/5">
+              <section className={`border border-ink ${isPublished ? 'bg-gold text-ink' : 'bg-cardinal text-broadcast-white'}`} aria-labelledby="number-draw-title">
+                <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+                  <div>
+                    <p className="oa-slab text-[11px] opacity-70">Draw phase</p>
+                    <h3 id="number-draw-title" className="oa-headline !text-2xl">
+                      {isPublished ? 'Axis digits are locked.' : drawPreview ? 'Review the random draw.' : 'Draw both 0–9 axes once.'}
+                    </h3>
+                    <p className="oa-body mt-2 max-w-2xl opacity-80">
+                      {isPublished
+                        ? 'The published viewer board and winner history remain tied to this committed draw.'
+                        : localBoard.squares.some((names) => !names.length)
+                          ? `Assign all 100 squares first. ${localBoard.squares.filter((names) => !names.length).length} remain before the random draw unlocks.`
+                          : 'GridOne uses your browser’s cryptographic random generator. You can redraw before committing; publication makes the committed result permanent.'}
+                    </p>
+                  </div>
+                  {!isPublished && !drawPreview && (
+                    <button
+                      type="button"
+                      onClick={stageNumberDraw}
+                      disabled={localBoard.squares.some((names) => !names.length)}
+                      className="oa-btn bg-gold text-ink border border-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Draw numbers
+                    </button>
+                  )}
+                </div>
+                {drawPreview && !isPublished && (
+                  <div className="border-t border-ink bg-broadcast-white p-5 text-ink overflow-x-auto">
+                    <dl className="min-w-[42rem] grid gap-4">
+                      <div className="grid grid-cols-[5rem_repeat(10,minmax(1.8rem,1fr))] items-center gap-px bg-ink">
+                        <dt className="oa-slab bg-newsprint p-2">Top</dt>
+                        {drawPreview.top.map((digit, index) => <dd key={`top-${index}`} className="oa-data bg-broadcast-white p-2 text-center text-lg">{digit}</dd>)}
+                      </div>
+                      <div className="grid grid-cols-[5rem_repeat(10,minmax(1.8rem,1fr))] items-center gap-px bg-ink">
+                        <dt className="oa-slab bg-newsprint p-2">Side</dt>
+                        {drawPreview.side.map((digit, index) => <dd key={`side-${index}`} className="oa-data bg-broadcast-white p-2 text-center text-lg">{digit}</dd>)}
+                      </div>
+                    </dl>
+                    <div className="mt-5 flex flex-wrap justify-end gap-3">
+                      <button type="button" onClick={() => setDrawPreview(null)} className="oa-btn oa-btn-ghost">Cancel</button>
+                      <button type="button" onClick={stageNumberDraw} className="oa-btn oa-btn-ghost">Redraw</button>
+                      <button type="button" onClick={commitNumberDraw} className="oa-btn oa-btn-primary">Commit draw</button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <div className="overflow-x-auto custom-scrollbar bg-newsprint p-6 rounded-none border border-newsprint">
                 <div className="min-w-[800px] space-y-6">
 
                   {/* Header: Top Team and Axis */}
@@ -1144,20 +1308,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       {/* Removed top-left abbreviation, now vertical on side */}
                     </div>
                     <div className="flex-1">
-                      <div className="text-center text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">{localGame.topName}</div>
+                      <div className="text-center text-[10px] font-black text-ink/50 uppercase tracking-widest mb-3">{localGame.topName}</div>
                       <div className="grid grid-cols-10 gap-2">
                         {currentOppAxis?.map((val, idx) => (
                           <div key={idx} className="space-y-1">
-                            <div className="relative group">
-                              <select
-                                value={val ?? ''}
-                                onChange={(e) => handleAxisChange('oppAxis', idx, e.target.value)}
-                                className="w-full h-10 bg-surface border border-white/10 rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5"
-                              >
-                                <option value="" className="text-gray-500">?</option>
-                                {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
-                              </select>
-                            </div>
+                            <output className="oa-data flex h-10 w-full items-center justify-center bg-broadcast-white border border-newsprint text-sm font-bold">
+                              {val ?? '—'}
+                            </output>
                           </div>
                         ))}
                       </div>
@@ -1168,57 +1325,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <div className="flex">
                     {/* Vertical Left Label */}
                     <div className="w-6 flex items-center justify-center">
-                      <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap py-4" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                      <div className="text-[10px] font-black text-ink/50 uppercase tracking-widest whitespace-nowrap py-4" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
                         {localGame.leftName}
                       </div>
                     </div>
 
-                    <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-white/5">
+                    <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-newsprint">
                       {currentBearsAxis?.map((val, idx) => (
                         <div key={idx} className="flex items-center justify-end gap-1 group h-12 relative">
-                          {/* Delete Button for Extra Rows */}
-                          {currentBearsAxis.length > 10 && (
-                            <button
-                              onClick={() => {
-                                if (confirm('Remove this row and its squares?')) {
-                                  // Remove axis item
-                                  const newAxis = [...currentBearsAxis];
-                                  newAxis.splice(idx, 1);
-
-                                  // Remove corresponding squares (10 items per row)
-                                  // Note: If columns are also messed up (>10), this logic might be imperfect but sufficient for row deletion
-                                  const colCount = currentOppAxis?.length || 10;
-                                  const newSquares = [...localBoard.squares];
-                                  newSquares.splice(idx * colCount, colCount);
-
-                                  const newBoard = { ...localBoard };
-                                  if (newBoard.isDynamic) {
-                                    // Update quarter specific if dynamic
-                                    if (!newBoard.bearsAxisByQuarter) newBoard.bearsAxisByQuarter = { Q1: [], Q2: [], Q3: [], Q4: [] };
-                                    newBoard.bearsAxisByQuarter[activeAxisQuarter] = newAxis;
-                                  } else {
-                                    newBoard.bearsAxis = newAxis;
-                                  }
-                                  newBoard.squares = newSquares;
-                                  setLocalBoard(newBoard);
-                                }
-                              }}
-                              className="absolute -left-6 opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-300 transition-opacity"
-                              title="Delete extra row"
-                            >
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          )}
-                          <div className="relative w-10">
-                            <select
-                              value={val ?? ''}
-                              onChange={(e) => handleAxisChange('bearsAxis', idx, e.target.value)}
-                              className={`w-full h-12 bg-surface border rounded-lg text-center text-sm text-white font-bold focus:border-white/30 outline-none appearance-none cursor-pointer transition-all hover:bg-white/5 ${currentBearsAxis.length > 10 ? 'border-red-500/50' : 'border-white/10'}`}
-                            >
-                              <option value="" className="text-gray-500">?</option>
-                              {axisDigits.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                          </div>
+                          <output className={`oa-data flex h-12 w-10 items-center justify-center bg-broadcast-white border text-sm font-bold ${currentBearsAxis.length > 10 ? 'border-cardinal' : 'border-newsprint'}`}>
+                            {val ?? '—'}
+                          </output>
                         </div>
                       ))}
                     </div>
@@ -1234,6 +1351,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                               {/* Unified Click Handler */}
                               <div
                                 onClick={() => {
+                                  if (isPublished) return;
                                   if (isAssignMode) {
                                     if (justFinishedDragRef.current) return;
                                     toggleCellSelection(cellIdx);
@@ -1242,30 +1360,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                   setEditingMetaIndex(cellIdx);
                                 }}
                                 onPointerDown={(e) => {
-                                  if (!isAssignMode) return;
+                                  if (isPublished || !isAssignMode) return;
                                   e.preventDefault();
                                   beginDragAssign(cellIdx);
                                 }}
                                 onPointerEnter={(e) => {
-                                  continueDragAssign(cellIdx, e.buttons);
+                                  if (!isPublished) continueDragAssign(cellIdx, e.buttons);
                                 }}
                                 onPointerOver={(e) => {
-                                  continueDragAssign(cellIdx, e.buttons);
+                                  if (!isPublished) continueDragAssign(cellIdx, e.buttons);
                                 }}
                                 onPointerUp={() => {
-                                  if (!isAssignMode) return;
+                                  if (isPublished || !isAssignMode) return;
                                   endDragAssign();
                                 }}
-                                className={`w-full h-full border rounded-lg flex flex-col items-center justify-center p-1 cursor-pointer transition-all group active:scale-95 ${isAssignMode && selectedCellIndices.has(cellIdx)
-                                  ? 'bg-indigo-500/30 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                                  : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                                aria-disabled={isPublished}
+                                className={`w-full h-full border rounded-none flex flex-col items-center justify-center p-1 transition-all group ${isPublished ? 'cursor-default' : 'cursor-pointer active:scale-95'} ${isAssignMode && selectedCellIndices.has(cellIdx)
+                                  ? 'bg-cardinal-subtle border-cardinal '
+                                  : 'bg-newsprint border-newsprint hover:bg-newsprint hover:border-newsprint'
                                   }`}
                               >
-                                <span className="text-[10px] font-medium text-white/90 truncate w-full text-center">
+                                <span className="oa-board-name font-bold text-ink/90 truncate w-full text-center">
                                   {players[0] || ''}
                                 </span>
                                 {players.length === 0 && (
-                                  <span className="text-[9px] text-white/20 select-none">
+                                  <span className="oa-board-name text-ink/30 select-none">
                                     {currentOppAxis?.[c] ?? '?'}-{currentBearsAxis?.[r] ?? '?'}
                                   </span>
                                 )}
@@ -1274,12 +1393,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                               {/* Status Indicator (Paid/Unpaid) */}
                               {entryMetaByIndex[cellIdx]?.paid_status === 'paid' && (
                                 <div className="absolute bottom-1 right-1 pointer-events-none">
-                                  <svg className="w-3 h-3 text-green-400 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                  <svg className="w-3 h-3 text-ink" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                                 </div>
                               )}
                               {(entryMetaByIndex[cellIdx]?.paid_status === 'unpaid' || (!entryMetaByIndex[cellIdx]?.paid_status && players.length > 0)) && (
                                 <div className="absolute bottom-1 right-1 pointer-events-none">
-                                  <svg className="w-3 h-3 text-red-500 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                  <svg className="w-3 h-3 text-cardinal" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
                                 </div>
                               )}
                             </div>
@@ -1297,7 +1416,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
       {/* Metadata Edit Modal */}
       {
-        editingMetaIndex !== null && (
+        editingMetaIndex !== null && !isPublished && (
           <MetadataModal
             cellIndex={editingMetaIndex}
             currentName={localBoard.squares[editingMetaIndex]?.[0] || ''}
@@ -1320,7 +1439,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
       {/* PREVIEW TAB CONTENT */}
       {activeTab === 'preview' && renderPreview && (
-        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-2xl overflow-hidden bg-background border border-white/10 relative shadow-2xl">
+        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-none overflow-hidden bg-background border border-newsprint relative">
           {renderPreview()}
         </div>
       )}
@@ -1339,34 +1458,35 @@ const MetadataModal: React.FC<{
 }> = ({ cellIndex, currentName, currentMeta, onSave, onClose }) => {
   const [name, setName] = useState(currentName);
   const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status && currentMeta.paid_status !== 'unknown' ? currentMeta.paid_status : 'unpaid');
-  const [notifyOptIn] = useState(currentMeta?.notify_opt_in || false);
-  const [contactType, setContactType] = useState<EntryMeta['contact_type']>(currentMeta?.contact_type || 'email');
-  const [contactValue, setContactValue] = useState(currentMeta?.contact_value || '');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialogRef, onClose);
 
   const handleSave = () => {
-    if (notifyOptIn && !contactValue.trim()) {
-      alert("Please provide contact details or disable notifications.");
-      return;
-    }
-
     onSave(name.trim(), {
       cell_index: cellIndex,
       paid_status: paidStatus,
-      notify_opt_in: notifyOptIn,
-      contact_type: notifyOptIn ? contactType : null,
-      contact_value: notifyOptIn ? contactValue : null
+      notify_opt_in: false,
+      contact_type: null,
+      contact_value: null
     });
   };
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-surface border border-white/10 rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+      <div className="absolute inset-0 bg-ink/80" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`square-dialog-title-${cellIndex}`}
+        aria-describedby={`square-dialog-description-${cellIndex}`}
+        className="relative w-full max-w-sm bg-broadcast-white border border-ink p-6 space-y-4"
+      >
 
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-white">Edit Square</h3>
-          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full text-white/50 hover:text-white">
+          <h3 id={`square-dialog-title-${cellIndex}`} className="text-lg font-semibold text-ink">Edit square {cellIndex + 1}</h3>
+          <button onClick={onClose} aria-label="Close square editor" className="min-h-11 min-w-11 p-1 hover:bg-newsprint rounded-none text-ink/50 hover:text-ink">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
@@ -1376,30 +1496,30 @@ const MetadataModal: React.FC<{
 
           {/* Name Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Player Name</label>
+            <label className="text-xs font-bold text-ink/50 uppercase tracking-widest">Purchaser or seller name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter Name"
-              className="w-full glass-input"
+              className="w-full oa-input"
               autoFocus
             />
           </div>
 
           {/* Paid Status */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Payment Status</label>
+            <label className="text-xs font-bold text-ink/50 uppercase tracking-widest">Payment Status</label>
             <div className="flex gap-2">
               {(['unpaid', 'paid'] as const).map(status => (
                 <button
                   key={status}
                   onClick={() => setPaidStatus(status)}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold capitalize transition-all ${paidStatus === status
-                    ? (status === 'paid' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                      status === 'unpaid' ? 'bg-red-500/20 text-red-500 border border-red-500/50' :
-                        'bg-white text-black')
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  className={`flex-1 min-h-11 py-2 px-3 rounded-none text-xs font-bold capitalize transition-all ${paidStatus === status
+                    ? (status === 'paid' ? 'bg-gold text-ink border border-gold-deep' :
+                      status === 'unpaid' ? 'bg-cardinal-subtle text-cardinal border border-cardinal' :
+                        'bg-broadcast-white text-ink')
+                    : 'bg-newsprint text-ink/60 hover:bg-newsprint'
                     }`}
                 >
                   {status}
@@ -1408,48 +1528,16 @@ const MetadataModal: React.FC<{
             </div>
           </div>
 
-          {/* Notification Settings */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className={`w-10 h-6 rounded-full p-1 transition-colors ${notifyOptIn ? 'bg-green-500' : 'bg-white/10'}`}>
-                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${notifyOptIn ? 'translate-x-4' : 'translate-x-0'}`} />
-              </div>
-              <span className="text-sm font-medium text-white group-hover:text-white/80">Notify Winner</span>
-            </label>
-
-            {notifyOptIn && (
-              <div className="space-y-3 pl-2 animate-in slide-in-from-top-2">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setContactType('email')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold ${contactType === 'email' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                  >
-                    Email
-                  </button>
-                  <button
-                    onClick={() => setContactType('sms')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold ${contactType === 'sms' ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                  >
-                    SMS
-                  </button>
-                </div>
-                <input
-                  type={contactType === 'email' ? 'email' : 'tel'}
-                  value={contactValue || ''}
-                  onChange={(e) => setContactValue(e.target.value)}
-                  placeholder={contactType === 'email' ? 'name@example.com' : '555-0199'}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-white/30 outline-none"
-                />
-              </div>
-            )}
-          </div>
+          <p id={`square-dialog-description-${cellIndex}`} className="pt-4 border-t border-newsprint text-xs leading-relaxed text-ink/55">
+            Viewers can select this name on the published board and verify their own winner email. Organizers never need to collect contact details.
+          </p>
         </div>
 
         {/* Footer Actions */}
         <div className="pt-2 flex justify-end">
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200 transition-colors"
+            className="min-h-11 px-6 py-2 bg-broadcast-white text-ink text-sm font-bold rounded-none hover:bg-newsprint transition-colors"
           >
             Save Details
           </button>

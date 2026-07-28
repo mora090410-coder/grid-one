@@ -112,18 +112,18 @@ const Login: React.FC = () => {
 
     if (successMessage) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 text-center">
-                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="oa-root min-h-screen bg-broadcast-white flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-none p-8 duration-300 text-center">
+                    <div className="w-16 h-16 rounded-none bg-gold flex items-center justify-center mx-auto mb-6">
+                        <svg className="w-8 h-8 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
-                    <p className="text-gray-400 mb-6">{successMessage}</p>
+                    <h2 className="text-xl font-bold text-ink mb-2">Check your inbox</h2>
+                    <p className="text-ink/60 mb-6">{successMessage}</p>
                     <button
                         onClick={() => setSuccessMessage(null)}
-                        className="text-sm text-white/50 hover:text-white transition-colors underline"
+                        className="text-sm text-ink/50 hover:text-ink transition-colors underline"
                     >
                         Back to Login
                     </button>
@@ -133,44 +133,44 @@ const Login: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-surface/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in duration-300 transition-all">
+        <div className="oa-root min-h-screen bg-broadcast-white flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-none p-8 duration-300 transition-all">
                 <div className="text-center mb-8">
-                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-xl shadow-2xl shadow-cardinal/20 mx-auto mb-4 hover:scale-105 transition-transform ring-1 ring-gold/50" />
-                    <h1 className="text-2xl font-bold text-white tracking-tight">
+                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-none mx-auto mb-4 transition-transform ring-1 ring-gold/50" />
+                    <h1 className="text-2xl font-bold text-ink tracking-tight">
                         {isSignUp ? 'Create your organizer account' : (isClaim ? 'Sign in to continue' : 'Welcome back')}
                     </h1>
-                    <p className="text-sm text-gray-400 mt-2">
+                    <p className="text-sm text-ink/60 mt-2">
                         {isSignUp ? 'Build your board, edit it freely, and unlock sharing when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
                     </p>
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium animate-in slide-in-from-top-2">
+                    <div className="mb-6 p-3 rounded-none bg-cardinal-subtle border border-cardinal text-cardinal text-xs font-medium">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     {isSignUp && (
-                        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="grid grid-cols-2 gap-3 duration-500">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">First Name <span className="text-gray-600 normal-case">(optional)</span></label>
+                                <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">First Name <span className="text-ink/50 normal-case">(optional)</span></label>
                                 <input
                                     type="text"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
+                                    className="oa-input w-full text-sm placeholder:text-ink/40"
                                     placeholder="John"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Last Name <span className="text-gray-600 normal-case">(optional)</span></label>
+                                <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Last Name <span className="text-ink/50 normal-case">(optional)</span></label>
                                 <input
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
+                                    className="oa-input w-full text-sm placeholder:text-ink/40"
                                     placeholder="Doe"
                                 />
                             </div>
@@ -178,37 +178,37 @@ const Login: React.FC = () => {
                     )}
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email Address</label>
+                        <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Email Address</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
+                            className="oa-input w-full text-sm placeholder:text-ink/40"
                             placeholder="you@example.com"
                             required
                         />
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Password</label>
+                        <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Password</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
+                            className="oa-input w-full text-sm placeholder:text-ink/40"
                             placeholder="••••••••"
                             required
                         />
                     </div>
 
                     {isSignUp && (
-                        <div className="space-y-1 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Confirm Password</label>
+                        <div className="space-y-1 duration-500 delay-100">
+                            <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Confirm Password</label>
                             <input
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-white/30 focus:bg-black/40 outline-none transition-all placeholder:text-gray-600"
+                                className="oa-input w-full text-sm placeholder:text-ink/40"
                                 placeholder="••••••••"
                                 required
                             />
@@ -218,7 +218,7 @@ const Login: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3.5 rounded-xl bg-white text-black font-bold text-sm uppercase tracking-wide hover:bg-gray-200 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                        className="oa-btn w-full mt-4 bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isClaim ? 'Sign In & Claim Board' : 'Sign In'))}
                     </button>
@@ -232,14 +232,14 @@ const Login: React.FC = () => {
                             setError(null);
                             setConfirmPassword('');
                         }}
-                        className="text-xs text-gray-400 hover:text-white transition-colors"
+                        className="text-xs text-ink/60 hover:text-ink transition-colors"
                     >
                         {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
                     </button>
                 </div>
 
-                <div className="mt-8 border-t border-white/5 pt-6 text-center">
-                    <a href="/" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
+                <div className="mt-8 border-t border-newsprint pt-6 text-center">
+                    <a href="/" className="text-xs text-ink/50 hover:text-ink/60 transition-colors">
                         &larr; Back to Guest View
                     </a>
                 </div>

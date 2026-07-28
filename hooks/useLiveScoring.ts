@@ -1,9 +1,10 @@
 /**
  * useLiveScoring Hook
- * Manages live game data using Gemini AI with Search Grounding
+ * Consumes the server-authoritative score snapshot. Provider credentials and
+ * grounding requests never run in the browser.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, LiveGameData } from '../types';
+import { GameState, LiveGameData, WinnerResolution } from '../types';
 import { fetchLiveScore } from '../services/scoreService';
 
 interface UseLiveScoringReturn {
@@ -13,15 +14,38 @@ interface UseLiveScoringReturn {
     isRefreshing: boolean;
     lastUpdated: string;
     fetchLive: () => Promise<void>;
+    winnerHistory: WinnerResolution[];
 }
 
-export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool: boolean): UseLiveScoringReturn {
+export function useLiveScoring(
+    game: GameState,
+    dataReady: boolean,
+    loadingPool: boolean,
+    boardRef?: string | null,
+    initialWinnerHistory: WinnerResolution[] = [],
+): UseLiveScoringReturn {
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
     const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
     const [isSynced, setIsSynced] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState('');
+    const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>(initialWinnerHistory);
     const pollRef = useRef<NodeJS.Timeout | null>(null);
+    const isFinalRef = useRef(false);
+
+    useEffect(() => {
+        if (!game.scoreSnapshot) return;
+        const score = game.scoreSnapshot;
+        isFinalRef.current = score.state === 'post';
+        setLiveData(score);
+        setLiveStatus(score.state === 'post' ? 'FINAL' : score.freshness === 'stale' ? 'STALE' : score.state === 'in' ? 'LIVE' : 'PRE-GAME');
+        setIsSynced(score.freshness !== 'offline' && score.freshness !== 'rejected');
+        setLastUpdated(score.retrievedAt ? new Date(score.retrievedAt).toLocaleTimeString() : '');
+    }, [game.scoreSnapshot]);
+
+    useEffect(() => {
+        setWinnerHistory(initialWinnerHistory);
+    }, [initialWinnerHistory]);
 
     const fetchLive = useCallback(async () => {
         if (!dataReady || loadingPool) {
@@ -66,51 +90,64 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
             return;
         }
 
-        if (!game.dates) {
-            setLiveStatus('WAITING FOR DATA');
+        if (isFinalRef.current || document.hidden) {
+            return;
+        }
+
+        if (!boardRef) {
+            setLiveStatus('SCORE UNAVAILABLE');
             return;
         }
 
         setIsRefreshing(true);
 
         try {
-            const data = await fetchLiveScore(
-                game.leftName || game.leftAbbr,
-                game.topName || game.topAbbr,
-                game.dates
-            );
+            const result = await fetchLiveScore(boardRef);
+            const data = result.score;
 
             setLiveData(data);
+            if (result.winnerHistory) setWinnerHistory(result.winnerHistory);
 
-            if (data.state === 'post') {
+            if (data.freshness === 'offline') {
+                setLiveStatus('OFFLINE · LAST KNOWN');
+            } else if (data.freshness === 'refreshing') {
+                setLiveStatus('REFRESHING');
+            } else if (data.freshness === 'stale') {
+                setLiveStatus('STALE · LAST KNOWN');
+            } else if (data.state === 'post') {
+                isFinalRef.current = true;
                 setLiveStatus('FINAL');
             } else if (data.state === 'in') {
                 setLiveStatus('LIVE');
             } else {
                 setLiveStatus('PRE-GAME');
             }
-            setIsSynced(true);
-            setLastUpdated(new Date().toLocaleTimeString());
+            setIsSynced(data.freshness !== 'offline' && data.freshness !== 'rejected');
+            setLastUpdated(data.retrievedAt ? new Date(data.retrievedAt).toLocaleTimeString() : new Date().toLocaleTimeString());
         } catch (err: unknown) {
             console.error("Live Scoring Error:", err);
-            setLiveStatus('OFFLINE');
+            const message = err instanceof Error ? err.message : 'The score service is unavailable.';
+            setLiveData((current) => current ? { ...current, freshness: 'offline', warning: message } : current);
+            setLiveStatus('OFFLINE · LAST KNOWN');
             setIsSynced(false);
         } finally {
             setIsRefreshing(false);
         }
-    }, [game, dataReady, loadingPool]);
+    }, [boardRef, game, dataReady, loadingPool]);
 
     // Auto-polling
     useEffect(() => {
         if (!dataReady) return;
 
         fetchLive();
-        pollRef.current = setInterval(fetchLive, 60000); // 1 minute interval for AI calls to manage quota
+        if (game.scoreSnapshot?.state !== 'post') {
+            pollRef.current = setInterval(fetchLive, 60000);
+        }
 
         return () => {
             if (pollRef.current) clearInterval(pollRef.current);
         };
-    }, [dataReady, fetchLive]);
+    }, [dataReady, fetchLive, game.scoreSnapshot?.state]);
 
     return {
         liveData,
@@ -118,7 +155,8 @@ export function useLiveScoring(game: GameState, dataReady: boolean, loadingPool:
         isSynced,
         isRefreshing,
         lastUpdated,
-        fetchLive
+        fetchLive,
+        winnerHistory
     };
 }
 

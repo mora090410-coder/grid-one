@@ -7,7 +7,7 @@ const ARTICLES = [
   {
     title: 'How to Run Super Bowl Squares Online',
     desc: 'Step-by-step guide for building, sharing, and managing football squares without poster-board confusion.',
-    to: '/articles/how-to-run-super-bowl-squares',
+    to: '/articles/how-',
     tag: 'How-to',
   },
   {
@@ -83,7 +83,7 @@ export const ArticlesHub: React.FC = () => {
   const description = 'GridOne guides for football squares, Super Bowl squares, fundraisers, office pools, and digital board alternatives.';
 
   return (
-    <div className="min-h-screen bg-background text-white font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
+    <div className="oa-root min-h-screen bg-broadcast-white text-ink font-sans selection:bg-gold/30 flex flex-col overflow-x-hidden">
       <PageMetadata
         title={title}
         description={description}
@@ -97,25 +97,25 @@ export const ArticlesHub: React.FC = () => {
         }}
       />
       <Header />
-      <main className="mx-auto w-full max-w-6xl px-5 py-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <main className="mx-auto w-full max-w-6xl px-5 py-24 duration-700">
         <div className="max-w-3xl">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs text-gold ring-1 ring-gold/20 backdrop-blur-sm">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
             Article Hub
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl text-white mb-6">
+          <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">
             GridOne guides built to capture real football squares search traffic
           </h1>
-          <p className="text-xl text-white/70 mb-12 leading-relaxed">
+          <p className="text-xl text-ink/70 mb-12 leading-relaxed">
             No fluff. Just the pages people actually search for when they want to run football squares, organize a fundraiser, or replace a messy paper board.
           </p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {ARTICLES.map((article) => (
-            <Link key={article.to} to={article.to} className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10 hover:bg-white/[0.07] transition-colors">
-              <div className="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs text-gold ring-1 ring-gold/20">{article.tag}</div>
-              <h2 className="mt-4 text-xl font-semibold text-white">{article.title}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/70">{article.desc}</p>
+            <Link key={article.to} to={article.to} className="rounded-none bg-newsprint p-6 ring-1 ring-white/10 hover:bg-newsprint transition-colors">
+              <div className="inline-flex rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">{article.tag}</div>
+              <h2 className="oa-headline mt-4 text-xl font-semibold text-ink">{article.title}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-ink/70">{article.desc}</p>
               <div className="mt-5 text-sm font-medium text-gold">Read guide →</div>
             </Link>
           ))}

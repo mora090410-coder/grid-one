@@ -1,97 +1,57 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-type PagesFunction = any;
+type PagesFunction = (context: any) => Promise<Response> | Response;
 
-export const onRequestPost: PagesFunction = async (context) => {
-    const stripe = new Stripe(context.env.STRIPE_SECRET_KEY, {
-        apiVersion: '2025-12-15.clover',
-        httpClient: Stripe.createFetchHttpClient(),
+export const onRequestPost: PagesFunction = async ({ request, env }) => {
+  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return new Response('Webhook is not configured.', { status: 503 });
+  }
+  const signature = request.headers.get('stripe-signature');
+  if (!signature) return new Response('Missing signature.', { status: 400 });
+  const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-02-25.clover',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+
+  try {
+    const event = await stripe.webhooks.constructEventAsync(
+      await request.text(),
+      signature,
+      env.STRIPE_WEBHOOK_SECRET,
+    );
+    if (event.type !== 'checkout.session.completed') return new Response('Ignored.', { status: 200 });
+    const session = event.data.object as Stripe.Checkout.Session;
+    if (session.payment_status !== 'paid') return new Response('Payment is not complete.', { status: 400 });
+    const orderId = session.metadata?.order_id;
+    if (!orderId || session.client_reference_id !== orderId) return new Response('Invalid order metadata.', { status: 400 });
+
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
+    if (lineItems.data.length !== 1) return new Response('Unexpected line items.', { status: 400 });
+    const line = lineItems.data[0];
+    const priceId = typeof line.price === 'string' ? line.price : line.price?.id;
+    if (!priceId || priceId !== env.STRIPE_2026_PRICE_ID || line.amount_total !== 499 || line.currency !== 'usd') {
+      return new Response('Checkout price mismatch.', { status: 400 });
+    }
+
+    const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-
-    const signature = context.request.headers.get('stripe-signature');
-
-    if (!signature) {
-        return new Response('Missing signature', { status: 400 });
-    }
-
-    try {
-        const body = await context.request.text();
-        const event = await stripe.webhooks.constructEventAsync(
-            body,
-            signature,
-            context.env.STRIPE_WEBHOOK_SECRET
-        );
-
-        if (event.type === 'checkout.session.completed') {
-            const session = event.data.object as Stripe.Checkout.Session;
-            const contestId = session.metadata?.contestId;
-
-            if (contestId) {
-                // Init Supabase Admin Client
-                const supabaseUrl = context.env.SUPABASE_URL || (context.env as any).VITE_SUPABASE_URL;
-                const supabaseKey = context.env.SUPABASE_SERVICE_ROLE_KEY;
-
-                if (!supabaseUrl) {
-                    throw new Error('Missing Supabase URL');
-                }
-
-                if (!supabaseKey) {
-                    console.error('Missing Supabase Key (Service Role or Anon)');
-                    throw new Error('Missing Supabase Key');
-                }
-
-                const supabase = createClient(
-                    supabaseUrl,
-                    supabaseKey
-                );
-
-                // Update Contest
-                const { data: contest, error } = await supabase
-                    .from('contests')
-                    .update({
-                        is_activated: true,
-                        activated_at: new Date().toISOString(),
-                        stripe_checkout_session_id: session.id,
-                        stripe_payment_intent_id: session.payment_intent as string,
-                        stripe_customer_id: session.customer as string,
-                        activation_price_id: context.env.STRIPE_PRICE_ID, // Store which price ID unlocked it
-                    })
-                    .eq('id', contestId)
-                    .select('owner_id')
-                    .single();
-
-                if (error) {
-                    console.error('Failed to update contest:', error);
-                    return new Response('Database update failed', { status: 500 });
-                }
-
-                // Season pass: the payment also grants the organizer an
-                // allowance of board activations (default 20). Idempotent via
-                // the unique stripe_checkout_session_id.
-                if (contest?.owner_id) {
-                    const { error: entitlementError } = await supabase
-                        .from('entitlements')
-                        .upsert({
-                            owner_id: contest.owner_id,
-                            stripe_checkout_session_id: session.id,
-                            stripe_payment_intent_id: session.payment_intent as string,
-                            stripe_customer_id: session.customer as string,
-                            price_id: context.env.STRIPE_PRICE_ID,
-                        }, { onConflict: 'stripe_checkout_session_id', ignoreDuplicates: true });
-
-                    if (entitlementError) {
-                        // The paid board is already activated; log and continue
-                        console.error('Failed to record entitlement:', entitlementError);
-                    }
-                }
-            }
-        }
-
-        return new Response('OK', { status: 200 });
-
-    } catch (err: any) {
-        console.error(`Webhook Error: ${err.message}`);
-        return new Response(`Webhook Error: ${err.message}`, { status: 400 });
-    }
+    const { error } = await admin.rpc('gridone_fulfill_checkout', {
+      p_event_id: event.id,
+      p_event_type: event.type,
+      p_order_id: orderId,
+      p_session_id: session.id,
+      p_payment_intent_id: String(session.payment_intent || ''),
+      p_customer_id: String(session.customer || ''),
+      p_price_id: priceId,
+      p_price_cents: line.amount_total,
+      p_currency: line.currency,
+    });
+    if (error) throw error;
+    return new Response('Fulfilled.', { status: 200 });
+  } catch (error: any) {
+    console.error('Stripe webhook failure', error);
+    return new Response(error?.message || 'Webhook failure.', { status: 500 });
+  }
 };

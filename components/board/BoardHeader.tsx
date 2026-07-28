@@ -37,49 +37,49 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
 
     if (showAdminHeader) {
         return (
-            <div className="premium-glass px-4 md:px-5 py-3 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-2xl border border-white/10 shadow-2xl mb-6">
-                <Link to="/dashboard" className="flex items-center gap-3 min-w-0 group cursor-pointer">
-                    <div className="w-9 h-9 rounded-xl bg-black/20 group-hover:bg-white/10 flex items-center justify-center shadow-md border border-white/10 hover:border-white/20 transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
-                        <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="bg-broadcast-white ring-[3px] ring-ink px-4 md:px-5 py-3 flex items-center justify-between gap-4 mb-6">
+                <Link to="/dashboard" className="flex min-h-11 items-center gap-3 min-w-0 group cursor-pointer">
+                    <div className="w-9 h-9 bg-ink flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="text-base font-semibold text-white tracking-tight group-hover:text-gold transition-colors">Organizer</h3>
-                        <p className="text-xs font-medium text-white/50 truncate group-hover:text-white/70 transition-colors">
+                        <h3 className="oa-slab text-ink group-hover:text-cardinal transition-colors">Organizer</h3>
+                        <p className="oa-data text-xs text-ink/50 truncate">
                             {game.title || 'Untitled board'}
                         </p>
                     </div>
                 </Link>
 
-                <div className="hidden md:flex items-center bg-black/30 p-0.5 rounded-full border border-white/[0.08]">
+                <div className="hidden md:flex items-center gap-px bg-ink p-px">
                     <button
                         onClick={() => { onAdminStartTab('overview'); onTogglePreview(false); }}
-                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-colors"
+                        className="oa-slab min-h-11 px-4 py-2 bg-broadcast-white text-ink/60 hover:text-ink hover:bg-newsprint transition-colors"
                     >
                         Overview
                     </button>
                     <button
                         onClick={() => { onAdminStartTab('edit'); onTogglePreview(false); }}
-                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white/50 hover:text-white transition-colors"
+                        className="oa-slab min-h-11 px-4 py-2 bg-broadcast-white text-ink/60 hover:text-ink hover:bg-newsprint transition-colors"
                     >
                         Edit
                     </button>
-                    <div className="w-px h-3 bg-white/10 mx-1" />
-                    <button className="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-black shadow-sm">
+                    <button className="oa-slab min-h-11 px-4 py-2 bg-cardinal text-broadcast-white">
                         Preview
                     </button>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10">
-                        <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-newsprint">
+                        <svg className="w-3.5 h-3.5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="text-[13px] font-semibold text-white/50">Saved</span>
+                        <span className="oa-slab text-ink/60">Saved</span>
                     </div>
                     {activePoolId && isActivated && (
                         <button
                             onClick={onShareClick}
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all"
+                            className="min-w-11 min-h-11 flex items-center justify-center bg-broadcast-white ring-1 ring-inset ring-ink text-ink hover:bg-newsprint transition-colors"
+                            aria-label="Share board"
                             title="Share Board"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,7 +89,7 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
                     )}
                     <button
                         onClick={() => onTogglePreview(false)}
-                        className="md:hidden px-4 py-1.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/10 hover:bg-white hover:text-black transition-all"
+                        className="oa-slab min-h-11 md:hidden px-4 py-2 bg-cardinal text-broadcast-white hover:bg-cardinal-deep transition-colors"
                     >
                         Edit
                     </button>
@@ -98,50 +98,37 @@ const BoardHeader: React.FC<BoardHeaderProps> = ({
         );
     }
 
-    // Public header
+    // Public header: one continuous Split Stage, no Live/Board mode switch.
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-                <a href="/dashboard" className="w-10 h-10 rounded-xl bg-black/20 hover:bg-white/10 flex items-center justify-center shadow-lg border border-white/10 hover:border-white/20 transition-all overflow-hidden cursor-pointer group ring-1 ring-gold/50">
-                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-90 group-hover:opacity-100" />
+                <a href="/" className="w-11 h-11 bg-ink flex items-center justify-center overflow-hidden cursor-pointer" aria-label="GridOne home">
+                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover" />
                 </a>
                 <div className="flex flex-col">
-                    <h1 className="text-xl font-bold leading-none tracking-tight text-white mb-1">{game.title || 'Super Bowl LIX'}</h1>
+                    <h1 className="oa-headline !text-xl text-ink mb-1">{game.title || 'Football squares board'}</h1>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-white/60 font-medium">
-                            {game.leftAbbr} vs {game.topAbbr} • {game.dates || 'Feb 9, 2025'}
+                        <span className="oa-data text-xs text-ink/60">
+                            {game.leftAbbr} vs {game.topAbbr}{game.dates ? ` · ${game.dates}` : ''}
                         </span>
-                        {isSynced && <span className="w-1.5 h-1.5 rounded-full bg-live shadow-[0_0_8px_var(--color-live)]" title="Live Sync Active" />}
+                        {isSynced && game.scoreSnapshot?.state === 'in' && (
+                            <span className="oa-slab text-live">Live</span>
+                        )}
                     </div>
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
-                <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/5">
-                    <button
-                        onClick={() => onTabChange('live')}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all ${activeTab === 'live' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
-                    >
-                        Live
-                    </button>
-                    <button
-                        onClick={() => onTabChange('board')}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all ${activeTab === 'board' ? 'bg-white text-black shadow-sm' : 'text-white/50 hover:text-white'}`}
-                    >
-                        Board
-                    </button>
-                </div>
-                {activePoolId && isActivated && (
-                    <button
-                        onClick={onShareClick}
-                        className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors text-white/70 hover:text-white border border-white/5"
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                        </svg>
-                    </button>
-                )}
-            </div>
+            {activePoolId && isActivated && (
+                <button
+                    onClick={onShareClick}
+                    className="min-w-11 min-h-11 p-2.5 bg-broadcast-white ring-1 ring-inset ring-ink text-ink hover:bg-newsprint transition-colors"
+                    aria-label="Share board"
+                >
+                    <svg className="w-5 h-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                </button>
+            )}
         </div>
     );
 };

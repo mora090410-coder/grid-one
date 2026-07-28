@@ -20,15 +20,12 @@ const CreateContest: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successPoolId, setSuccessPoolId] = useState<string | null>(null);
     const [scanSuccess, setScanSuccess] = useState(false);
-    const [recoveryEmail, setRecoveryEmail] = useState('');
-    const [adminPasscode, setAdminPasscode] = useState('');
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Restore wizard draft if user was redirected away from /create for auth
     useEffect(() => {
         const savedGame = sessionStorage.getItem('gridone_draft_game');
         const savedBoard = sessionStorage.getItem('gridone_draft_board');
-        const savedMeta = sessionStorage.getItem('gridone_draft_meta');
         if (savedGame) {
             try { setGame(JSON.parse(savedGame)); } catch { /* corrupt data */ }
             sessionStorage.removeItem('gridone_draft_game');
@@ -36,14 +33,6 @@ const CreateContest: React.FC = () => {
         if (savedBoard) {
             try { setBoard(JSON.parse(savedBoard)); } catch { /* corrupt data */ }
             sessionStorage.removeItem('gridone_draft_board');
-        }
-        if (savedMeta) {
-            try {
-                const meta = JSON.parse(savedMeta);
-                setRecoveryEmail(meta.recoveryEmail || '');
-                setAdminPasscode(meta.adminPasscode || '');
-            } catch { /* corrupt data */ }
-            sessionStorage.removeItem('gridone_draft_meta');
         }
     }, []); // Run once on mount
 
@@ -99,7 +88,6 @@ const CreateContest: React.FC = () => {
             try {
                 sessionStorage.setItem('gridone_draft_game', JSON.stringify(game));
                 sessionStorage.setItem('gridone_draft_board', JSON.stringify(finalBoard));
-                sessionStorage.setItem('gridone_draft_meta', JSON.stringify({ recoveryEmail, adminPasscode }));
             } catch {
                 // sessionStorage unavailable — user will lose draft state on redirect
             }
@@ -114,9 +102,7 @@ const CreateContest: React.FC = () => {
 
         try {
             if (!leagueTitle) throw new Error("League Name is required.");
-            if (!recoveryEmail.includes('@')) throw new Error("Recovery email is required.");
-            if (adminPasscode.trim().length < 4) throw new Error("Organizer passcode must be at least 4 characters.");
-            if (!session?.access_token) throw new Error("You must be logged in to create a contest.");
+            if (!session?.access_token) throw new Error("You must be logged in to create a board.");
 
             const response = await fetch('/api/pools', {
                 method: 'POST',
@@ -127,18 +113,12 @@ const CreateContest: React.FC = () => {
                 body: JSON.stringify({
                     game: { ...game, title: leagueTitle },
                     board: finalBoard,
-                    adminEmail: recoveryEmail,
-                    adminPassword: adminPasscode,
                 }),
             });
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || data.error || 'Failed to create contest.');
             if (!data.poolId) throw new Error("No data returned from create flow.");
-
-            const storedTokens = JSON.parse(localStorage.getItem('gridone_tokens') || '{}');
-            storedTokens[data.poolId] = adminPasscode;
-            localStorage.setItem('gridone_tokens', JSON.stringify(storedTokens));
 
             setSuccessPoolId(data.poolId);
         } catch (err: any) {
@@ -151,18 +131,19 @@ const CreateContest: React.FC = () => {
 
     if (successPoolId) {
         return (
-            <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-500">
-                <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6">
-                    <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            <div className="oa-root min-h-screen bg-broadcast-white text-ink flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-20 h-20 bg-gold border border-ink flex items-center justify-center mb-6">
+                    <svg className="w-10 h-10 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Board Ready!</h1>
-                <p className="text-gray-400 mb-8 max-w-md">Your board is saved. Review it, clean it up, and unlock sharing when you are ready to publish it.</p>
-                <div className="flex gap-4">
-                    <button onClick={() => navigate('/dashboard')} className="btn-secondary px-8 py-3 rounded-full uppercase font-bold text-xs tracking-widest">
+                <p className="oa-slab text-cardinal mb-2">Fill phase started</p>
+                <h1 className="oa-headline !text-4xl mb-3">Your board is ready to fill.</h1>
+                <p className="oa-body text-ink/65 mb-8 max-w-md">Review the matchup, assign all 100 squares, then run the number draw before publishing.</p>
+                <div className="flex flex-wrap justify-center gap-4">
+                    <button onClick={() => navigate('/dashboard')} className="oa-btn oa-btn-ghost">
                         Back to Dashboard
                     </button>
-                    <button onClick={() => navigate(`/?poolId=${successPoolId}`)} className="btn-cardinal px-8 py-3 rounded-full uppercase font-bold text-xs tracking-widest shadow-lg">
-                        Open Board
+                    <button onClick={() => navigate(`/boards/${successPoolId}`)} className="oa-btn oa-btn-primary">
+                        Start assigning
                     </button>
                 </div>
             </div>
@@ -170,31 +151,31 @@ const CreateContest: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background text-white p-6 font-sans">
+        <div className="oa-root min-h-screen bg-broadcast-white text-ink p-5 md:p-8">
             <div className="max-w-2xl mx-auto pt-10">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-colors">
+                    <button onClick={() => navigate(-1)} className="oa-slab min-h-11 text-ink/60 hover:text-ink flex items-center gap-2">
                         &larr; Back
                     </button>
                     <div className="flex gap-2">
                         {[1, 2, 3].map(s => (
-                            <div key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-cardinal' : 'bg-white/10'}`}></div>
+                            <div key={s} className={`h-1 w-12 ${step >= s ? 'bg-cardinal' : 'bg-newsprint'}`} aria-label={`Step ${s}${step === s ? ', current' : ''}`}></div>
                         ))}
                     </div>
                 </div>
 
-                <div className="premium-glass p-8 rounded-3xl animate-in slide-in-from-bottom-8 duration-500">
+                <div className="border border-ink bg-broadcast-white p-6 md:p-9">
 
                     {error && (
-                        <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm font-medium flex items-center gap-3">
+                        <div className="mb-6 bg-cardinal-subtle border border-cardinal p-4 text-cardinal text-sm font-medium flex items-center gap-3" role="alert">
                             <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                             <span className="flex-1">{error}</span>
                             {error.includes('overloaded') && (
                                 <button
                                     onClick={() => handlePublish()} // Retry the same action
-                                    className="px-3 py-1 bg-red-800/50 hover:bg-red-800 rounded text-xs font-bold uppercase"
+                                    className="oa-btn oa-btn-ghost"
                                 >
                                     Retry
                                 </button>
@@ -205,49 +186,31 @@ const CreateContest: React.FC = () => {
                     {step === 1 && (
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Name your board</h1>
-                                <p className="text-gray-400 text-sm">This is the title your group will see after you unlock sharing.</p>
+                                <p className="oa-slab text-cardinal mb-2">01 · Name</p>
+                                <h1 className="oa-headline !text-3xl mb-2">Name your board</h1>
+                                <p className="oa-body text-ink/60">This is the title your group will see after you unlock sharing.</p>
                             </div>
 
                             <div className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-label">Board Name</label>
+                                    <label className="oa-slab text-ink/60">Board name</label>
                                     <input
                                         type="text"
                                         value={game.title}
                                         onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
-                                        className="w-full glass-input"
+                                        className="w-full oa-input"
                                         placeholder="e.g. Super Bowl LIX Party"
                                         autoFocus
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-label">Recovery Email</label>
-                                    <input
-                                        type="email"
-                                        value={recoveryEmail}
-                                        onChange={(e) => setRecoveryEmail(e.target.value)}
-                                        className="w-full glass-input"
-                                        placeholder="commissioner@example.com"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-label">Organizer Passcode</label>
-                                    <input
-                                        type="password"
-                                        value={adminPasscode}
-                                        onChange={(e) => setAdminPasscode(e.target.value)}
-                                        className="w-full glass-input"
-                                        placeholder="Create a secure passcode"
-                                    />
-                                </div>
+                                <p className="oa-body text-sm text-ink/60">Your GridOne account is the only organizer key. There is no separate board passcode to lose or share.</p>
                             </div>
 
                             <div className="pt-4">
                                 <button
-                                    disabled={!game.title || !recoveryEmail.includes('@') || adminPasscode.trim().length < 4}
+                                    disabled={!game.title.trim()}
                                     onClick={() => setStep(2)}
-                                    className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full oa-btn oa-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Continue
                                 </button>
@@ -258,24 +221,25 @@ const CreateContest: React.FC = () => {
                     {step === 2 && (
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Pick the game</h1>
-                                <p className="text-gray-400 text-sm">Select teams and date.</p>
+                                <p className="oa-slab text-cardinal mb-2">02 · Matchup</p>
+                                <h1 className="oa-headline !text-3xl mb-2">Pick the game</h1>
+                                <p className="oa-body text-ink/60">Select the NFL teams and game date.</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-label">Left Team</label>
+                                    <label className="oa-slab text-ink/60">Side team</label>
                                     <div className="relative">
-                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
+                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full oa-input appearance-none">
                                             {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
                                         </select>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-label">Top Team</label>
+                                    <label className="oa-slab text-ink/60">Top team</label>
                                     <div className="relative">
-                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full glass-input appearance-none bg-surface text-white">
+                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full oa-input appearance-none">
                                             {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
                                         </select>
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
@@ -284,14 +248,14 @@ const CreateContest: React.FC = () => {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-label">Date (Optional)</label>
+                                <label className="oa-slab text-ink/60">Game date (optional)</label>
                                 <input type="date" value={game.dates} onChange={(e) => setGame(prev => ({ ...prev, dates: e.target.value }))}
-                                    className="w-full glass-input [color-scheme:dark]" />
+                                    className="w-full oa-input" />
                             </div>
 
                             <div className="pt-4 flex gap-4">
-                                <button onClick={() => setStep(1)} className="btn-secondary flex-1">Back</button>
-                                <button onClick={() => setStep(3)} className="btn-primary flex-1">Continue</button>
+                                <button onClick={() => setStep(1)} className="oa-btn oa-btn-ghost flex-1">Back</button>
+                                <button onClick={() => setStep(3)} className="oa-btn oa-btn-primary flex-1">Continue</button>
                             </div>
                         </div>
                     )}
@@ -299,33 +263,59 @@ const CreateContest: React.FC = () => {
                     {step === 3 && (
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Bring your board</h1>
-                                <p className="text-gray-400 text-sm">Upload a board photo to discover the magic, or start with a blank grid and fill it in yourself.</p>
+                                <p className="oa-slab text-cardinal mb-2">03 · Fill</p>
+                                <h1 className="oa-headline !text-3xl mb-2">Start your 100 squares</h1>
+                                <p className="oa-body text-ink/60">The native GridOne board is the fastest, most reliable starting point. You will assign purchaser names in the organizer view.</p>
                             </div>
 
-                            <div onClick={() => !isLoading && fileRef.current?.click()} className={`border border-dashed border-white/20 rounded-2xl h-[240px] relative overflow-hidden group transition-all ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 hover:border-white/30 cursor-pointer'} flex flex-col items-center justify-center`}>
+                            <button
+                                disabled={isLoading}
+                                onClick={() => handlePublish(EMPTY_BOARD)}
+                                className="w-full oa-btn oa-btn-primary !py-5"
+                            >
+                                Create blank 10×10 board
+                            </button>
+
+                            <div className="border-t border-newsprint pt-6">
+                                <p className="oa-slab text-ink/55 mb-2">Optional · paper recovery beta</p>
+                                <p className="oa-body text-sm text-ink/60 mb-4">Already started on paper? Import a photo, then review every assignment before publishing.</p>
+                            </div>
+
+                            <div
+                                role="button"
+                                tabIndex={isLoading ? -1 : 0}
+                                aria-disabled={isLoading}
+                                onClick={() => !isLoading && fileRef.current?.click()}
+                                onKeyDown={(event) => {
+                                    if (!isLoading && (event.key === 'Enter' || event.key === ' ')) {
+                                        event.preventDefault();
+                                        fileRef.current?.click();
+                                    }
+                                }}
+                                className={`border border-dashed border-ink h-[220px] relative overflow-hidden group focus-visible:outline focus-visible:outline-4 focus-visible:outline-cardinal ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-newsprint cursor-pointer'} flex flex-col items-center justify-center`}
+                            >
                                 <input type="file" ref={fileRef} className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={handleFileUpload} disabled={isLoading} />
 
                                 {isLoading ? (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
-                                        <span className="text-xs font-bold uppercase tracking-widest text-white/50">Scanning Board...</span>
+                                        <div className="w-8 h-8 border-2 border-newsprint border-t-cardinal animate-spin"></div>
+                                        <span className="oa-slab text-ink/50">Scanning board…</span>
                                     </div>
                                 ) : game.coverImage ? (
                                     <>
-                                        <img src={game.coverImage} className="absolute inset-0 w-full h-full object-contain bg-black/50" />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="btn-secondary text-xs">Change Image</div>
+                                        <img src={game.coverImage} className="absolute inset-0 w-full h-full object-contain bg-newsprint" alt="Uploaded paper board preview" />
+                                        <div className="absolute inset-0 bg-ink/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="oa-btn bg-broadcast-white text-ink">Change image</div>
                                         </div>
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-4 text-center p-6">
-                                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-                                            <svg className="w-8 h-8 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <div className="w-16 h-16 bg-newsprint flex items-center justify-center border border-ink">
+                                            <svg className="w-8 h-8 text-ink/45" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         </div>
                                         <div>
-                                            <span className="text-white font-bold block mb-1">Click to Upload Image</span>
-                                            <span className="text-gray-500 text-xs">JPG or PNG. We'll scan the grid for you.</span>
+                                            <span className="font-bold block mb-1">Choose a board photo</span>
+                                            <span className="text-ink/50 text-xs">JPG, PNG, or WebP</span>
                                         </div>
                                     </div>
                                 )}
@@ -335,18 +325,11 @@ const CreateContest: React.FC = () => {
                                 <button
                                     onClick={() => handlePublish()}
                                     disabled={isLoading || !game.coverImage || !!error || !scanSuccess}
-                                    className={`w-full btn-cardinal py-3 rounded-xl uppercase font-black text-sm tracking-widest shadow-lg ${(!game.coverImage || isLoading || !!error || !scanSuccess) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95 transition-all'}`}
+                                    className={`w-full oa-btn oa-btn-ghost ${(!game.coverImage || isLoading || !!error || !scanSuccess) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isLoading ? 'Processing...' : error ? 'Scan Failed' : 'Save scanned board'}
                                 </button>
 
-                                <button
-                                    disabled={isLoading}
-                                    onClick={() => handlePublish(EMPTY_BOARD)}
-                                    className="w-full text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors py-2"
-                                >
-                                    Skip & save a blank board
-                                </button>
                             </div>
                         </div>
                     )}

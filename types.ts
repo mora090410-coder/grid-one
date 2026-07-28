@@ -34,6 +34,7 @@ export interface GameState {
     Q3: number;
     Final: number;
   };
+  scoreSnapshot?: LiveGameData | null;
 }
 
 // Dynamic Board Support - Per-Quarter Axes
@@ -55,6 +56,7 @@ export interface BoardData {
   isDynamic?: boolean;
   bearsAxisByQuarter?: QuarterAxes;
   oppAxisByQuarter?: QuarterAxes;
+  participants?: Array<{ id: string; displayName: string; publicLabel: string }>;
 }
 
 export interface QuarterScores {
@@ -78,11 +80,26 @@ export interface LiveGameData {
   detail: string;
   isOvertime: boolean;
   isManual?: boolean;
+  sourceName?: string;
+  sourceUrl?: string;
+  sourceObservedAt?: string;
+  retrievedAt?: string;
+  staleAfter?: string;
+  freshness?: 'fresh' | 'stale' | 'refreshing' | 'rejected' | 'offline';
+  warning?: string;
 }
 
 export interface WinnerHighlights {
   quarterWinners: Record<string, string>;
   currentLabel: string;
+}
+
+export interface WinnerResolution {
+  milestone: 'Q1' | 'Q2' | 'Q3' | 'FINAL';
+  sideDigit: number;
+  topDigit: number;
+  participantName: string | null;
+  resolvedAt: string;
 }
 
 export interface EntryMeta {
