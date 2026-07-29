@@ -25,7 +25,7 @@ export const SuperBowlSquaresIdeas: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Seasonal ideas</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Seasonal ideas</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Super Bowl squares ideas that do not suck</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">Most Super Bowl squares ideas are just theme fluff. The best idea is usually making the board easier to run and easier for everyone to follow.</p>
 

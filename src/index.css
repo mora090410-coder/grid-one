@@ -5,14 +5,14 @@
     --gridone-color-background: #0E0F12;
     --gridone-color-surface: #16181D;
     --gridone-color-surface-hover: #6E1622;
-    --gridone-color-surface-glass: rgba(28, 28, 30, 0.6);
+    --gridone-color-surface-glass: #1C1C1E;
 
     --gridone-color-brand-primary: #8F1D2C;
     --gridone-color-brand-primary-hover: #6E1622;
-    --gridone-color-brand-primary-subtle: rgba(143, 29, 44, 0.15);
+    --gridone-color-brand-primary-subtle: color-mix(in srgb, #8F1D2C 15%, #EFF0F1);
     --gridone-color-brand-accent: #FFC72C;
-    --gridone-color-brand-accent-dim: rgba(255, 199, 44, 0.3);
-    --gridone-color-brand-accent-glow: rgba(255, 199, 44, 0.4);
+    --gridone-color-brand-accent-dim: color-mix(in srgb, #FFC72C 30%, #0E0F12);
+    --gridone-color-brand-accent-glow: color-mix(in srgb, #FFC72C 40%, #0E0F12);
 
     --gridone-color-live: #22C55E;
 
@@ -34,9 +34,11 @@
     --gridone-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --gridone-spacing-18: 4.5rem;
     --gridone-spacing-22: 5.5rem;
-    --gridone-radius-xl: 12px;
-    --gridone-radius-2xl: 16px;
-    --gridone-radius-3xl: 24px;
+    --gridone-radius-control: 8px;
+    --gridone-radius-surface: 12px;
+    --gridone-radius-grid: 0px;
+    --gridone-elevation-raised: 0 2px 8px rgba(14, 15, 18, 0.10),
+                                0 1px 2px rgba(14, 15, 18, 0.06);
 
     /* App aliases so current styling stays visually stable */
     --color-background: var(--gridone-color-background);
@@ -64,9 +66,9 @@
     --font-sans: var(--gridone-font-sans);
     --spacing-18: var(--gridone-spacing-18);
     --spacing-22: var(--gridone-spacing-22);
-    --radius-xl: var(--gridone-radius-xl);
-    --radius-2xl: var(--gridone-radius-2xl);
-    --radius-3xl: var(--gridone-radius-3xl);
+    --radius-control: var(--gridone-radius-control);
+    --radius-surface: var(--gridone-radius-surface);
+    --radius-grid: var(--gridone-radius-grid);
 }
 
 @layer base {
@@ -77,7 +79,8 @@
 
 @layer components {
     .btn-cardinal {
-        @apply bg-cardinal text-broadcast-white font-bold rounded-none px-6 py-3 transition-colors hover:bg-cardinal-deep;
+        @apply bg-cardinal text-broadcast-white font-bold px-6 py-3 transition-colors hover:bg-cardinal-deep;
+        border-radius: var(--gridone-radius-control);
     }
 
     /* Typography System */
@@ -113,8 +116,10 @@
 
 /* ══════════════════════════════════════════════════════════════════
    "ON AIR" — broadcast graphics package. See DESIGN.md.
-   Invariants: 0px radius everywhere, no shadow, no gradient, no blur,
-   no translucency. Depth is opaque planes + 3px key lines.
+   Invariants: soft controls (8px) and surfaces (12px), one raised elevation,
+   no pills, no gradient, no blur, and no translucent content surfaces.
+   The 10×10 grid stays deliberately sharp at 0px. Depth is otherwise opaque
+   planes + 3px key lines.
 
    Deliberately UNLAYERED. Tailwind's preflight (@layer base) resets
    headings to `font-size: inherit`, and legacy public/premium.css is
@@ -234,24 +239,33 @@
         }
     }
 
-    /* Buttons ── color and rule shift only; never scale, never glow */
+    /* Buttons ── one uppercase primary cue; quieter sentence-case support. */
     .oa-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-family: var(--font-condensed);
         font-variation-settings: 'wdth' 100;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+        min-height: 44px;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
         font-size: 0.8125rem;
         line-height: 1;
         white-space: nowrap;
-        border-radius: 0;
-        padding: 18px 32px;
-        border: 0;
+        border-radius: var(--gridone-radius-control);
+        padding: 13px 20px;
+        border: 1px solid transparent;
         cursor: pointer;
-        transition: background-color 160ms linear, color 160ms linear, box-shadow 160ms linear;
+        transition: background-color 160ms linear, border-color 160ms linear, color 160ms linear;
+    }
+
+    .oa-btn-primary,
+    .oa-btn-cardinal {
+        padding: 14px 26px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .oa-btn-primary {
@@ -259,16 +273,25 @@
         color: var(--color-ink);
     }
 
+    .oa-btn-cardinal {
+        background: var(--color-cardinal);
+        color: var(--color-broadcast-white);
+    }
+
     .oa-btn-primary:hover {
         background: var(--color-gold-deep);
-        box-shadow: inset 3px 0 0 0 var(--color-ink);
+        border-color: var(--color-ink);
+    }
+
+    .oa-btn-cardinal:hover {
+        background: var(--color-cardinal-deep);
+        border-color: var(--color-ink);
     }
 
     .oa-btn-ghost {
         background: var(--color-broadcast-white);
         color: var(--color-ink);
         border: 1px solid var(--color-ink);
-        padding: 17px 31px;
     }
 
     .oa-btn-ghost:hover {
@@ -279,7 +302,6 @@
         background: transparent;
         color: var(--color-broadcast-white);
         border: 1px solid var(--color-broadcast-white);
-        padding: 17px 31px;
     }
 
     .oa-btn-onred:hover {
@@ -309,18 +331,62 @@
         outline-color: var(--color-gold);
     }
 
-    /* Inputs ── asymmetric leading rule on focus, borrowed from the bug */
+    /* Inputs ── warm fill, full focus boundary, and explicit error state. */
     .oa-input {
-        border-radius: 0;
-        background: var(--color-broadcast-white);
+        min-height: 44px;
+        border: 2px solid color-mix(in srgb, var(--color-ink) 55%, transparent);
+        border-radius: var(--gridone-radius-control);
+        background: color-mix(in srgb, var(--color-newsprint) 40%, white);
         color: var(--color-ink);
         padding: 14px 16px;
-        box-shadow: inset 0 0 0 1px var(--color-ink);
+        box-shadow: none;
         outline: none;
     }
 
-    .oa-input:focus {
-        box-shadow: inset 3px 0 0 0 var(--color-cardinal), inset 0 0 0 1px var(--color-ink);
+    .oa-input::placeholder {
+        color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+        opacity: 1;
+    }
+
+    .oa-input:focus,
+    .oa-input:focus-visible {
+        border-color: var(--color-cardinal);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cardinal) 20%, transparent);
+    }
+
+    .oa-input[aria-invalid="true"],
+    .oa-input:user-invalid {
+        border-color: var(--color-cardinal);
+    }
+
+    .oa-field-error {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        color: var(--color-cardinal);
+    }
+
+    .oa-input:disabled {
+        color: var(--color-ink);
+        background: var(--color-newsprint);
+        border-style: dashed;
+        cursor: not-allowed;
+    }
+
+    :where([role="dialog"][aria-modal="true"]) {
+        border-radius: var(--gridone-radius-surface);
+        box-shadow: var(--gridone-elevation-raised);
+    }
+
+    .gridone-organizer-header {
+        box-shadow: var(--gridone-elevation-raised);
+    }
+
+    .gridone-board-frame,
+    .gridone-board-grid,
+    .gridone-board-grid th,
+    .gridone-board-grid td {
+        border-radius: var(--gridone-radius-grid);
     }
 
     /* Ticker ── pauses on hover and for reduced motion */
@@ -615,10 +681,10 @@ body:has(.gdh-root) {
     min-width: 44px;
     min-height: 44px;
     border: 0;
-    border-radius: 0;
-    font: 700 0.78rem/1 var(--font-condensed);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    border-radius: var(--gridone-radius-control);
+    font: 600 0.78rem/1 var(--font-condensed);
+    letter-spacing: 0;
+    text-transform: none;
 }
 
 .gdh-find-action {
@@ -688,7 +754,7 @@ body:has(.gdh-root) {
 .gdh-notify input,
 .gdh-notify button {
     min-height: 44px;
-    border-radius: 0;
+    border-radius: var(--gridone-radius-control);
 }
 
 .gdh-notify input {
@@ -745,14 +811,8 @@ body:has(.gdh-root) {
 .gdh-horizon::before {
     content: "";
     position: absolute;
-    inset: -140% 0 -10%;
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        color-mix(in srgb, var(--gdh-horizon) 52%, transparent) 62%,
-        var(--gdh-horizon-bright) 93%,
-        var(--gdh-horizon-bright)
-    );
+    inset: 42% 0 0;
+    background: var(--gdh-horizon);
 }
 
 .gdh-horizon span {
@@ -772,8 +832,7 @@ body:has(.gdh-root) {
     width: min(100%, 1320px);
     margin-inline: auto;
     padding: clamp(1rem, 3vw, 2.5rem);
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--gdh-horizon) 18%, var(--color-ink)) 0, var(--color-ink) 13rem);
+    background: var(--color-ink);
 }
 
 .gdh-board-work,
@@ -784,6 +843,7 @@ body:has(.gdh-root) {
 .gdh-board-work {
     grid-column: 1;
     grid-row: 1;
+    position: relative;
 }
 
 .gdh-scenarios {
@@ -813,11 +873,27 @@ body:has(.gdh-root) {
     line-height: 1.4;
 }
 
+.gdh-floating-board-controls {
+    position: sticky;
+    top: 5.5rem;
+    z-index: 60;
+    display: flex;
+    align-items: stretch;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 0 -1.35rem auto;
+    padding: 0.25rem;
+    border: 1px solid var(--color-broadcast-white);
+    border-radius: var(--gridone-radius-surface);
+    background: var(--color-chyron);
+    box-shadow: var(--gridone-elevation-raised);
+}
+
 .gdh-zoom {
     flex: 0 0 auto;
     gap: 1px;
     color: var(--color-broadcast-white);
-    background: rgba(239, 240, 241, 0.24);
+    background: var(--color-newsprint);
 }
 
 .gdh-zoom button,
@@ -859,7 +935,7 @@ body:has(.gdh-root) {
 .gdh-scenario-list {
     display: grid;
     gap: 1px;
-    background: rgba(239, 240, 241, 0.22);
+    background: var(--color-newsprint);
 }
 
 .gdh-scenario {
@@ -872,7 +948,7 @@ body:has(.gdh-root) {
     text-align: left;
     background: var(--color-chyron);
     border: 0;
-    border-radius: 0;
+    border-radius: var(--gridone-radius-control);
 }
 
 .gdh-scenario:hover,
@@ -895,7 +971,7 @@ body:has(.gdh-root) {
     margin-top: 2rem;
     padding: 1rem;
     border: 1px dashed rgba(239, 240, 241, 0.55);
-    background: rgba(239, 240, 241, 0.08);
+    background: var(--color-chyron);
 }
 
 .gdh-pending-results h2 {
@@ -1088,7 +1164,7 @@ body:has(.gdh-root) {
     }
 
     .gdh-find-action {
-        width: 100%;
+        width: auto;
     }
 
     .gdh-personal-row > p {
@@ -1119,6 +1195,10 @@ body:has(.gdh-root) {
     .gdh-zoom {
         align-self: flex-start;
     }
+
+    .gdh-floating-board-controls {
+        top: 4.5rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1127,6 +1207,14 @@ body:has(.gdh-root) {
     }
 
     .gdh-horizon span {
+        box-shadow: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    :where([role="dialog"][aria-modal="true"]),
+    .gridone-organizer-header,
+    .gdh-floating-board-controls {
         box-shadow: none;
     }
 }

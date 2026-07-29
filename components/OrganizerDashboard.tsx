@@ -227,12 +227,12 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                             <span>Action</span>
                         </div>
                         {workQueue.map((item) => (
-                            <div key={item.name} className="flex items-center justify-between p-3 rounded-none bg-newsprint border border-newsprint hover:bg-newsprint transition-colors group">
+                            <div key={item.name} className="flex items-center justify-between p-3 rounded-surface bg-newsprint border border-newsprint hover:bg-newsprint transition-colors group">
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="min-w-0">
                                         <div className="text-sm font-bold text-ink truncate max-w-[120px]">{item.name}</div>
                                         <div className="text-[10px] text-cardinal font-medium flex items-center gap-1.5">
-                                            <span className="bg-cardinal-subtle px-1.5 rounded-none text-cardinal">
+                                            <span className="bg-cardinal-subtle px-1.5 rounded-control text-cardinal">
                                                 {item.indices.length} squares
                                             </span>
                                             <span className="opacity-50 oa-slab">Unpaid</span>
@@ -243,7 +243,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                                     {/* Mark Paid Button */}
                                     <button
                                         onClick={() => handleMarkPaid(item.indices)}
-                                        className="min-w-11 min-h-11 p-2 rounded-none bg-gold text-ink hover:bg-gold-deep transition-colors"
+                                        className="min-w-11 min-h-11 p-2 rounded-control bg-gold text-ink hover:bg-gold-deep transition-colors"
                                         title="Mark All Paid"
                                     >
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -262,7 +262,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                     <h3 className="oa-headline !text-2xl text-ink mb-5">Resolved winners</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {winnerInfo.map((w) => (
-                            <div key={w.label} className="p-3 rounded-none bg-newsprint ] border border-newsprint flex flex-col items-center text-center">
+                            <div key={w.label} className="p-3 rounded-surface bg-newsprint ] border border-newsprint flex flex-col items-center text-center">
                                 <div className="text-[10px] font-bold text-gold uppercase tracking-widest mb-1">{w.label}</div>
                                 <div className="text-lg font-bold text-ink mb-0.5 truncate w-full">{w.name}</div>
                                 <div className="text-xs text-ink/50">Square {w.sq}</div>

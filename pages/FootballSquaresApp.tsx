@@ -25,7 +25,7 @@ export const FootballSquaresApp: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Category page</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Category page</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">What a good football squares app should actually do</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">A football squares app is not just a digital grid. It should reduce organizer friction, make the board easy to share, and help the whole group follow the action without confusion.</p>
 

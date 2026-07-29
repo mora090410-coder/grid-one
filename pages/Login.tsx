@@ -116,8 +116,8 @@ const Login: React.FC = () => {
     if (successMessage) {
         return (
             <div className="oa-root min-h-screen bg-broadcast-white flex items-center justify-center p-4">
-                <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-none p-8 duration-300 text-center">
-                    <div className="w-16 h-16 rounded-none bg-gold flex items-center justify-center mx-auto mb-6">
+                <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-surface p-8 duration-300 text-center">
+                    <div className="w-16 h-16 rounded-surface bg-gold flex items-center justify-center mx-auto mb-6">
                         <svg className="w-8 h-8 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
@@ -137,9 +137,9 @@ const Login: React.FC = () => {
 
     return (
         <div className="oa-root min-h-screen bg-broadcast-white flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-none p-8 duration-300 transition-all">
+            <div className="w-full max-w-md bg-broadcast-white border border-newsprint rounded-surface p-8 duration-300 transition-all">
                 <div className="text-center mb-8">
-                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-none mx-auto mb-4 transition-transform ring-1 ring-gold/50" />
+                    <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-surface mx-auto mb-4 transition-transform ring-1 ring-gold/50" />
                     <h1 className="text-2xl font-bold text-ink tracking-tight">
                         {isSignUp ? 'Create your organizer account' : (isClaim ? 'Sign in to continue' : 'Welcome back')}
                     </h1>
@@ -149,8 +149,11 @@ const Login: React.FC = () => {
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-3 rounded-none bg-cardinal-subtle border border-cardinal text-cardinal text-xs font-medium">
-                        {error}
+                    <div id="auth-error" className="oa-field-error mb-6 p-3 rounded-surface bg-cardinal-subtle border border-cardinal text-xs font-medium" role="alert">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.3 3.8 2.6 17.1A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.9L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+                        </svg>
+                        <span>{error}</span>
                     </div>
                 )}
 
@@ -158,26 +161,26 @@ const Login: React.FC = () => {
                     {isSignUp && (
                         <div className="grid grid-cols-2 gap-3 duration-500">
                             <div className="space-y-1">
-                                <label htmlFor="signup-first-name" className="text-xs font-bold text-ink/50 uppercase tracking-wide">First Name <span className="text-ink/50 normal-case">(optional)</span></label>
+                                <label htmlFor="signup-first-name" className="text-xs font-bold text-ink/60 uppercase tracking-wide">First Name <span className="text-ink/60 normal-case">(optional)</span></label>
                                 <input
                                     id="signup-first-name"
                                     type="text"
                                     autoComplete="given-name"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    className="oa-input w-full text-sm placeholder:text-ink/40"
+                                    className="oa-input w-full text-sm"
                                     placeholder="John"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="signup-last-name" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Last Name <span className="text-ink/50 normal-case">(optional)</span></label>
+                                <label htmlFor="signup-last-name" className="text-xs font-bold text-ink/60 uppercase tracking-wide">Last Name <span className="text-ink/60 normal-case">(optional)</span></label>
                                 <input
                                     id="signup-last-name"
                                     type="text"
                                     autoComplete="family-name"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    className="oa-input w-full text-sm placeholder:text-ink/40"
+                                    className="oa-input w-full text-sm"
                                     placeholder="Doe"
                                 />
                             </div>
@@ -185,44 +188,50 @@ const Login: React.FC = () => {
                     )}
 
                     <div className="space-y-1">
-                        <label htmlFor="auth-email" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Email Address</label>
+                        <label htmlFor="auth-email" className="text-xs font-bold text-ink/60 uppercase tracking-wide">Email Address</label>
                         <input
                             id="auth-email"
                             type="email"
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="oa-input w-full text-sm placeholder:text-ink/40"
+                            className="oa-input w-full text-sm"
                             placeholder="you@example.com"
+                            aria-invalid={error ? 'true' : undefined}
+                            aria-describedby={error ? 'auth-error' : undefined}
                             required
                         />
                     </div>
 
                     <div className="space-y-1">
-                        <label htmlFor="auth-password" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Password</label>
+                        <label htmlFor="auth-password" className="text-xs font-bold text-ink/60 uppercase tracking-wide">Password</label>
                         <input
                             id="auth-password"
                             type="password"
                             autoComplete={isSignUp ? 'new-password' : 'current-password'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="oa-input w-full text-sm placeholder:text-ink/40"
+                            className="oa-input w-full text-sm"
                             placeholder="••••••••"
+                            aria-invalid={error ? 'true' : undefined}
+                            aria-describedby={error ? 'auth-error' : undefined}
                             required
                         />
                     </div>
 
                     {isSignUp && (
                         <div className="space-y-1 duration-500 delay-100">
-                            <label htmlFor="auth-confirm-password" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Confirm Password</label>
+                            <label htmlFor="auth-confirm-password" className="text-xs font-bold text-ink/60 uppercase tracking-wide">Confirm Password</label>
                             <input
                                 id="auth-confirm-password"
                                 type="password"
                                 autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="oa-input w-full text-sm placeholder:text-ink/40"
+                                className="oa-input w-full text-sm"
                                 placeholder="••••••••"
+                                aria-invalid={error ? 'true' : undefined}
+                                aria-describedby={error ? 'auth-error' : undefined}
                                 required
                             />
                         </div>
@@ -231,7 +240,7 @@ const Login: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="oa-btn w-full mt-4 bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="oa-btn oa-btn-cardinal w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isClaim ? 'Sign In & Claim Board' : 'Sign In'))}
                     </button>

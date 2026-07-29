@@ -40,7 +40,7 @@ export const HowToRunSquares: React.FC = () => {
             <Header />
             <main className="mx-auto w-full max-w-4xl px-5 py-24 duration-700">
 
-                <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">
+                <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">
                     Organizer Playbook
                 </div>
 
@@ -62,12 +62,12 @@ export const HowToRunSquares: React.FC = () => {
                         The columns and rows are then assigned random numbers from 0 to 9. The goal? To own the square that intersects with the final digit of both teams' scores at the end of each quarter.
                     </p>
 
-                    <div className="my-12 rounded-none bg-newsprint p-8 ring-1 ring-white/10">
+                    <div className="my-12 rounded-surface bg-newsprint p-8 ring-1 ring-white/10">
                         <h3 className="text-xl font-bold text-ink mb-6">Step-by-Step Instructions</h3>
 
                         <div className="space-y-8">
                             <div className="flex gap-4">
-                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-none bg-cardinal font-bold text-broadcast-white">1</div>
+                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">1</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Build the board</h4>
                                     <p className="mt-2 text-sm text-ink/70">Rather than drawing one by hand, use a digital tool like <strong><Link to="/" className="text-gold hover:underline hover:text-ink transition-colors">GridOne</Link></strong>. Set your teams, upload a background image of your physical board, and review team names, positions, and remove any stray marks before publishing.</p>
@@ -75,7 +75,7 @@ export const HowToRunSquares: React.FC = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-none bg-cardinal font-bold text-broadcast-white">2</div>
+                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">2</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Unlock and share</h4>
                                     <p className="mt-2 text-sm text-ink/70">Once the board is ready, unlock sharing and send the viewer link to your friends, family, or coworkers. The $4.99 introductory 2026 season pass unlocks up to 20 boards, and viewers get a clean read-only board.</p>
@@ -83,7 +83,7 @@ export const HowToRunSquares: React.FC = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-none bg-cardinal font-bold text-broadcast-white">3</div>
+                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">3</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Draw the numbers</h4>
                                     <p className="mt-2 text-sm text-ink/70">This is crucial: <em>Wait until all squares are claimed before drawing numbers</em>. Draw numbers 0-9 randomly for the top rows, and 0-9 randomly for the side columns. Doing this online prevents cheating accusations.</p>
@@ -91,7 +91,7 @@ export const HowToRunSquares: React.FC = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-none bg-gold font-bold text-ink">4</div>
+                                <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-gold font-bold text-ink">4</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Watch and win</h4>
                                     <p className="mt-2 text-sm text-ink/70">At the end of Q1, Q2, Q3, and the Final Score, compare the last digit of both teams' scores to your grid. If the Chiefs have 14 and the Eagles have 17, the winning square is (Chiefs 4, Eagles 7).</p>
@@ -109,7 +109,7 @@ export const HowToRunSquares: React.FC = () => {
                     </p>
 
                     <div className="mt-16 text-center">
-                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-none bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
+                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
                             Build Your 2026 Board →
                         </Link>
                         <p className="mt-4 text-sm text-ink/50">Create and edit first. Unlock sharing when you're ready.</p>

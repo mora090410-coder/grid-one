@@ -39,7 +39,7 @@ export const RunYourPoolAlternative: React.FC = () => {
             <Header />
             <main className="mx-auto w-full max-w-4xl px-5 py-24 duration-700">
 
-                <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
+                <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
                     Comparison Guide
                 </div>
 
@@ -58,7 +58,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                     </p>
 
                     <div className="my-12 grid gap-6 md:grid-cols-2">
-                        <div className="rounded-none bg-newsprint p-6 ring-1 ring-gold/20">
+                        <div className="rounded-surface bg-newsprint p-6 ring-1 ring-gold/20">
                             <h3 className="text-xl font-bold text-gold mb-4">GridOne (The Modern Way)</h3>
                             <ul className="space-y-3 text-sm text-ink/80">
                                 <li className="flex items-center gap-2">✓ <strong>Free to build</strong> your board before you unlock sharing</li>
@@ -69,7 +69,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                             </ul>
                         </div>
 
-                        <div className="rounded-none bg-newsprint p-6 ring-1 ring-white/10 opacity-70">
+                        <div className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 opacity-70">
                             <h3 className="text-xl font-bold text-ink/80 mb-4">Legacy Platforms</h3>
                             <ul className="space-y-3 text-sm text-ink/60">
                                 <li className="flex items-center gap-2">✗ Often charge fees or have hidden costs</li>
@@ -100,7 +100,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                     </p>
 
                     <div className="mt-16 text-center">
-                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-none bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
+                        <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
                             Build Your Board Now →
                         </Link>
                         <p className="mt-4 text-sm text-ink/50">Create and edit first. The $4.99 introductory 2026 season pass unlocks up to 20 boards when you are ready.</p>

@@ -25,13 +25,13 @@ export const DigitalFootballSquaresBoardVsPaper: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Comparison</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Comparison</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Digital football squares board vs paper board</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">Paper boards still work, but they create friction exactly where organizers least want it, during sharing, updates, and winner checks.</p>
 
         <article className="prose prose-lg max-w-none">
           <div className="my-8 grid gap-6 md:grid-cols-2">
-            <div className="rounded-none bg-newsprint p-6 ring-1 ring-gold/20">
+            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-gold/20">
               <h2 className="oa-headline text-2xl font-semibold text-ink mb-4">Digital board</h2>
               <ul className="space-y-3 text-ink/80">
                 <li>One live link for everyone</li>
@@ -40,7 +40,7 @@ export const DigitalFootballSquaresBoardVsPaper: React.FC = () => {
                 <li>Better for offices, fundraisers, and watch parties</li>
               </ul>
             </div>
-            <div className="rounded-none bg-newsprint p-6 ring-1 ring-white/10 opacity-80">
+            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 opacity-80">
               <h2 className="oa-headline text-2xl font-semibold text-ink mb-4">Paper board</h2>
               <ul className="space-y-3 text-ink/65">
                 <li>Usually becomes a photo in a text thread</li>

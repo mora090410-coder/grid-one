@@ -3,7 +3,7 @@ import React from 'react';
 const SyntheticScoreTestBanner: React.FC = () => (
   <aside
     role="alert"
-    className="relative z-[100] w-full border-y-4 border-ink bg-cardinal px-4 py-3 text-center text-broadcast-white shadow-[0_6px_0_#FFC72C]"
+    className="relative z-[100] w-full border-y-4 border-ink bg-cardinal px-4 py-3 text-center text-broadcast-white"
   >
     <p className="text-sm font-black uppercase tracking-[0.18em] sm:text-base">
       SYNTHETIC SCORE TEST

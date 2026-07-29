@@ -338,6 +338,11 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
                   : 'Pan to inspect. Tap or focus a square to reveal the organizer-entered name.'}
               </p>
             </div>
+          </div>
+          <div className="gdh-floating-board-controls">
+            <button type="button" className="gdh-find-action" onClick={onFindSquares} aria-label="Find squares on the board">
+              Find
+            </button>
             <div className="gdh-zoom" aria-label="Board zoom">
               <button type="button" onClick={() => setZoom((value) => Math.max(1, value - 0.25))} disabled={zoom === 1} aria-label="Zoom board out">−</button>
               <output aria-live="polite">{Math.round(zoom * 100)}%</output>

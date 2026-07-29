@@ -25,7 +25,7 @@ export const NFLOpeningWeekSquares: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Seasonal NFL</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Seasonal NFL</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">NFL opening week squares pool ideas</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">Opening week is one of the best times to get a squares pool going because attention is high and people are already looking for something fun to organize around the return of football.</p>
 

@@ -117,13 +117,13 @@ The product must feel engineered and calm at the level of leading consumer platf
 
 ### Horizon rendering
 
-Broad phase transitions may use controlled color interpolation or soft light fields, but:
+Phase changes use opaque palette fields and a narrow, solid horizon rule:
 
-- They occupy a page-scale horizon, not individual buttons or cards.
-- They use only documented palette colors and derived opacity.
-- They never reduce text contrast.
-- They never become glossy rainbow gradients.
-- Fine grain is permitted as subtle structure; glass blur and glow are not the component language.
+- The horizon belongs to the page-scale phase, never to an individual button or card.
+- It uses only documented palette colors.
+- It never reduces text contrast.
+- Gradients, glass blur, and glow are not part of the component or horizon language.
+- Fine grain may provide subtle structure only when it remains opaque and non-essential.
 
 ## Typography
 
@@ -197,8 +197,31 @@ Desktop may place personal summary and full board side by side, but reading orde
 
 - One per phase.
 - Opaque gold on ink for commitment or cardinal/white when progressing without commitment.
+- Keeps the short uppercase cue treatment at 700 weight, `0.05em` tracking, and `14px 26px` padding.
 - Minimum 44×44 CSS pixels.
 - Label describes the outcome: “Review assignments,” “Commit number draw,” “Publish viewer link.”
+
+### Supporting actions
+
+- Secondary, ghost, and tertiary controls use sentence case, 600 weight, no added tracking, and `13px 20px` padding.
+- They keep the same 44×44 minimum target, visible focus rule, and existing semantic hover colors.
+- Repeated support controls must remain visually quieter than the one primary action.
+
+### Radius system
+
+- Controls use `--gridone-radius-control: 8px`.
+- Slabs, cards, dialogs, panels, and the sticky organizer header use `--gridone-radius-surface: 12px`.
+- The 10×10 grid frame, cells, and axis headers use `--gridone-radius-grid: 0px`.
+- The grid stays sharp on purpose: it is the product's precision instrument and should visibly contrast with the softened application chrome.
+
+### Inputs
+
+- Inputs use the warm opaque mix `newsprint 40% / white 60%`.
+- Resting boundaries use ink at 55%, the verified value that clears 3:1 on every input host surface. The originally proposed 24% value measured only 1.71:1 and is not permitted.
+- Focus uses a full 2px cardinal boundary plus a supplemental 3px cardinal-at-20% halo.
+- Placeholder text uses ink at 60% with full opacity; labels remain visible and persistent.
+- Disabled controls keep ink text, switch to newsprint, and add a dashed boundary instead of relying on opacity.
+- Errors pair a cardinal boundary with an icon, explicit text, `aria-invalid`, and an associated description.
 
 ### Instrument slab
 
@@ -211,7 +234,22 @@ Desktop may place personal summary and full board side by side, but reading orde
 
 - True semantic dialog with title, description, initial focus, focus containment, Escape, and focus return.
 - High-stakes dialogs name what changes and what remains recoverable.
+- Uses the one raised elevation while retaining its key-line boundary.
 - Never use browser `alert` or `confirm` for product actions.
+
+### Elevation
+
+- `--gridone-elevation-raised` is the only elevation token.
+- It applies only to modal dialogs, the sticky organizer header, and the floating Find/zoom/reset board controls.
+- The board, phase horizons, normal-flow slabs, cards, and panels never receive elevation.
+- Every raised element keeps a key-line boundary so high-contrast or reduced-transparency modes remain legible without the shadow.
+
+### What we deliberately did not do
+
+- No pills.
+- No gradients.
+- No blur or translucent content surfaces.
+- No multi-level shadow scale.
 
 ### Status
 
@@ -266,6 +304,7 @@ GridOne should rarely need photography. The product artifact is the board.
 
 - Generic dashboard card grids
 - Glassmorphism, floating translucent panels, glow as structure
+- Pills, gradients, blur, and multi-level elevation scales
 - Decorative sports imagery and betting visual language
 - Green for generic success
 - Gold as general emphasis

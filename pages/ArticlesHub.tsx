@@ -99,7 +99,7 @@ export const ArticlesHub: React.FC = () => {
       <Header />
       <main className="mx-auto w-full max-w-6xl px-5 py-24 duration-700">
         <div className="max-w-3xl">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
             Article Hub
           </div>
           <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">
@@ -112,8 +112,8 @@ export const ArticlesHub: React.FC = () => {
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {ARTICLES.map((article) => (
-            <Link key={article.to} to={article.to} className="rounded-none bg-newsprint p-6 ring-1 ring-white/10 hover:bg-newsprint transition-colors">
-              <div className="inline-flex rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">{article.tag}</div>
+            <Link key={article.to} to={article.to} className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 hover:bg-newsprint transition-colors">
+              <div className="inline-flex rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">{article.tag}</div>
               <h2 className="oa-headline mt-4 text-xl font-semibold text-ink">{article.title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-ink/70">{article.desc}</p>
               <div className="mt-5 text-sm font-medium text-gold">Read guide →</div>

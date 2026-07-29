@@ -40,7 +40,7 @@ export const BoosterClubFootballSquares: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Booster club</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">Booster club</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Booster club football squares fundraiser guide</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">Booster clubs are one of the best fits for GridOne. The audience already gets the format. The win is making it easier to organize and easier to trust.</p>
 
