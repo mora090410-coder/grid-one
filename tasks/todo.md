@@ -10,7 +10,7 @@
 - [x] T5.5 update `DESIGN.md` and the CSS invariant, including the deliberate no-pills/no-gradients/no-blur/no-shadow-scale boundary.
 - [x] Run strict type, production build, full Vitest, diff checks, Chromium, and WebKit at desktop, tablet, phone, reduced-motion, and keyboard-accessibility coverage.
 - [x] Capture and review the matching post-refresh screenshot set.
-- [ ] Commit, push, review, merge, and deploy the verified refresh under the owner's autonomous-plan authorization.
+- [x] Commit, push, review, merge, and deploy the verified refresh under the owner's autonomous-plan authorization.
 
 ### Phase 5 execution boundary
 
@@ -29,10 +29,12 @@
 - Deterministic before/after artifacts live in `docs/audits/phase5-design-refresh-2026-07-29/{before,after}`. Chromium capture passes 5/5 using mocked owner/viewer fixtures and never touches production.
 - Full Vitest passes 44/44 files with 270 passing tests and one hosted Stripe proof skipped. Full Playwright passes 44 workflows across Chromium and WebKit; ten explicit visual-capture cases skip unless `PHASE5_CAPTURE=before|after` is set. Strict TypeScript, production build, retry-worker dry run, and `git diff --check` pass.
 - `npm audit --omit=dev` remains the approved documented exception: two high package findings for one React Router RSC-only advisory.
+- Commit `cde3cbe` passed the Cloudflare Pages preview, PR `#4` merged as `753270d`, and production deployment `593db8f1-6b9f-4276-ab4b-9c7769b1530e` succeeded.
+- Production asset `index-Cgp-wPj6.css` contains all three radius tokens and exactly three elevation references. Rendered organizer proof shows a 12px raised header, 8px warm inputs with a 2px boundary, 12px normal-flow surfaces, and 0px grid cells.
 
 ## Launch hardening Phase 4 — July 29, 2026
 
-- [ ] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
+- [x] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
 - [x] T4.2 record the approved dated React Router RSC-only advisory exception with a post-season review date.
 - [x] T4.3 remove obsolete prelaunch pricing/capacity claims; retain `$4.99` one-time for up to 20 boards.
 - [ ] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
