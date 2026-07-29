@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { PageMetadata } from '../components/seo/PageMetadata';
 
 const Privacy: React.FC = () => {
   return (
     <div className="oa-root min-h-screen bg-broadcast-white text-ink">
+      <PageMetadata
+        title="Privacy Policy | GridOne"
+        description="How GridOne handles organizer accounts, football squares board data, optional winner emails, and beta image scanning."
+        path="/privacy"
+      />
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back link */}
         <Link

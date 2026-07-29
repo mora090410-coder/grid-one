@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { PageMetadata } from '../components/seo/PageMetadata';
 
 const Terms: React.FC = () => {
   return (
     <div className="oa-root min-h-screen bg-broadcast-white text-ink">
+      <PageMetadata
+        title="Terms of Service | GridOne"
+        description="Terms for using GridOne to create, share, and track football squares boards."
+        path="/terms"
+      />
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back link */}
         <Link

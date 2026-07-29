@@ -78,6 +78,10 @@ Create `.env.local` with the following variables:
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
 | `GEMINI_API_KEY` | Server-only Gemini key for score grounding and beta paper-board import |
 | `PUBLIC_SITE_URL` | Canonical site URL — `https://www.getgridone.com` in production |
+| `EMAIL_PROVIDER_API_KEY` | Server-only Resend sending key |
+| `EMAIL_FROM` | Verified sender identity — `GridOne <updates@parksideag.com>` in production |
+| `CRON_SECRET` | High-entropy token for scheduled notification processing |
+| `NOTIFICATION_TOKEN_SECRET` | High-entropy signing key for verification and unsubscribe links |
 
 See `.env.example` for a template.
 
@@ -94,6 +98,7 @@ See `.env.example` for a template.
 ## Notes
 
 - Production domain: `www.getgridone.com`
+- Cloudflare Redirect Rule `Canonical apex to www` permanently redirects `https://getgridone.com/*` to `https://www.getgridone.com/${1}` with the query string preserved. This hostname redirect is configured at the zone edge, not in Pages `_redirects`.
 - Brand name is **GridOne** — do not use legacy names (SBXPRO, five-star-grid-pool, etc.)
 - Do not materially redesign theme/styling without intent
 - Use design tokens as the customization layer — see `docs/DESIGN_TOKENS.md`

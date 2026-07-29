@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { PageMetadata } from '../components/seo/PageMetadata';
 import { supabase } from '../services/supabase';
 
 const Paid: React.FC = () => {
@@ -65,6 +66,12 @@ const Paid: React.FC = () => {
 
     return (
         <main className="oa-root gdh-unavailable min-h-[100dvh]" aria-live="polite">
+            <PageMetadata
+                title="Checkout status | GridOne"
+                description="Confirming your GridOne 2026 season-pass payment and board activation."
+                path="/paid"
+                noIndex
+            />
             <p className="gdh-kicker">2026 season pass</p>
             <h1>{state === 'ready' ? 'Board unlocked.' : state === 'checking' ? 'Finishing checkout.' : 'Activation needs attention.'}</h1>
             <p>{message}</p>
