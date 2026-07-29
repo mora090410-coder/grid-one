@@ -1,5 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { BoardData, GameState, LiveGameData, WinnerHighlights, WinnerResolution } from '../types';
+import {
+  BoardData,
+  GameState,
+  LiveGameData,
+  PendingMilestone,
+  WinnerHighlights,
+  WinnerResolution,
+} from '../types';
 import { getAxisForQuarter } from '../utils/winnerLogic';
 import BoardGrid from './BoardGrid';
 import NotificationOptIn from './NotificationOptIn';
@@ -15,6 +22,7 @@ interface GameDayHorizonProps {
   isSynced: boolean;
   highlights: WinnerHighlights;
   winnerHistory: WinnerResolution[];
+  pendingMilestones: PendingMilestone[];
   selectedPlayer: string;
   onClearPlayer: () => void;
   onFindSquares: () => void;
@@ -63,6 +71,9 @@ const periodLabel = (live: LiveGameData | null) => {
 };
 
 const authorityLabel = (live: LiveGameData | null, liveStatus: string, isSynced: boolean) => {
+  if (!live && liveStatus.startsWith('MANUAL')) {
+    return { label: 'Manual · awaiting entry', detail: 'The organizer has scoring authority', tone: 'manual' };
+  }
   if (live?.isManual) return { label: 'Manual score', detail: 'Entered by the organizer', tone: 'manual' };
   if (!live) return { label: 'Score unavailable', detail: liveStatus || 'Try again shortly', tone: 'stale' };
   const source = live.sourceName || 'Automatic beta score';
@@ -97,6 +108,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   isSynced,
   highlights,
   winnerHistory,
+  pendingMilestones,
   selectedPlayer,
   onClearPlayer,
   onFindSquares,
@@ -160,6 +172,9 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
     digits: `${resolution.topDigit} / ${resolution.sideDigit}`,
     name: resolution.participantName || 'Unassigned',
     resolvedAt: resolution.resolvedAt,
+    corrected: Boolean(resolution.corrected),
+    correctionReason: resolution.correctionReason,
+    resolutionVersion: resolution.resolutionVersion || 1,
   })), [winnerHistory]);
 
   return (
@@ -205,6 +220,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             <span>{authority.detail}</span>
           )}
           {freshness && <span>{freshness}{live?.freshness === 'stale' ? ' · stale' : ''}</span>}
+          <span>Score updates about every minute</span>
           {live?.detail && <span>{live.detail}</span>}
           {live?.warning && <span>{live.warning}</span>}
         </div>
@@ -276,16 +292,33 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
               These are arithmetic score outcomes, not odds or predictions.
             </p>
           )}
+          {servicesEnabled && pendingMilestones.length > 0 && (
+            <section className="gdh-pending-results" aria-labelledby="pending-results-title">
+              <p className="gdh-kicker">Provisional · not settled</p>
+              <h2 id="pending-results-title">Results pending confirmation</h2>
+              <ul>
+                {pendingMilestones.map((pending) => (
+                  <li key={pending.milestone}>
+                    <strong>{pending.milestone === 'Q2' ? 'Halftime' : pending.milestone} result pending confirmation</strong>
+                    <span>{pending.topScore}–{pending.sideScore} · digits {pending.topDigit} / {pending.sideDigit}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {servicesEnabled && <section className="gdh-resolved" aria-labelledby="resolved-title">
             <p className="gdh-kicker">Completed milestones</p>
             <h2 id="resolved-title">Resolved winners</h2>
             {resolvedWinners.length ? (
               <ol>
                 {resolvedWinners.map((winner) => (
-                  <li key={winner.label}>
+                  <li key={`${winner.label}-${winner.resolutionVersion}`} className={winner.corrected ? 'is-corrected' : undefined}>
                     <span>{winner.label}</span>
                     <strong>{winner.name}</strong>
                     <small>{winner.digits}</small>
+                    {winner.corrected && (
+                      <em>Corrected result · {winner.correctionReason || 'Organizer correction'}</em>
+                    )}
                   </li>
                 ))}
               </ol>

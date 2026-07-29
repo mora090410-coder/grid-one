@@ -4,6 +4,7 @@ import {
   fetchScheduledGames,
   type ScheduledGame,
 } from '../_lib/espnNfl';
+import { scoreTestModeAllowed } from '../_lib/scoreTestMode';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
@@ -28,6 +29,8 @@ interface CreateBoardPayload {
     [key: string]: unknown;
   };
 }
+
+export { scoreTestModeAllowed };
 
 const allowedOrigins = new Set([
   'http://localhost:8788',
@@ -107,6 +110,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     if (authError || !authData.user) {
       return json(request, { error: 'Your session has expired. Sign in again.' }, 401, env.PUBLIC_SITE_URL);
     }
+    const scoreTestGateOpen = payload.scoreTestMode === true
+      && scoreTestModeAllowed(env, authData.user.id);
 
     let scheduledGame: ScheduledGame | null;
     try {
@@ -121,10 +126,11 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
         error: 'That NFL game could not be verified. Choose a scheduled game and try again.',
       }, 400, env.PUBLIC_SITE_URL);
     }
+    const scoreTestMode = scoreTestGateOpen && scheduledGame.state !== 'pre';
     if (scheduledGame.state !== 'pre') {
-      if (!payload.scoreTestMode) {
+      if (!scoreTestMode) {
         return json(request, {
-          error: 'Choose an upcoming NFL game. Completed games are available only in score-test mode.',
+          error: 'Choose an upcoming NFL game.',
         }, 400, env.PUBLIC_SITE_URL);
       }
       let recentCompleted: ScheduledGame[];
@@ -151,11 +157,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const topAxis = Array.isArray(payload.board.oppAxis) && payload.board.oppAxis.every(Number.isInteger)
       ? payload.board.oppAxis
       : null;
+    if (scoreTestMode && !env.SUPABASE_SERVICE_ROLE_KEY) {
+      return json(request, { error: 'Server configuration is incomplete.' }, 503, env.PUBLIC_SITE_URL);
+    }
+    const writeClient = scoreTestMode
+      ? createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+      : supabase;
 
-    const { data, error } = await supabase
+    const { data, error } = await writeClient
       .from('contests')
       .insert({
         owner_id: authData.user.id,
+        score_test_mode: scoreTestMode,
         title: game.title,
         season_year: LAUNCH_SEASON_YEAR,
         game_external_id: scheduledGame.id,

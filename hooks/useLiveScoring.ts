@@ -4,7 +4,7 @@
  * grounding requests never run in the browser.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, LiveGameData, WinnerResolution } from '../types';
+import { GameState, LiveGameData, PendingMilestone, WinnerResolution } from '../types';
 import { fetchLiveScore } from '../services/scoreService';
 
 interface UseLiveScoringReturn {
@@ -15,24 +15,53 @@ interface UseLiveScoringReturn {
     lastUpdated: string;
     fetchLive: () => Promise<void>;
     winnerHistory: WinnerResolution[];
+    pendingMilestones: PendingMilestone[];
 }
+
+const EMPTY_WINNER_HISTORY: WinnerResolution[] = [];
+const EMPTY_PENDING_MILESTONES: PendingMilestone[] = [];
 
 export function useLiveScoring(
     game: GameState,
     dataReady: boolean,
     loadingPool: boolean,
     boardRef?: string | null,
-    initialWinnerHistory: WinnerResolution[] = [],
+    initialWinnerHistory: WinnerResolution[] = EMPTY_WINNER_HISTORY,
     enabled = true,
+    initialPendingMilestones: PendingMilestone[] = EMPTY_PENDING_MILESTONES,
 ): UseLiveScoringReturn {
+    const gameRef = useRef(game);
+    gameRef.current = game;
+    const externalEventId = game.gameExternalId || null;
+    const manualScoringEnabled = Boolean(game.useManualScores);
+    const manualScoreSignature = JSON.stringify({
+        manualScoringEnabled,
+        manualQuarterScores: game.manualQuarterScores,
+        manualLeftScore: game.manualLeftScore,
+        manualTopScore: game.manualTopScore,
+        manualGameState: game.manualGameState,
+        manualPeriod: game.manualPeriod,
+    });
+    const initialWinnerHistoryRef = useRef(initialWinnerHistory);
+    initialWinnerHistoryRef.current = initialWinnerHistory;
+    const initialPendingMilestonesRef = useRef(initialPendingMilestones);
+    initialPendingMilestonesRef.current = initialPendingMilestones;
+    const initialWinnerHistorySignature = JSON.stringify(initialWinnerHistory);
+    const initialPendingMilestonesSignature = JSON.stringify(initialPendingMilestones);
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
     const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
     const [isSynced, setIsSynced] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState('');
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>(initialWinnerHistory);
+    const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>(initialPendingMilestones);
     const pollRef = useRef<NodeJS.Timeout | null>(null);
     const isFinalRef = useRef(false);
+    const clearPoll = useCallback(() => {
+        if (!pollRef.current) return;
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+    }, []);
 
     useEffect(() => {
         if (!enabled) {
@@ -50,21 +79,33 @@ export function useLiveScoring(
         const score = game.scoreSnapshot;
         const needsAutomaticRefresh = Boolean(
             score.isManual
-            && !game.useManualScores
-            && game.gameExternalId,
+            && !manualScoringEnabled
+            && externalEventId,
         );
         isFinalRef.current = score.state === 'post' && !needsAutomaticRefresh;
+        if (isFinalRef.current) clearPoll();
         setLiveData(score);
         setLiveStatus(score.state === 'post' ? 'FINAL' : score.freshness === 'stale' ? 'STALE' : score.state === 'in' ? 'LIVE' : 'PRE-GAME');
         setIsSynced(score.freshness !== 'offline' && score.freshness !== 'rejected');
         setLastUpdated(score.retrievedAt ? new Date(score.retrievedAt).toLocaleTimeString() : '');
-    }, [enabled, game.gameExternalId, game.scoreSnapshot, game.useManualScores]);
+    }, [clearPoll, enabled, externalEventId, game.scoreSnapshot, manualScoringEnabled]);
 
     useEffect(() => {
-        setWinnerHistory(initialWinnerHistory);
-    }, [initialWinnerHistory]);
+        setWinnerHistory(current =>
+            JSON.stringify(current) === initialWinnerHistorySignature
+                ? current
+                : initialWinnerHistoryRef.current);
+    }, [initialWinnerHistorySignature]);
+
+    useEffect(() => {
+        setPendingMilestones(current =>
+            JSON.stringify(current) === initialPendingMilestonesSignature
+                ? current
+                : initialPendingMilestonesRef.current);
+    }, [initialPendingMilestonesSignature]);
 
     const fetchLive = useCallback(async () => {
+        const currentGame = gameRef.current;
         if (!enabled) {
             setLiveStatus('UNLOCK LIVE SCORING');
             return;
@@ -75,9 +116,9 @@ export function useLiveScoring(
         }
 
         // Manual scores mode: the organizer is the source of truth, no date needed
-        if (game.useManualScores) {
+        if (manualScoringEnabled) {
             const zero = { left: 0, top: 0 };
-            const mq = game.manualQuarterScores;
+            const mq = currentGame.manualQuarterScores;
             const quarterScores = {
                 Q1: mq?.Q1 ?? zero,
                 Q2: mq?.Q2 ?? zero,
@@ -89,10 +130,10 @@ export function useLiveScoring(
                 quarterScores.Q1[side] + quarterScores.Q2[side] + quarterScores.Q3[side] +
                 quarterScores.Q4[side] + quarterScores.OT[side];
             // Boards saved before the quarter-entry UI only have single totals
-            const leftScore = mq ? total('left') : (game.manualLeftScore || 0);
-            const topScore = mq ? total('top') : (game.manualTopScore || 0);
-            const state = game.manualGameState ?? 'in';
-            const period = game.manualPeriod ?? 1;
+            const leftScore = mq ? total('left') : (currentGame.manualLeftScore || 0);
+            const topScore = mq ? total('top') : (currentGame.manualTopScore || 0);
+            const state = currentGame.manualGameState ?? 'in';
+            const period = currentGame.manualPeriod ?? 1;
 
             setLiveData({
                 leftScore,
@@ -111,8 +152,10 @@ export function useLiveScoring(
             return;
         }
 
-        if (!game.gameExternalId) {
-            const legacyManual = game.scoreSnapshot?.isManual ? game.scoreSnapshot : null;
+        if (!externalEventId) {
+            const legacyManual = currentGame.scoreSnapshot?.isManual
+                ? currentGame.scoreSnapshot
+                : null;
             if (legacyManual) {
                 setLiveData(legacyManual);
                 setLiveStatus(legacyManual.state === 'post'
@@ -151,8 +194,21 @@ export function useLiveScoring(
             const result = await fetchLiveScore(boardRef);
             const data = result.score;
 
+            if (!data && result.scoreState === 'awaiting_organizer_entry') {
+                setLiveData(null);
+                setLiveStatus('MANUAL · AWAITING SCORE');
+                setIsSynced(true);
+                setLastUpdated('');
+                if (result.winnerHistory) setWinnerHistory(result.winnerHistory);
+                if (result.pendingMilestones) setPendingMilestones(result.pendingMilestones);
+                return;
+            }
+            if (!data) {
+                throw new Error(result.message || 'No score is available yet.');
+            }
             setLiveData(data);
             if (result.winnerHistory) setWinnerHistory(result.winnerHistory);
+            if (result.pendingMilestones) setPendingMilestones(result.pendingMilestones);
 
             if (data.freshness === 'offline') {
                 setLiveStatus('OFFLINE · LAST KNOWN');
@@ -162,6 +218,7 @@ export function useLiveScoring(
                 setLiveStatus('STALE · LAST KNOWN');
             } else if (data.state === 'post') {
                 isFinalRef.current = true;
+                clearPoll();
                 setLiveStatus('FINAL');
             } else if (data.state === 'in') {
                 setLiveStatus('LIVE');
@@ -179,21 +236,62 @@ export function useLiveScoring(
         } finally {
             setIsRefreshing(false);
         }
-    }, [boardRef, dataReady, enabled, game, loadingPool]);
+    }, [
+        boardRef,
+        clearPoll,
+        dataReady,
+        enabled,
+        externalEventId,
+        loadingPool,
+        manualScoringEnabled,
+    ]);
 
-    // Auto-polling
     useEffect(() => {
-        if (!dataReady || !enabled) return;
+        if (!manualScoringEnabled || !dataReady || loadingPool || !enabled) return;
+        void fetchLive();
+    }, [
+        dataReady,
+        enabled,
+        fetchLive,
+        loadingPool,
+        manualScoreSignature,
+        manualScoringEnabled,
+    ]);
 
-        fetchLive();
-        if (game.scoreSnapshot?.state !== 'post') {
-            pollRef.current = setInterval(fetchLive, 60000);
-        }
-
-        return () => {
-            if (pollRef.current) clearInterval(pollRef.current);
+    // Auto-polling owns one stable timer per board/scoring identity. Visibility
+    // changes pause the timer itself, rather than burning hidden no-op ticks.
+    useEffect(() => {
+        const startPoll = () => {
+            clearPoll();
+            if (
+                !dataReady
+                || !enabled
+                || manualScoringEnabled
+                || document.hidden
+                || isFinalRef.current
+            ) return;
+            void fetchLive();
+            if (externalEventId) pollRef.current = setInterval(fetchLive, 60_000);
         };
-    }, [dataReady, enabled, fetchLive, game.scoreSnapshot?.state]);
+        const handleVisibility = () => {
+            if (document.hidden) clearPoll();
+            else startPoll();
+        };
+
+        startPoll();
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
+            clearPoll();
+        };
+    }, [
+        clearPoll,
+        dataReady,
+        enabled,
+        externalEventId,
+        fetchLive,
+        manualScoringEnabled,
+    ]);
 
     return {
         liveData,
@@ -202,7 +300,8 @@ export function useLiveScoring(
         isRefreshing,
         lastUpdated,
         fetchLive,
-        winnerHistory
+        winnerHistory,
+        pendingMilestones
     };
 }
 

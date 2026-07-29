@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLiveScoring } from '../hooks/useLiveScoring';
 import { fetchLiveScore } from '../services/scoreService';
@@ -110,5 +110,130 @@ describe('legacy manual live scoring', () => {
     await waitFor(() => expect(result.current.liveData).toEqual(providerSnapshot));
     expect(result.current.liveStatus).toBe('FINAL');
     unmount();
+  });
+
+  it('does not restart polling across forty unrelated organizer edits', async () => {
+    const providerSnapshot: LiveGameData = {
+      ...manualSnapshot,
+      state: 'in',
+      period: 2,
+      isManual: false,
+      sourceName: 'ESPN',
+    };
+    vi.mocked(fetchLiveScore).mockResolvedValue({
+      score: providerSnapshot,
+      winnerHistory: [],
+      pendingMilestones: [],
+    });
+    const initialGame: GameState = {
+      ...legacyGame,
+      gameExternalId: '401772988',
+      scoreSnapshot: providerSnapshot,
+    };
+    const { rerender, unmount } = renderHook(
+      ({ game }) => useLiveScoring(game, true, false, 'board-id', []),
+      { initialProps: { game: initialGame } },
+    );
+
+    await waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(1));
+    for (let index = 0; index < 40; index += 1) {
+      rerender({
+        game: {
+          ...initialGame,
+          title: `Unrelated edit ${index}`,
+          payouts: { Q1: index, Q2: 25, Q3: 25, Final: 50 },
+        },
+      });
+    }
+
+    await new Promise(resolveWait => setTimeout(resolveWait, 25));
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('accepts inline empty history arrays without entering a render loop', async () => {
+    const providerSnapshot: LiveGameData = {
+      ...manualSnapshot,
+      state: 'in',
+      period: 2,
+      isManual: false,
+    };
+    vi.mocked(fetchLiveScore).mockResolvedValue({
+      score: providerSnapshot,
+      winnerHistory: [],
+      pendingMilestones: [],
+    });
+    const game = {
+      ...legacyGame,
+      gameExternalId: '401772988',
+      scoreSnapshot: providerSnapshot,
+    };
+    const { result, unmount } = renderHook(() =>
+      useLiveScoring(game, true, false, 'board-id', [], true, []));
+
+    await waitFor(() => expect(result.current.liveStatus).toBe('LIVE'));
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('pauses while hidden, resumes once on visibility, and stops permanently at Final', async () => {
+    vi.useFakeTimers();
+    let hidden = false;
+    Object.defineProperty(document, 'hidden', {
+      configurable: true,
+      get: () => hidden,
+    });
+    const liveSnapshot: LiveGameData = {
+      ...manualSnapshot,
+      state: 'in',
+      period: 4,
+      isManual: false,
+    };
+    const finalSnapshot: LiveGameData = {
+      ...liveSnapshot,
+      state: 'post',
+    };
+    vi.mocked(fetchLiveScore)
+      .mockResolvedValueOnce({ score: liveSnapshot })
+      .mockResolvedValueOnce({ score: liveSnapshot })
+      .mockResolvedValueOnce({ score: finalSnapshot });
+    const game = {
+      ...legacyGame,
+      gameExternalId: '401772988',
+      scoreSnapshot: liveSnapshot,
+    };
+    const { unmount } = renderHook(() =>
+      useLiveScoring(game, true, false, 'board-id'));
+
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(1));
+    });
+    hidden = true;
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
+
+    hidden = false;
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(3));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000);
+    });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(3);
+
+    unmount();
+    vi.useRealTimers();
   });
 });

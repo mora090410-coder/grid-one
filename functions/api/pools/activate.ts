@@ -23,12 +23,35 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     p_season_year: 2026,
   });
   if (error) {
+    if (/SEASON_PASS_INACTIVE/i.test(error.message)) {
+      return Response.json({
+        code: 'SEASON_PASS_INACTIVE',
+        error: 'Your 2026 season pass is inactive. Previously published boards remain available. Purchase a new pass to unlock another board.',
+        needsPayment: true,
+        canRepurchase: true,
+      }, { status: 402 });
+    }
     const status = /owned/i.test(error.message) ? 403 : 500;
     return Response.json({ error: error.message }, { status });
   }
   const result = data?.[0];
   if (!result?.activated) {
-    return Response.json({ needsPayment: true, used: result?.used || 0, allowance: result?.allowance || 0 }, { status: 402 });
+    const used = Number(result?.used || 0);
+    const allowance = Number(result?.allowance || 0);
+    if (allowance > 0 && used >= allowance) {
+      return Response.json({
+        code: 'BOARD_ALLOWANCE_EXHAUSTED',
+        error: `This season pass has activated all ${allowance} available boards.`,
+        used,
+        allowance,
+      }, { status: 409 });
+    }
+    return Response.json({
+      code: 'PAYMENT_REQUIRED',
+      needsPayment: true,
+      used,
+      allowance,
+    }, { status: 402 });
   }
   return Response.json({ activated: true, used: result.used, allowance: result.allowance });
 };

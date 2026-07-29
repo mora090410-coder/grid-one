@@ -20,6 +20,8 @@ export interface ScheduledGame {
 export interface GameState {
   title: string;
   meta: string;
+  /** Permanent marker for completed-game synthetic scoring demonstrations. */
+  scoreTestMode?: boolean;
   /** ESPN event id used for exact-event score lookups. */
   gameExternalId?: string;
   /** Canonical provider kickoff instant. */
@@ -113,10 +115,48 @@ export interface WinnerHighlights {
 
 export interface WinnerResolution {
   milestone: 'Q1' | 'Q2' | 'Q3' | 'FINAL';
+  sideScore?: number;
+  topScore?: number;
   sideDigit: number;
   topDigit: number;
   participantName: string | null;
   resolvedAt: string;
+  resolutionVersion?: number;
+  corrected?: boolean;
+  correctedAt?: string | null;
+  correctionReason?: string | null;
+  versions?: Array<{
+    resolutionVersion: number;
+    sideScore: number;
+    topScore: number;
+    sideDigit: number;
+    topDigit: number;
+    participantName: string | null;
+    resolvedAt: string;
+    corrected: boolean;
+    correctedAt?: string | null;
+    correctionReason?: string | null;
+  }>;
+}
+
+export interface PendingMilestone {
+  milestone: 'Q1' | 'Q2' | 'Q3' | 'FINAL';
+  sideScore: number;
+  topScore: number;
+  sideDigit: number;
+  topDigit: number;
+  stableSince: string;
+  lastObservedAt: string;
+  successfulReadCount: number;
+}
+
+export interface NotificationDeliveryIssue {
+  id: string;
+  notificationKind: 'winner' | 'correction_previous' | 'correction_current';
+  milestone?: WinnerResolution['milestone'];
+  attemptCount: number;
+  error?: string | null;
+  terminalAt: string;
 }
 
 export interface EntryMeta {

@@ -62,7 +62,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                             <h3 className="text-xl font-bold text-gold mb-4">GridOne (The Modern Way)</h3>
                             <ul className="space-y-3 text-sm text-ink/80">
                                 <li className="flex items-center gap-2">✓ <strong>Free to build</strong> your board before you unlock sharing</li>
-                                <li className="flex items-center gap-2">✓ <strong>Live Scoring:</strong> Updates instantly on every device</li>
+                                <li className="flex items-center gap-2">✓ <strong>Live Scoring:</strong> Updates about every minute on every device</li>
                                 <li className="flex items-center gap-2">✓ <strong>Scenario Engine:</strong> "If KC scores a TD, who wins?"</li>
                                 <li className="flex items-center gap-2">✓ <strong>Mobile-First:</strong> Beautiful 'liquid glass' UI on phones</li>
                                 <li className="flex items-center gap-2">✓ <strong>No Login Required</strong> for players to view the board</li>
@@ -81,7 +81,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         </div>
                     </div>
 
-                    <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">The Real-Time Scenario Engine</h2>
+                    <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">The Live Scenario Engine</h2>
                     <p className="text-ink/80 leading-relaxed mb-6">
                         The biggest differentiator between GridOne and every other RunYourPool alternative is the <strong>Live Scenario Engine</strong>. When you're watching the big game in the 4th quarter, everyone is asking: <em>"Who wins if they kick a field goal here?"</em>
                     </p>
@@ -110,7 +110,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         title="Related guides"
                         links={[
                             { to: '/articles/digital-football-squares-board-vs-paper', label: 'Digital vs Paper Board', primary: true },
-                            { to: '/articles/how-', label: 'How to run Super Bowl squares' },
+                            { to: '/articles/how-to-run-super-bowl-squares', label: 'How to run Super Bowl squares' },
                             { to: '/articles/football-squares-fundraiser', label: 'Fundraiser use cases' },
                         ]}
                     />

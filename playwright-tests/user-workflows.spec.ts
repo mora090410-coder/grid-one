@@ -48,6 +48,11 @@ test('protected routes preserve the exact destination through sign-in', async ({
   await page.goto('/create?scoreTest=1');
   await expect(page).toHaveURL(/\/login\?returnTo=/);
 
+  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ games: [scheduledGame] }),
+  }));
   await page.evaluate(({ key, value }) => localStorage.setItem(key, value), {
     key: authStorageKey,
     value: sessionValue(),

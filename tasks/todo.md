@@ -1,5 +1,277 @@
 # GridOne Friday launch
 
+## Launch hardening Phase 4 — July 29, 2026
+
+- [ ] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
+- [x] T4.2 record the approved dated React Router RSC-only advisory exception with a post-season review date.
+- [x] T4.3 remove obsolete prelaunch pricing/capacity claims; retain `$4.99` one-time for up to 20 boards.
+- [ ] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
+- [ ] Prove one end-to-end refund and observe entitlement revocation without unpublishing the board.
+- [ ] Run a production subscribe-endpoint abuse test and observe throttling.
+- [ ] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
+
+### Phase 4 execution boundary
+
+- Phase 1–3 commit `8e1cafd` is pushed on `agent/launch-hardening-phases-1-3`; draft PR `#2` targets `main`.
+- Production migrations `012`–`018` are applied to confirmed project `illqymckwqiawdwxhwcy` and pass the schema/RPC/trigger postflight.
+- Phase 4 may run local verification, documentation/copy corrections, non-financial production reads, and an approved application deployment.
+- The product owner explicitly authorized autonomous completion of the entire execution plan in this Codex task on July 29, 2026, including the production $4.99 charge/refund proof, recipient notification proof, deployments, and Phase 5. Re-verify exact targets before every irreversible action.
+
+### React Router dependency security exception — July 29, 2026
+
+- Advisory: `GHSA-qwww-vcr4-c8h2`, React Router RSC-mode CSRF bypass. Current resolved packages are `react-router-dom@7.18.1` and `react-router@7.18.1`. `npm audit --omit=dev` reports two high-severity findings for this single advisory.
+- Exposure decision: Temporarily accepted for the 2026 season. GridOne is a Vite-built client-side SPA using `ReactDOM.createRoot` with `BrowserRouter`, `Routes`, and `Route`. It has no React Server Components runtime, React Router framework/server entry, route actions/loaders, or RSC request handler, so the advisory’s vulnerable RSC action-execution path is not enabled.
+- Remediation decision: Do not run `npm audit fix --force`; npm currently proposes a breaking downgrade to `react-router-dom@7.11.0`. Re-evaluate and upgrade to a non-vulnerable supported release with full unit, build, Chromium, and WebKit regression coverage after the season.
+- Guardrail: Enabling React Router RSC/framework mode, server actions, or an RSC request handler invalidates this exception and requires remediation before merge or deployment.
+- Review/expiry date: February 16, 2027. Close earlier if a low-risk patched 7.x release becomes available.
+- Approved by: GridOne product owner — recommended decision approved in this Codex task on July 29, 2026.
+- Recorded by: Codex, July 29, 2026.
+
+### Phase 4 local verification
+
+- A detached worktree at pushed commit `8e1cafd` completed a fresh `npm ci`, production build, and all 41 Phase 1–3 Vitest files: 259 passing tests and one credential-gated hosted Stripe proof skipped.
+- The Phase 4 tree passes strict TypeScript, production build, and `git diff --check`.
+- Full Vitest passes 43/43 files with 265 passing tests and the same hosted Stripe proof skipped. Disposable PostgreSQL 17 covers migrations, RLS, checkout/webhook/refund, concurrency, rate limits, notification retry, milestone confirmation, and score-test suppression.
+- Full Playwright passes 42/42 workflows across Chromium and WebKit. Coverage now includes desktop, 768×1024 tablet, phone, reduced motion, reverse scrub, sticky release, 44×44 targets, visible keyboard focus, dialog focus containment/Escape/return, and the organizer/viewer workflows.
+- Build-time output contains crawler-visible route-specific HTML for all 17 public routes. The sitemap, canonical URLs, robots policy, Article JSON-LD, OG metadata, and 1200×630 OG image are contract-tested.
+- `npm audit --omit=dev` still reports the two package findings for the single documented React Router RSC-only advisory; do not describe the audit as clean.
+
+## Launch hardening Phase 3 — July 29, 2026
+
+- [x] T3.1 observe milestones at most once per promoted score snapshot, skip permanently completed finals, and avoid unchanged public projection writes.
+- [x] T3.2 keep the 60-second score poll stable across unrelated organizer edits, inline history arrays, page visibility changes, and Final.
+- [x] T3.3 require both a server flag and owner allowlist for score-test boards; permanently label them and suppress all winner email.
+- [x] T3.4 implement the approved Step 8 recommendation: ship polling, remove realtime claims, and disclose updates about every minute.
+- [x] Prove one finished board with 50 concurrent viewers performs zero milestone-observation work.
+- [x] Apply the complete local migration chain to disposable PostgreSQL 17 and prove new RPC/RLS/load behavior.
+- [x] Run the full unit, strict type, build, diff, Chromium, and WebKit gates.
+- [x] Record the Phase 3 review and stop before any production migration or deploy.
+
+### Phase 3 execution boundary
+
+- Baseline remains commit `2f357d9` on `main`; the completed, uncommitted Phase 1 and Phase 2 work remains the starting tree.
+- Phase 3 is authorized for local code, recorded fixtures, disposable PostgreSQL, load simulation, documentation, and browser tests only.
+- The Step 8 decision already selects 60-second polling, so T3.4 does not require another owner decision.
+- Do not apply new migrations, deploy Cloudflare Pages or the Cron Worker, send live email, or mutate production data without fresh approval.
+
+### T3.2 review
+
+- `useLiveScoring` now keys automatic polling only to board reference, external event identity, scoring authority, readiness, and visibility—not the full organizer `game` object.
+- Forty unrelated organizer edits leave the one-minute interval intact and produce zero additional score requests. Inline winner/pending arrays are synchronized by content signature, eliminating render-loop behavior.
+- Hiding the document clears the timer; returning to the page performs one immediate refresh and restores one timer. A Final response clears that timer permanently.
+- Focused hook coverage passes 6/6 tests, including the 40-edit load case, inline-array regression, visibility lifecycle, and Final stop.
+
+### T3.1 review
+
+- Migration `017_milestone_observation_efficiency.sql` makes score promotion and milestone observation one transaction. A projection or outbox failure rolls promotion back instead of leaving a Final snapshot permanently unobserved.
+- Durable snapshot/count/finalized markers serialize replayed observations, conservatively backfill already-observed boards, and permanently seal completed post-game boards after all four milestones exist.
+- Milestone projection updates use JSON difference checks, so unchanged history no longer churns `updated_at`. Automatic and manual handlers read the transactionally published projection without a second observer call.
+- Focused coverage passes 29/29 tests. Fifty sequential and fifty concurrent finished-board viewer GETs perform zero observer or RPC work; disposable PostgreSQL applies migrations `000`–`017` and proves atomic promotion, one replay observation, permanent Final skip, and unchanged projection timestamps.
+
+### T3.4 review
+
+- `PRODUCT.md`, `DESIGN.md`, and this launch checklist now describe visibility-aware viewer polling about every minute. Supabase realtime is explicitly deferred until after the 2026 season.
+- The public score authority line says “Score updates about every minute,” and the comparison article no longer promises instant or “Real-Time” updates.
+- Focused documentation/UI contract coverage passes 2/2 tests. No realtime subsystem, deployment, or production configuration was added.
+
+### T3.3 review
+
+- Score-test creation and completed-game discovery require both `SCORE_TEST_MODE_ENABLED=true` and an authenticated owner UUID in `SCORE_TEST_MODE_OWNER_IDS`. Closed gates silently fall back to ordinary upcoming-game behavior and copy.
+- Migration `018_score_test_mode.sql` makes the server-created flag immutable, projects it onto public snapshots, and suppresses winner/correction delivery inserts at the database boundary.
+- Every organizer and public board branch displays an unmissable “SYNTHETIC SCORE TEST” warning explaining that completed-game data is not live and winner/correction emails are disabled.
+- Disposable PostgreSQL applies the full chain through `018` and passes 7/7 database tests. Focused API, discovery, UI, and regression coverage passes 37/37; Chromium creation/discovery coverage passes 4/4.
+
+### Phase 3 verification and stop
+
+- Fifty sequential and fifty concurrent reads of one permanently finished board perform zero milestone-observation calls and zero score-promotion RPC work.
+- Disposable PostgreSQL 17 applies migrations `000`–`018`. The database suites prove atomic score promotion plus observation, one observation per snapshot, permanent Final sealing, unchanged-projection write suppression, score-test immutability, public projection, and notification suppression.
+- `npx vitest run --maxWorkers=1`: 41/41 files pass, with 259 passing tests and one intentionally environment-gated Stripe lifecycle proof skipped.
+- Strict TypeScript, production build, `git diff --check`, and the retry-scheduler Wrangler dry run pass.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 34/34 workflows pass across Chromium and WebKit.
+- Phase 3 stops here. Migrations `012`–`018`, the Pages release, the Cron Worker, and all live email remain undeployed; no production data, Stripe object, or live notification was changed.
+
+## Launch hardening Phase 2 — July 29, 2026
+
+- [x] T2.1 make manual scoring authoritative before the first score, order automatic refreshes monotonically, and promote canonical plus public score atomically.
+- [x] T2.2 confirm milestone results only after two stable reads at least 45 seconds apart, then add append-only organizer corrections and public correction history.
+- [x] T2.3 cap winner-email delivery at five attempts with scheduled exponential backoff, immediate permanent failure, organizer visibility, and no viewer-triggered sends.
+- [x] T2.4 centralize the published-and-not-withdrawn predicate and return one identical 404 from board, score, and subscribe public endpoints.
+- [x] Apply migrations `000`–`016` to disposable PostgreSQL 17 and prove RPC/RLS/concurrency behavior.
+- [x] Add recorded-fixture coverage for pregame, live, stale, offline, manual, overtime, final, milestone confirmation, and milestone correction.
+- [x] Run the full unit, strict type, build, diff, Chromium, and WebKit gates.
+- [x] Record the Phase 2 review and stop before any production migration or deploy.
+
+### Phase 2 execution boundary
+
+- Baseline remains commit `2f357d9` on `main`; the completed, uncommitted Phase 1 work is preserved as the starting tree.
+- Phase 2 is authorized for local development, recorded fixtures, disposable PostgreSQL, and browser tests only.
+- Do not apply migrations `014`, `015`, or `016` to production, deploy Cloudflare Pages, send live email, or mutate production data without fresh approval.
+
+### T2.1 review
+
+- Migration `014_score_promotion_ordering.sql` adds authority generations and refresh-start sequences, refuses automatic lease acquisition in manual mode, rejects stale/old-generation promotions, and updates canonical plus public score in one transaction.
+- The organizer Manual action now persists authority before exposing the score form. A fresh manual board returns the explicit `awaiting_organizer_entry` state without a provider call or synthetic 0–0 score.
+- Disposable PostgreSQL 17 proves a later-started refresh beats a slower earlier request, a missing published projection rolls the whole promotion back, manual mode invalidates in-flight automatic authority, and an explicit return to automatic allows only a new-generation refresh.
+- Focused T2.1 verification passes 13/13 tests plus strict TypeScript and diff checks. No production migration, provider call, deployment, or data mutation occurred.
+
+### T2.2 review
+
+- Migration `015_milestone_confirmation.sql` keeps automatic Q1–Q3 results provisional until two distinct, identical successful reads are at least 45 seconds apart. Candidate changes reset the clock, provider regressions clear pending state, manual results confirm immediately, and a provider FINAL confirms on `post`.
+- Confirmed results are versioned append-only. Organizer corrections record actor, time, reason, previous version, public version history, and separate outbox rows for the previous recipient and corrected winner.
+- The UI renders provisional results in a neutral dashed treatment, exposes settled correction history publicly, and requires explicit consequence copy before publishing a correction.
+- The original 7–13 then 7–14 at T+25 fixture is explicitly amended: T+25 remains pending; the matching 7–14 read at T+70 confirms.
+
+### T2.3 review
+
+- Migration `016_notification_delivery_retry.sql` moves send authority to service-role-only claim/completion RPCs with a five-attempt cap and 1m, 5m, 25m, and 2h database-enforced backoff.
+- The `CRON_SECRET` worker sends bounded batches with deterministic idempotency, treats hard 4xx failures as permanent and 408/429/5xx/timeouts as transient, and produces clearly worded winner and correction messages. A dedicated one-minute Cloudflare Cron Worker invokes the protected endpoint; its separate Wrangler configuration passes a local deployment dry run.
+- Score reads only queue confirmed deliveries; viewer polling performs no provider email call. Owner board reads expose sanitized terminal failures, and the organizer dashboard explains when human follow-up is needed.
+
+### T2.4 review
+
+- `publicBoardVisibility.ts` is the single public predicate for published lifecycle states plus `withdrawn_at IS NULL`.
+- Public board, score, and subscribe handlers all use that helper and the byte-identical unavailable response. Architecture tests fail if these routes bypass the helper.
+
+### Phase 2 verification and stop
+
+- Disposable PostgreSQL 17 applies migrations `000`–`016`. The migration suites prove score ordering and atomic projection, milestone stability/correction history, notification retry/backoff/attempt caps, checkout lifecycle preservation, and notification rate-limit/RLS behavior.
+- `npx vitest run --maxWorkers=1`: 35/35 files pass, with 229 passing tests and one intentionally environment-gated Stripe lifecycle proof skipped.
+- Strict TypeScript, production build, `git diff --check`, and the retry-scheduler Wrangler dry run pass.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 32/32 workflows pass across Chromium and WebKit.
+- Phase 2 stops here. Migrations `014`–`016`, the Pages release, the Cron Worker, and all live email remain undeployed; no production data, Stripe object, or live notification was changed.
+
+## Launch hardening Phase 1 — July 29, 2026
+
+- [x] T1.1 prevent duplicate payment for the non-stacking 2026 season pass.
+- [x] T1.2 handle completed, delayed-success, delayed-failure, and expired Stripe Checkout sessions idempotently.
+- [x] T1.3 revoke and restore entitlements for refunds and disputes without unpublishing boards.
+- [x] T1.4 enforce durable board, address, IP, and participant notification-send limits.
+- [x] T1.5 preserve verified subscriptions during same-address resubmission and pending address changes.
+- [x] Confirm T1.6 remains not required because the activation RPC is concurrency-safe.
+- [x] Confirm T1.7 remains not required because the emailed HMAC unsubscribe flow works.
+- [x] Apply migrations `000`–`013` to disposable PostgreSQL 17 and prove RPC/RLS/concurrency behavior.
+- [x] Run Stripe test-mode lifecycle/refund proof without a real charge.
+- [x] Run the full unit, strict type, build, diff, Chromium, and WebKit gates.
+- [x] Record the Phase 1 review and stop before any production migration or deploy.
+
+### Phase 1 payment implementation
+
+- [x] Scope checkout claims and live sessions to owner + 2026 season, with an atomic database claim and attach path.
+- [x] Reuse one deterministic open session, expire every other open session, and set Stripe's minimum 30-minute Checkout expiry.
+- [x] Record a completed-but-unpaid checkout as processing; fulfill delayed success through the same verified path; terminalize delayed failure and expiry.
+- [x] Make fulfillment idempotent, preserve one non-stacking entitlement, and mark any second payment refundable without granting allowance.
+- [x] Revoke only the current purchase source after a full refund or opened dispute, restore a won dispute, and protect a later repurchase from older events.
+- [x] Preserve every existing activation and published snapshot during revocation; block only new activations with a deliberate repurchase affordance.
+
+#### Payment implementation review
+
+- Migration `012_checkout_lifecycle_and_entitlement_revocation.sql` adds owner-season checkout claims, terminal session states, refundable duplicate orders, refund/dispute history, entitlement audit events, and source-aware revocation/restoration RPCs. All new RPCs are service-role-only.
+- Checkout creation rechecks entitlement atomically immediately before reuse/creation, uses the order ID as a non-PII Stripe idempotency key, attaches the resulting Session transactionally, and expires stale owner-season Sessions.
+- The webhook verifies the raw signature, acknowledges valid but unactionable events with `2xx`, sends genuine processing failures to Stripe as `5xx`, and handles completed, async-success, async-failure, expired, refunded, dispute-opened, and dispute-closed events.
+- The organizer sees distinct no-entitlement, exhausted-allowance, inactive-pass, processing, failed/expired, duplicate-payment, refund, and dispute states. An inactive pass requires a deliberate second click to purchase again; previously published boards remain available.
+- Disposable PostgreSQL 17 applies migrations `000`–`013`. The full suite passes 183/183 tests across 29 files, including payment and notification concurrency/RLS; strict TypeScript, production build, and `git diff --check` pass; Playwright passes 32/32 across Chromium and WebKit.
+- Stripe Sandbox hosted proof completed against Parkside Advisory Group with `livemode=false`: Checkout Session `cs_test_a1gtJtfAjfLPcIYEXI3ax3W2RUwonngKVBRg0R6ukIJz84hgMmay55ViJT` paid $4.99 and emitted completion event `evt_1TydwoFwSi8ogxSrBW8zlqdk`.
+- The environment-gated PostgreSQL integration test retrieved that exact Stripe event, signed and submitted it to the production webhook handler, and proved order `paid`, entitlement `active`, one activation, and one idempotent event record after migrations `000`–`012`.
+- The same proof published a disposable viewer snapshot, issued Sandbox refund `re_3TydwnFwSi8ogxSr1X4iDEeC`, processed real `charge.refunded` event `evt_3TydwnFwSi8ogxSr1bvtXso9` through the production handler, and proved order `refunded`, entitlement `revoked`, full 499-cent refund, one preserved activation, and one unwithdrawn published snapshot.
+- Hosted lifecycle verification passed 5/5 tests on disposable PostgreSQL 17. The temporary Sandbox price and product were archived and the temporary webhook endpoint was deleted. No live Stripe object, real charge, production migration, deployment, email, or production data was changed.
+
+### Phase 1 notification implementation
+
+- [x] Add migration `013_notification_rate_limits.sql` with durable forensic logging, atomic four-dimension claims, send completion, and one-current-address verification.
+- [x] Make the public subscribe response enumeration-safe and byte-identical across all accepted outcomes.
+- [x] Trust only a valid Cloudflare client-IP header and require a successful database claim before any provider request.
+- [x] Prove the limits, address-change lifecycle, RPC privileges, and claim-before-send behavior in focused unit and disposable PostgreSQL tests.
+- [x] Record verification results here; do not apply the migration or send email in production.
+
+#### Notification implementation review
+
+- The subscribe endpoint now returns one byte-identical `202` response for new, invalid-participant, already-verified, changed-address, and provider-failure outcomes. Only durable throttles return a generic `429` with `Retry-After`.
+- Migration `013` serializes board, address, IP, and participant claims with ordered transaction advisory locks; stores HMAC address hashes plus service-only forensic outcomes; and completes provider results through a second service-only RPC.
+- Same-address resubmission is a no-op. A changed address remains pending beside the old verified address, and verification atomically replaces the old row under a participant lock and a one-verified-address unique index. Unsubscribed addresses may start fresh verification.
+- Disposable PostgreSQL 17 applied migrations `000`–`013` and passed 9/9 focused RPC/RLS/concurrency tests. The database proof exposed and migration `013` repairs a migration-005 trigger defect that dereferenced `current_snapshot_id` on notification rows.
+- Focused endpoint/winner/unsubscribe tests pass 25/25; strict TypeScript, production build, and diff checks pass. No production migration, email, or data mutation occurred.
+
+## Launch hardening Phase 0 audit — July 29, 2026
+
+- [x] Audit `gridone_activate_board` for an atomic 20-board allowance check and a database backstop.
+- [x] Audit `gridone_promote_score_snapshot` for transaction-local manual-mode and stale-write rejection.
+- [x] Trace the winner-email unsubscribe token through generation, delivery, validation, and state change.
+- [x] Add executable proof for the exact audit cases and a failing-first regression for the exhausted-allowance API state.
+- [x] Run the full unit, strict type, build, diff, migration, and Phase 0 browser verification gates.
+- [x] Record exact findings, test evidence, and the T2.1 amendment required before Phase 1.
+- [x] Stop after the Phase 0 exit gate and report to the product owner.
+
+### Phase 0 findings
+
+#### T0.1 — Allowance concurrency: safe through the activation RPC
+
+The applied function in `supabase/migrations/005_canonical_launch_schema.sql` serializes all activations for one owner and season by locking the single active entitlement row before it counts or inserts:
+
+```sql
+SELECT *
+  INTO entitlement
+FROM public.season_entitlements e
+WHERE e.owner_id = p_owner_id
+  AND e.season_year = p_season_year
+  AND e.status = 'active'
+FOR UPDATE;
+```
+
+Only after that lock does it read `count(*)` from `board_activations`, reject `used_count >= entitlement.boards_allowance`, and insert the activation. Unique constraints also prevent duplicate owner/season entitlements and duplicate contest activations. The numeric limit is not independently enforced against a direct service-role table insert, but every application activation path uses the service-role-only RPC; the spec therefore makes T1.6 not required.
+
+Disposable PostgreSQL 17 proof applies migrations `000`–`011`, sends 25 parallel requests through the actual activation handler backed by real RPC connections, and consistently records exactly 20 activations under one still-active entitlement. The other five now receive HTTP 409 with `BOARD_ALLOWANCE_EXHAUSTED`, `used: 20`, and `allowance: 20`; retrying all 25 boards is idempotent and leaves 20 rows.
+
+#### T0.2 — Exact database guards pass; stronger slow-response ordering is not complete
+
+The promotion function locks the per-board score state and independently rejects automatic promotion while manual authority is active:
+
+```sql
+SELECT * INTO state_row
+FROM public.contest_score_state
+WHERE contest_id = p_contest_id
+FOR UPDATE;
+
+IF state_row.scoring_mode = 'manual'
+  AND next_snapshot.source_mode = 'automatic'
+THEN
+  RETURN false;
+END IF;
+```
+
+It also rejects the exact older-timestamp case required by Phase 0:
+
+```sql
+IF current_snapshot.retrieved_at > next_snapshot.retrieved_at THEN
+  RETURN false;
+END IF;
+```
+
+Direct SQL tests prove both behaviors, including manual mode with no current snapshot. The broader slow-response assumption is partially refuted: `retrieved_at` is assigned after the provider call, equal timestamps have no tiebreaker, and the viewer projection is written after the promotion transaction. `docs/execution-spec-2026-07-29.md` now amends T2.1 to require monotonic refresh-start/lease ordering and atomic canonical-plus-public projection in new migration `014_score_promotion_ordering.sql`; the milestone-confirmation migration moves to `015`.
+
+#### T0.3 — Emailed unsubscribe link works
+
+Winner email generation signs `HMAC-SHA256(NOTIFICATION_TOKEN_SECRET, subscription.id)`, and the unsubscribe handler recomputes and constant-time-compares that same HMAC before moving the row to `unsubscribed`. Future winner selection filters to `status = 'verified'`. The separately generated `unsubscribe_token_hash` stored during initial subscription is unused dead state, but it is not the emailed token contract and does not break the link. T1.7 is therefore not required.
+
+The end-to-end regression renders a real winner email, extracts its unsubscribe URL, calls the real handler, verifies the row becomes `unsubscribed`, resolves a later winner for the same participant, and proves no second email is sent.
+
+### Phase 0 verification
+
+- Baseline confirmed at `2f357d9` on `main`; pre-existing untracked design/architecture/marketing files were preserved.
+- `npm test -- --run`: 143/143 tests pass across 24 files, including the disposable PostgreSQL concurrency and direct-SQL audits.
+- `npx tsc --noEmit --noUnusedLocals --noUnusedParameters`: passes.
+- `npm run build`: passes.
+- `git diff --check`: passes.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 32/32 pass across Chromium and WebKit.
+- Migrations `000`–`011` apply unchanged to disposable PostgreSQL 17; the harness executes the activation RPC as `service_role` and removes its container after the run.
+- No production migration, Cloudflare deploy, Stripe change/charge, live email, or production data mutation was performed.
+
+### Step 8 owner decisions
+
+- [x] Launch with 60-second polling and amend the three realtime claims in `PRODUCT.md`, `DESIGN.md`, and `tasks/todo.md` during T3.4.
+- [x] Document a React Router advisory exception through the season; schedule the major upgrade after the season.
+- [x] Include one real $4.99 charge followed by a refund in Phase 4, with fresh action-time approval required immediately before submitting the charge.
+- [x] Keep already-published boards live after entitlement revocation; block only new activations.
+
 ## Organizer setup flow repair plan — July 29, 2026
 
 - [x] Reproduce Overview → Continue setup → Edit in the authenticated production Safari session without changing board data.
@@ -175,7 +447,7 @@ Production launch approval received July 28, 2026. Approved account boundary: Gr
 - [x] Propagate authenticated JWTs for user-scoped writes.
 - [x] Add atomic/versioned board updates to prevent stale autosaves overwriting newer work.
 - [x] Add a canonical score snapshot and source/freshness fields.
-- [ ] Add realtime publication/policies for read-only viewer board and score updates.
+- [x] Ship read-only viewer board and score updates through visibility-aware one-minute polling; realtime transport is deliberately deferred until after the 2026 season.
 - [x] Add migration and RLS tests for anonymous viewer, owner, and non-owner behavior.
 
 ## 2. Server-authoritative NFL scoring
@@ -187,7 +459,7 @@ Production launch approval received July 28, 2026. Approved account boundary: Gr
 - [x] Include source, fetched time, freshness, game state, and failure details.
 - [x] Stop automatic refresh after Final and avoid background/inactive-tab polling.
 - [x] Prevent stale async results from overwriting manual mode or newer snapshots.
-- [ ] Broadcast persisted score changes to all open viewers through Supabase realtime.
+- [x] Poll persisted score changes about every minute, pause while hidden, and retain polling as the explicit launch transport.
 - [x] Keep organizer manual quarter scores authoritative when manual override is enabled.
 - [ ] Add pregame, live, stale, offline, manual, overtime, and Final tests.
 
@@ -230,7 +502,7 @@ Production launch approval received July 28, 2026. Approved account boundary: Gr
 - [ ] Clean-install dependencies and build from a clean checkout-equivalent state.
 - [x] Apply the full schema to a fresh local/test Supabase database.
 - [ ] Run unit, migration, RLS, API, webhook, and concurrency tests.
-- [ ] Run a two-context full-stack flow: signup → create → share → viewer opens → manual score → realtime winner update.
+- [ ] Run a two-context full-stack flow: signup → create → share → viewer opens → manual score → polled winner update.
 - [ ] Run automatic-score tests with recorded fixtures; do not depend on a live NFL game.
 - [ ] Run Stripe test-mode checkout/webhook/activation and retry scenarios.
 - [ ] Run desktop, tablet, and phone Playwright coverage.

@@ -19,7 +19,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   });
   const { data: order, error } = await admin
     .from('checkout_orders')
-    .select('id, contest_id, status, paid_at')
+    .select('id, contest_id, season_year, status, paid_at, refundable_at, terminal_reason, amount_refunded_cents')
     .eq('id', orderId)
     .eq('owner_id', authData.user.id)
     .maybeSingle();
@@ -30,10 +30,20 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     .select('id')
     .eq('contest_id', order.contest_id)
     .maybeSingle();
+  const { data: entitlement } = await admin
+    .from('season_entitlements')
+    .select('status')
+    .eq('owner_id', authData.user.id)
+    .eq('season_year', order.season_year)
+    .maybeSingle();
   return Response.json({
     orderStatus: order.status,
     activated: Boolean(activation),
     contestId: order.contest_id,
     paidAt: order.paid_at,
+    refundable: Boolean(order.refundable_at),
+    terminalReason: order.terminal_reason,
+    amountRefundedCents: Number(order.amount_refunded_cents || 0),
+    entitlementStatus: entitlement?.status || null,
   });
 };

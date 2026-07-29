@@ -11,6 +11,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { PageMetadata } from './seo/PageMetadata';
 import { startScrollRuntime } from '../lib/scrollRuntime';
+import { getPublicRouteMetadata } from '../seo/publicRouteMetadata';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -206,9 +207,7 @@ const Board: React.FC<{ q: number; compact?: boolean }> = ({ q, compact }) => {
 };
 
 const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
-  const title = 'GridOne — Live Football Squares Boards With Automatic Score Tracking';
-  const description =
-    'Run football squares and Super Bowl squares on one live board with automatic beta score tracking, a clear manual fallback, and no viewer accounts.';
+  const { title, description } = getPublicRouteMetadata('/');
 
   const [q, setQ] = useState(0);
   const arcRef = useRef<HTMLElement>(null);
@@ -280,7 +279,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
 
       <main className="flex-1">
         {/* ── BAND 1 — thesis + the board ── */}
-        <section className="grid border-b-[3px] border-ink md:grid-cols-2">
+        <section className="grid border-b-[3px] border-ink lg:grid-cols-2">
           <div className="flex min-w-0 flex-col justify-center gap-7 px-5 py-14 md:px-10 md:py-20">
             <h1 className="oa-chyron text-ink">
               The board<br />watches<br />the game
@@ -313,7 +312,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         {/* ── BAND 2 — the game arc. The proof.
                The board is sticky INSIDE this band so it is on screen at the
                exact moment each quarter settles. ── */}
-        <section ref={arcRef} className="border-b-[3px] border-ink bg-ink px-5 py-16 md:min-h-[150vh] md:px-10 md:py-24">
+        <section ref={arcRef} className="border-b-[3px] border-ink bg-ink px-5 py-16 lg:min-h-[150vh] md:px-10 md:py-24">
           <div className="mb-4 h-[3px] w-full bg-gold" aria-hidden data-wipe />
           <h2 className="oa-chyron mb-5 text-broadcast-white" data-wipe>Automatic first.<br />Manual when needed.</h2>
           <p className="oa-body mb-12 max-w-xl text-broadcast-white/70">
@@ -321,8 +320,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             Scroll to watch a synthetic game settle.
           </p>
 
-          <div className="grid gap-10 md:min-h-[100vh] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
-            <div className="min-w-0 self-start bg-cardinal md:sticky md:top-[7.5rem]">
+          <div className="grid gap-10 lg:min-h-[100vh] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
+            <div className="min-w-0 self-start bg-cardinal lg:sticky lg:top-[7.5rem]">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 pb-2 pt-3">
                 <span className="oa-slab text-broadcast-white">
                   {q === 0 ? 'Board · pregame' : q === 4 ? 'Board · final' : `Board · through ${QUARTERS[q - 1].label}`}
@@ -332,7 +331,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               <Board q={q} />
             </div>
 
-            <ol className="grid min-w-0 gap-px self-start bg-broadcast-white/20 sm:grid-cols-2 md:grid-cols-1 md:sticky md:top-[7.5rem]">
+            <ol className="grid min-w-0 gap-px self-start bg-broadcast-white/20 sm:grid-cols-2 lg:grid-cols-1 lg:sticky lg:top-[7.5rem]">
             {QUARTERS.map((quarter, i) => {
               const active = q > i;
               const cell = winnerCell(quarter);

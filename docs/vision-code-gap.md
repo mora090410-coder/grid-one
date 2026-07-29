@@ -45,7 +45,7 @@ This is not a full rewrite. It is a **foundation replacement beneath a preserved
 | Passcodes/recovery | Four-character board passwords, hashes, and calls to nonexistent recovery/login functions remain. | Remove the entire legacy board-passcode authority. |
 | Entitlements | Allowance activation is raceable and repeated payments can stack rows. | One non-stacking 2026 entitlement with atomic activation and recovery. |
 | Checkout | Anyone can create checkout for an arbitrary board ID. | Require signed-in owner and verify the owned draft board server-side. |
-| Pricing | Product copy and Stripe configuration say $14.99. | Use $4.99 consistently; change the live Stripe Price only at final production approval. |
+| Pricing | Product copy and configuration use a $4.99 one-time 2026 pass for up to 20 boards. | Keep the claim consistent; verify the live Stripe Price at final production approval. |
 | Error handling | Invalid board fetches can become plausible empty boards. | Render explicit unavailable, unpublished, locked, deleted, and offline states. |
 | Accessibility | Visual modals lack dialog semantics, focus containment/return, Escape behavior, and names. | Implement accessible dialog and control primitives across all flows. |
 | SEO/social | Missing `/og-image.jpg`; SPA metadata is not crawler-reliable for articles. | Add the asset and produce crawlable per-route metadata/static output. |
@@ -78,7 +78,7 @@ This is not a full rewrite. It is a **foundation replacement beneath a preserved
 - Multiple digit sets by quarter
 - Claims that the app updates “instantly” without a defined freshness window
 - Unenforced “100 viewer cap” language; retain it only as a tested capacity target
-- Legacy names, glass styling, placeholder recovery copy, and obsolete $14.99 statements
+- Legacy names, glass styling, placeholder recovery copy, and obsolete pricing statements
 
 ## Recommended implementation topology
 

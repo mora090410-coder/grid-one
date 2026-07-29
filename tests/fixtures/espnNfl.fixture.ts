@@ -87,3 +87,46 @@ export const scheduledEspnEvent = {
     ],
   }],
 };
+
+const quarterFlipSummary = (homeQ1: number) => ({
+  header: {
+    id: '401000010',
+    season: { year: 2026 },
+    week: { number: 1 },
+    competitions: [{
+      id: '401000010',
+      date: '2026-09-13T17:00:00Z',
+      status: {
+        period: 2,
+        displayClock: '15:00',
+        type: { state: 'in', detail: 'Start of 2nd Quarter' },
+      },
+      competitors: [
+        team('home', 'GB', 'Green Bay Packers', String(homeQ1), [
+          { period: 1, value: homeQ1 },
+          { period: 2, value: 0 },
+        ]),
+        team('away', 'CHI', 'Chicago Bears', '7', [
+          { period: 1, value: 7 },
+          { period: 2, value: 0 },
+        ]),
+      ],
+    }],
+  },
+});
+
+/** Recorded-shape provider sequence for a late extra-point correction. */
+export const milestoneCorrectionEspnSequence = [
+  {
+    observedAt: '2026-09-13T18:00:00Z',
+    summary: quarterFlipSummary(13),
+  },
+  {
+    observedAt: '2026-09-13T18:00:25Z',
+    summary: quarterFlipSummary(14),
+  },
+  {
+    observedAt: '2026-09-13T18:01:10Z',
+    summary: quarterFlipSummary(14),
+  },
+] as const;

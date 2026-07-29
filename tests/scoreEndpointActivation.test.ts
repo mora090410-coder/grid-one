@@ -16,7 +16,7 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 vi.mock('../functions/_lib/winnerNotifications', () => ({
-  resolveMilestonesAndNotify: vi.fn(),
+  observeMilestones: vi.fn(),
 }));
 
 const env = {
@@ -38,8 +38,14 @@ const adminClient = (contest: Record<string, unknown>) => {
     const chain: any = {
       select: vi.fn(() => chain),
       eq: vi.fn(() => chain),
+      is: vi.fn(() => chain),
       in: vi.fn(() => chain),
-      maybeSingle: vi.fn(async () => ({ data: contest, error: null })),
+      maybeSingle: vi.fn(async () => ({
+        data: table === 'public_board_snapshots'
+          ? { contest_id: contest.id, contest }
+          : contest,
+        error: null,
+      })),
     };
     return chain;
   });
@@ -98,7 +104,7 @@ describe.sequential('automatic score service activation boundary', () => {
     });
 
     expect(response.status).toBe(402);
-    expect(admin.tables).toEqual(['contests']);
+    expect(admin.tables).toEqual(['public_board_snapshots']);
     expect(admin.rpc).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
--- Season-pass entitlements: one $14.99 payment grants an organizer an
--- allowance of board activations (default 20) instead of paying per board.
+-- Season-pass entitlements: one $4.99 payment grants an organizer up to
+-- 20 board activations for the 2026 season instead of paying per board.
 CREATE TABLE IF NOT EXISTS public.entitlements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL,

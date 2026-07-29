@@ -110,7 +110,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 - Read-only short link and QR code
 - Mobile My Squares, current winner, scenario engine, and full board
 - Server-cached automatic beta plus manual override
-- Realtime viewer updates
+- Viewer score updates about every minute through visibility-aware polling
 - Verified email opt-in and winner delivery
 - Explicit errors, stale/offline states, secure schema/RLS, and accessibility
 
@@ -120,6 +120,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 - Viewer claiming
 - In-app money handling or payouts
 - SMS, co-organizers, non-NFL sports
+- Optional realtime transport after the 2026 season
 - Multiple digit sets by quarter
 - Native apps and hard viewer caps
 

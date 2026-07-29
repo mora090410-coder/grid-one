@@ -891,6 +891,37 @@ body:has(.gdh-root) {
     border-top: 1px solid rgba(239, 240, 241, 0.35);
 }
 
+.gdh-pending-results {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px dashed rgba(239, 240, 241, 0.55);
+    background: rgba(239, 240, 241, 0.08);
+}
+
+.gdh-pending-results h2 {
+    margin: 0.3rem 0 0.8rem;
+    color: var(--color-broadcast-white);
+    font: 750 1.25rem/1 var(--font-condensed);
+    text-transform: uppercase;
+}
+
+.gdh-pending-results ul {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.gdh-pending-results li {
+    display: grid;
+    gap: 0.25rem;
+    color: var(--color-broadcast-white);
+}
+
+.gdh-pending-results span {
+    color: rgba(239, 240, 241, 0.7);
+    font: 700 0.72rem/1.35 var(--font-data);
+    text-transform: uppercase;
+}
+
 .gdh-resolved h2 {
     margin: 0.3rem 0 0.8rem;
     color: var(--color-broadcast-white);
@@ -917,6 +948,16 @@ body:has(.gdh-root) {
     padding: 0.65rem 0.8rem;
     color: var(--color-ink);
     background: var(--color-gold);
+}
+
+.gdh-resolved li.is-corrected {
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+}
+
+.gdh-resolved li em {
+    grid-column: 1 / -1;
+    font: 700 0.7rem/1.35 var(--font-data);
+    text-transform: uppercase;
 }
 
 .gdh-resolved span,

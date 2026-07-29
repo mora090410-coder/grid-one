@@ -3,6 +3,10 @@ import {
   fetchScheduledGameById,
   type ScheduledGame,
 } from '../../_lib/espnNfl';
+import {
+  findVisiblePublicBoard,
+  publicBoardNotFoundResponse,
+} from '../../_lib/publicBoardVisibility';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
@@ -157,7 +161,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (uuidPattern.test(id) && auth.userId) {
       const { data, error } = await admin
         .from('contests')
-        .select('id, share_code, owner_id, title, status, revision, settings, board_data, payout_labels, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+        .select('id, share_code, owner_id, title, status, revision, score_test_mode, settings, board_data, payout_labels, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
         .eq('id', id)
         .eq('owner_id', auth.userId)
         .maybeSingle();
@@ -169,7 +173,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       ] = await Promise.all([
         admin
           .from('public_board_snapshots')
-          .select('winner_history, score')
+          .select('winner_history, pending_milestones, score')
           .eq('contest_id', data.id)
           .maybeSingle(),
         admin
@@ -180,6 +184,14 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       ]);
       if (publicSnapshotError) throw publicSnapshotError;
       if (scoreStateError) throw scoreStateError;
+      const { data: terminalDeliveries, error: terminalDeliveriesError } = await admin
+        .from('notification_deliveries')
+        .select('id, notification_kind, attempt_count, last_error, terminal_at, milestone_resolutions!inner(contest_id, milestone)')
+        .eq('milestone_resolutions.contest_id', data.id)
+        .eq('status', 'failed_permanent')
+        .order('terminal_at', { ascending: false })
+        .limit(20);
+      if (terminalDeliveriesError) throw terminalDeliveriesError;
       let currentScore = publicSnapshot?.score || null;
       if (scoreState?.current_snapshot_id) {
         const { data: snapshot, error: snapshotError } = await admin
@@ -217,6 +229,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         status: data.status,
         revision: data.revision,
         ...(data.settings || {}),
+        scoreTestMode: data.score_test_mode === true,
         payouts: data.payout_labels || data.settings?.payouts || {},
         gameExternalId: data.game_external_id || data.settings?.gameExternalId || null,
         gameStartsAt: data.game_starts_at || data.settings?.gameStartsAt || null,
@@ -233,6 +246,17 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         locked: Boolean(data.published_at),
         published_at: data.published_at,
         winner_history: publicSnapshot?.winner_history || [],
+        pending_milestones: publicSnapshot?.pending_milestones || [],
+        notification_delivery_issues: (terminalDeliveries || []).map((delivery: any) => ({
+          id: delivery.id,
+          notificationKind: delivery.notification_kind,
+          milestone: Array.isArray(delivery.milestone_resolutions)
+            ? delivery.milestone_resolutions[0]?.milestone
+            : delivery.milestone_resolutions?.milestone,
+          attemptCount: delivery.attempt_count,
+          error: delivery.last_error,
+          terminalAt: delivery.terminal_at,
+        })),
         score: currentScore,
         scoreSnapshot: currentScore,
         useManualScores,
@@ -245,17 +269,17 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     }
 
     if (!sharePattern.test(id)) {
-      return json(request, { error: 'This board link is invalid.' }, 404, env.PUBLIC_SITE_URL);
+      return publicBoardNotFoundResponse(responseHeaders(request, env.PUBLIC_SITE_URL));
     }
 
-    const { data, error } = await admin
-      .from('public_board_snapshots')
-      .select('share_code, revision, board_title, matchup, board, score, winner_history, payout_labels, published_at, updated_at')
-      .eq('share_code', id)
-      .is('withdrawn_at', null)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) return json(request, { error: 'This board is unavailable or has not been published.' }, 404, env.PUBLIC_SITE_URL);
+    const visibleBoard = await findVisiblePublicBoard(admin, id, {
+      snapshot: 'share_code, revision, board_title, matchup, board, score, winner_history, pending_milestones, payout_labels, score_test_mode, published_at, updated_at',
+      contest: 'id, status',
+    });
+    if (!visibleBoard) {
+      return publicBoardNotFoundResponse(responseHeaders(request, env.PUBLIC_SITE_URL));
+    }
+    const data = visibleBoard.snapshot;
 
     const matchup = data.matchup || {};
     return json(request, {
@@ -277,8 +301,10 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       board: data.board,
       score: data.score,
       winner_history: data.winner_history,
+      pending_milestones: data.pending_milestones,
       payout_labels: data.payout_labels,
       payouts: data.payout_labels,
+      scoreTestMode: data.score_test_mode === true,
       is_activated: true,
       locked: false,
     }, 200, env.PUBLIC_SITE_URL);

@@ -39,6 +39,65 @@ test('narrow landing page stays within the viewport and exposes the real board',
   expect(await boardScroller.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
 });
 
+test('tablet matrix keeps landing, demo, and sign-in surfaces inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+
+  const surfaces = [
+    { path: '/', landmark: page.getByRole('heading', { name: /The board watches the game/i }) },
+    { path: '/demo', landmark: page.getByText(/Demo: Super Bowl LIX/i).first() },
+    { path: '/login?mode=signin', landmark: page.getByRole('heading', { name: /Welcome back/i }) },
+  ];
+
+  for (const surface of surfaces) {
+    await page.goto(surface.path);
+    await expect(surface.landmark).toBeVisible();
+    expect(await page.evaluate(() => {
+      window.scrollTo({ left: document.documentElement.scrollWidth, top: window.scrollY, behavior: 'auto' });
+      return window.scrollX;
+    })).toBe(0);
+  }
+});
+
+test('landing game arc reverses, releases its sticky board, and reaches post-hero content', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+
+  const arcHeading = page.getByRole('heading', { name: /Automatic first/i });
+  const arc = page.locator('section').filter({ has: arcHeading });
+  const arcBoard = arc.getByRole('group', {
+    name: /Squares board, scrolls horizontally on small screens/i,
+  });
+  const stickyBoard = arcBoard.locator('..');
+
+  await expect(page.getByText('Board · pregame')).toBeVisible();
+  await arc.evaluate((element) => {
+    const section = element as HTMLElement;
+    const top = section.offsetTop + Math.max(1, section.offsetHeight - window.innerHeight) * 0.8;
+    window.__lenis?.scrollTo(top, { immediate: true });
+  });
+  await expect.poll(async () => (await stickyBoard.boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(115);
+  await expect.poll(async () => (await stickyBoard.boundingBox())?.y ?? 999).toBeLessThanOrEqual(125);
+
+  await arc.evaluate((element) => {
+    const section = element as HTMLElement;
+    window.__lenis?.scrollTo(section.offsetTop + section.offsetHeight, { immediate: true });
+  });
+  await expect(page.getByText('Board · final')).toBeVisible();
+
+  await arc.evaluate((element) => {
+    window.__lenis?.scrollTo((element as HTMLElement).offsetTop, { immediate: true });
+  });
+  await expect(page.getByText('Board · pregame')).toBeVisible();
+
+  const how = page.locator('#how');
+  await how.evaluate((element) => {
+    window.__lenis?.scrollTo((element as HTMLElement).offsetTop, { immediate: true });
+  });
+  await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Build the board' })).toBeVisible();
+  await expect.poll(async () => (await arcBoard.boundingBox())?.y ?? 0).toBeLessThan(0);
+});
+
 test('smooth scrolling is owned only by the cinematic landing route', async ({ page }) => {
   await page.goto('/');
   await expect.poll(() => page.evaluate(() => Boolean(window.__lenis))).toBe(true);

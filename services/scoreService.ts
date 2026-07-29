@@ -1,9 +1,12 @@
-import { LiveGameData, WinnerResolution } from '../types';
+import { LiveGameData, PendingMilestone, WinnerResolution } from '../types';
 import { supabase } from './supabase';
 
 export async function fetchLiveScore(boardRef: string, accessToken?: string | null): Promise<{
-    score: LiveGameData;
+    score: LiveGameData | null;
+    scoreState?: 'awaiting_organizer_entry';
+    message?: string;
     winnerHistory?: WinnerResolution[];
+    pendingMilestones?: PendingMilestone[];
 }> {
     let token = accessToken;
     if (token === undefined) {
@@ -24,14 +27,17 @@ export async function fetchLiveScore(boardRef: string, accessToken?: string | nu
     if (!response.ok) {
         throw new Error(data.error || 'The score service is unavailable.');
     }
-    if (!data.score) {
+    if (!data.score && data.scoreState !== 'awaiting_organizer_entry') {
         throw new Error('No score is available yet.');
     }
     return {
-      score: {
+      score: data.score ? {
         ...(data.score as LiveGameData),
         warning: data.warning || data.score.warning,
-      },
+      } : null,
+      scoreState: data.scoreState,
+      message: data.message,
       winnerHistory: Array.isArray(data.winnerHistory) ? data.winnerHistory : undefined,
+      pendingMilestones: Array.isArray(data.pendingMilestones) ? data.pendingMilestones : undefined,
     };
 }

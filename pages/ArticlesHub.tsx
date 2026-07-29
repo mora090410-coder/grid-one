@@ -7,7 +7,7 @@ const ARTICLES = [
   {
     title: 'How to Run Super Bowl Squares Online',
     desc: 'Step-by-step guide for building, sharing, and managing football squares without poster-board confusion.',
-    to: '/articles/how-',
+    to: '/articles/how-to-run-super-bowl-squares',
     tag: 'How-to',
   },
   {

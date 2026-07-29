@@ -1,8 +1,5 @@
 import { useEffect } from 'react';
-
-const SITE_NAME = 'GridOne';
-const SITE_URL = 'https://www.getgridone.com';
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.jpg`;
+import { DEFAULT_OG_IMAGE, SITE_NAME, SITE_URL } from '../../seo/publicRouteMetadata';
 
 type Props = {
   title: string;
@@ -37,7 +34,7 @@ export function PageMetadata({
   description,
   path = '/',
   type = 'website',
-  image = DEFAULT_IMAGE,
+  image = DEFAULT_OG_IMAGE,
   schema,
   noIndex = false,
 }: Props) {

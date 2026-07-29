@@ -25,7 +25,7 @@ const NotificationOptIn: React.FC<NotificationOptInProps> = ({ shareCode, partic
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to start email verification.');
       setStatus('sent');
-      setMessage('Check your inbox and verify this email. Notifications begin only after verification.');
+      setMessage(result.message || 'If this address needs verification, check your inbox. Any already verified address remains active.');
     } catch (error: any) {
       setStatus('error');
       setMessage(error.message || 'Unable to start email verification.');

@@ -50,7 +50,7 @@ export const HowFootballSquaresWork: React.FC = () => {
 
           <ArticleCTA
             links={[
-              { to: '/articles/how-', label: 'How to Run Super Bowl Squares', primary: true },
+              { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares', primary: true },
               { to: '/articles/digital-football-squares-board-vs-paper', label: 'Digital vs Paper Board' },
               { to: '/create', label: 'Build your board' },
             ]}
