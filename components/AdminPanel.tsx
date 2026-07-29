@@ -868,7 +868,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     <div className="space-y-6">
 
       {/* Top Header - Apple-clean 3-zone layout */}
-      <div className="sticky top-0 z-[85] bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-none flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
+      <div className="gridone-organizer-header sticky top-0 z-[85] bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-surface flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
 
         {/* LEFT: Brand + Title */}
         <button
@@ -883,7 +883,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
           }}
           className="flex min-h-11 items-center gap-3 min-w-0 group cursor-pointer text-left"
         >
-          <div className="w-9 h-9 rounded-none bg-newsprint group-hover:bg-newsprint flex items-center justify-center border border-newsprint hover:border-newsprint transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
+          <div className="w-9 h-9 rounded-surface bg-newsprint group-hover:bg-newsprint flex items-center justify-center border border-newsprint hover:border-newsprint transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="min-w-0 hidden md:block">
@@ -918,8 +918,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
         {/* RIGHT: Status + Overflow Menu */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Status pill - compact (Hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-newsprint border border-newsprint">
+          {/* Compact save status (hidden on mobile) */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-newsprint border border-newsprint">
             {saveStatus === 'saved' && (
               <>
                 <svg className="w-3.5 h-3.5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -959,7 +959,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
               aria-label="More options"
               aria-expanded={showMenu}
               aria-haspopup="true"
-              className="min-w-11 min-h-11 flex items-center justify-center rounded-none bg-newsprint hover:bg-newsprint border border-newsprint text-ink/60 hover:text-ink transition-all focus:outline-none focus:ring-2 focus:ring-ink/20"
+              className="min-w-11 min-h-11 flex items-center justify-center rounded-control bg-newsprint hover:bg-newsprint border border-newsprint text-ink/60 hover:text-ink transition-all focus:outline-none focus:ring-2 focus:ring-ink/20"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="6" r="1.5" />
@@ -975,7 +975,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
                 {/* Menu dropdown - positioned via ref */}
                 <div
-                  className="fixed w-56 py-1.5 bg-broadcast-white border border-newsprint rounded-none z-[9999] duration-150"
+                  className="fixed w-56 py-1.5 bg-broadcast-white border border-newsprint rounded-surface z-[9999] duration-150"
                   style={{
                     top: menuButtonRef.current ? menuButtonRef.current.getBoundingClientRect().bottom + 8 : 0,
                     right: menuButtonRef.current ? window.innerWidth - menuButtonRef.current.getBoundingClientRect().right : 0,
@@ -1174,14 +1174,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
             {/* Main Settings Area */}
             <div className="order-2 grid lg:grid-cols-2 gap-8">
               {/* Left Column: Board Settings */}
-              <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none space-y-6 h-fit">
+              <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-surface space-y-6 h-fit">
                 <div className="flex items-center justify-between">
                   <h4 className="text-lg font-semibold text-ink">Board Settings</h4>
 
                   <span className="oa-slab text-[10px] text-ink/50">One fixed draw · locked at publish</span>
                 </div>
 
-                <fieldset disabled={isPublished} className="space-y-4 disabled:opacity-60">
+                <fieldset disabled={isPublished} className="space-y-4">
                   <div className="space-y-1.5">
                     <label htmlFor="organizer-board-name" className="oa-slab text-ink/60">Board Name</label>
                     <input id="organizer-board-name" maxLength={100} type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full oa-input" />
@@ -1248,11 +1248,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
               {/* Right Column: Pool Configuration */}
               <div className="flex flex-col space-y-6">
-                <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex-1">
+                <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-surface flex-1">
                   <h4 className="text-lg font-semibold text-ink mb-6">Payout Configuration</h4>
 
                   {/* Payout Configuration */}
-                  <fieldset disabled={isPublished} className="space-y-5 mb-8 disabled:opacity-60">
+                  <fieldset disabled={isPublished} className="space-y-5 mb-8">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <label htmlFor="payout-q1" className="oa-slab text-ink/60">Q1 Payout</label>
@@ -1276,10 +1276,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label htmlFor="payout-final" className="oa-slab text-ink/60 text-gold">Final Payout</label>
+                        <label htmlFor="payout-final" className="oa-slab text-ink/60">Final Payout</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold text-sm">$</span>
-                          <input id="payout-final" min={0} type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 text-sm">$</span>
+                          <input id="payout-final" min={0} type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 font-bold" />
                         </div>
                       </div>
                     </div>
@@ -1299,17 +1299,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <>
                     <div className="flex items-center justify-between mb-4">
                       <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
-                      <div className="flex rounded-none bg-newsprint p-1 border border-newsprint">
+                      <div className="flex rounded-control bg-newsprint p-1 border border-newsprint">
                         <button
                           onClick={enableAutomaticScoring}
-                          className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
+                          className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Auto
                         </button>
                         <button
                           onClick={enableManualScoring}
                           disabled={scoreSaveStatus === 'saving'}
-                          className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
+                          className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Manual
                         </button>
@@ -1332,7 +1332,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                 onChange={(e) => updateManualGameState(
                                   e.target.value as NonNullable<GameState['manualGameState']>,
                                 )}
-                                className="w-full oa-input appearance-none bg-broadcast-white text-ink"
+                                className="w-full oa-input appearance-none text-ink"
                               >
                                 <option value="pre">Scheduled</option>
                                 <option value="in">In progress</option>
@@ -1353,7 +1353,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                 )}
                                 onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
                                 disabled={(localGame.manualGameState ?? 'in') !== 'in'}
-                                className="w-full oa-input appearance-none bg-broadcast-white text-ink disabled:opacity-40"
+                                className="w-full oa-input appearance-none text-ink"
                               >
                                 {(localGame.manualGameState ?? 'in') === 'pre' && (
                                   <option value={0}>Not started</option>
@@ -1537,13 +1537,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       </p>
                     ) : (
                     <div className="flex gap-4">
-                      <label className={`flex-1 flex flex-col items-center justify-center gap-2 bg-newsprint border border-newsprint hover:border-newsprint hover:bg-newsprint rounded-none p-4 cursor-pointer transition-all active:scale-[0.98] ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <label className={`flex-1 flex flex-col items-center justify-center gap-2 bg-newsprint border border-newsprint hover:border-newsprint hover:bg-newsprint rounded-control p-4 cursor-pointer transition-all active:scale-[0.98] ${isScanning ? 'opacity-50 pointer-events-none' : ''}`}>
                         <svg className="w-6 h-6 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         <span className="text-xs font-bold text-ink">{isScanning ? 'Processing...' : 'Scan Board'}</span>
                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                       </label>
 
-                      <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center gap-2 bg-cardinal-subtle border border-cardinal hover:bg-cardinal-subtle rounded-none p-4 transition-all active:scale-[0.98]">
+                      <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center gap-2 bg-cardinal-subtle border border-cardinal hover:bg-cardinal-subtle rounded-control p-4 transition-all active:scale-[0.98]">
                         <svg className="w-6 h-6 text-cardinal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         <span className="text-xs font-bold text-cardinal">{clearArmed ? 'Confirm clear' : 'Clear names'}</span>
                       </button>
@@ -1555,7 +1555,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
             </div>
 
             {/* Manual Grid Editor Section */}
-            <div id="grid-editor" tabIndex={-1} className="order-1 scroll-mt-28 bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex flex-col space-y-6 duration-700 outline-none">
+            <div id="grid-editor" tabIndex={-1} className="order-1 scroll-mt-28 bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-surface flex flex-col space-y-6 duration-700 outline-none">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-newsprint pb-6">
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-ink tracking-tight">Grid Editor</h3>
@@ -1576,7 +1576,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       dragBaseSelectionRef.current = new Set();
                       setSelectedCellIndices(new Set());
                     }}
-                    className={`min-h-11 px-4 py-2 rounded-none text-xs font-bold transition-all ${isAssignMode ? 'bg-cardinal text-broadcast-white  ' : 'bg-newsprint text-ink/70 hover:bg-newsprint'}`}
+                    className={`min-h-11 px-4 py-2 rounded-control text-xs font-bold transition-all ${isAssignMode ? 'bg-cardinal text-broadcast-white  ' : 'bg-newsprint text-ink/70 hover:bg-newsprint'}`}
                   >
                     {isAssignMode ? 'Done' : 'Assign Squares'}
                   </button>}
@@ -1585,7 +1585,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
               {/* Bulk Assign Panel */}
               {isAssignMode && !isPublished && (
-                <div className="bg-cardinal-subtle border border-cardinal rounded-none p-4">
+                <div className="bg-cardinal-subtle border border-cardinal rounded-surface p-4">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-5 space-y-1">
                     <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Label to Apply</label>
@@ -1596,18 +1596,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       value={assignLabel}
                       onChange={(e) => setAssignLabel(e.target.value)}
                       placeholder="e.g. Mora"
-                      className="w-full bg-broadcast-white border border-newsprint rounded-none px-3 py-2 text-sm text-ink focus:border-cardinal outline-none"
+                      className="w-full bg-broadcast-white border border-newsprint rounded-control px-3 py-2 text-sm text-ink focus:border-cardinal outline-none"
                     />
                     </div>
 
                     <div className="md:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Payment Status</label>
-                    <div className="w-full flex bg-broadcast-white rounded-none p-1 border border-newsprint">
+                    <div className="w-full flex bg-broadcast-white rounded-control p-1 border border-newsprint">
                       {(['unpaid', 'paid'] as const).map(status => (
                         <button
                           key={status}
                           onClick={() => setAssignPaidDefault(status)}
-                          className={`flex-1 min-h-11 px-3 py-2 rounded-none text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-cardinal text-broadcast-white' : 'text-ink/50 hover:text-ink'}`}
+                          className={`flex-1 min-h-11 px-3 py-2 rounded-control text-xs font-bold capitalize transition-all ${assignPaidDefault === status ? 'bg-cardinal text-broadcast-white' : 'text-ink/50 hover:text-ink'}`}
                         >
                           {status}
                         </button>
@@ -1628,14 +1628,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                           dragBaseSelectionRef.current = new Set();
                           setSelectedCellIndices(new Set());
                         }}
-                        className="min-h-11 px-4 py-2 rounded-none text-xs font-bold text-ink/50 hover:bg-newsprint hover:text-ink transition-colors"
+                        className="min-h-11 px-4 py-2 rounded-control text-xs font-bold text-ink/50 hover:bg-newsprint hover:text-ink transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleBulkApply}
                         disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
-                        className="min-h-11 px-6 py-2 rounded-none text-sm font-bold bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="min-h-11 px-6 py-2 rounded-control text-sm font-bold bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         Apply to {selectedCellIndices.size}
                       </button>
@@ -1668,7 +1668,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       type="button"
                       onClick={stageNumberDraw}
                       disabled={localBoard.squares.some((names) => !names.length)}
-                      className="oa-btn bg-gold text-ink border border-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      className="oa-btn oa-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Draw numbers
                     </button>
@@ -1695,7 +1695,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                 )}
               </section>
 
-              <div className="overflow-x-auto custom-scrollbar bg-newsprint p-6 rounded-none border border-newsprint">
+              <div className="overflow-x-auto custom-scrollbar bg-newsprint p-6 rounded-grid border border-newsprint">
                 <div className="min-w-[800px] space-y-6">
 
                   {/* Header: Top Team and Axis */}
@@ -1775,7 +1775,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                 disabled={isPublished}
                                 aria-pressed={isAssignMode ? selectedCellIndices.has(cellIdx) : undefined}
                                 aria-label={`Square ${cellIdx + 1}${players[0] ? `, assigned to ${players[0]}` : ', unassigned'}${isAssignMode ? ', toggle selection' : ', edit purchaser details'}`}
-                                className={`w-full h-full border rounded-none flex flex-col items-center justify-center p-1 transition-all group ${isPublished ? 'cursor-default' : 'cursor-pointer active:scale-95'} ${isAssignMode && selectedCellIndices.has(cellIdx)
+                                className={`w-full h-full border rounded-grid flex flex-col items-center justify-center p-1 transition-all group ${isPublished ? 'cursor-default' : 'cursor-pointer active:scale-95'} ${isAssignMode && selectedCellIndices.has(cellIdx)
                                   ? 'bg-cardinal-subtle border-cardinal '
                                   : 'bg-newsprint border-newsprint hover:bg-newsprint hover:border-newsprint'
                                   }`}
@@ -1840,7 +1840,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
       {/* PREVIEW TAB CONTENT */}
       {activeTab === 'preview' && renderPreview && (
-        <div id="preview-board" tabIndex={-1} className="scroll-mt-28 min-h-[calc(100dvh-6rem)] w-full rounded-none bg-background border border-newsprint relative outline-none">
+        <div id="preview-board" tabIndex={-1} className="scroll-mt-28 min-h-[calc(100dvh-6rem)] w-full rounded-surface bg-background border border-newsprint relative outline-none">
           {renderPreview()}
         </div>
       )}
@@ -1887,7 +1887,7 @@ const MetadataModal: React.FC<{
         {/* Header */}
         <div className="flex justify-between items-center">
           <h3 id={`square-dialog-title-${cellIndex}`} className="text-lg font-semibold text-ink">Edit square {cellIndex + 1}</h3>
-          <button onClick={onClose} aria-label="Close square editor" className="min-h-11 min-w-11 p-1 hover:bg-newsprint rounded-none text-ink/50 hover:text-ink">
+          <button onClick={onClose} aria-label="Close square editor" className="min-h-11 min-w-11 p-1 hover:bg-newsprint rounded-control text-ink/50 hover:text-ink">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
@@ -1916,7 +1916,7 @@ const MetadataModal: React.FC<{
                 <button
                   key={status}
                   onClick={() => setPaidStatus(status)}
-                  className={`flex-1 min-h-11 py-2 px-3 rounded-none text-xs font-bold capitalize transition-all ${paidStatus === status
+                  className={`flex-1 min-h-11 py-2 px-3 rounded-control text-xs font-bold capitalize transition-all ${paidStatus === status
                     ? (status === 'paid' ? 'bg-gold text-ink border border-gold-deep' :
                       status === 'unpaid' ? 'bg-cardinal-subtle text-cardinal border border-cardinal' :
                         'bg-broadcast-white text-ink')
@@ -1938,7 +1938,7 @@ const MetadataModal: React.FC<{
         <div className="pt-2 flex justify-end">
           <button
             onClick={handleSave}
-            className="min-h-11 px-6 py-2 bg-broadcast-white text-ink text-sm font-bold rounded-none hover:bg-newsprint transition-colors"
+            className="min-h-11 px-6 py-2 bg-broadcast-white text-ink text-sm font-bold rounded-control hover:bg-newsprint transition-colors"
           >
             Save Details
           </button>

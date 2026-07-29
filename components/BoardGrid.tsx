@@ -103,14 +103,14 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
         </div>
       )}
 
-      {/* Main Board Container — hard rect, 3px ink rule, no radius/shadow */}
-      <div className={`relative overflow-visible bg-broadcast-white w-full max-w-[920px] aspect-square mx-auto ${
+      {/* Main Board Container — deliberately sharp, 3px ink rule, no radius/shadow */}
+      <div className={`gridone-board-frame relative overflow-visible bg-broadcast-white w-full max-w-[920px] aspect-square mx-auto ${
         isFilteringByPlayer
           ? 'ring-[3px] ring-inset ring-cardinal'
           : 'ring-[3px] ring-inset ring-ink'
       }`}>
 
-        <table className="border-collapse table-fixed w-full h-full">
+        <table className="gridone-board-grid border-collapse table-fixed w-full h-full">
           <colgroup>
             <col className="w-[7%] md:w-[5%]" />
             <col className="w-[7%] md:w-[5%]" />

@@ -26,7 +26,7 @@ export const OfficeSuperBowlSquares: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24 duration-700">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">
           Office Pool Guide
         </div>
 
@@ -45,7 +45,7 @@ export const OfficeSuperBowlSquares: React.FC = () => {
           </p>
 
           <div className="my-12 grid gap-6 md:grid-cols-2">
-            <div className="rounded-none bg-newsprint p-6 ring-1 ring-gold/20">
+            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-gold/20">
               <h3 className="text-xl font-bold text-gold mb-4">Better office squares flow</h3>
               <ul className="space-y-3 text-sm text-ink/80">
                 <li>One live board link for the whole office</li>
@@ -54,7 +54,7 @@ export const OfficeSuperBowlSquares: React.FC = () => {
                 <li>Cleaner handoff than spreadsheet plus group chat</li>
               </ul>
             </div>
-            <div className="rounded-none bg-newsprint p-6 ring-1 ring-white/10 opacity-80">
+            <div className="rounded-surface bg-newsprint p-6 ring-1 ring-white/10 opacity-80">
               <h3 className="text-xl font-bold text-ink mb-4">Typical mess</h3>
               <ul className="space-y-3 text-sm text-ink/65">
                 <li>Someone uploads one blurry photo</li>
@@ -74,7 +74,7 @@ export const OfficeSuperBowlSquares: React.FC = () => {
           </ul>
 
           <div className="mt-16 text-center">
-            <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-none bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
+            <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
               Build your office board →
             </Link>
           </div>

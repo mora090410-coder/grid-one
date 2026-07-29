@@ -22,7 +22,7 @@ export const ArticleCTA: React.FC<Props> = ({ title = 'Related guides', links })
             key={link.to}
             to={link.to}
             className={link.primary
-              ? 'oa-btn bg-cardinal text-broadcast-white hover:bg-cardinal-deep text-center'
+              ? 'oa-btn oa-btn-cardinal text-center'
               : 'oa-btn bg-broadcast-white text-ink ring-1 ring-inset ring-ink hover:bg-newsprint text-center'}
           >
             {link.label}

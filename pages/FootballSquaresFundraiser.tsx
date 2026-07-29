@@ -44,7 +44,7 @@ export const FootballSquaresFundraiser: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24 duration-700">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-gold ring-1 ring-gold/20">
           Fundraiser Guide
         </div>
 
@@ -72,7 +72,7 @@ export const FootballSquaresFundraiser: React.FC = () => {
               'Supporters open one live board link from any phone.',
               'Everyone can see winners and next-score scenarios without asking for updates.',
             ].map((item) => (
-              <div key={item} className="rounded-none bg-newsprint p-5 ring-1 ring-white/10 text-sm text-ink/75">{item}</div>
+              <div key={item} className="rounded-surface bg-newsprint p-5 ring-1 ring-white/10 text-sm text-ink/75">{item}</div>
             ))}
           </div>
 

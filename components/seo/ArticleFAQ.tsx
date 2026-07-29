@@ -21,7 +21,7 @@ export const ArticleFAQ: React.FC<{ faqs: FAQItem[] }> = ({ faqs }) => (
     <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Frequently asked questions</h2>
     <div className="space-y-4">
       {faqs.map((faq) => (
-        <div key={faq.question} className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10">
+        <div key={faq.question} className="rounded-surface bg-newsprint p-6 ring-1 ring-ink/10">
           <h3 className="text-lg font-semibold text-white mb-3">{faq.question}</h3>
           <p className="text-white/80 leading-relaxed">{faq.answer}</p>
         </div>

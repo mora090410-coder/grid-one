@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
         return (
             <div className="oa-root flex items-center justify-center h-screen bg-broadcast-white text-ink">
                 <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-none border-4 border-newsprint border-t-cardinal animate-spin"></div>
+                    <div className="w-12 h-12 rounded-control border-4 border-newsprint border-t-cardinal animate-spin"></div>
                     <p className="text-sm text-ink/60 font-medium tracking-wide">LOADING STADIUM...</p>
                 </div>
             </div>
@@ -169,14 +169,14 @@ const Dashboard: React.FC = () => {
 
             {pendingGuestBoard && !showMigratedToast && (
                 <div className="max-w-6xl mx-auto mb-6 duration-500">
-                    <div className="bg-cardinal-subtle border border-cardinal rounded-none p-6 flex items-center justify-between">
+                    <div className="bg-cardinal-subtle border border-cardinal rounded-surface p-6 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             {migrating ? (
-                                <div className="w-12 h-12 rounded-none bg-cardinal-subtle flex items-center justify-center border border-cardinal">
-                                    <div className="w-6 h-6 border-2 border-cardinal border-t-transparent rounded-none animate-spin"></div>
+                                <div className="w-12 h-12 rounded-surface bg-cardinal-subtle flex items-center justify-center border border-cardinal">
+                                    <div className="w-6 h-6 border-2 border-cardinal border-t-transparent rounded-control animate-spin"></div>
                                 </div>
                             ) : (
-                                <div className="w-12 h-12 rounded-none bg-cardinal-subtle flex items-center justify-center border border-cardinal">
+                                <div className="w-12 h-12 rounded-surface bg-cardinal-subtle flex items-center justify-center border border-cardinal">
                                     <Save className="w-6 h-6 text-cardinal" />
                                 </div>
                             )}
@@ -212,7 +212,7 @@ const Dashboard: React.FC = () => {
                                             }, 3000);
                                         }
                                     }}
-                                    className="px-4 py-2 rounded-none text-xs font-bold uppercase tracking-widest text-cardinal hover:text-ink transition-all"
+                                    className="px-4 py-2 rounded-control text-xs font-bold uppercase tracking-widest text-cardinal hover:text-ink transition-all"
                                 >
                                     Discard
                                 </button>
@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
                             <button
                                 onClick={handleManualMigration}
                                 disabled={migrating}
-                                className="px-6 py-3 rounded-none bg-cardinal hover:bg-cardinal-deep text-broadcast-white text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
+                                className="px-6 py-3 rounded-control bg-cardinal hover:bg-cardinal-deep text-broadcast-white text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
                             >
                                 {migrating ? 'Saving...' : 'Save to Account'}
                             </button>
@@ -231,8 +231,8 @@ const Dashboard: React.FC = () => {
 
             {showMigratedToast && (
                 <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 duration-300">
-                    <div className="bg-gold border border-gold-deep text-ink px-6 py-4 rounded-none flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-none bg-gold flex items-center justify-center">
+                    <div className="bg-gold border border-gold-deep text-ink px-6 py-4 rounded-surface flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-surface bg-gold flex items-center justify-center">
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         </div>
                         <div>
@@ -259,7 +259,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         {contests.length > 0 && (
-                            <Link to="/create" className="oa-btn bg-cardinal text-broadcast-white hover:bg-cardinal-deep oa-slab flex items-center gap-2">
+                            <Link to="/create" className="oa-btn oa-btn-cardinal flex items-center gap-2">
                                 <Plus className="w-5 h-5" />
                                 New Board
                             </Link>
@@ -278,8 +278,8 @@ const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     {contests.length > 0 && (
-                        <Link to="/create" className="group relative aspect-video bg-broadcast-white border border-newsprint rounded-none overflow-hidden hover:border-newsprint transition-all hover:bg-broadcast-white flex flex-col items-center justify-center gap-4 cursor-pointer">
-                            <div className="w-16 h-16 rounded-none bg-newsprint group-hover:bg-newsprint flex items-center justify-center transition-colors border border-newsprint duration-300">
+                        <Link to="/create" className="group relative aspect-video bg-broadcast-white border border-newsprint rounded-surface overflow-hidden hover:border-newsprint transition-all hover:bg-broadcast-white flex flex-col items-center justify-center gap-4 cursor-pointer">
+                            <div className="w-16 h-16 rounded-surface bg-newsprint group-hover:bg-newsprint flex items-center justify-center transition-colors border border-newsprint duration-300">
                                 <Plus className="w-8 h-8 text-ink/40 group-hover:text-ink" strokeWidth={1.5} />
                             </div>
                             <span className="oa-slab text-ink/60 group-hover:text-ink">Create New Board</span>
@@ -289,10 +289,10 @@ const Dashboard: React.FC = () => {
                     {pendingGuestBoard && !showMigratedToast && (
                         <div
                             onClick={handleManualMigration}
-                            className="group relative aspect-video bg-cardinal/10 border border-cardinal/50 border-dashed rounded-none overflow-hidden hover:bg-cardinal/20 transition-all flex flex-col cursor-pointer"
+                            className="group relative aspect-video bg-cardinal/10 border border-cardinal/50 border-dashed rounded-surface overflow-hidden hover:bg-cardinal/20 transition-all flex flex-col cursor-pointer"
                         >
                             <div className="absolute top-4 left-4 z-20">
-                                <span className="px-2 py-1 rounded-none bg-cardinal text-broadcast-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <span className="px-2 py-1 rounded-control bg-cardinal text-broadcast-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                                     <Save className="w-3 h-3" />
                                     Unsaved Board
                                 </span>
@@ -309,7 +309,7 @@ const Dashboard: React.FC = () => {
                                 <div className="absolute inset-0 bg-newsprint group-hover:bg-transparent transition-colors"></div>
 
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                                    <span className="px-4 py-2 bg-broadcast-white text-cardinal rounded-none text-xs font-black uppercase tracking-widest">
+                                    <span className="px-4 py-2 bg-broadcast-white text-cardinal rounded-control text-xs font-black uppercase tracking-widest">
                                         {migrating ? 'Saving...' : 'Click to Save'}
                                     </span>
                                 </div>
@@ -335,7 +335,7 @@ const Dashboard: React.FC = () => {
                     )}
 
                     {contests.map(contest => (
-                        <Link key={contest.id} to={`/boards/${contest.id}`} className="group relative aspect-video bg-broadcast-white border border-newsprint rounded-none overflow-hidden hover:border-cardinal/50 transition-all flex flex-col">
+                        <Link key={contest.id} to={`/boards/${contest.id}`} className="group relative aspect-video bg-broadcast-white border border-newsprint rounded-surface overflow-hidden hover:border-cardinal/50 transition-all flex flex-col">
 
                             <div className="flex-1 relative overflow-hidden">
                                 {contest.settings.coverImage ? (
@@ -345,7 +345,7 @@ const Dashboard: React.FC = () => {
                                 )}
 
                                 <div className="absolute top-4 left-4 flex items-center gap-2">
-                                    <span className="px-2 py-1 rounded-none bg-ink/80 border border-ink text-[10px] font-bold uppercase tracking-wider text-broadcast-white">
+                                    <span className="px-2 py-1 rounded-control bg-ink/80 border border-ink text-[10px] font-bold uppercase tracking-wider text-broadcast-white">
                                         {contest.settings.leftAbbr || 'UNK'} vs {contest.settings.topAbbr || 'UNK'}
                                     </span>
                                 </div>
@@ -353,7 +353,7 @@ const Dashboard: React.FC = () => {
                                 <button
                                     onClick={(e) => handleDelete(e, contest.id)}
                                     aria-label={deleteConfirmId === contest.id ? `Confirm deletion of ${contest.title}` : `Delete ${contest.title}`}
-                                    className={`absolute top-4 right-4 z-20 min-h-11 p-2 rounded-none border transition-all ${deleteConfirmId === contest.id ? 'bg-cardinal text-broadcast-white border-cardinal-deep w-auto px-3' : 'bg-newsprint text-ink/40 border-newsprint hover:bg-cardinal-subtle hover:text-cardinal hover:border-cardinal min-w-11 flex items-center justify-center'}`}
+                                    className={`absolute top-4 right-4 z-20 min-h-11 p-2 rounded-control border transition-all ${deleteConfirmId === contest.id ? 'bg-cardinal text-broadcast-white border-cardinal-deep w-auto px-3' : 'bg-newsprint text-ink/40 border-newsprint hover:bg-cardinal-subtle hover:text-cardinal hover:border-cardinal min-w-11 flex items-center justify-center'}`}
                                 >
                                     {deleteConfirmId === contest.id ? (
                                         <span className="text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">Confirm?</span>
@@ -364,7 +364,7 @@ const Dashboard: React.FC = () => {
 
                                 {!contest.board_activations?.length && (
                                     <div className="absolute bottom-4 left-4 z-20">
-                                        <span className="px-2 py-1 rounded-none bg-gold border border-gold-deep text-[10px] font-bold uppercase tracking-wider text-ink flex items-center gap-1">
+                                        <span className="px-2 py-1 rounded-control bg-gold border border-gold-deep text-[10px] font-bold uppercase tracking-wider text-ink flex items-center gap-1">
                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                             Draft · sharing off
                                         </span>

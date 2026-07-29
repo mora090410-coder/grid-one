@@ -40,7 +40,7 @@ export const ChurchSchoolFundraiserSquares: React.FC = () => {
       />
       <Header />
       <main className="mx-auto w-full max-w-4xl px-5 py-24">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-none bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Church and school fundraiser</div>
+        <div className="mb-8 inline-flex items-center gap-2 rounded-control bg-newsprint px-3 py-1 text-xs text-cardinal ring-1 ring-cardinal">Church and school fundraiser</div>
         <h1 className="oa-chyron text-4xl font-semibold tracking-tight md:text-5xl text-ink mb-6">Church and school football squares fundraiser ideas</h1>
         <p className="text-xl text-ink/70 mb-12 leading-relaxed">For schools and churches, the issue is not whether football squares can work. It is whether the fundraiser feels organized enough that people actually trust it.</p>
 

@@ -1,5 +1,35 @@
 # GridOne Friday launch
 
+## Phase 5 design refresh — July 29, 2026
+
+- [x] Capture the required pre-refresh screenshot set for landing, organizer Fill, organizer Draw, viewer phone, and one dialog.
+- [x] T5.1 add the 8px control, 12px surface, and 0px grid radius tokens; keep only the board instrument sharp.
+- [x] T5.2 preserve the primary uppercase cue while moving secondary controls to a quieter sentence-case treatment, with every target at least 44×44.
+- [x] T5.3 warm inputs, replace the asymmetric focus rule, and document rendered contrast for rest, focus, placeholder, text, disabled, and error states.
+- [x] T5.4 add exactly one elevation token used only by dialogs, the sticky organizer header, and floating board controls.
+- [x] T5.5 update `DESIGN.md` and the CSS invariant, including the deliberate no-pills/no-gradients/no-blur/no-shadow-scale boundary.
+- [x] Run strict type, production build, full Vitest, diff checks, Chromium, and WebKit at desktop, tablet, phone, reduced-motion, and keyboard-accessibility coverage.
+- [x] Capture and review the matching post-refresh screenshot set.
+- [ ] Commit, push, review, merge, and deploy the verified refresh under the owner's autonomous-plan authorization.
+
+### Phase 5 execution boundary
+
+- The product owner explicitly waived the phase stop gates for this task and authorized autonomous completion of the entire plan, including Phase 5 review and deployment.
+- Phase 5 remains intentionally narrow: `src/index.css`, `DESIGN.md`, token-backed class names in `components/` and `pages/`, focused tests, screenshots, and this task record.
+- Do not change payment, score, migration, notification, or entitlement behavior as part of the visual refresh.
+- Preserve the organizer-first free board, the sharp 10×10 instrument, the existing palette and semantic color meanings, phase composition, focus rule, and reduced-motion behavior.
+
+### Phase 5 review
+
+- All 83 component/page `rounded-none` usages now resolve to the token system: 48 controls, 33 surfaces, and the two intentional organizer-grid exceptions. `BoardGrid` also carries explicit sharp frame/table/cell/axis rules.
+- Primary actions retain the uppercase cue. Supporting actions use sentence case, 600 weight, no tracking, and a 44px minimum target.
+- The warm input fill is approximately `#F2F3F3`. The specified 24% ink boundary measured only 1.71:1, so the accessible implementation uses 55% ink: 4.11:1. Placeholder ink at 60% measures 4.85:1; entered ink 17.19:1; cardinal focus/error 7.91:1. The halo is supplemental to the passing 2px cardinal border.
+- Exactly three rule blocks reference the single elevation token: semantic modal dialogs, the sticky organizer header, and the floating Find/zoom/reset board-control cluster. Each keeps a key-line boundary and drops only the shadow in reduced-transparency or forced-colors modes.
+- No `rounded-none`, out-of-system radii, pills, gradients, blur, arbitrary shadow utility, or hardcoded `border-radius: 0` remains in the refreshed source boundary.
+- Deterministic before/after artifacts live in `docs/audits/phase5-design-refresh-2026-07-29/{before,after}`. Chromium capture passes 5/5 using mocked owner/viewer fixtures and never touches production.
+- Full Vitest passes 44/44 files with 270 passing tests and one hosted Stripe proof skipped. Full Playwright passes 44 workflows across Chromium and WebKit; ten explicit visual-capture cases skip unless `PHASE5_CAPTURE=before|after` is set. Strict TypeScript, production build, retry-worker dry run, and `git diff --check` pass.
+- `npm audit --omit=dev` remains the approved documented exception: two high package findings for one React Router RSC-only advisory.
+
 ## Launch hardening Phase 4 — July 29, 2026
 
 - [ ] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
@@ -35,6 +65,13 @@
 - Full Playwright passes 42/42 workflows across Chromium and WebKit. Coverage now includes desktop, 768×1024 tablet, phone, reduced motion, reverse scrub, sticky release, 44×44 targets, visible keyboard focus, dialog focus containment/Escape/return, and the organizer/viewer workflows.
 - Build-time output contains crawler-visible route-specific HTML for all 17 public routes. The sitemap, canonical URLs, robots policy, Article JSON-LD, OG metadata, and 1200×630 OG image are contract-tested.
 - `npm audit --omit=dev` still reports the two package findings for the single documented React Router RSC-only advisory; do not describe the audit as clean.
+
+### Phase 4 production verification
+
+- Confirmed live Stripe account `acct_1TsBjcFwSi8ogxSr` is Parkside Advisory Group. Product `prod_UyCDIvzdzv0KAe` and live price `price_1TyFoqFwSi8ogxSrY9KvKd70` are active at `$4.99`.
+- Created production organizer board `8c40d1b6-c7c8-4626-b46f-22996e25e858`, assigned all 100 squares, and committed both random axes while the unpaid board remained fully editable.
+- The first approved checkout attempt stopped before a charge with Stripe's exact server error `No such price: 'price_1TyFoqFwSi8ogxSrY9KvKd70'`. Production `checkout_orders` contains zero rows for the board, so no open order or payment requires cleanup.
+- Because the same price exists in live mode, the production `STRIPE_SECRET_KEY` is in the wrong mode/account. Correcting the secret and deploying the retry Cron Worker require the Cloudflare account's Apple sign-in/passkey; GitHub and Google were both rejected as a different provider and Wrangler has no local authentication.
 
 ## Launch hardening Phase 3 — July 29, 2026
 
