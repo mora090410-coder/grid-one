@@ -1,5 +1,23 @@
 # GridOne Friday launch
 
+## QA board preview visibility — July 29, 2026
+
+- [x] Inspect the rendered QA board and identify the organizer preview boundary.
+- [x] Trace Overview, Edit, and Preview state through `BoardView` and `AdminPanel`.
+- [x] Keep draft/unactivated organizer boards fully visible, editable, and interactive.
+- [x] Gate automatic live-score refresh, live scenarios/updates, notifications, and published sharing behind activation.
+- [x] Add browser and API coverage for the free-board/paid-services boundary.
+- [x] Run the focused browser test, full test suite, build, and diff checks.
+
+### QA board preview review
+
+- The organizer-owned 10×10 board is no longer dimmed or pointer-disabled before activation. Edit controls, preview, zoom, square inspection, and Find My Squares remain available.
+- Unactivated previews now identify the grid as `Board preview` and explain that live scoring, automatic updates, winner scenarios, notifications, and published sharing are the paid GridOne services.
+- Client polling is disabled until activation. The automatic score endpoint independently returns `402` before cached-score reads, ESPN refreshes, milestone resolution, or notification work when `board_activations` is empty.
+- `npm test -- --run`: 120/120 pass across 20 files.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 15/15 browser workflows pass, including free draft edit/preview interaction with no automatic score request.
+- `npm run build`, strict `tsc --noEmit --noUnusedLocals --noUnusedParameters`, and `git diff --check`: pass.
+
 ## Delegated local test-board fill — July 28, 2026
 
 - [ ] Start or locate the dedicated local GridOne test instance; do not interact with an unrelated listener.

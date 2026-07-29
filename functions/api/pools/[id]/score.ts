@@ -24,6 +24,9 @@ type ProviderScore = {
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const sharePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
+export const hasActivatedBoardServices = (contest: { board_activations?: unknown } | null | undefined) =>
+  Array.isArray(contest?.board_activations) && contest.board_activations.length > 0;
+
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -181,13 +184,16 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
   }
   let contestQuery = admin
     .from('contests')
-    .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr');
+    .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
   if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
   const { data: contest, error: contestError } = uuidPattern.test(ref)
     ? await contestQuery.eq('id', ref).maybeSingle()
     : await contestQuery.eq('share_code', ref).in('status', ['published', 'live', 'final', 'archived']).maybeSingle();
   if (contestError) return json({ error: contestError.message }, 500);
   if (!contest) return json({ error: 'Board not found or not published.' }, 404);
+  if (!hasActivatedBoardServices(contest)) {
+    return json({ error: 'Unlock this board to use automatic live scoring and updates.' }, 402);
+  }
 
   const { data: state } = await admin
     .from('contest_score_state')

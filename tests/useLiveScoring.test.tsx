@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLiveScoring } from '../hooks/useLiveScoring';
 import { fetchLiveScore } from '../services/scoreService';
 import type { GameState, LiveGameData } from '../types';
@@ -7,6 +7,10 @@ import type { GameState, LiveGameData } from '../types';
 vi.mock('../services/scoreService', () => ({
   fetchLiveScore: vi.fn(),
 }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const manualSnapshot: LiveGameData = {
   leftScore: 17,
@@ -44,6 +48,17 @@ const legacyGame: GameState = {
 };
 
 describe('legacy manual live scoring', () => {
+  it('does not request or expose score services for an unactivated board', async () => {
+    const winnerHistory: [] = [];
+    const { result, unmount } = renderHook(() =>
+      useLiveScoring(legacyGame, true, false, 'board-id', winnerHistory, false));
+
+    await waitFor(() => expect(result.current.liveStatus).toBe('UNLOCK LIVE SCORING'));
+    expect(result.current.liveData).toBeNull();
+    expect(fetchLiveScore).not.toHaveBeenCalled();
+    unmount();
+  });
+
   it('keeps a persisted legacy manual snapshot visible without requesting ESPN', async () => {
     const winnerHistory: [] = [];
     const { result, unmount } = renderHook(() =>

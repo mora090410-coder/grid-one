@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   fetchExactEventScore,
+  hasActivatedBoardServices,
   scoreStaleAfter,
   toClientScore,
   validateScore,
@@ -26,6 +27,11 @@ const valid = {
 };
 
 describe('server score validation', () => {
+  it('requires an activated board before automatic score services run', () => {
+    expect(hasActivatedBoardServices({ board_activations: [] })).toBe(false);
+    expect(hasActivatedBoardServices({ board_activations: [{ id: 'activation-id' }] })).toBe(true);
+  });
+
   it('accepts a complete internally consistent NFL score snapshot', () => {
     expect(validateScore(valid)).toMatchObject({ leftScore: 17, topScore: 24, state: 'in' });
   });

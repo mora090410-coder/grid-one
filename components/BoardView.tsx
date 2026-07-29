@@ -41,12 +41,21 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
         ownerId, loadingPool, dataReady, loadPoolData, error: poolError,
-        isActivated, isPaid, isLocked, isPublished, winnerHistory, updatePool, publishPool
+        isActivated, isLocked, isPublished, winnerHistory, updatePool, publishPool
     } = poolData;
 
     const auth = useAuth();
+    const isOwner = Boolean(auth.user && ownerId && auth.user.id === ownerId);
+    const boardServicesEnabled = Boolean(demoMode || isActivated || !isOwner);
     const scoringBoardRef = routeShareCode || routeBoardId || (auth.user ? activePoolId : null) || shareCode;
-    const liveScoring = useLiveScoring(game, dataReady, loadingPool, scoringBoardRef, winnerHistory);
+    const liveScoring = useLiveScoring(
+        game,
+        dataReady,
+        loadingPool,
+        scoringBoardRef,
+        winnerHistory,
+        boardServicesEnabled,
+    );
     const { liveData, liveStatus, isSynced, winnerHistory: liveWinnerHistory } = liveScoring;
 
     const requiresAuthForRoute = !demoMode && Boolean(
@@ -76,7 +85,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     });
 
     // 4. Derived State
-    const isOwner = auth.user && ownerId && auth.user.id === ownerId;
     const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
 
     // 5. Effects
@@ -151,7 +159,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const shareUrl = shareCode ? `${window.location.origin}/b/${shareCode}` : window.location.href;
 
     const renderMainContent = (previewMode = false) => (
-        <div className={`flex-1 min-h-0 overflow-y-auto ${isOwner && !isPaid ? 'pointer-events-none select-none opacity-50' : ''}`}>
+        <div className="flex-1 min-h-0 overflow-y-auto">
             {isLocked && !previewMode ? (
                 <section className="gdh-unavailable" role="status">
                     <span className="gdh-kicker">Viewer link unavailable</span>
@@ -174,6 +182,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     onScenarioFocus={setHighlightedCoords}
                     locked={isLocked}
                     shareCode={routeShareCode || shareCode}
+                    servicesEnabled={boardServicesEnabled}
                 />
             )}
         </div>

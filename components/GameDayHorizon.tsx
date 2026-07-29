@@ -22,6 +22,7 @@ interface GameDayHorizonProps {
   onScenarioFocus: (coords: Highlight) => void;
   locked?: boolean;
   shareCode?: string | null;
+  servicesEnabled?: boolean;
 }
 
 const scoringEvents = [
@@ -102,6 +103,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   onScenarioFocus,
   locked = false,
   shareCode,
+  servicesEnabled = true,
 }) => {
   const [zoom, setZoom] = useState(1);
   const emailResult = new URLSearchParams(window.location.search).get('email');
@@ -219,7 +221,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             <p>Select the name used by the organizer to trace your squares and winning paths.</p>
           )}
         </div>
-        {selectedPlayer && (
+        {selectedPlayer && servicesEnabled && (
           <NotificationOptIn
             shareCode={shareCode}
             participantId={selectedParticipant?.id}
@@ -238,7 +240,9 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
               <h2 id="scenario-title">What score makes me win next?</h2>
             </div>
           </div>
-          {!live ? (
+          {!servicesEnabled ? (
+            <p className="gdh-scenario-empty">Unlock GridOne services to add live scoring, automatic updates, winner scenarios, and notifications to this board.</p>
+          ) : !live ? (
             <p className="gdh-scenario-empty">Scenarios appear when a score is available.</p>
           ) : (
             <div className="gdh-scenario-list">
@@ -265,10 +269,12 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
               })}
             </div>
           )}
-          <p className="gdh-scenario-note">
-            These are arithmetic score outcomes, not odds or predictions.
-          </p>
-          <section className="gdh-resolved" aria-labelledby="resolved-title">
+          {servicesEnabled && (
+            <p className="gdh-scenario-note">
+              These are arithmetic score outcomes, not odds or predictions.
+            </p>
+          )}
+          {servicesEnabled && <section className="gdh-resolved" aria-labelledby="resolved-title">
             <p className="gdh-kicker">Completed milestones</p>
             <h2 id="resolved-title">Resolved winners</h2>
             {resolvedWinners.length ? (
@@ -284,12 +290,12 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             ) : (
               <p>No quarter has been resolved yet.</p>
             )}
-          </section>
+          </section>}
         </aside>
         <div className="gdh-board-work">
           <div className="gdh-section-heading">
             <div>
-              <p className="gdh-kicker">Published board</p>
+              <p className="gdh-kicker">{servicesEnabled ? 'Published board' : 'Board preview'}</p>
               <h2 id="board-title">The exact grid</h2>
               <p>Pan to inspect. Tap or focus a square to reveal the organizer-entered name.</p>
             </div>

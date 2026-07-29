@@ -23,6 +23,7 @@ export function useLiveScoring(
     loadingPool: boolean,
     boardRef?: string | null,
     initialWinnerHistory: WinnerResolution[] = [],
+    enabled = true,
 ): UseLiveScoringReturn {
     const [liveData, setLiveData] = useState<LiveGameData | null>(null);
     const [liveStatus, setLiveStatus] = useState<string>('Initializing...');
@@ -34,6 +35,14 @@ export function useLiveScoring(
     const isFinalRef = useRef(false);
 
     useEffect(() => {
+        if (!enabled) {
+            isFinalRef.current = false;
+            setLiveData(null);
+            setLiveStatus('UNLOCK LIVE SCORING');
+            setIsSynced(false);
+            setLastUpdated('');
+            return;
+        }
         if (!game.scoreSnapshot) {
             isFinalRef.current = false;
             return;
@@ -49,13 +58,17 @@ export function useLiveScoring(
         setLiveStatus(score.state === 'post' ? 'FINAL' : score.freshness === 'stale' ? 'STALE' : score.state === 'in' ? 'LIVE' : 'PRE-GAME');
         setIsSynced(score.freshness !== 'offline' && score.freshness !== 'rejected');
         setLastUpdated(score.retrievedAt ? new Date(score.retrievedAt).toLocaleTimeString() : '');
-    }, [game.gameExternalId, game.scoreSnapshot, game.useManualScores]);
+    }, [enabled, game.gameExternalId, game.scoreSnapshot, game.useManualScores]);
 
     useEffect(() => {
         setWinnerHistory(initialWinnerHistory);
     }, [initialWinnerHistory]);
 
     const fetchLive = useCallback(async () => {
+        if (!enabled) {
+            setLiveStatus('UNLOCK LIVE SCORING');
+            return;
+        }
         if (!dataReady || loadingPool) {
             setLiveStatus('WAITING FOR DATA');
             return;
@@ -166,11 +179,11 @@ export function useLiveScoring(
         } finally {
             setIsRefreshing(false);
         }
-    }, [boardRef, game, dataReady, loadingPool]);
+    }, [boardRef, dataReady, enabled, game, loadingPool]);
 
     // Auto-polling
     useEffect(() => {
-        if (!dataReady) return;
+        if (!dataReady || !enabled) return;
 
         fetchLive();
         if (game.scoreSnapshot?.state !== 'post') {
@@ -180,7 +193,7 @@ export function useLiveScoring(
         return () => {
             if (pollRef.current) clearInterval(pollRef.current);
         };
-    }, [dataReady, fetchLive, game.scoreSnapshot?.state]);
+    }, [dataReady, enabled, fetchLive, game.scoreSnapshot?.state]);
 
     return {
         liveData,

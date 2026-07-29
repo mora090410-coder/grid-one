@@ -175,6 +175,78 @@ test('invalid public links show an explicit unavailable state', async ({ page })
   await expect(page.getByRole('alert')).toContainText('This link does not open a published GridOne board.');
 });
 
+test('draft organizer preview stays fully visible and interactive before activation', async ({ page }) => {
+  await installOrganizerSession(page);
+  const boardId = ownerId;
+  let automaticScoreRequests = 0;
+  const board = {
+    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    squares: Array.from({ length: 100 }, () => [] as string[]),
+    isDynamic: false,
+  };
+  board.squares[0] = ['QA Viewer'];
+  await page.route(`**/api/pools/${boardId}`, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      id: boardId,
+      share_code: 'ABCDEFGH',
+      owner_id: ownerId,
+      title: 'QA draft board',
+      status: 'draft',
+      revision: 1,
+      meta: 'Preview verification',
+      gameExternalId: scheduledGame.id,
+      kickoffAt: scheduledGame.kickoffAt,
+      dates: '2026-09-13',
+      leftAbbr: 'DAL',
+      leftName: 'Dallas Cowboys',
+      topAbbr: 'WAS',
+      topName: 'Washington Commanders',
+      payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+      board,
+      score: null,
+      is_activated: false,
+      locked: true,
+      published_at: null,
+      winner_history: [],
+    }),
+  }));
+  await page.route(`**/api/pools/${boardId}/score`, (route) => {
+    automaticScoreRequests += 1;
+    return route.fulfill({
+      status: 402,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Unlock this board to use automatic live scoring and updates.' }),
+    });
+  });
+  await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: '[]',
+  }));
+  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ games: [scheduledGame] }),
+  }));
+
+  await page.goto(`/boards/${boardId}`);
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByLabel('Board Name')).toBeEnabled();
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+
+  const preview = page.getByRole('main', { name: /QA draft board game day/i });
+  await expect(preview).toBeVisible();
+  await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
+  await expect(page.getByText(/Unlock GridOne services to add live scoring/i)).toBeVisible();
+
+  await page.getByRole('button', { name: /Find my squares/i }).click();
+  await expect(page.getByRole('dialog', { name: /Find my squares/i })).toBeVisible();
+  expect(automaticScoreRequests).toBe(0);
+});
+
 test('organizer flushes the latest draft before publishing the viewer link', async ({ page }) => {
   await installOrganizerSession(page);
   const boardId = ownerId;
