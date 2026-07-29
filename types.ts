@@ -42,7 +42,7 @@ export interface GameState {
     Q4: QuarterScores;
     OT: QuarterScores;
   };
-  manualPeriod?: number; // 1-4 = quarter, 5 = OT
+  manualPeriod?: number; // 0 = scheduled, 1-4 = quarter, 5 = OT
   manualGameState?: 'pre' | 'in' | 'post';
   coverImage?: string; // Base64 image string for board cover
   payouts?: {

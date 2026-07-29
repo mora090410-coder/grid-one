@@ -23,6 +23,43 @@ export const secureShuffleDigits = () => {
   return digits;
 };
 
+type ManualQuarterScores = NonNullable<GameState['manualQuarterScores']>;
+
+const EMPTY_MANUAL_SCORES: ManualQuarterScores = {
+  Q1: { left: 0, top: 0 },
+  Q2: { left: 0, top: 0 },
+  Q3: { left: 0, top: 0 },
+  Q4: { left: 0, top: 0 },
+  OT: { left: 0, top: 0 },
+};
+
+export const manualPeriodForState = (
+  state: NonNullable<GameState['manualGameState']>,
+  period: number | undefined,
+  quarterScores: ManualQuarterScores | undefined,
+) => {
+  if (state === 'pre') return 0;
+  if (state === 'post') {
+    const hasOvertimeScore = Boolean(
+      quarterScores && (quarterScores.OT.left > 0 || quarterScores.OT.top > 0),
+    );
+    return hasOvertimeScore || period === 5 ? 5 : 4;
+  }
+  return Math.min(5, Math.max(1, period ?? 1));
+};
+
+export const seedManualScoreFromSnapshot = (
+  snapshot: LiveGameData | null | undefined,
+) => {
+  const state = snapshot?.state ?? 'in';
+  const quarterScores = snapshot?.quarterScores ?? EMPTY_MANUAL_SCORES;
+  return {
+    manualGameState: state,
+    manualPeriod: manualPeriodForState(state, snapshot?.period, quarterScores),
+    manualQuarterScores: quarterScores,
+  };
+};
+
 interface AdminPanelProps {
   game: GameState;
   board: BoardData;
@@ -277,13 +314,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     setLocalGame(prev => ({ ...prev, [field]: val }));
   };
 
-  const EMPTY_MANUAL_SCORES = { Q1: { left: 0, top: 0 }, Q2: { left: 0, top: 0 }, Q3: { left: 0, top: 0 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } };
-
   const updateManualQuarter = (q: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', side: 'left' | 'top', val: number) => {
     setLocalGame(prev => {
       const base = prev.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
       return { ...prev, manualQuarterScores: { ...base, [q]: { ...base[q], [side]: Math.max(0, val) } } };
     });
+  };
+
+  const enableManualScoring = () => {
+    setLocalGame((current) => {
+      const snapshot = current.scoreSnapshot ?? liveData;
+      const seed = seedManualScoreFromSnapshot(snapshot);
+      return {
+        ...current,
+        useManualScores: true,
+        manualQuarterScores: current.manualQuarterScores ?? seed.manualQuarterScores,
+        manualPeriod: current.manualPeriod ?? seed.manualPeriod,
+        manualGameState: current.manualGameState ?? seed.manualGameState,
+      };
+    });
+  };
+
+  const updateManualGameState = (state: NonNullable<GameState['manualGameState']>) => {
+    setLocalGame((current) => ({
+      ...current,
+      manualGameState: state,
+      manualPeriod: manualPeriodForState(
+        state,
+        current.manualPeriod,
+        current.manualQuarterScores,
+      ),
+    }));
   };
 
   const stageNumberDraw = () => {
@@ -322,7 +383,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           quarterScores: localGame.manualQuarterScores ?? EMPTY_MANUAL_SCORES,
-          period: localGame.manualGameState === 'post' ? 4 : (localGame.manualPeriod ?? 1),
+          period: manualPeriodForState(
+            localGame.manualGameState ?? 'in',
+            localGame.manualPeriod,
+            localGame.manualQuarterScores,
+          ),
           state: localGame.manualGameState ?? 'in',
         }),
       });
@@ -1083,7 +1148,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                           Auto
                         </button>
                         <button
-                          onClick={() => updateField('useManualScores', true)}
+                          onClick={enableManualScoring}
                           className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Manual
@@ -1104,7 +1169,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                               <select
                                 id="manual-game-status"
                                 value={localGame.manualGameState ?? 'in'}
-                                onChange={(e) => updateField('manualGameState', e.target.value)}
+                                onChange={(e) => updateManualGameState(
+                                  e.target.value as NonNullable<GameState['manualGameState']>,
+                                )}
                                 className="w-full oa-input appearance-none bg-broadcast-white text-ink"
                               >
                                 <option value="pre">Scheduled</option>
@@ -1119,11 +1186,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                             <div className="relative">
                               <select
                                 id="manual-current-period"
-                                value={localGame.manualPeriod ?? 1}
+                                value={manualPeriodForState(
+                                  localGame.manualGameState ?? 'in',
+                                  localGame.manualPeriod,
+                                  localGame.manualQuarterScores,
+                                )}
                                 onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
                                 disabled={(localGame.manualGameState ?? 'in') !== 'in'}
                                 className="w-full oa-input appearance-none bg-broadcast-white text-ink disabled:opacity-40"
                               >
+                                {(localGame.manualGameState ?? 'in') === 'pre' && (
+                                  <option value={0}>Not started</option>
+                                )}
                                 <option value={1}>Q1</option>
                                 <option value={2}>Q2</option>
                                 <option value={3}>Q3</option>
