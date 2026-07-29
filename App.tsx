@@ -5,6 +5,7 @@ import FullScreenLoading from './components/loading/FullScreenLoading';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
+import BoardView from './components/BoardView';
 
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -12,7 +13,6 @@ const CreateContest = React.lazy(() => import('./pages/CreateContest'));
 const Paid = React.lazy(() => import('./pages/Paid'));
 const Privacy = React.lazy(() => import('./pages/Privacy'));
 const Terms = React.lazy(() => import('./pages/Terms'));
-const BoardView = React.lazy(() => import('./components/BoardView'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const ArticlesHub = React.lazy(() => import('./pages/ArticlesHub').then((module) => ({ default: module.ArticlesHub })));
