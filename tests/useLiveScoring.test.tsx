@@ -85,7 +85,9 @@ describe('legacy manual live scoring', () => {
       game: {
         ...manualGame,
         useManualScores: false,
-        scoreSnapshot: undefined,
+        // The server preserves the manual score as the last valid fallback until
+        // ESPN replaces it, so Auto must refresh even though this snapshot is Final.
+        scoreSnapshot: manualSnapshot,
       },
     });
 

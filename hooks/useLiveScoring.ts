@@ -39,12 +39,17 @@ export function useLiveScoring(
             return;
         }
         const score = game.scoreSnapshot;
-        isFinalRef.current = score.state === 'post';
+        const needsAutomaticRefresh = Boolean(
+            score.isManual
+            && !game.useManualScores
+            && game.gameExternalId,
+        );
+        isFinalRef.current = score.state === 'post' && !needsAutomaticRefresh;
         setLiveData(score);
         setLiveStatus(score.state === 'post' ? 'FINAL' : score.freshness === 'stale' ? 'STALE' : score.state === 'in' ? 'LIVE' : 'PRE-GAME');
         setIsSynced(score.freshness !== 'offline' && score.freshness !== 'rejected');
         setLastUpdated(score.retrievedAt ? new Date(score.retrievedAt).toLocaleTimeString() : '');
-    }, [game.scoreSnapshot]);
+    }, [game.gameExternalId, game.scoreSnapshot, game.useManualScores]);
 
     useEffect(() => {
         setWinnerHistory(initialWinnerHistory);
