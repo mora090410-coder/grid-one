@@ -385,6 +385,60 @@ describe('scheduled-game persistence', () => {
     });
   });
 
+  it('returns the latest revision so an explicit organizer retry can recover', async () => {
+    const currentQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          published_at: null,
+          status: 'draft',
+          revision: 7,
+          title: 'Server draft',
+          payout_labels: {},
+          board_data: { squares: [] },
+          settings: {},
+          game_external_id: scheduledGame.id,
+          game_starts_at: scheduledGame.kickoffAt,
+          season_year: 2026,
+          side_team_name: scheduledGame.awayTeam.name,
+          side_team_abbr: scheduledGame.awayTeam.abbr,
+          top_team_name: scheduledGame.homeTeam.name,
+          top_team_abbr: scheduledGame.homeTeam.abbr,
+        },
+        error: null,
+      }),
+    };
+    const rpc = vi.fn().mockResolvedValue({ data: [], error: null });
+    createClientMock.mockReturnValue(authClient({
+      from: vi.fn().mockReturnValue(currentQuery),
+      rpc,
+    }));
+    const request = new Request('https://getgridone.com/api/pools/11111111-1111-4111-8111-111111111111', {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer token',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        revision: 6,
+        game: { title: 'Local draft', gameExternalId: scheduledGame.id },
+      }),
+    });
+
+    const response = await onRequestPut({
+      request,
+      env,
+      params: { id: '11111111-1111-4111-8111-111111111111' },
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'REVISION_CONFLICT',
+      currentRevision: 7,
+    });
+  });
+
   it('keeps provider season metadata without changing the 2026 launch entitlement season', () => {
     const completedGame = { ...scheduledGame, season: 2025, state: 'post' as const };
     const canonical = canonicalizeUpdatedGame({

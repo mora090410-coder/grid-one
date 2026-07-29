@@ -328,9 +328,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       return {
         ...current,
         useManualScores: true,
-        manualQuarterScores: current.manualQuarterScores ?? seed.manualQuarterScores,
-        manualPeriod: current.manualPeriod ?? seed.manualPeriod,
-        manualGameState: current.manualGameState ?? seed.manualGameState,
+        manualQuarterScores: current.useManualScores
+          ? current.manualQuarterScores ?? seed.manualQuarterScores
+          : seed.manualQuarterScores,
+        manualPeriod: current.useManualScores
+          ? current.manualPeriod ?? seed.manualPeriod
+          : seed.manualPeriod,
+        manualGameState: current.useManualScores
+          ? current.manualGameState ?? seed.manualGameState
+          : seed.manualGameState,
       };
     });
   };

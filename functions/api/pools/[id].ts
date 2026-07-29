@@ -309,7 +309,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
     });
     const { data: currentContest, error: currentError } = await client
       .from('contests')
-      .select('published_at, status, title, payout_labels, board_data, settings, game_external_id, game_starts_at, season_year, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
+      .select('published_at, status, revision, title, payout_labels, board_data, settings, game_external_id, game_starts_at, season_year, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
       .eq('id', id)
       .eq('owner_id', auth.userId)
       .maybeSingle();
@@ -406,6 +406,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
         return json(request, {
           error: 'This board changed in another session. Reload before saving again.',
           code: 'REVISION_CONFLICT',
+          currentRevision: currentContest.revision,
         }, 409, env.PUBLIC_SITE_URL);
       }
       return json(request, {
@@ -432,6 +433,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
       return json(request, {
         error: 'This board changed in another session. Reload before saving again.',
         code: 'REVISION_CONFLICT',
+        currentRevision: currentContest.revision,
       }, 409, env.PUBLIC_SITE_URL);
     }
     return json(request, { ok: true, revision: data.revision, updatedAt: data.updated_at }, 200, env.PUBLIC_SITE_URL);

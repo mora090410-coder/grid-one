@@ -105,4 +105,61 @@ describe('organizer save ordering', () => {
 
     expect(revisions).toEqual([1, 2]);
   });
+
+  it('keeps the organizer open and refreshes the retry revision after a conflict', async () => {
+    const revisions: number[] = [];
+    let putCount = 0;
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (!init?.method) {
+        return new Response(JSON.stringify({
+          id: '11111111-1111-4111-8111-111111111111',
+          share_code: 'ABCDEFGH',
+          owner_id: '22222222-2222-4222-8222-222222222222',
+          revision: 1,
+          ...game,
+          board,
+          payouts: { Q1: 25, Q2: 50, Q3: 25, Final: 100 },
+          is_activated: true,
+          locked: false,
+          published_at: null,
+        }), { status: 200 });
+      }
+
+      const payload = JSON.parse(String(init.body));
+      revisions.push(payload.revision);
+      putCount += 1;
+      if (putCount === 1) {
+        return new Response(JSON.stringify({
+          error: 'This board changed in another session. Reload before saving again.',
+          code: 'REVISION_CONFLICT',
+          currentRevision: 2,
+        }), { status: 409 });
+      }
+      return new Response(JSON.stringify({ ok: true, revision: 3 }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => usePoolData());
+    await act(async () => {
+      await result.current.loadPoolData('11111111-1111-4111-8111-111111111111');
+    });
+
+    await act(async () => {
+      await expect(result.current.updatePool(
+        '11111111-1111-4111-8111-111111111111',
+        { game: { ...game, title: 'Keep this local draft' }, board },
+      )).resolves.toBe(false);
+    });
+
+    expect(result.current.error).toBeNull();
+
+    await act(async () => {
+      await expect(result.current.updatePool(
+        '11111111-1111-4111-8111-111111111111',
+        { game: { ...game, title: 'Keep this local draft' }, board },
+      )).resolves.toBe(true);
+    });
+
+    expect(revisions).toEqual([1, 2]);
+  });
 });

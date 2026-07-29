@@ -194,13 +194,22 @@ export function usePoolData(): UsePoolDataReturn {
                     body: JSON.stringify({ ...data, revision: currentRevision }),
                 });
                 const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Unable to save the board.');
+                if (!response.ok) {
+                    if (
+                        response.status === 409
+                        && result.code === 'REVISION_CONFLICT'
+                        && Number.isInteger(result.currentRevision)
+                    ) {
+                        revisionRef.current = result.currentRevision;
+                        setRevision(result.currentRevision);
+                    }
+                    throw new Error(result.error || 'Unable to save the board.');
+                }
                 revisionRef.current = result.revision;
                 setRevision(result.revision);
                 return true;
             } catch (err: any) {
                 console.error("Update Pool Error:", err);
-                setError(err.message);
                 return false;
             }
         };
