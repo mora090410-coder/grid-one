@@ -71,6 +71,15 @@ export const renderStaticRouteHtml = (
 export const outputPathForRoute = (outDir: string, routePath: string): string => (
   routePath === '/'
     ? join(outDir, 'index.html')
+    : join(outDir, `${routePath.slice(1)}.html`)
+);
+
+export const trailingSlashOutputPathForRoute = (
+  outDir: string,
+  routePath: string,
+): string => (
+  routePath === '/'
+    ? join(outDir, 'index.html')
     : join(outDir, routePath.slice(1), 'index.html')
 );
 
@@ -79,8 +88,15 @@ export const generateStaticSeoPages = async (outDir: string): Promise<void> => {
   const template = await readFile(templatePath, 'utf8');
 
   await Promise.all(PUBLIC_ROUTE_METADATA.map(async (route) => {
-    const outputPath = outputPathForRoute(outDir, route.path);
-    await mkdir(dirname(outputPath), { recursive: true });
-    await writeFile(outputPath, renderStaticRouteHtml(template, route), 'utf8');
+    const renderedHtml = renderStaticRouteHtml(template, route);
+    const outputPaths = new Set([
+      outputPathForRoute(outDir, route.path),
+      trailingSlashOutputPathForRoute(outDir, route.path),
+    ]);
+
+    await Promise.all(Array.from(outputPaths, async (outputPath) => {
+      await mkdir(dirname(outputPath), { recursive: true });
+      await writeFile(outputPath, renderedHtml, 'utf8');
+    }));
   }));
 };
