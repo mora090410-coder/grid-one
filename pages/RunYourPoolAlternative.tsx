@@ -110,7 +110,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         title="Related guides"
                         links={[
                             { to: '/articles/digital-football-squares-board-vs-paper', label: 'Digital vs Paper Board', primary: true },
-                            { to: '/articles/how-', label: 'How to run Super Bowl squares' },
+                            { to: '/articles/how-to-run-super-bowl-squares', label: 'How to run Super Bowl squares' },
                             { to: '/articles/football-squares-fundraiser', label: 'Fundraiser use cases' },
                         ]}
                     />

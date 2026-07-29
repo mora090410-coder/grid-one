@@ -106,7 +106,7 @@ CTA: See how GridOne works
 - Answer questions directly
 - Do not drop links unless the context clearly supports it
 - Avoid argument threads
-- If someone asks pricing: "This season, $14.99 unlocks at least 20 boards once you're ready to share."
+- If someone asks pricing: "This season, $4.99 once unlocks up to 20 boards when you're ready to share."
 - If someone asks what it is: "GridOne is a football squares app that gives organizers one clean live board link for fundraisers, office pools, and watch parties."
 - If someone asks about launch: "We’re getting the site and content dialed in now. Happy to keep you posted."
 

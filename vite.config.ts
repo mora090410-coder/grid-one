@@ -1,9 +1,19 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { generateStaticSeoPages } from './build/staticSeoPages';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'gridone-static-seo-pages',
+      apply: 'build',
+      async closeBundle() {
+        await generateStaticSeoPages('dist');
+      },
+    },
+  ],
   define: {
     'process.env': {},
   },

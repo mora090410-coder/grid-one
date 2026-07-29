@@ -13,14 +13,14 @@ export const HowToRunSquares: React.FC = () => {
             <PageMetadata
                 title={title}
                 description={description}
-                path="/articles/how-"
+                path="/articles/how-to-run-super-bowl-squares"
                 type="article"
                 schema={[
                     {
                         '@type': 'Article',
                         headline: title,
                         description,
-                        mainEntityOfPage: 'https://www.getgridone.com/articles/how-',
+                        mainEntityOfPage: 'https://www.getgridone.com/articles/how-to-run-super-bowl-squares',
                         author: { '@type': 'Organization', name: 'GridOne' },
                         publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
                     },

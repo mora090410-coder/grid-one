@@ -1,5 +1,41 @@
 # GridOne Friday launch
 
+## Launch hardening Phase 4 — July 29, 2026
+
+- [ ] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
+- [x] T4.2 record the approved dated React Router RSC-only advisory exception with a post-season review date.
+- [x] T4.3 remove obsolete prelaunch pricing/capacity claims; retain `$4.99` one-time for up to 20 boards.
+- [ ] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
+- [ ] Prove one end-to-end refund and observe entitlement revocation without unpublishing the board.
+- [ ] Run a production subscribe-endpoint abuse test and observe throttling.
+- [ ] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
+
+### Phase 4 execution boundary
+
+- Phase 1–3 commit `8e1cafd` is pushed on `agent/launch-hardening-phases-1-3`; draft PR `#2` targets `main`.
+- Production migrations `012`–`018` are applied to confirmed project `illqymckwqiawdwxhwcy` and pass the schema/RPC/trigger postflight.
+- Phase 4 may run local verification, documentation/copy corrections, non-financial production reads, and an approved application deployment.
+- The product owner explicitly authorized autonomous completion of the entire execution plan in this Codex task on July 29, 2026, including the production $4.99 charge/refund proof, recipient notification proof, deployments, and Phase 5. Re-verify exact targets before every irreversible action.
+
+### React Router dependency security exception — July 29, 2026
+
+- Advisory: `GHSA-qwww-vcr4-c8h2`, React Router RSC-mode CSRF bypass. Current resolved packages are `react-router-dom@7.18.1` and `react-router@7.18.1`. `npm audit --omit=dev` reports two high-severity findings for this single advisory.
+- Exposure decision: Temporarily accepted for the 2026 season. GridOne is a Vite-built client-side SPA using `ReactDOM.createRoot` with `BrowserRouter`, `Routes`, and `Route`. It has no React Server Components runtime, React Router framework/server entry, route actions/loaders, or RSC request handler, so the advisory’s vulnerable RSC action-execution path is not enabled.
+- Remediation decision: Do not run `npm audit fix --force`; npm currently proposes a breaking downgrade to `react-router-dom@7.11.0`. Re-evaluate and upgrade to a non-vulnerable supported release with full unit, build, Chromium, and WebKit regression coverage after the season.
+- Guardrail: Enabling React Router RSC/framework mode, server actions, or an RSC request handler invalidates this exception and requires remediation before merge or deployment.
+- Review/expiry date: February 16, 2027. Close earlier if a low-risk patched 7.x release becomes available.
+- Approved by: GridOne product owner — recommended decision approved in this Codex task on July 29, 2026.
+- Recorded by: Codex, July 29, 2026.
+
+### Phase 4 local verification
+
+- A detached worktree at pushed commit `8e1cafd` completed a fresh `npm ci`, production build, and all 41 Phase 1–3 Vitest files: 259 passing tests and one credential-gated hosted Stripe proof skipped.
+- The Phase 4 tree passes strict TypeScript, production build, and `git diff --check`.
+- Full Vitest passes 43/43 files with 265 passing tests and the same hosted Stripe proof skipped. Disposable PostgreSQL 17 covers migrations, RLS, checkout/webhook/refund, concurrency, rate limits, notification retry, milestone confirmation, and score-test suppression.
+- Full Playwright passes 42/42 workflows across Chromium and WebKit. Coverage now includes desktop, 768×1024 tablet, phone, reduced motion, reverse scrub, sticky release, 44×44 targets, visible keyboard focus, dialog focus containment/Escape/return, and the organizer/viewer workflows.
+- Build-time output contains crawler-visible route-specific HTML for all 17 public routes. The sitemap, canonical URLs, robots policy, Article JSON-LD, OG metadata, and 1200×630 OG image are contract-tested.
+- `npm audit --omit=dev` still reports the two package findings for the single documented React Router RSC-only advisory; do not describe the audit as clean.
+
 ## Launch hardening Phase 3 — July 29, 2026
 
 - [x] T3.1 observe milestones at most once per promoted score snapshot, skip permanently completed finals, and avoid unchanged public projection writes.

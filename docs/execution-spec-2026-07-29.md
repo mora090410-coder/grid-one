@@ -503,7 +503,7 @@ The following items in `tasks/todo.md` §6 are still open and must be closed wit
 
 ### T4.3 — Copy consistency
 
-`docs/marketing/gridone-launch-social-pack-2026-04-19.md:109` still says "$14.99 unlocks at least 20 boards." Sweep all marketing docs for stale pricing. "At least 20" is also wrong — the product is "up to 20."
+Tracked marketing, documentation, application copy, and schema comments must consistently describe the launch offer as **$4.99 one-time for up to 20 boards**. Keep a focused corpus check so stale price or minimum-board claims cannot return.
 
 ### T4.4 — Production organizer smoke test
 

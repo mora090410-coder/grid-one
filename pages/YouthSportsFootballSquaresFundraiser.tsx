@@ -73,7 +73,7 @@ export const YouthSportsFootballSquaresFundraiser: React.FC = () => {
           <ArticleCTA
             links={[
               { to: '/articles/football-squares-fundraiser', label: 'Football Squares Fundraiser Ideas', primary: true },
-              { to: '/articles/how-', label: 'How to Run Super Bowl Squares' },
+              { to: '/articles/how-to-run-super-bowl-squares', label: 'How to Run Super Bowl Squares' },
               { to: '/create', label: 'Build your board' },
             ]}
           />
