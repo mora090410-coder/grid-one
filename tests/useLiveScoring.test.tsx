@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useLiveScoring } from '../hooks/useLiveScoring';
+import { fetchLiveScore } from '../services/scoreService';
 import type { GameState, LiveGameData } from '../types';
 
 vi.mock('../services/scoreService', () => ({
@@ -51,6 +52,46 @@ describe('legacy manual live scoring', () => {
     await waitFor(() => expect(result.current.liveStatus).toBe('FINAL'));
     expect(result.current.liveData).toEqual(manualSnapshot);
     expect(result.current.isSynced).toBe(true);
+    unmount();
+  });
+
+  it('refreshes the canonical provider after a final manual override is disabled', async () => {
+    const providerSnapshot: LiveGameData = {
+      ...manualSnapshot,
+      isManual: false,
+      sourceName: 'ESPN',
+      sourceUrl: 'https://www.espn.com/nfl/game/_/gameId/401772988',
+      detail: 'Final',
+    };
+    vi.mocked(fetchLiveScore).mockResolvedValueOnce({
+      score: providerSnapshot,
+      winnerHistory: [],
+    });
+
+    const manualGame: GameState = {
+      ...legacyGame,
+      gameExternalId: '401772988',
+      useManualScores: true,
+    };
+    const winnerHistory: [] = [];
+    const { result, rerender, unmount } = renderHook(
+      ({ game }) => useLiveScoring(game, true, false, 'board-id', winnerHistory),
+      { initialProps: { game: manualGame } },
+    );
+
+    await waitFor(() => expect(result.current.liveData?.isManual).toBe(true));
+
+    rerender({
+      game: {
+        ...manualGame,
+        useManualScores: false,
+        scoreSnapshot: undefined,
+      },
+    });
+
+    await waitFor(() => expect(fetchLiveScore).toHaveBeenCalledWith('board-id'));
+    await waitFor(() => expect(result.current.liveData).toEqual(providerSnapshot));
+    expect(result.current.liveStatus).toBe('FINAL');
     unmount();
   });
 });

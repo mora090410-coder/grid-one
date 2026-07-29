@@ -34,7 +34,10 @@ export function useLiveScoring(
     const isFinalRef = useRef(false);
 
     useEffect(() => {
-        if (!game.scoreSnapshot) return;
+        if (!game.scoreSnapshot) {
+            isFinalRef.current = false;
+            return;
+        }
         const score = game.scoreSnapshot;
         isFinalRef.current = score.state === 'post';
         setLiveData(score);
