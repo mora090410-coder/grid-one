@@ -176,16 +176,17 @@ test('invalid public links show an explicit unavailable state', async ({ page })
 });
 
 test('draft organizer preview stays fully visible and interactive before activation', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await installOrganizerSession(page);
   const boardId = ownerId;
   let automaticScoreRequests = 0;
+  let scheduleRequests = 0;
   const board = {
     bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     squares: Array.from({ length: 100 }, () => [] as string[]),
     isDynamic: false,
   };
-  board.squares[0] = ['QA Viewer'];
   await page.route(`**/api/pools/${boardId}`, (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -226,21 +227,51 @@ test('draft organizer preview stays fully visible and interactive before activat
     contentType: 'application/json',
     body: '[]',
   }));
-  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ games: [scheduledGame] }),
-  }));
+  await page.route('**/api/nfl/games?**', (route) => {
+    scheduleRequests += 1;
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ games: [scheduledGame] }),
+    });
+  });
 
   await page.goto(`/boards/${boardId}`);
-  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  expect(await page.evaluate(() => window.__lenis)).toBeUndefined();
+  expect(await page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth
+  )).toBe(true);
+  await page.getByRole('button', { name: 'Assign 100 squares' }).click();
+  await expect(page.getByRole('heading', { name: 'Grid Editor' })).toBeVisible();
+  await expect(page.getByLabel('Label to apply')).toBeFocused();
+  const gridPosition = await page.getByRole('heading', { name: 'Grid Editor' }).boundingBox();
+  expect(gridPosition?.y).toBeGreaterThanOrEqual(0);
+  expect(gridPosition?.y).toBeLessThan(844);
+
+  const beforePageDown = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press('PageDown');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageDown);
+  const beforeWheel = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 500);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforeWheel);
+
+  expect(scheduleRequests).toBe(0);
+  await page.getByRole('button', { name: 'Change scheduled game' }).click();
+  await expect(page.getByRole('radio', { name: /DAL.*at.*WAS/i })).toBeVisible();
+  expect(scheduleRequests).toBeGreaterThan(0);
+  const requestsAfterFirstOpen = scheduleRequests;
+  await page.getByRole('button', { name: 'Close game schedule' }).click();
+  await page.getByRole('button', { name: 'Change scheduled game' }).click();
+  expect(scheduleRequests).toBe(requestsAfterFirstOpen);
   await expect(page.getByLabel('Board Name')).toBeEnabled();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
   const preview = page.getByRole('main', { name: /QA draft board game day/i });
   await expect(preview).toBeVisible();
   await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
+  await expect(page.getByText(/Private draft · sharing and live services are off/i)).toBeVisible();
   await expect(page.getByText(/Unlock GridOne services to add live scoring/i)).toBeVisible();
+  await expect(page.getByRole('cell', { name: /^Unassigned square/i })).toHaveCount(100);
 
   await page.getByRole('button', { name: /Find my squares/i }).click();
   await expect(page.getByRole('dialog', { name: /Find my squares/i })).toBeVisible();

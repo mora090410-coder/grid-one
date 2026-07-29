@@ -1,5 +1,42 @@
 # GridOne Friday launch
 
+## Organizer setup flow repair plan — July 29, 2026
+
+- [x] Reproduce Overview → Continue setup → Edit in the authenticated production Safari session without changing board data.
+- [x] Verify normal scroll, Page Down, draggable-scrollbar, assignment-mode, and draft Preview behavior.
+- [x] Trace the flow through `OrganizerDashboard`, `AdminPanel`, `BoardView`, `ScheduledGamePicker`, `GameDayHorizon`, and the global Lenis runtime.
+- [x] Save and inspect the four-step audit evidence in `docs/audits/organizer-setup-2026-07-29/`.
+- [x] Replace the fixed nested commissioner scroller with one normal document-flow scroll owner; make the organizer header sticky and remove Preview clipping.
+- [x] Scope Lenis to cinematic surfaces or explicitly exclude native application scrollers.
+- [x] Replace the phase-blind Overview CTA with typed Assign, Reconcile, Draw, Preview, and Scoring destinations with scroll, focus, and announcements.
+- [x] Put Grid Editor and draw before secondary settings; collapse and lazy-mount `Change scheduled game`.
+- [x] Always render the blank 10×10 board in organizer Preview with draft-aware copy.
+- [x] Make payment review advisory, prioritize published/game-day state, and replace `Locked (Unpaid)` lifecycle copy.
+- [x] Present pre-activation live scoring as an unavailable paid-service card while preserving free board interaction.
+- [x] Share exact 0–9 axis validation between Overview and publication.
+- [x] Add Chromium and WebKit coverage for phase routing, scroll/focus, assignment, blank Preview, lifecycle state, and entitlement boundaries.
+- [x] Run full unit, API, type, build, responsive, accessibility, Chromium, and WebKit verification before release.
+
+### Organizer setup audit review
+
+- Root cause: global Lenis cancels wheel/touch input while commissioner mode is a fixed nested native scroller. The document cannot move because fixed organizer content contributes no document height.
+- The scrollbar itself can be dragged, proving that the content exists and the failure is input routing/scroll ownership rather than missing board data.
+- `Continue setup` changes only the tab. The full unbounded schedule then separates the organizer from Grid Editor by many viewports.
+- Preview and lifecycle logic contain additional contradictions documented in the audit report. No board data or production state was changed during investigation.
+
+### Organizer setup repair review
+
+- Organizer mode now uses native document scrolling. Lenis mounts only with the cinematic landing page and is destroyed when that route unmounts.
+- Assign opens Edit with Grid Editor first, enables assignment mode, and focuses the label field. The phase rail has typed destinations for assignment, private payment review, number draw, Preview, and game-day scoring.
+- The NFL schedule is collapsed and unfetched until the organizer explicitly opens it. Secondary settings follow the grid and draw.
+- Empty private Preview renders the exact 100-cell board. Unactivated boards keep all core board interactions while presenting live scoring, updates, scenarios, notifications, and sharing as paid services.
+- Payment review is advisory, published state wins lifecycle precedence, and both UI and publication now share exact permutation validation for digits 0–9.
+- `npm test -- --run`: 138/138 pass across 22 files.
+- `PLAYWRIGHT_PORT=5199 npx playwright test --project=chromium`: 16/16 pass.
+- `PLAYWRIGHT_PORT=5199 npx playwright test --project=webkit`: 16/16 pass, including phone-size document scrolling, Page Down, wheel, assignment focus, lazy schedule, blank Preview, and entitlement boundaries.
+- `npm run build`, `npx tsc --noEmit`, responsive overflow assertion, keyboard focus checks, and `git diff --check`: pass.
+- No production deployment or push was performed in this implementation turn.
+
 ## QA board preview visibility — July 29, 2026
 
 - [x] Inspect the rendered QA board and identify the organizer preview boundary.

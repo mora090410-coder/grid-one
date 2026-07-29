@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { PageMetadata } from './seo/PageMetadata';
+import { startScrollRuntime } from '../lib/scrollRuntime';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -212,6 +213,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
   const [q, setQ] = useState(0);
   const arcRef = useRef<HTMLElement>(null);
   const wipeRef = useWipe() as React.RefObject<HTMLDivElement>;
+
+  useEffect(() => {
+    const runtime = startScrollRuntime();
+    return () => runtime.destroy();
+  }, []);
 
   /* Scroll drives the game. Without JS or with reduced motion the page is
      complete and every quarter is already shown. */

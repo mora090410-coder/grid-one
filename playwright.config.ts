@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 const port = Number(process.env.PLAYWRIGHT_PORT || 5173);
 const baseURL = `http://127.0.0.1:${port}`;
@@ -10,6 +10,16 @@ export default defineConfig({
     baseURL,
     headless: true,
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
   webServer: {
     command: `npm run dev -- --host 127.0.0.1 --port ${port}`,
     url: baseURL,

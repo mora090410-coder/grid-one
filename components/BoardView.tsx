@@ -159,7 +159,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const shareUrl = shareCode ? `${window.location.origin}/b/${shareCode}` : window.location.href;
 
     const renderMainContent = (previewMode = false) => (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0">
             {isLocked && !previewMode ? (
                 <section className="gdh-unavailable" role="status">
                     <span className="gdh-kicker">Viewer link unavailable</span>
@@ -183,6 +183,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     locked={isLocked}
                     shareCode={routeShareCode || shareCode}
                     servicesEnabled={boardServicesEnabled}
+                    organizerPreview={previewMode && isOwner}
                 />
             )}
         </div>
@@ -244,7 +245,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             )}
 
             {isCommissionerMode && (
-                <div className="oa-root fixed inset-0 z-[80] bg-broadcast-white p-0 overflow-y-auto scrollbar-hide">
+                <div className="oa-root relative z-[80] min-h-[100dvh] w-full bg-broadcast-white p-0 text-ink">
                     <AdminPanel
                         game={game}
                         board={board}
@@ -258,7 +259,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         isPublished={isPublished}
                         shareCode={shareCode}
                         renderPreview={() => (
-                            <div className="flex-1 flex flex-col relative z-50 w-full h-full">
+                            <div className="relative z-50 flex min-h-[calc(100dvh-6rem)] w-full flex-col">
                                 {renderMainContent(true)}
                             </div>
                         )}

@@ -8,6 +8,7 @@
 import React, { useMemo } from 'react';
 import { BoardData, EntryMeta, LiveGameData } from '../types';
 import { calculateWinnerHighlights, getAxisForQuarter } from '../utils/winnerLogic';
+import { getOrganizerProgress, OrganizerDestination } from '../utils/organizerFlow';
 
 interface OrganizerDashboardProps {
     board: BoardData;
@@ -17,7 +18,7 @@ interface OrganizerDashboardProps {
     gameTitle?: string;
     isActivated?: boolean;
     isPublished?: boolean;
-    onOpenEditor?: () => void;
+    onNavigate?: (destination: OrganizerDestination) => void;
 }
 
 export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
@@ -27,7 +28,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     onBulkStatusUpdate,
     isActivated = false,
     isPublished = false,
-    onOpenEditor,
+    onNavigate,
 }) => {
     // 1. Coverage Stats
     const coverage = useMemo(() => {
@@ -121,35 +122,56 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
         }
     };
 
-    const axesReady = [board.bearsAxis, board.oppAxis].every((axis) =>
-        axis.length === 10 && axis.every((digit) => Number.isInteger(digit)) && new Set(axis).size === 10,
-    );
-    const activePhase = coverage.filled < 100
+    const progress = useMemo(() => getOrganizerProgress({
+        board,
+        entryMetaByIndex,
+        isPublished,
+    }), [board, entryMetaByIndex, isPublished]);
+    const activePhase = progress.phase === 'fill'
         ? 0
-        : paymentStats.needsFollowUp > 0
-            ? 1
-            : !axesReady
-                ? 2
-                : !isActivated || !isPublished
-                    ? 3
-                    : 4;
+        : progress.phase === 'draw'
+            ? 2
+            : progress.phase === 'preview'
+                ? 3
+                : 4;
     const phases = [
-        { name: 'Fill', fact: `${coverage.open} squares open` },
-        { name: 'Reconcile', fact: `${paymentStats.needsFollowUp} need payment review` },
-        { name: 'Draw', fact: axesReady ? 'Digits locked in' : 'Axis digits needed' },
-        { name: 'Preview', fact: isActivated ? 'Ready to verify' : 'Season pass required to publish' },
-        { name: 'Go live', fact: isPublished ? 'Viewer link published' : 'Not published' },
+        { name: 'Fill', fact: `${coverage.open} squares open`, destination: 'assign' as const },
+        { name: 'Reconcile', fact: `${paymentStats.needsFollowUp} need payment review`, destination: 'reconcile' as const },
+        { name: 'Draw', fact: progress.axesReady ? 'Digits locked in' : 'Axis digits needed', destination: 'draw' as const },
+        { name: 'Preview', fact: isActivated ? 'Ready to verify' : 'Free private preview', destination: 'preview' as const },
+        { name: 'Go live', fact: isPublished ? 'Viewer link published' : 'Sharing is off', destination: 'scoring' as const },
     ];
-    const phaseAction = activePhase <= 2 ? 'Continue setup' : activePhase === 3 ? 'Preview and publish' : 'Open game-day controls';
+    const completedPhases = [
+        coverage.filled === 100,
+        paymentStats.needsFollowUp === 0,
+        progress.axesReady,
+        isPublished,
+        false,
+    ];
 
     return (
         <section className="mb-8 bg-broadcast-white text-ink" aria-labelledby="organizer-phase-title">
             <div className="overflow-x-auto border-b border-ink">
                 <ol className="flex min-w-[680px]">
                     {phases.map((phase, index) => (
-                        <li key={phase.name} className={`flex-1 px-4 py-4 border-r border-ink last:border-r-0 ${index === activePhase ? 'bg-cardinal text-broadcast-white' : index < activePhase ? 'bg-gold text-ink' : 'bg-newsprint text-ink/50'}`}>
-                            <span className="oa-slab block mb-1">{phase.name}</span>
-                            <span className="oa-data block text-[11px] leading-4">{phase.fact}</span>
+                        <li
+                            key={phase.name}
+                            className={`flex-1 border-r border-ink last:border-r-0 ${
+                                index === activePhase
+                                    ? 'bg-cardinal text-broadcast-white'
+                                    : completedPhases[index]
+                                        ? 'bg-gold text-ink'
+                                        : 'bg-newsprint text-ink/50'
+                            }`}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => onNavigate?.(phase.destination)}
+                                className="min-h-16 w-full px-4 py-4 text-left"
+                            >
+                                <span className="oa-slab block mb-1">{phase.name}</span>
+                                <span className="oa-data block text-[11px] leading-4">{phase.fact}</span>
+                            </button>
                         </li>
                     ))}
                 </ol>
@@ -159,22 +181,20 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                 <div className="p-6 md:p-9 border-b lg:border-b-0 lg:border-r border-ink">
                     <p className="oa-slab text-cardinal mb-3">Current phase · {phases[activePhase].name}</p>
                     <h2 id="organizer-phase-title" className="oa-headline !text-3xl md:!text-5xl text-ink">
-                        {activePhase === 0 && `${coverage.open} squares left to assign.`}
-                        {activePhase === 1 && 'Resolve the exceptions before the draw.'}
-                        {activePhase === 2 && 'The board is ready for its number draw.'}
-                        {activePhase === 3 && 'Verify the exact viewer experience.'}
-                        {activePhase === 4 && 'The board is running game day.'}
+                        {progress.phase === 'fill' && `${coverage.open} squares left to assign.`}
+                        {progress.phase === 'draw' && 'The board is ready for its number draw.'}
+                        {progress.phase === 'preview' && 'Verify the exact board experience.'}
+                        {progress.phase === 'live' && 'The board is running game day.'}
                     </h2>
                     <p className="oa-body mt-4 max-w-[62ch] text-ink/70">
-                        {activePhase === 0 && 'Select one or many squares, enter the purchaser or seller label your group recognizes, and keep moving.'}
-                        {activePhase === 1 && `${paymentStats.unpaid} assigned squares are not marked paid. This stays private to the organizer.`}
-                        {activePhase === 2 && 'Randomize one fixed set of 0–9 digits for each axis. Once published, those digits lock for participant trust.'}
-                        {activePhase === 3 && (isActivated ? 'Preview the phone experience, then publish the short viewer link.' : 'Everything remains editable for free. Unlock when you are ready to publish.')}
-                        {activePhase === 4 && 'Use manual score mode whenever the automatic beta source is stale or cannot confirm the matchup.'}
+                        {progress.phase === 'fill' && 'Select one or many squares, enter the purchaser or seller label your group recognizes, and keep moving.'}
+                        {progress.phase === 'draw' && 'Randomize one fixed set of 0–9 digits for each axis. Payment review stays private and never blocks the draw.'}
+                        {progress.phase === 'preview' && (isActivated ? 'Preview the phone experience, then publish the short viewer link.' : 'The complete board remains editable and previewable for free. Unlock only when you are ready to share it live.')}
+                        {progress.phase === 'live' && 'Use manual score mode whenever the automatic beta source is stale or cannot confirm the matchup.'}
                     </p>
-                    {onOpenEditor && (
-                        <button type="button" onClick={onOpenEditor} className="oa-btn oa-btn-primary mt-6">
-                            {phaseAction}
+                    {onNavigate && (
+                        <button type="button" onClick={() => onNavigate(progress.destination)} className="oa-btn oa-btn-primary mt-6">
+                            {progress.actionLabel}
                         </button>
                     )}
                 </div>
@@ -195,16 +215,11 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                 </div>
             </div>
 
-            {workQueue.length > 0 && activePhase === 1 && (
-            <div className="border-t border-ink p-6 md:p-9">
-                <h3 className="oa-headline !text-2xl text-ink mb-5">Payment follow-up</h3>
+            <div id="payment-review" className="scroll-mt-28 border-t border-ink p-6 md:p-9">
+                <h3 tabIndex={-1} className="oa-headline !text-2xl text-ink mb-2 outline-none">Payment follow-up</h3>
+                <p className="oa-body mb-5 text-sm text-ink/60">Private organizer notes only. Review them when useful; they do not block assignment, drawing, or Preview.</p>
                 {workQueue.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                        <div className="w-10 h-10 rounded-none bg-gold flex items-center justify-center mb-3">
-                            <svg className="w-5 h-5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        </div>
-                        <p className="text-sm text-ink/60">You're all caught up!</p>
-                    </div>
+                    <p className="border border-gold bg-gold/20 p-4 text-sm font-semibold text-ink">No assigned squares need payment review.</p>
                 ) : (
                     <div className="space-y-2 pr-1 custom-scrollbar max-h-[400px] overflow-y-auto">
                         <div className="flex justify-between items-center text-[10px] uppercase font-bold text-ink/50 px-2 mb-1">
@@ -241,7 +256,6 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                     </div>
                 )}
             </div>
-            )}
 
             {winnerInfo && winnerInfo.length > 0 && (
                 <div className="border-t border-ink p-6 md:p-9">

@@ -23,6 +23,7 @@ interface GameDayHorizonProps {
   locked?: boolean;
   shareCode?: string | null;
   servicesEnabled?: boolean;
+  organizerPreview?: boolean;
 }
 
 const scoringEvents = [
@@ -104,6 +105,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   locked = false,
   shareCode,
   servicesEnabled = true,
+  organizerPreview = false,
 }) => {
   const [zoom, setZoom] = useState(1);
   const emailResult = new URLSearchParams(window.location.search).get('email');
@@ -297,7 +299,11 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             <div>
               <p className="gdh-kicker">{servicesEnabled ? 'Published board' : 'Board preview'}</p>
               <h2 id="board-title">The exact grid</h2>
-              <p>Pan to inspect. Tap or focus a square to reveal the organizer-entered name.</p>
+              <p>
+                {!servicesEnabled && organizerPreview
+                  ? 'Private draft · sharing and live services are off. Pan to inspect every square.'
+                  : 'Pan to inspect. Tap or focus a square to reveal the organizer-entered name.'}
+              </p>
             </div>
             <div className="gdh-zoom" aria-label="Board zoom">
               <button type="button" onClick={() => setZoom((value) => Math.max(1, value - 0.25))} disabled={zoom === 1} aria-label="Zoom board out">−</button>
@@ -308,7 +314,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
           </div>
 
           <div className="gdh-board-viewport" tabIndex={0} aria-label="Scrollable football squares board">
-            {isEmpty ? (
+            {isEmpty && !organizerPreview ? (
               <div className="gdh-empty-board">
                 <strong>This board has no assignments yet.</strong>
                 <span>Ask the organizer to finish and publish the board.</span>

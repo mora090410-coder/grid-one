@@ -9,6 +9,7 @@ import { ScheduledGamePicker } from './ScheduledGamePicker';
 
 import { createCheckoutSession, activateWithEntitlement } from '../services/stripe';
 import { useDialogFocus } from '../hooks/useDialogFocus';
+import { OrganizerDestination } from '../utils/organizerFlow';
 
 export const secureShuffleDigits = () => {
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -83,6 +84,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const activeAxisQuarter: 'Q1' = 'Q1';
   const [activeTab, setActiveTab] = useState<'overview' | 'edit' | 'preview'>(initialTab);
+  const [pendingDestination, setPendingDestination] = useState<OrganizerDestination | null>(null);
+  const [showGamePicker, setShowGamePicker] = useState(false);
+  const [gamePickerInitialized, setGamePickerInitialized] = useState(false);
 
   // Metadata State (via Hook)
   const { entryMetaByIndex, setEntryMetaByIndex } = useContestEntries(activePoolId);
@@ -91,6 +95,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   // Bulk Assign State
   const [isAssignMode, setIsAssignMode] = useState(false);
   const [assignLabel, setAssignLabel] = useState('');
+  const assignLabelRef = useRef<HTMLInputElement>(null);
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
   const selectedCellIndicesRef = useRef<Set<number>>(new Set());
@@ -127,6 +132,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   useEffect(() => {
     latestDraftRef.current = { game: localGame, board: localBoard };
   }, [localGame, localBoard]);
+
+  useEffect(() => {
+    if (!pendingDestination) return;
+    const destination = pendingDestination;
+    const frame = window.requestAnimationFrame(() => {
+      const targetId = {
+        assign: 'grid-editor',
+        reconcile: 'payment-review',
+        draw: 'number-draw',
+        preview: 'preview-board',
+        scoring: 'live-scoring',
+      }[destination];
+      const target = document.getElementById(targetId);
+      target?.scrollIntoView({ block: 'start' });
+      if (destination === 'assign') {
+        assignLabelRef.current?.focus({ preventScroll: true });
+      } else {
+        (target?.querySelector<HTMLElement>('h2, h3, h4, h5') ?? target)?.focus({ preventScroll: true });
+      }
+      setPendingDestination(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, isAssignMode, pendingDestination]);
+
+  const navigateToDestination = (destination: OrganizerDestination) => {
+    setPendingDestination(destination);
+    if (destination === 'assign') setIsAssignMode(true);
+    setActiveTab(destination === 'preview' ? 'preview' : destination === 'reconcile' ? 'overview' : 'edit');
+  };
+
+  const selectTab = (tab: 'overview' | 'edit' | 'preview') => {
+    setPendingDestination(null);
+    setActiveTab(tab);
+    window.scrollTo({ top: 0 });
+  };
 
   const persistDraft = async () => {
     const targetVersion = draftVersionRef.current;
@@ -447,6 +487,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       manualPeriod: undefined,
       manualGameState: undefined,
     }));
+    setShowGamePicker(false);
     setActionMessage('Scheduled game changed. Prior score state will be cleared when this draft saves.');
   };
 
@@ -751,7 +792,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     <div className="space-y-6">
 
       {/* Top Header - Apple-clean 3-zone layout */}
-      <div className="bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-none flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
+      <div className="sticky top-0 z-[85] bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-none flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
 
         {/* LEFT: Brand + Title */}
         <button
@@ -780,19 +821,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         {/* CENTER: Tab Navigation — hard segmented control, cardinal active */}
         <div className="flex items-center gap-px bg-ink p-px">
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() => selectTab('overview')}
             className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'overview' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Overview
           </button>
           <button
-            onClick={() => setActiveTab('edit')}
+            onClick={() => selectTab('edit')}
             className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'edit' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Edit
           </button>
           <button
-            onClick={() => setActiveTab('preview')}
+            onClick={() => selectTab('preview')}
             className={`oa-slab min-h-11 px-3 md:px-4 py-2 transition-colors ${activeTab === 'preview' ? 'bg-cardinal text-broadcast-white' : 'bg-broadcast-white text-ink/60 hover:bg-newsprint hover:text-ink'}`}
           >
             Preview
@@ -1032,7 +1073,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
           gameTitle={localGame.title}
           isActivated={isActivated}
           isPublished={isPublished}
-          onOpenEditor={() => setActiveTab('edit')}
+          onNavigate={navigateToDestination}
         />
       ) : null}
 
@@ -1040,8 +1081,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       {
         activeTab === 'edit' && (
           <>
+            <div className="flex flex-col gap-6">
             {/* Main Settings Area */}
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="order-2 grid lg:grid-cols-2 gap-8">
               {/* Left Column: Board Settings */}
               <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none space-y-6 h-fit">
                 <div className="flex items-center justify-between">
@@ -1084,13 +1126,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       </p>
                     ) : (
                       <div className="space-y-3">
-                        <p className="oa-slab text-ink/60">
-                          {localGame.gameExternalId ? 'Change scheduled game' : 'Link scheduled game'}
-                        </p>
-                        <ScheduledGamePicker
-                          value={localGame.gameExternalId || null}
-                          onChange={handleScheduledGameChange}
-                        />
+                        <button
+                          type="button"
+                          aria-expanded={showGamePicker}
+                          onClick={() => {
+                            setGamePickerInitialized(true);
+                            setShowGamePicker((open) => !open);
+                          }}
+                          className="oa-btn oa-btn-ghost"
+                        >
+                          {showGamePicker ? 'Close game schedule' : localGame.gameExternalId ? 'Change scheduled game' : 'Link scheduled game'}
+                        </button>
+                        {gamePickerInitialized && (
+                          <div hidden={!showGamePicker}>
+                            <ScheduledGamePicker
+                              value={localGame.gameExternalId || null}
+                              onChange={handleScheduledGameChange}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1143,7 +1197,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                   </fieldset>
 
                   {/* Live Scoring */}
-                  <div className="border-t border-newsprint pt-6 mb-8">
+                  <div id="live-scoring" tabIndex={-1} className="scroll-mt-28 border-t border-newsprint pt-6 mb-8 outline-none">
+                    {!isActivated ? (
+                      <div className="border border-gold bg-gold/20 p-5 text-ink">
+                        <p className="oa-slab mb-2 text-cardinal">Live service unavailable</p>
+                        <h5 className="oa-headline !text-2xl">Unlock when you are ready for game day.</h5>
+                        <p className="oa-body mt-3 text-sm text-ink/70">
+                          Your board stays fully editable for free. The season pass adds automatic score checks, live updates, scenarios, notifications, and published sharing.
+                        </p>
+                      </div>
+                    ) : (
+                    <>
                     <div className="flex items-center justify-between mb-4">
                       <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
                       <div className="flex rounded-none bg-newsprint p-1 border border-newsprint">
@@ -1263,6 +1327,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         </button>
                       </div>
                     )}
+                    </>
+                    )}
                   </div>
 
                   {/* Board Actions */}
@@ -1292,7 +1358,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
             </div>
 
             {/* Manual Grid Editor Section */}
-            <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex flex-col space-y-6 duration-700">
+            <div id="grid-editor" tabIndex={-1} className="order-1 scroll-mt-28 bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-none flex flex-col space-y-6 duration-700 outline-none">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-newsprint pb-6">
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-ink tracking-tight">Grid Editor</h3>
@@ -1327,6 +1393,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <div className="md:col-span-5 space-y-1">
                     <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Label to Apply</label>
                     <input
+                      ref={assignLabelRef}
+                      aria-label="Label to apply"
                       type="text"
                       value={assignLabel}
                       onChange={(e) => setAssignLabel(e.target.value)}
@@ -1383,7 +1451,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                 </div>
               )}
 
-              <section className={`border border-ink ${isPublished ? 'bg-gold text-ink' : 'bg-cardinal text-broadcast-white'}`} aria-labelledby="number-draw-title">
+              <section id="number-draw" tabIndex={-1} className={`scroll-mt-28 border border-ink outline-none ${isPublished ? 'bg-gold text-ink' : 'bg-cardinal text-broadcast-white'}`} aria-labelledby="number-draw-title">
                 <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
                   <div>
                     <p className="oa-slab text-[11px] opacity-70">Draw phase</p>
@@ -1545,6 +1613,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                 </div>
               </div>
             </div>
+            </div>
           </>
         )
       }
@@ -1574,7 +1643,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
       {/* PREVIEW TAB CONTENT */}
       {activeTab === 'preview' && renderPreview && (
-        <div className="w-full h-full min-h-[calc(100vh-140px)] rounded-none overflow-hidden bg-background border border-newsprint relative">
+        <div id="preview-board" tabIndex={-1} className="scroll-mt-28 min-h-[calc(100dvh-6rem)] w-full rounded-none bg-background border border-newsprint relative outline-none">
           {renderPreview()}
         </div>
       )}

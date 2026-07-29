@@ -38,3 +38,15 @@ test('narrow landing page stays within the viewport and exposes the real board',
   });
   expect(await boardScroller.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
 });
+
+test('smooth scrolling is owned only by the cinematic landing route', async ({ page }) => {
+  await page.goto('/');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lenis))).toBe(true);
+
+  await page.getByRole('button', { name: /Sign in/i }).first().click();
+  await expect(page).toHaveURL(/\/login/);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lenis))).toBe(false);
+
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__lenis))).toBe(true);
+});

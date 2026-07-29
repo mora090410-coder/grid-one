@@ -3,12 +3,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './src/index.css'; // Tailwind
 import App from './App';
-import { startScrollRuntime } from './lib/scrollRuntime';
-
-const scrollRuntime = startScrollRuntime();
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => scrollRuntime.destroy());
-}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

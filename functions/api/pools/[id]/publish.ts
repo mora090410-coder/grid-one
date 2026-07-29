@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { isValidAxis } from '../../../../utils/boardValidation';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
-
-const validAxis = (axis: unknown): axis is number[] =>
-  Array.isArray(axis)
-  && axis.length === 10
-  && axis.every((digit) => Number.isInteger(digit) && digit >= 0 && digit <= 9)
-  && new Set(axis).size === 10;
 
 export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return Response.json({ error: 'Publishing is not configured.' }, { status: 503 });
@@ -34,9 +29,9 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   }
 
   const board = contest.board_data || {};
-  const sideAxis = validAxis(board.bearsAxis) ? board.bearsAxis : contest.side_axis;
-  const topAxis = validAxis(board.oppAxis) ? board.oppAxis : contest.top_axis;
-  if (!validAxis(sideAxis) || !validAxis(topAxis)) {
+  const sideAxis = isValidAxis(board.bearsAxis) ? board.bearsAxis : contest.side_axis;
+  const topAxis = isValidAxis(board.oppAxis) ? board.oppAxis : contest.top_axis;
+  if (!isValidAxis(sideAxis) || !isValidAxis(topAxis)) {
     return Response.json({ error: 'Draw all ten unique axis digits before publishing.' }, { status: 409 });
   }
   if (!Array.isArray(board.squares) || board.squares.length !== 100) {
