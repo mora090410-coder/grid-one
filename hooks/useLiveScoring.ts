@@ -90,6 +90,31 @@ export function useLiveScoring(
             return;
         }
 
+        if (!game.gameExternalId) {
+            const legacyManual = game.scoreSnapshot?.isManual ? game.scoreSnapshot : null;
+            if (legacyManual) {
+                setLiveData(legacyManual);
+                setLiveStatus(legacyManual.state === 'post'
+                    ? 'FINAL'
+                    : legacyManual.state === 'pre'
+                        ? 'PRE-GAME'
+                        : 'MANUAL');
+                setIsSynced(
+                    legacyManual.freshness !== 'offline'
+                    && legacyManual.freshness !== 'rejected',
+                );
+                setLastUpdated(
+                    legacyManual.retrievedAt
+                        ? new Date(legacyManual.retrievedAt).toLocaleTimeString()
+                        : '',
+                );
+                return;
+            }
+            setLiveStatus('LINK GAME OR USE MANUAL SCORE');
+            setIsSynced(false);
+            return;
+        }
+
         if (isFinalRef.current || document.hidden) {
             return;
         }

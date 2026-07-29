@@ -13,10 +13,14 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
 
     if (!user) {
-        // Redirect them to the /login page, but save the current location they were
-        // trying to go to when they were redirected. This allows us to send them
-        // along to that page after they login, which is a nicer user experience.
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        const returnTo = `${location.pathname}${location.search}${location.hash}`;
+        return (
+            <Navigate
+                to={`/login?returnTo=${encodeURIComponent(returnTo)}`}
+                state={{ from: location }}
+                replace
+            />
+        );
     }
 
     return <>{children}</>;

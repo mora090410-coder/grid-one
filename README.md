@@ -17,7 +17,8 @@ Football squares board builder and live scoring viewer. Organizers create and sh
 - **Auth & data:** Supabase (PostgreSQL + Row Level Security)
 - **Payments:** Stripe checkout + webhook activation
 - **Deployment:** Cloudflare Pages + Cloudflare Pages Functions (API routes)
-- **Live scoring:** Google Gemini Search Grounding via `services/geminiService.ts`
+- **NFL schedule and scoring:** server-side exact-event ESPN lookups, cached and validated before persistence
+- **Paper-board import:** server-side Gemini OCR with organizer review
 
 ## Local development
 
@@ -76,7 +77,8 @@ Create `.env.local` with the following variables:
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (frontend) |
 | `STRIPE_SECRET_KEY` | Stripe secret key (Cloudflare Functions only) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `GEMINI_API_KEY` | Server-only Gemini key for score grounding and beta paper-board import |
+| `GEMINI_API_KEY` | Server-only Gemini key for beta paper-board import |
+| `OCR_MODEL` | Gemini model used only for paper-board import |
 | `PUBLIC_SITE_URL` | Canonical site URL — `https://www.getgridone.com` in production |
 | `EMAIL_PROVIDER_API_KEY` | Server-only Resend sending key |
 | `EMAIL_FROM` | Verified sender identity — `GridOne <updates@parksideag.com>` in production |

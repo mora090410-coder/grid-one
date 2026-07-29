@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import { useContestEntries } from '../hooks/useContestEntries';
 import { OrganizerDashboard } from './OrganizerDashboard';
-import { GameState, BoardData, EntryMeta, LiveGameData } from '../types';
+import { GameState, BoardData, EntryMeta, LiveGameData, ScheduledGame } from '../types';
 import { supabase } from '../services/supabase';
-import { NFL_TEAMS } from '../constants';
 import { parseBoardImage } from '../services/geminiService';
+import { ScheduledGamePicker } from './ScheduledGamePicker';
 
 import { createCheckoutSession, activateWithEntitlement } from '../services/stripe';
 import { useDialogFocus } from '../hooks/useDialogFocus';
@@ -27,11 +26,10 @@ export const secureShuffleDigits = () => {
 interface AdminPanelProps {
   game: GameState;
   board: BoardData;
-  adminToken: string;
   activePoolId: string | null;
   liveData: LiveGameData | null;
   onApply: (game: GameState, board: BoardData) => void;
-  onPublish: (token: string, currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
+  onPublish: (currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
   onLogout: () => void;
   isActivated: boolean;
   isPublished: boolean;
@@ -40,13 +38,13 @@ interface AdminPanelProps {
   renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const [activeAxisQuarter, setActiveAxisQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
+  const activeAxisQuarter: 'Q1' = 'Q1';
   const [activeTab, setActiveTab] = useState<'overview' | 'edit' | 'preview'>(initialTab);
 
   // Metadata State (via Hook)
@@ -78,12 +76,44 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   const [deleteArmed, setDeleteArmed] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const onPublishRef = useRef(onPublish);
+  const latestDraftRef = useRef({ game: localGame, board: localBoard });
+  const saveGenerationRef = useRef(0);
+  const draftVersionRef = useRef(0);
+  const savedVersionRef = useRef(0);
   const isFirstRender = useRef(true);
 
   // Keep latest publish handler without making autosave effect depend on callback identity.
   useEffect(() => {
     onPublishRef.current = onPublish;
   }, [onPublish]);
+
+  useEffect(() => {
+    latestDraftRef.current = { game: localGame, board: localBoard };
+  }, [localGame, localBoard]);
+
+  const persistDraft = async () => {
+    const targetVersion = draftVersionRef.current;
+    if (targetVersion <= savedVersionRef.current) return;
+    const generation = ++saveGenerationRef.current;
+    const draft = latestDraftRef.current;
+    setSaveStatus('saving');
+    try {
+      await onPublishRef.current(draft);
+      savedVersionRef.current = Math.max(savedVersionRef.current, targetVersion);
+      if (generation === saveGenerationRef.current) setSaveStatus('saved');
+    } catch (error) {
+      if (generation === saveGenerationRef.current) setSaveStatus('error');
+      throw error;
+    }
+  };
+
+  const flushDraftSave = async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    await persistDraft();
+  };
 
   const saveEntryMeta = async (meta: EntryMeta) => {
     if (!activePoolId) return;
@@ -117,31 +147,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   // Debounced auto-save to backend
   useEffect(() => {
+    if (isPublished) return;
     // Skip first render (initial load)
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+    draftVersionRef.current += 1;
 
     // Clear any pending save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set status to saving immediately
     setSaveStatus('saving');
 
     // Debounce the actual save by 800ms
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        await onPublishRef.current(adminToken, {
-          game: localGame,
-          board: localBoard
-        });
-        setSaveStatus('saved');
+        saveTimeoutRef.current = null;
+        await persistDraft();
       } catch (e) {
         console.error('Auto-save failed:', e);
-        setSaveStatus('error');
       }
     }, 800);
 
@@ -150,7 +177,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [localGame, localBoard, adminToken]);
+  }, [localGame, localBoard, isPublished]);
+
+  useEffect(() => {
+    const warnOnUnsavedExit = (event: BeforeUnloadEvent) => {
+      if (!saveTimeoutRef.current && saveStatus === 'saved') return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnOnUnsavedExit);
+    return () => window.removeEventListener('beforeunload', warnOnUnsavedExit);
+  }, [saveStatus]);
 
   // Self-healing: Ensure dynamic boards have quarter axes initialized
   useEffect(() => {
@@ -227,44 +264,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
 
   };
 
-  const toggleBoardType = () => {
-    const newBoard = { ...localBoard };
-    newBoard.isDynamic = !newBoard.isDynamic;
-
-    // Initialize quarter axes if switching to dynamic and missing
-    if (newBoard.isDynamic) {
-      if (!newBoard.bearsAxisByQuarter) {
-        newBoard.bearsAxisByQuarter = {
-          Q1: [...newBoard.bearsAxis],
-          Q2: [...newBoard.bearsAxis],
-          Q3: [...newBoard.bearsAxis],
-          Q4: [...newBoard.bearsAxis]
-        };
-      }
-      if (!newBoard.oppAxisByQuarter) {
-        newBoard.oppAxisByQuarter = {
-          Q1: [...newBoard.oppAxis],
-          Q2: [...newBoard.oppAxis],
-          Q3: [...newBoard.oppAxis],
-          Q4: [...newBoard.oppAxis]
-        };
-      }
-    }
-    setLocalBoard(newBoard);
-  };
-
   // Retry save on error
   const handleRetry = async () => {
-    setSaveStatus('saving');
     try {
-      await onPublish(adminToken, {
-        game: localGame,
-        board: localBoard
-      });
-      setSaveStatus('saved');
+      await flushDraftSave();
     } catch (e) {
       console.error('Retry save failed:', e);
-      setSaveStatus('error');
     }
   };
 
@@ -323,6 +328,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Unable to save the score.');
+      setLocalGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
       setScoreSaveStatus('saved');
       setActionMessage('Manual score is live. Completed-quarter winners were resolved once.');
     } catch (error: any) {
@@ -332,7 +338,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
   };
 
   const enableAutomaticScoring = async () => {
-    updateField('useManualScores', false);
     if (!activePoolId) return;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -346,19 +351,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         const result = await response.json();
         throw new Error(result.error || 'Automatic scoring could not be enabled.');
       }
+      setLocalGame((current) => ({ ...current, useManualScores: false, scoreSnapshot: null }));
       setActionMessage('Automatic score checks are enabled.');
     } catch (error: any) {
       setActionMessage(error.message || 'Automatic scoring could not be enabled.');
     }
   };
 
-  const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
-    const team = NFL_TEAMS.find(t => t.abbr === abbr);
+  const handleScheduledGameChange = (scheduledGame: ScheduledGame) => {
     setLocalGame(prev => ({
       ...prev,
-      [`${side}Abbr`]: abbr,
-      [`${side}Name`]: team ? team.name : abbr
+      gameExternalId: scheduledGame.id,
+      kickoffAt: scheduledGame.kickoffAt,
+      leftAbbr: scheduledGame.awayTeam.abbr,
+      leftName: scheduledGame.awayTeam.name,
+      topAbbr: scheduledGame.homeTeam.abbr,
+      topName: scheduledGame.homeTeam.name,
+      dates: scheduledGame.kickoffAt.slice(0, 10),
+      scoreSnapshot: null,
+      useManualScores: false,
+      manualQuarterScores: undefined,
+      manualLeftScore: 0,
+      manualTopScore: 0,
+      manualPeriod: undefined,
+      manualGameState: undefined,
     }));
+    setActionMessage('Scheduled game changed. Prior score state will be cleared when this draft saves.');
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,17 +498,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         supabase
           .from('contest_entries')
           .upsert(payload, { onConflict: 'contest_id, cell_index' })
-          .then(({ error }) => {
-            if (error) {
-              console.error("Batch save failed (non-blocking):", {
+            .then(({ error }) => {
+              if (error) {
+                console.error("Batch save failed (non-blocking):", {
                 message: error.message,
                 details: error.details,
                 hint: error.hint,
-                code: error.code
-              });
-              // No alert shown to user to keep flow smooth
-            } else {
-              console.log("Batch metadata saved successfully");
+                  code: error.code
+                });
+                setActionMessage(`Purchaser payment details were not saved: ${error.message || 'Unknown error'}`);
+              } else {
+                console.log("Batch metadata saved successfully");
             }
           });
       }
@@ -590,29 +608,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     selectedCellIndicesRef.current = selectedCellIndices;
   }, [selectedCellIndices]);
 
-  // --- Manual Grid Editor Sync Functions ---
-
-  const handleAxisChange = (axis: 'bearsAxis' | 'oppAxis', index: number, value: string) => {
-    const newBoard = { ...localBoard };
-    const num = parseInt(value);
-
-    if (!isNaN(num)) {
-      if (newBoard.isDynamic) {
-        // Update specific quarter axis
-        const axisKey = axis === 'bearsAxis' ? 'bearsAxisByQuarter' : 'oppAxisByQuarter';
-        if (newBoard[axisKey]) {
-          newBoard[axisKey]![activeAxisQuarter][index] = num;
-        }
-      } else {
-        // Update standard axis
-        newBoard[axis][index] = num;
-      }
-      setLocalBoard(newBoard);
-    }
-  };
-
-  const axisDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
   // Axis values to display based on dynamic mode
   const currentOppAxis = localBoard.isDynamic
     ? localBoard.oppAxisByQuarter?.[activeAxisQuarter]
@@ -622,6 +617,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
     ? localBoard.bearsAxisByQuarter?.[activeAxisQuarter]
     : localBoard.bearsAxis;
 
+  const handleBoardLifecycleAction = async () => {
+    if (!activePoolId) {
+      setActionMessage('Save this board before unlocking or publishing.');
+      return;
+    }
+    setShowMenu(false);
+    try {
+      if (!isPublished) await flushDraftSave();
+
+      if (!isActivated) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('Sign in before unlocking this board.');
+        try {
+          const result = await activateWithEntitlement(activePoolId, session.access_token);
+          if (result.activated) {
+            setActionMessage('Board unlocked — covered by your season pass.');
+            window.location.reload();
+            return;
+          }
+        } catch (error) {
+          console.error('Entitlement check failed, falling back to checkout:', error);
+        }
+        await createCheckoutSession(activePoolId);
+        return;
+      }
+
+      if (!isPublished) {
+        setActionMessage('Checking the latest saved board and publishing the viewer link…');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('Sign in before publishing this board.');
+        const response = await fetch(`/api/pools/${activePoolId}/publish`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'The board could not be published.');
+        try {
+          await navigator.clipboard.writeText(`${window.location.origin}${result.viewerUrl}`);
+          setActionMessage('Published. The viewer link is copied.');
+        } catch {
+          setActionMessage('Published. Copy the viewer link from this menu after the board reloads.');
+        }
+        window.setTimeout(() => window.location.reload(), 900);
+        return;
+      }
+
+      if (!shareCode) throw new Error('The published viewer link is unavailable. Reload and try again.');
+      try {
+        await navigator.clipboard.writeText(`${window.location.origin}/b/${shareCode}`);
+        setActionMessage('Viewer link copied.');
+      } catch {
+        setActionMessage('Could not copy automatically. Open Preview and copy the viewer URL manually.');
+      }
+    } catch (error: any) {
+      console.error('Board lifecycle action failed:', error);
+      setActionMessage(error?.message || 'The board action failed. Try again.');
+    }
+  };
+
   return (
     <div className="space-y-6">
 
@@ -629,7 +683,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
       <div className="bg-broadcast-white ring-1 ring-inset ring-ink px-4 md:px-5 py-3 rounded-none flex items-center justify-between gap-2 md:gap-4 duration-500 mb-6">
 
         {/* LEFT: Brand + Title */}
-        <Link to="/dashboard" className="flex min-h-11 items-center gap-3 min-w-0 group cursor-pointer">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await flushDraftSave();
+              window.location.href = '/dashboard';
+            } catch {
+              setActionMessage('The latest changes were not saved. Retry before leaving this board.');
+            }
+          }}
+          className="flex min-h-11 items-center gap-3 min-w-0 group cursor-pointer text-left"
+        >
           <div className="w-9 h-9 rounded-none bg-newsprint group-hover:bg-newsprint flex items-center justify-center border border-newsprint hover:border-newsprint transition-all flex-shrink-0 overflow-hidden ring-1 ring-gold/50">
             <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           </div>
@@ -639,7 +704,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
               {localGame.title || 'Untitled board'}
             </p>
           </div>
-        </Link>
+        </button>
 
         {/* CENTER: Tab Navigation — hard segmented control, cardinal active */}
         <div className="flex items-center gap-px bg-ink p-px">
@@ -734,45 +799,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                     </p>
                   )}
                   <button
-                    onClick={async () => {
-                      if (!isActivated && activePoolId) {
-                        setShowMenu(false);
-                        // Season pass: a prior purchase covers up to 20 boards,
-                        // so try the free activation before Stripe checkout.
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (session?.access_token) {
-                            const result = await activateWithEntitlement(activePoolId, session.access_token);
-                            if (result.activated) {
-                              setActionMessage('Board unlocked — covered by your season pass.');
-                              window.location.reload();
-                              return;
-                            }
-                          }
-                        } catch (e) {
-                          console.error('Entitlement check failed, falling back to checkout:', e);
-                        }
-                        await createCheckoutSession(activePoolId);
-                      } else if (!isPublished && activePoolId) {
-                        setActionMessage('Checking the board and publishing the viewer link…');
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const response = await fetch(`/api/pools/${activePoolId}/publish`, {
-                          method: 'POST',
-                          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-                        });
-                        const result = await response.json();
-                        if (!response.ok) {
-                          setActionMessage(result.error || 'The board could not be published.');
-                          return;
-                        }
-                        await navigator.clipboard.writeText(`${window.location.origin}${result.viewerUrl}`);
-                        setActionMessage('Published. The viewer link is copied.');
-                        setTimeout(() => window.location.reload(), 900);
-                      } else if (shareCode) {
-                        await navigator.clipboard.writeText(`${window.location.origin}/b/${shareCode}`);
-                        setActionMessage('Viewer link copied.');
-                      }
-                    }}
+                    onClick={handleBoardLifecycleAction}
                     className={`w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-3 ${!isActivated || !isPublished ? 'text-ink hover:bg-gold' : 'text-ink/80 hover:bg-newsprint hover:text-ink'}`}
                   >
                     {!isActivated ? (
@@ -811,9 +838,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <div className="my-1.5 border-t border-newsprint" />
 
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setShowMenu(false);
-                      onLogout();
+                      try {
+                        await flushDraftSave();
+                        onLogout();
+                      } catch {
+                        setActionMessage('The latest changes were not saved. Retry before logging out.');
+                      }
                     }}
                     className="w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium text-ink/60 hover:bg-newsprint hover:text-ink transition-colors flex items-center gap-3"
                   >
@@ -867,6 +899,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
         </div>
       </div>
 
+      {actionMessage && !showMenu && (
+        <div className="border border-ink bg-newsprint px-4 py-3 text-sm text-ink" role="status" aria-live="polite">
+          {actionMessage}
+        </div>
+      )}
+
       {/* Organizer Dashboard */}
       {/* CONTENT AREA */}
       {activeTab === 'overview' ? (
@@ -913,7 +951,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                 .from('contest_entries')
                 .upsert(payload, { onConflict: 'contest_id, cell_index' })
                 .then(({ error }) => {
-                  if (error) console.error("Batch status update failed:", error);
+                  if (error) {
+                    console.error("Batch status update failed:", error);
+                    setActionMessage(`Payment status changes were not saved: ${error.message || 'Unknown error'}`);
+                  }
                 });
             }
           }}
@@ -938,47 +979,56 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <span className="oa-slab text-[10px] text-ink/50">One fixed draw · locked at publish</span>
                 </div>
 
-                <div className="space-y-4">
+                <fieldset disabled={isPublished} className="space-y-4 disabled:opacity-60">
                   <div className="space-y-1.5">
-                    <label className="oa-slab text-ink/60">Board Name</label>
-                    <input type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full oa-input" />
+                    <label htmlFor="organizer-board-name" className="oa-slab text-ink/60">Board Name</label>
+                    <input id="organizer-board-name" maxLength={100} type="text" value={localGame.title} onChange={(e) => updateField('title', e.target.value)} className="w-full oa-input" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="oa-slab text-ink/60">Left Team</label>
-                      <div className="relative">
-                        <select value={localGame.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full oa-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-broadcast-white">{t.abbr}</option>)}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
+                  <div className="space-y-4">
+                    <div className="border border-ink bg-newsprint p-4">
+                      <p className="oa-slab text-ink/55 mb-1">
+                        {localGame.gameExternalId ? 'Linked NFL game' : 'Legacy matchup'}
+                      </p>
+                      <p className="font-semibold text-ink">
+                        {localGame.leftAbbr || 'Away'} at {localGame.topAbbr || 'Home'}
+                      </p>
+                      <p className="oa-body text-sm text-ink/60">
+                        {localGame.kickoffAt
+                          ? new Date(localGame.kickoffAt).toLocaleString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            timeZoneName: 'short',
+                          })
+                          : localGame.dates || 'No verified kickoff'}
+                      </p>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="oa-slab text-ink/60">Top Team</label>
-                      <div className="relative">
-                        <select value={localGame.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full oa-input appearance-none cursor-pointer">
-                          {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr} className="bg-broadcast-white">{t.abbr}</option>)}
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <label className="oa-slab text-ink/60 whitespace-nowrap">Game Date</label>
-                    <input type="date" value={localGame.dates} onChange={(e) => updateField('dates', e.target.value)} className="w-full oa-input" />
+                    {isPublished ? (
+                      <p className="oa-body text-sm text-ink/60">
+                        Published matchups are locked. Legacy published boards remain available with organizer-entered scoring.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="oa-slab text-ink/60">
+                          {localGame.gameExternalId ? 'Change scheduled game' : 'Link scheduled game'}
+                        </p>
+                        <ScheduledGamePicker
+                          value={localGame.gameExternalId || null}
+                          onChange={handleScheduledGameChange}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-2">
-                    <div className="text-[10px] text-ink/50 uppercase font-bold tracking-widest mb-2">Location / Subtext</div>
-                    <input type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full oa-input" placeholder="e.g. 'Family Pool' or 'Las Vegas'" />
+                    <label htmlFor="organizer-board-subtext" className="block text-[10px] text-ink/50 uppercase font-bold tracking-widest mb-2">Location / Subtext</label>
+                    <input id="organizer-board-subtext" type="text" value={localGame.meta} onChange={(e) => updateField('meta', e.target.value)} className="w-full oa-input" placeholder="e.g. 'Family Pool' or 'Las Vegas'" />
                   </div>
-                </div>
+                </fieldset>
 
               </div>
 
@@ -988,38 +1038,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                   <h4 className="text-lg font-semibold text-ink mb-6">Payout Configuration</h4>
 
                   {/* Payout Configuration */}
-                  <div className="space-y-5 mb-8">
+                  <fieldset disabled={isPublished} className="space-y-5 mb-8 disabled:opacity-60">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="oa-slab text-ink/60">Q1 Payout</label>
+                        <label htmlFor="payout-q1" className="oa-slab text-ink/60">Q1 Payout</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
+                          <input id="payout-q1" min={0} type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="oa-slab text-ink/60">Q2 Payout</label>
+                        <label htmlFor="payout-q2" className="oa-slab text-ink/60">Q2 Payout</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
+                          <input id="payout-q2" min={0} type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="oa-slab text-ink/60">Q3 Payout</label>
+                        <label htmlFor="payout-q3" className="oa-slab text-ink/60">Q3 Payout</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
+                          <input id="payout-q3" min={0} type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="oa-slab text-ink/60 text-gold">Final Payout</label>
+                        <label htmlFor="payout-final" className="oa-slab text-ink/60 text-gold">Final Payout</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gold text-sm">$</span>
-                          <input type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
+                          <input id="payout-final" min={0} type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 text-gold font-bold border-gold/30 focus:border-gold" />
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </fieldset>
 
                   {/* Live Scoring */}
                   <div className="border-t border-newsprint pt-6 mb-8">
@@ -1049,9 +1099,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <label className="oa-slab text-ink/60">Game Status</label>
+                            <label htmlFor="manual-game-status" className="oa-slab text-ink/60">Game Status</label>
                             <div className="relative">
                               <select
+                                id="manual-game-status"
                                 value={localGame.manualGameState ?? 'in'}
                                 onChange={(e) => updateField('manualGameState', e.target.value)}
                                 className="w-full oa-input appearance-none bg-broadcast-white text-ink"
@@ -1064,9 +1115,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <label className="oa-slab text-ink/60">Current Period</label>
+                            <label htmlFor="manual-current-period" className="oa-slab text-ink/60">Current Period</label>
                             <div className="relative">
                               <select
+                                id="manual-current-period"
                                 value={localGame.manualPeriod ?? 1}
                                 onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
                                 disabled={(localGame.manualGameState ?? 'in') !== 'in'}
@@ -1349,7 +1401,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                           return (
                             <div key={cellIdx} className="relative group h-12">
                               {/* Unified Click Handler */}
-                              <div
+                              <button
+                                type="button"
                                 onClick={() => {
                                   if (isPublished) return;
                                   if (isAssignMode) {
@@ -1374,7 +1427,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                   if (isPublished || !isAssignMode) return;
                                   endDragAssign();
                                 }}
-                                aria-disabled={isPublished}
+                                disabled={isPublished}
+                                aria-pressed={isAssignMode ? selectedCellIndices.has(cellIdx) : undefined}
+                                aria-label={`Square ${cellIdx + 1}${players[0] ? `, assigned to ${players[0]}` : ', unassigned'}${isAssignMode ? ', toggle selection' : ', edit purchaser details'}`}
                                 className={`w-full h-full border rounded-none flex flex-col items-center justify-center p-1 transition-all group ${isPublished ? 'cursor-default' : 'cursor-pointer active:scale-95'} ${isAssignMode && selectedCellIndices.has(cellIdx)
                                   ? 'bg-cardinal-subtle border-cardinal '
                                   : 'bg-newsprint border-newsprint hover:bg-newsprint hover:border-newsprint'
@@ -1388,7 +1443,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, adminToken, active
                                     {currentOppAxis?.[c] ?? '?'}-{currentBearsAxis?.[r] ?? '?'}
                                   </span>
                                 )}
-                              </div>
+                              </button>
 
                               {/* Status Indicator (Paid/Unpaid) */}
                               {entryMetaByIndex[cellIdx]?.paid_status === 'paid' && (

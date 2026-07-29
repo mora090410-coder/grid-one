@@ -4,6 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
+export const safeReturnTo = (value: string | null): string | null => {
+    if (!value) return null;
+    if (value.startsWith('?')) return `/${value}`;
+    if (!value.startsWith('/') || value.startsWith('//')) return null;
+    return value;
+};
+
 const Login: React.FC = () => {
     const { session } = useAuth();
     const navigate = useNavigate();
@@ -23,13 +30,9 @@ const Login: React.FC = () => {
     // If already logged in, redirect to dashboard or return URL
     React.useEffect(() => {
         if (session) {
-            const returnTo = searchParams.get('returnTo');
-            // Preserve 'mode=claim' if it exists to trigger downstream logic
+            const returnTo = safeReturnTo(searchParams.get('returnTo'));
             if (returnTo) {
-                const decoded = decodeURIComponent(returnTo);
-                // If returnTo is just query params (e.g. ?poolId=...), prepend /
-                const target = decoded.startsWith('?') ? `/${decoded}` : decoded;
-                navigate(target);
+                navigate(returnTo);
             } else if (isClaim) {
                 navigate('/dashboard?mode=claim');
             } else {
@@ -155,9 +158,11 @@ const Login: React.FC = () => {
                     {isSignUp && (
                         <div className="grid grid-cols-2 gap-3 duration-500">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">First Name <span className="text-ink/50 normal-case">(optional)</span></label>
+                                <label htmlFor="signup-first-name" className="text-xs font-bold text-ink/50 uppercase tracking-wide">First Name <span className="text-ink/50 normal-case">(optional)</span></label>
                                 <input
+                                    id="signup-first-name"
                                     type="text"
+                                    autoComplete="given-name"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
                                     className="oa-input w-full text-sm placeholder:text-ink/40"
@@ -165,9 +170,11 @@ const Login: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Last Name <span className="text-ink/50 normal-case">(optional)</span></label>
+                                <label htmlFor="signup-last-name" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Last Name <span className="text-ink/50 normal-case">(optional)</span></label>
                                 <input
+                                    id="signup-last-name"
                                     type="text"
+                                    autoComplete="family-name"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
                                     className="oa-input w-full text-sm placeholder:text-ink/40"
@@ -178,9 +185,11 @@ const Login: React.FC = () => {
                     )}
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Email Address</label>
+                        <label htmlFor="auth-email" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Email Address</label>
                         <input
+                            id="auth-email"
                             type="email"
+                            autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="oa-input w-full text-sm placeholder:text-ink/40"
@@ -190,9 +199,11 @@ const Login: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Password</label>
+                        <label htmlFor="auth-password" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Password</label>
                         <input
+                            id="auth-password"
                             type="password"
+                            autoComplete={isSignUp ? 'new-password' : 'current-password'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="oa-input w-full text-sm placeholder:text-ink/40"
@@ -203,9 +214,11 @@ const Login: React.FC = () => {
 
                     {isSignUp && (
                         <div className="space-y-1 duration-500 delay-100">
-                            <label className="text-xs font-bold text-ink/50 uppercase tracking-wide">Confirm Password</label>
+                            <label htmlFor="auth-confirm-password" className="text-xs font-bold text-ink/50 uppercase tracking-wide">Confirm Password</label>
                             <input
+                                id="auth-confirm-password"
                                 type="password"
+                                autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="oa-input w-full text-sm placeholder:text-ink/40"

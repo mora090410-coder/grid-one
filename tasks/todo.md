@@ -1,5 +1,59 @@
 # GridOne Friday launch
 
+## Delegated local test-board fill — July 28, 2026
+
+- [ ] Start or locate the dedicated local GridOne test instance; do not interact with an unrelated listener.
+- [ ] Inspect the active local Football Squares board and select an appropriate editable test board.
+- [ ] Assign every currently available square using unmistakably fake participant data.
+- [ ] Reproduce and diagnose organizer assignment-control scrolling around Paid, Unpaid, Assign, and Assign Square.
+- [ ] Implement and verify a durable UI fix across relevant viewport sizes and normal scrolling.
+- [ ] Verify the completed board has no remaining available squares and record the result.
+
+### Delegated test-board review
+
+- Blocked before assignment: port 5173 is an unrelated private-team app, while the dedicated GridOne instance on 5199 reaches the public landing page without an authenticated organizer or editable test board. Do not apply the pending migration, seek credentials, or use a production workaround. No square data or product code was changed.
+- UI investigation was scoped to `AdminPanel.tsx`: the organizer controls are currently normal-flow content and the wide grid is only horizontally scrollable. Full reproduction at a real organizer board is migration/identity-dependent and was not performed after the explicit stop instruction.
+
+## Full user-workflow audit and repair
+
+- [x] Inventory organizer, participant, viewer, scoring, notification, checkout, entitlement, and legacy-board workflows.
+- [x] Add end-to-end coverage for every locally testable workflow and failure state.
+- [x] Fix every reproducible workflow defect found during the audit.
+- [x] Re-run unit, API, migration, build, typecheck, accessibility, responsive, and browser verification.
+- [x] Record fixed defects, passing evidence, and the remaining production-only test boundary.
+
+### Full workflow review
+
+- Fixed the public viewer lock inversion, exact-name Find My Squares matching, protected-route return paths, clipboard false-success, dashboard false-empty errors, and paid-return recovery.
+- Removed legacy board-password storage; organizer authority now comes only from the authenticated account session.
+- Draft saves are serialized and flushed before activation, navigation, and publish. Title/payout columns stay synchronized, and published grid controls are keyboard-operable and immutable.
+- Publishing is one database transaction through migration `010`; manual score commits and Manual→Auto transitions are atomic through migration `011`.
+- New boards require one upcoming ESPN event. Hidden completed-game tests are bounded to the five most recent finals; legacy unlinked boards remain manual-only.
+- Paper scanning now returns safe retryable errors for network and malformed-provider failures, while blank-board creation remains available.
+- `npm test -- --run`: 109/109 tests pass across 18 files, including schedule, scoring, persistence, commercial, notification, and paper-scan endpoints.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 14/14 browser workflows pass, including return-to-login, keyboard/mobile game selection, creation, organizer save-before-publish, public viewer, exact-name lookup, and invalid links.
+- `npm run build`, strict `tsc --noEmit --noUnusedLocals --noUnusedParameters`, and `git diff --check`: pass.
+- Migrations `000` through `011` apply in disposable PostgreSQL. Injected manual-score audit failure rolls back mode, snapshot, and public projection; manual and automatic success paths pass.
+- Production migrations `009`–`011` were applied July 29, 2026 to the exact `GridOneApp` project (`illqymckwqiawdwxhwcy`). The application release and authenticated production smoke remain pending. A live Stripe charge remains separately approval-gated.
+
+## Scheduled-game binding implementation
+
+- [x] Add a server-side ESPN schedule/event normalizer and upcoming/completed games API.
+- [x] Replace freeform team/date creation with a required scheduled-game picker and hidden five-game score-test mode.
+- [x] Persist and update canonical game identity atomically; protect published matchups.
+- [x] Fetch automatic scores by exact external event ID with identity validation and manual/last-score fallback.
+- [x] Add deterministic recorded-payload, API, migration, and browser coverage.
+- [x] Run the full local test/build/diff verification suite and document results below.
+
+### Scheduled-game binding review
+
+- `npm test -- --run`: 47/47 tests pass across schedule normalization, exact-event scoring, persistence, picker states, winner logic, and existing behavior.
+- `PLAYWRIGHT_PORT=5199 npx playwright test`: 8/8 browser checks pass, including authenticated creation and hidden completed-game mode. The explicit port prevents another local project already using 5173 from being mistaken for GridOne.
+- `npm run build`, `npx tsc --noEmit`, and `git diff --check`: pass.
+- Full migrations `000` through `009` apply cleanly to disposable PostgreSQL 17 with Supabase auth/role stubs; the new RPC and published-identity trigger are present.
+- Live read-only ESPN verification returned five real completed franchise games with exact IDs, kickoffs, final totals, and quarter/OT scoring. Pro Bowl AFC/NFC pseudo-teams are excluded.
+- Production migration 009 and deployment were intentionally not applied in this local implementation turn.
+
 Target: public soft launch on Friday, July 31, 2026.
 
 Production boundary: implementation and local/test-mode verification are authorized. Stop for fresh action-time approval before applying production Supabase migrations, changing the live Stripe price, enabling live Stripe payments, or deploying Cloudflare Pages.
@@ -8,6 +62,8 @@ Production launch approval received July 28, 2026. Approved account boundary: Gr
 
 ## Production launch execution
 
+- [x] Apply scheduled-game, atomic-publish, and atomic-scoring migrations `009`–`011` to project `illqymckwqiawdwxhwcy`.
+- [x] Audit and restrict the six new function ACLs to `postgres`/`service_role`; Supabase's explicit default `anon` and `authenticated` grants required revocation beyond `PUBLIC`.
 - [x] Verify access to Supabase project `illqymckwqiawdwxhwcy`; do not substitute another project. Verified healthy as `GridOneApp | Sideline Hacks` in the Codex in-app browser; Safari is authenticated to a different Supabase account.
 - [x] Confirm the pre-reset recovery boundary. The free Supabase project reported no existing backups; the owner confirmed its contents were test-only and approved a clean start.
 - [x] Reset the approved GridOne database and apply migrations `000` through `008`.
@@ -148,3 +204,4 @@ Local implementation review, July 28, 2026:
 - Public production smoke, July 28, 2026: `/`, `/demo`, `/terms`, `/privacy`, `/paid`, and `/api/health` return 200. The public demo uses explicit `Demo Player` labels, exposes source/freshness, presents current-quarter arithmetic scoring scenarios, and labels its fixture synthetic. Apex canonicalization preserves path/query; unauthenticated billing returns 401, invalid board and score references return 404, and an unsigned Stripe webhook returns 400.
 - Final local verification against the deployed source: 20/20 tests pass across six files; production build passes; `git diff --check` passes. `npm audit --omit=dev` still reports React Router's high-severity unstable-RSC-only advisory. GridOne uses the client-side SPA APIs, not React Server Components, so the vulnerable code path is not enabled; React Router lists 8.3.0 as the patched line and that major upgrade remains a post-launch hardening item.
 - Go/no-go: **go for the public marketing/demo surface; hold organizer onboarding and paid acquisition until one production organizer identity completes create → publish → viewer → manual score → notification → checkout-session → entitlement verification.** A real Stripe charge is outside this smoke test unless separately approved at action time.
+- Scheduled-game production migration, July 29, 2026: migrations `009`–`011` applied successfully. Verification found all six expected functions and the enabled `gridone_protect_published_game_identity` trigger. A production-only ACL audit exposed Supabase's explicit default execute grants to `anon` and `authenticated`; the migration source and live ACLs were corrected so the six functions are callable only by `postgres` and `service_role`.

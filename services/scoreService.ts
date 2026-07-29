@@ -1,11 +1,23 @@
 import { LiveGameData, WinnerResolution } from '../types';
+import { supabase } from './supabase';
 
-export async function fetchLiveScore(boardRef: string): Promise<{
+export async function fetchLiveScore(boardRef: string, accessToken?: string | null): Promise<{
     score: LiveGameData;
     winnerHistory?: WinnerResolution[];
 }> {
+    let token = accessToken;
+    if (token === undefined) {
+        try {
+            const { data } = await supabase.auth.getSession();
+            token = data.session?.access_token || null;
+        } catch {
+            token = null;
+        }
+    }
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
     const response = await fetch(`/api/pools/${encodeURIComponent(boardRef)}/score`, {
-        headers: { Accept: 'application/json' },
+        headers,
         cache: 'no-store',
     });
     const data = await response.json().catch(() => ({}));

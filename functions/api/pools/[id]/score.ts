@@ -1,16 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveMilestonesAndNotify } from '../../../_lib/winnerNotifications';
+import {
+  fetchEspnSummary,
+  normalizeEspnScoreSummary,
+  normalizeTeamAbbreviation,
+} from '../../../_lib/espnNfl';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
-
-interface Env {
-  VITE_SUPABASE_URL: string;
-  VITE_SUPABASE_ANON_KEY: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
-  GEMINI_API_KEY?: string;
-  SCORE_MODEL?: string;
-  PUBLIC_SITE_URL?: string;
-}
 
 type QuarterScore = { left: number; top: number };
 type ProviderScore = {
@@ -99,31 +95,69 @@ export const toClientScore = (snapshot: any, freshness?: string) => snapshot ? (
   freshness: freshness || (new Date(snapshot.stale_after).getTime() > Date.now() ? 'fresh' : 'stale'),
 }) : null;
 
-const fetchGroundedScore = async (env: Env, contest: any) => {
-  if (!env.GEMINI_API_KEY) throw new Error('Automatic score provider is not configured.');
-  const model = env.SCORE_MODEL || 'gemini-2.5-flash';
-  const prompt = `Find the current NFL game score for ${contest.side_team_name || contest.side_team_abbr} versus ${contest.top_team_name || contest.top_team_abbr}, scheduled ${contest.game_starts_at || 'date not supplied'}.
-Use Google Search. Return only JSON with:
-{"leftScore":0,"topScore":0,"quarterScores":{"Q1":{"left":0,"top":0},"Q2":{"left":0,"top":0},"Q3":{"left":0,"top":0},"Q4":{"left":0,"top":0},"OT":{"left":0,"top":0}},"clock":"","period":0,"state":"pre","detail":"","isOvertime":false,"sourceObservedAt":"ISO-8601 timestamp"}
-left means ${contest.side_team_name || contest.side_team_abbr}; top means ${contest.top_team_name || contest.top_team_abbr}. Quarter scores must be points scored within each quarter, and must add to the totals. If the matchup cannot be confirmed, do not guess.`;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0 },
-    }),
+export const fetchExactEventScore = async (contest: any, fetchImpl: typeof fetch = fetch) => {
+  const eventId = String(contest.game_external_id || '').trim();
+  if (!/^\d+$/.test(eventId)) {
+    throw new Error('Automatic scoring requires a linked scheduled NFL game. Use manual scoring for this legacy board.');
+  }
+  const raw = await fetchEspnSummary(eventId, fetchImpl);
+  if (!raw) throw new Error('The linked NFL game was not found.');
+  const provider = normalizeEspnScoreSummary(raw);
+  const expectedSide = normalizeTeamAbbreviation(contest.side_team_abbr);
+  const expectedTop = normalizeTeamAbbreviation(contest.top_team_abbr);
+  const expectedKickoff = new Date(contest.game_starts_at).getTime();
+  const providerKickoff = new Date(provider.kickoffAt).getTime();
+  if (
+    provider.eventId !== eventId
+    || provider.awayTeam.abbr !== expectedSide
+    || provider.homeTeam.abbr !== expectedTop
+    || Number.isNaN(expectedKickoff)
+    || providerKickoff !== expectedKickoff
+  ) {
+    throw new Error('The score provider returned a different NFL game than the board is linked to.');
+  }
+  const observedAt = new Date().toISOString();
+  const score = validateScore({
+    leftScore: provider.awayTeam.score,
+    topScore: provider.homeTeam.score,
+    quarterScores: {
+      Q1: { left: provider.awayTeam.quarterScores.Q1, top: provider.homeTeam.quarterScores.Q1 },
+      Q2: { left: provider.awayTeam.quarterScores.Q2, top: provider.homeTeam.quarterScores.Q2 },
+      Q3: { left: provider.awayTeam.quarterScores.Q3, top: provider.homeTeam.quarterScores.Q3 },
+      Q4: { left: provider.awayTeam.quarterScores.Q4, top: provider.homeTeam.quarterScores.Q4 },
+      OT: { left: provider.awayTeam.quarterScores.OT, top: provider.homeTeam.quarterScores.OT },
+    },
+    clock: provider.clock,
+    // GridOne models every period after Q4 as the single OT milestone.
+    period: Math.min(provider.period, 5),
+    state: provider.state,
+    detail: provider.detail,
+    isOvertime: provider.period > 4,
+    sourceObservedAt: observedAt,
   });
-  const raw = await response.json() as any;
-  if (!response.ok) throw new Error(raw?.error?.message || 'Automatic score request failed.');
-  const candidate = raw?.candidates?.[0];
-  const text = candidate?.content?.parts?.map((part: any) => part.text || '').join('').trim();
-  const chunks = candidate?.groundingMetadata?.groundingChunks || [];
-  const source = chunks.map((chunk: any) => chunk.web).find((web: any) => web?.uri && web?.title);
-  if (!text || !source) throw new Error('Automatic score response was not grounded to a named source.');
-  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  return { score: validateScore(JSON.parse(cleaned)), source, raw };
+  return {
+    score,
+    source: {
+      title: 'ESPN',
+      uri: `https://www.espn.com/nfl/game/_/gameId/${encodeURIComponent(eventId)}`,
+    },
+    raw,
+  };
+};
+
+export const scoreStaleAfter = (
+  scoreState: ProviderScore['state'],
+  retrievedAt: Date,
+  kickoffAt?: string | null,
+) => {
+  const staleSeconds = scoreState === 'in' ? 120 : scoreState === 'post' ? 31_536_000 : 900;
+  const defaultStaleAt = retrievedAt.getTime() + staleSeconds * 1000;
+  if (scoreState !== 'pre' || !kickoffAt) return new Date(defaultStaleAt).toISOString();
+  const kickoffTime = new Date(kickoffAt).getTime();
+  if (Number.isNaN(kickoffTime)) return new Date(defaultStaleAt).toISOString();
+  // A pre-game snapshot must become stale no later than kickoff. Equality with
+  // retrieved_at is valid and forces the next request to recheck immediately.
+  return new Date(Math.max(retrievedAt.getTime(), Math.min(defaultStaleAt, kickoffTime))).toISOString();
 };
 
 export const onRequestGet: PagesFunction = async ({ request, env, params, waitUntil }) => {
@@ -147,7 +181,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
   }
   let contestQuery = admin
     .from('contests')
-    .select('id, owner_id, status, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr');
+    .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr');
   if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
   const { data: contest, error: contestError } = uuidPattern.test(ref)
     ? await contestQuery.eq('id', ref).maybeSingle()
@@ -195,15 +229,15 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
   }
 
   try {
-    const provider = await fetchGroundedScore(env, contest);
+    const provider = await fetchExactEventScore(contest);
     const retrievedAt = new Date();
-    const staleSeconds = provider.score.state === 'in' ? 120 : provider.score.state === 'post' ? 31_536_000 : 900;
+    const staleAfter = scoreStaleAfter(provider.score.state, retrievedAt, contest.game_starts_at);
     const { data: inserted, error: insertError } = await admin
       .from('score_snapshots')
       .insert({
         contest_id: contest.id,
         source_mode: 'automatic',
-        provider: env.SCORE_MODEL || 'gemini-2.5-flash',
+        provider: 'espn',
         game_state: provider.score.state,
         period: provider.score.period,
         side_score: provider.score.leftScore,
@@ -216,7 +250,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
         source_url: provider.source.uri,
         source_observed_at: provider.score.sourceObservedAt,
         retrieved_at: retrievedAt.toISOString(),
-        stale_after: new Date(retrievedAt.getTime() + staleSeconds * 1000).toISOString(),
+        stale_after: staleAfter,
       })
       .select('*')
       .single();

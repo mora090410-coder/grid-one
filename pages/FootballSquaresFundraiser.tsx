@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { PageMetadata } from '../components/seo/PageMetadata';
 import { ArticleCTA } from '../components/seo/ArticleCTA';

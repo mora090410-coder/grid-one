@@ -45,11 +45,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         isActivated, isPaid, isLocked, isPublished, winnerHistory, updatePool, publishPool
     } = poolData;
 
-    const liveScoring = useLiveScoring(game, dataReady, loadingPool, routeShareCode || shareCode, winnerHistory);
-    const { liveData, liveStatus, isSynced, winnerHistory: liveWinnerHistory } = liveScoring;
-
     const auth = useAuth();
-    const { adminToken, setAdminToken } = auth;
+    const scoringBoardRef = routeShareCode || routeBoardId || (auth.user ? activePoolId : null) || shareCode;
+    const liveScoring = useLiveScoring(game, dataReady, loadingPool, scoringBoardRef, winnerHistory);
+    const { liveData, liveStatus, isSynced, winnerHistory: liveWinnerHistory } = liveScoring;
 
     const requiresAuthForRoute = !demoMode && Boolean(
         routeBoardId || forceAdmin || (legacyPoolId && legacyPoolId.length > 8),
@@ -64,14 +63,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     // 2. UI State
     const [showShareModal, setShowShareModal] = useState(false);
-    const [showAdminView, setShowAdminView] = useState(false);
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
 
     const [adminStartTab, setAdminStartTab] = useState<'overview' | 'edit'>('overview');
-    const [activeTab, setActiveTab] = useState<'live' | 'board'>('live');
-
-    const [hasEnteredApp, setHasEnteredApp] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
 
     const [selectedPlayer, setSelectedPlayer] = useState<string>('');
@@ -84,13 +78,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     // 4. Derived State
     const isOwner = auth.user && ownerId && auth.user.id === ownerId;
-    const isCommissionerMode = (showAdminView && !!adminToken && !isPreviewMode) || (isOwner && !isPreviewMode);
+    const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
 
     // 5. Effects
-    useEffect(() => {
-        if (isOwner) setShowAdminView(true);
-    }, [isOwner]);
-
     useEffect(() => {
         if (demoMode) {
             setBoard(SAMPLE_BOARD);
@@ -122,9 +112,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     freshness: 'fresh',
                 },
             });
-            setIsInitialized(true);
-            setHasEnteredApp(true);
-            setActiveTab('board');
         }
     }, [demoMode, setBoard, setGame]);
 
@@ -132,20 +119,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         if (urlPoolId) {
             if (forceAdmin || routeBoardId) {
                 setIsPreviewMode(false);
-                setShowAdminView(true);
                 localStorage.setItem('gridone_preview_mode', 'false');
             }
-            loadPoolData(urlPoolId).then(() => {
-                setIsInitialized(true);
-            });
+            void loadPoolData(urlPoolId);
         }
-    }, [forceAdmin, loadPoolData, routeBoardId, setAdminToken, urlPoolId]);
-
-    useEffect(() => {
-        if (dataReady && !loadingPool && !isActivated && !isOwner && !demoMode) {
-            setActiveTab('board');
-        }
-    }, [dataReady, loadingPool, isActivated, isOwner, demoMode]);
+    }, [forceAdmin, loadPoolData, routeBoardId, urlPoolId]);
 
     useEffect(() => {
         if (urlPoolId) return;
@@ -158,17 +136,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const handleTogglePreview = (enabled: boolean) => {
         setIsPreviewMode(enabled);
         localStorage.setItem('gridone_preview_mode', String(enabled));
-        if (enabled) setShowAdminView(false);
-        else setShowAdminView(true);
     };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        setAdminToken('');
-        setHasEnteredApp(false);
         setActivePoolId(null);
-        setIsInitialized(false);
-        setShowAdminView(false);
         setIsPreviewMode(false);
         localStorage.removeItem('gridone_preview_mode');
         setBoard(SAMPLE_BOARD);
@@ -177,7 +149,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     const highlights = useMemo<WinnerHighlights>(() => calculateWinnerHighlights(liveData), [liveData]);
 
-    const openSetupWizard = () => navigate('/create');
     const shareUrl = shareCode ? `${window.location.origin}/b/${shareCode}` : window.location.href;
 
     const renderMainContent = (previewMode = false) => (
@@ -236,21 +207,17 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {loadingPool && urlPoolId && <FullScreenLoading />}
 
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
-            {(demoMode || !loadingPool) && (
+            {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
                     <div className="flex-shrink-0 z-50 p-4 md:py-6">
                         <BoardHeader
                             game={game}
-                            adminToken={adminToken || ''}
                             isOwner={!!isOwner}
                             activePoolId={activePoolId}
                             isActivated={isActivated}
                             isSynced={isSynced}
-                            activeTab={activeTab}
-                            onTabChange={setActiveTab}
                             isPreviewMode={isPreviewMode}
                             onTogglePreview={handleTogglePreview}
-                            adminStartTab={adminStartTab}
                             onAdminStartTab={setAdminStartTab}
                             onShareClick={() => setShowShareModal(true)}
                         />
@@ -274,7 +241,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         <AdminPanel
                             game={game}
                             board={board}
-                            adminToken={adminToken || ''}
                             activePoolId={activePoolId || ''}
                             liveData={liveData}
                             initialTab={adminStartTab}

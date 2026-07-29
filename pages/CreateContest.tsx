@@ -4,17 +4,27 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/geminiService';
-import { NFL_TEAMS } from '../constants';
-import { GameState, BoardData } from '../types';
+import { GameState, BoardData, ScheduledGame } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
+import ScheduledGamePicker from '../components/ScheduledGamePicker';
 
 const CreateContest: React.FC = () => {
     const { user, session } = useAuth();
     const navigate = useNavigate();
+    const scoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
 
     // Wizard State
     const [step, setStep] = useState(1);
-    const [game, setGame] = useState<GameState>(INITIAL_GAME);
+    const [game, setGame] = useState<GameState>(() => ({
+        ...INITIAL_GAME,
+        gameExternalId: undefined,
+        kickoffAt: undefined,
+        leftAbbr: '',
+        leftName: '',
+        topAbbr: '',
+        topName: '',
+        dates: '',
+    }));
     const [board, setBoard] = useState<BoardData>(EMPTY_BOARD);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -36,13 +46,18 @@ const CreateContest: React.FC = () => {
         }
     }, []); // Run once on mount
 
-    const handleTeamChange = (side: 'left' | 'top', abbr: string) => {
-        const team = NFL_TEAMS.find(t => t.abbr === abbr);
-        if (!team) return;
+    const handleGameChange = (scheduledGame: ScheduledGame) => {
         setGame(prev => ({
             ...prev,
-            [`${side}Abbr`]: team.abbr,
-            [`${side}Name`]: team.name
+            gameExternalId: scheduledGame.id,
+            kickoffAt: scheduledGame.kickoffAt,
+            // ESPN's away team is the board's left axis; home is the top axis.
+            leftAbbr: scheduledGame.awayTeam.abbr,
+            leftName: scheduledGame.awayTeam.name,
+            topAbbr: scheduledGame.homeTeam.abbr,
+            topName: scheduledGame.homeTeam.name,
+            // Legacy read compatibility only. The provider kickoff remains canonical.
+            dates: scheduledGame.kickoffAt.slice(0, 10),
         }));
     };
 
@@ -91,7 +106,7 @@ const CreateContest: React.FC = () => {
             } catch {
                 // sessionStorage unavailable — user will lose draft state on redirect
             }
-            const returnTo = encodeURIComponent('/create');
+            const returnTo = encodeURIComponent(scoreTestMode ? '/create?scoreTest=1' : '/create');
             navigate(`/login?mode=signup&returnTo=${returnTo}`);
             return;
         }
@@ -102,6 +117,7 @@ const CreateContest: React.FC = () => {
 
         try {
             if (!leagueTitle) throw new Error("League Name is required.");
+            if (!game.gameExternalId) throw new Error("Select an NFL game before creating your board.");
             if (!session?.access_token) throw new Error("You must be logged in to create a board.");
 
             const response = await fetch('/api/pools', {
@@ -111,6 +127,7 @@ const CreateContest: React.FC = () => {
                     'Authorization': `Bearer ${session.access_token}`,
                 },
                 body: JSON.stringify({
+                    scoreTestMode,
                     game: { ...game, title: leagueTitle },
                     board: finalBoard,
                 }),
@@ -193,9 +210,11 @@ const CreateContest: React.FC = () => {
 
                             <div className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="oa-slab text-ink/60">Board name</label>
+                                    <label htmlFor="board-name" className="oa-slab text-ink/60">Board name</label>
                                     <input
+                                        id="board-name"
                                         type="text"
+                                        maxLength={100}
                                         value={game.title}
                                         onChange={(e) => setGame(prev => ({ ...prev, title: e.target.value }))}
                                         className="w-full oa-input"
@@ -223,39 +242,32 @@ const CreateContest: React.FC = () => {
                             <div>
                                 <p className="oa-slab text-cardinal mb-2">02 · Matchup</p>
                                 <h1 className="oa-headline !text-3xl mb-2">Pick the game</h1>
-                                <p className="oa-body text-ink/60">Select the NFL teams and game date.</p>
+                                <p className="oa-body text-ink/60">Choose one scheduled NFL game. The teams and kickoff stay linked so live scoring follows the right event.</p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="oa-slab text-ink/60">Side team</label>
-                                    <div className="relative">
-                                        <select value={game.leftAbbr} onChange={(e) => handleTeamChange('left', e.target.value)} className="w-full oa-input appearance-none">
-                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
-                                    </div>
+                            {scoreTestMode && (
+                                <div className="border border-gold bg-gold/20 p-4" role="status">
+                                    <p className="oa-slab text-ink mb-1">Completed-game score test</p>
+                                    <p className="oa-body text-sm text-ink/65">This hidden test mode shows only the five most recent final games.</p>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="oa-slab text-ink/60">Top team</label>
-                                    <div className="relative">
-                                        <select value={game.topAbbr} onChange={(e) => handleTeamChange('top', e.target.value)} className="w-full oa-input appearance-none">
-                                            {NFL_TEAMS.map(t => <option key={t.abbr} value={t.abbr}>{t.abbr} - {t.name}</option>)}
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
 
-                            <div className="space-y-1">
-                                <label className="oa-slab text-ink/60">Game date (optional)</label>
-                                <input type="date" value={game.dates} onChange={(e) => setGame(prev => ({ ...prev, dates: e.target.value }))}
-                                    className="w-full oa-input" />
-                            </div>
+                            <ScheduledGamePicker
+                                value={game.gameExternalId || null}
+                                onChange={handleGameChange}
+                                scope={scoreTestMode ? 'completed' : 'upcoming'}
+                                limit={scoreTestMode ? 5 : undefined}
+                            />
 
                             <div className="pt-4 flex gap-4">
                                 <button onClick={() => setStep(1)} className="oa-btn oa-btn-ghost flex-1">Back</button>
-                                <button onClick={() => setStep(3)} className="oa-btn oa-btn-primary flex-1">Continue</button>
+                                <button
+                                    disabled={!game.gameExternalId}
+                                    onClick={() => setStep(3)}
+                                    className="oa-btn oa-btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Continue
+                                </button>
                             </div>
                         </div>
                     )}

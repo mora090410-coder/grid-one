@@ -19,6 +19,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Remove credentials left by the retired board-password flow.
+        localStorage.removeItem('sbx_adminToken');
+        localStorage.removeItem('sbx_poolId');
+
         // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);

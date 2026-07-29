@@ -9,14 +9,20 @@ interface ShareModalProps {
 }
 
 const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
-    const [copyFeedback, setCopyFeedback] = useState(false);
+    const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
     const dialogRef = useRef<HTMLDivElement>(null);
     useDialogFocus(dialogRef, onClose);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(shareUrl);
-        setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 2000);
+    const handleCopy = async () => {
+        setCopyStatus('copying');
+        try {
+            if (!navigator.clipboard?.writeText) throw new Error('Clipboard access is unavailable.');
+            await navigator.clipboard.writeText(shareUrl);
+            setCopyStatus('copied');
+            window.setTimeout(() => setCopyStatus('idle'), 2000);
+        } catch {
+            setCopyStatus('error');
+        }
     };
 
     return (
@@ -30,11 +36,18 @@ const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
                     <div className="flex-1 oa-data text-xs text-ink/70 truncate text-left">{shareUrl}</div>
                     <button
                         onClick={handleCopy}
+                        disabled={copyStatus === 'copying'}
                         className="oa-btn oa-btn-primary !px-4 !py-2"
                     >
-                        {copyFeedback ? 'Copied' : 'Copy'}
+                        {copyStatus === 'copying' ? 'Copying…' : copyStatus === 'copied' ? 'Copied' : 'Copy'}
                     </button>
                 </div>
+                {copyStatus === 'error' && (
+                    <p className="oa-body text-[13px] text-cardinal" role="alert">
+                        The link could not be copied. Select the address above and copy it manually.
+                    </p>
+                )}
+                {copyStatus === 'copied' && <span className="sr-only" role="status">Viewer link copied.</span>}
                 <p className="oa-body text-[13px] text-ink/70 leading-tight px-4">
                     <span className="font-bold text-ink">Note:</span> This link gives{' '}
                     <span className="text-ink">read-only access</span> to viewers. Organizers keep edit access inside their GridOne account.

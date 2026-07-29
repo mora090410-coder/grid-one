@@ -1,16 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  fetchScheduledGameById,
+  fetchScheduledGames,
+  type ScheduledGame,
+} from '../_lib/espnNfl';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
-
-interface Env {
-  PUBLIC_SITE_URL?: string;
-  VITE_SUPABASE_URL: string;
-  VITE_SUPABASE_ANON_KEY: string;
-}
+const LAUNCH_SEASON_YEAR = 2026;
 
 interface CreateBoardPayload {
+  scoreTestMode?: boolean;
   game: {
     title: string;
+    gameExternalId: string;
     dates?: string;
     leftAbbr?: string;
     leftName?: string;
@@ -55,11 +57,33 @@ const json = (request: Request, body: unknown, status: number, siteOrigin?: stri
   });
 };
 
+export const legacyDateFromKickoff = (kickoffAt: string) => kickoffAt.slice(0, 10);
+
+export const canonicalizeGameSettings = (
+  submitted: CreateBoardPayload['game'],
+  scheduled: ScheduledGame,
+) => ({
+  ...submitted,
+  gameExternalId: scheduled.id,
+  gameStartsAt: scheduled.kickoffAt,
+  kickoffAt: scheduled.kickoffAt,
+  gameSeason: scheduled.season,
+  gameWeek: scheduled.week,
+  dates: legacyDateFromKickoff(scheduled.kickoffAt),
+  leftAbbr: scheduled.awayTeam.abbr,
+  leftName: scheduled.awayTeam.name,
+  topAbbr: scheduled.homeTeam.abbr,
+  topName: scheduled.homeTeam.name,
+});
+
 const validate = (input: unknown): CreateBoardPayload => {
   if (!input || typeof input !== 'object') throw new Error('Invalid request body.');
   const candidate = input as Partial<CreateBoardPayload>;
   const title = candidate.game?.title?.trim();
   if (!title || title.length > 100) throw new Error('Board name must be between 1 and 100 characters.');
+  if (!candidate.game?.gameExternalId?.trim()) {
+    throw new Error('Choose a scheduled NFL game before continuing.');
+  }
   if (!candidate.board || !Array.isArray(candidate.board.squares) || candidate.board.squares.length !== 100) {
     throw new Error('A board must contain exactly 100 squares.');
   }
@@ -84,10 +108,43 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       return json(request, { error: 'Your session has expired. Sign in again.' }, 401, env.PUBLIC_SITE_URL);
     }
 
-    const game = { ...payload.game, title: payload.game.title.trim() };
-    const date = typeof game.dates === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(game.dates)
-      ? `${game.dates}T12:00:00Z`
-      : null;
+    let scheduledGame: ScheduledGame | null;
+    try {
+      scheduledGame = await fetchScheduledGameById(payload.game.gameExternalId);
+    } catch {
+      return json(request, {
+        error: 'The NFL schedule provider is unavailable. Retry in a moment.',
+      }, 503, env.PUBLIC_SITE_URL);
+    }
+    if (!scheduledGame) {
+      return json(request, {
+        error: 'That NFL game could not be verified. Choose a scheduled game and try again.',
+      }, 400, env.PUBLIC_SITE_URL);
+    }
+    if (scheduledGame.state !== 'pre') {
+      if (!payload.scoreTestMode) {
+        return json(request, {
+          error: 'Choose an upcoming NFL game. Completed games are available only in score-test mode.',
+        }, 400, env.PUBLIC_SITE_URL);
+      }
+      let recentCompleted: ScheduledGame[];
+      try {
+        recentCompleted = await fetchScheduledGames({ scope: 'completed', limit: 5 });
+      } catch {
+        return json(request, {
+          error: 'The completed-game test list is unavailable. Retry in a moment.',
+        }, 503, env.PUBLIC_SITE_URL);
+      }
+      if (!recentCompleted.some((game) => game.id === scheduledGame.id)) {
+        return json(request, {
+          error: 'Score-test boards are limited to the five most recent completed NFL games.',
+        }, 400, env.PUBLIC_SITE_URL);
+      }
+    }
+    const game = canonicalizeGameSettings({
+      ...payload.game,
+      title: payload.game.title.trim(),
+    }, scheduledGame);
     const sideAxis = Array.isArray(payload.board.bearsAxis) && payload.board.bearsAxis.every(Number.isInteger)
       ? payload.board.bearsAxis
       : null;
@@ -100,11 +157,13 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       .insert({
         owner_id: authData.user.id,
         title: game.title,
-        game_starts_at: date,
-        side_team_abbr: game.leftAbbr || null,
-        side_team_name: game.leftName || null,
-        top_team_abbr: game.topAbbr || null,
-        top_team_name: game.topName || null,
+        season_year: LAUNCH_SEASON_YEAR,
+        game_external_id: scheduledGame.id,
+        game_starts_at: scheduledGame.kickoffAt,
+        side_team_abbr: scheduledGame.awayTeam.abbr,
+        side_team_name: scheduledGame.awayTeam.name,
+        top_team_abbr: scheduledGame.homeTeam.abbr,
+        top_team_name: scheduledGame.homeTeam.name,
         side_axis: sideAxis,
         top_axis: topAxis,
         payout_labels: game.payouts || {},
@@ -124,7 +183,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     }, 201, env.PUBLIC_SITE_URL);
   } catch (error: any) {
     const message = error?.message || 'Unable to create the board.';
-    const validationError = /board name|100 squares|invalid request/i.test(message);
+    const validationError = /board name|100 squares|invalid request|scheduled NFL game/i.test(message);
     return json(request, { error: message }, validationError ? 400 : 500, env.PUBLIC_SITE_URL);
   }
 };

@@ -146,8 +146,8 @@ Invalid, unavailable, locked, or unpublished links never render a plausible empt
 
 ### Automatic beta
 
-- Gemini with Google Search grounding remains the launch provider because it has worked in the real Super Bowl workflow and does not require a paid sports feed.
-- Gemini runs only on the server. No reusable provider key appears in browser JavaScript.
+- ESPN event IDs bind each board to one scheduled matchup and exact kickoff. Schedule and score reads run only through server functions, and every response is validated against the stored event identity before persistence.
+- Gemini remains server-only for paper-board OCR. No reusable provider key appears in browser JavaScript.
 - Multiple viewers collapse into at most one provider request per board freshness window.
 - The normalized response must include matchup identity, score, quarter-by-quarter scoring, period/state, source time, retrieval time, and provenance.
 - Invalid, contradictory, wrong-matchup, or implausibly old responses are rejected instead of rendered.
@@ -207,7 +207,7 @@ Invalid, unavailable, locked, or unpublished links never render a plausible empt
 ### System-only
 
 - Supabase service credentials
-- Gemini and email-provider credentials
+- Gemini OCR and email-provider credentials
 - Provider raw responses
 - Webhook secrets
 - Rate-limit and delivery internals

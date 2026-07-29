@@ -2,17 +2,17 @@
  * usePoolData Hook
  * Manages pool loading, saving, and state
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, BoardData, WinnerResolution } from '../types';
 import { supabase } from '../services/supabase';
 
 const INITIAL_GAME: GameState = {
     title: '',
     meta: 'Super Bowl Party',
-    leftAbbr: 'DAL',
-    leftName: 'Dallas Cowboys',
-    topAbbr: 'WAS',
-    topName: 'Washington Commanders',
+    leftAbbr: '',
+    leftName: '',
+    topAbbr: '',
+    topName: '',
     dates: '',
     lockTitle: false,
     lockMeta: false,
@@ -57,9 +57,9 @@ interface UsePoolDataReturn extends PoolDataState {
     setBoard: React.Dispatch<React.SetStateAction<BoardData>>;
     setActivePoolId: React.Dispatch<React.SetStateAction<string | null>>;
     loadPoolData: (poolId: string) => Promise<void>;
-    publishPool: (_legacyToken: string, currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
+    publishPool: (currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
     updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
-    migrateGuestBoard: (user: any, guestData: { game: GameState; board: BoardData }) => Promise<string>;
+    migrateGuestBoard: (_user: unknown, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
 }
 
@@ -69,6 +69,8 @@ export function usePoolData(): UsePoolDataReturn {
     const [activePoolId, setActivePoolId] = useState<string | null>(null);
     const [shareCode, setShareCode] = useState<string | null>(null);
     const [revision, setRevision] = useState<number | null>(null);
+    const revisionRef = useRef<number | null>(null);
+    const updateQueueRef = useRef<Promise<unknown>>(Promise.resolve());
     const [ownerId, setOwnerId] = useState<string | null>(null);
     const [loadingPool, setLoadingPool] = useState(true);
     const [dataReady, setDataReady] = useState(false);
@@ -77,6 +79,10 @@ export function usePoolData(): UsePoolDataReturn {
     const [isLocked, setIsLocked] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>([]);
+
+    useEffect(() => {
+        revisionRef.current = revision;
+    }, [revision]);
 
 
     // Load pool data through the API so unpaid boards can be masked for non-owners.
@@ -97,6 +103,7 @@ export function usePoolData(): UsePoolDataReturn {
             setActivePoolId(data.id || poolId);
             setShareCode(data.share_code || (poolId.length === 8 ? poolId : null));
             setRevision(Number.isInteger(data.revision) ? data.revision : null);
+            revisionRef.current = Number.isInteger(data.revision) ? data.revision : null;
             setOwnerId(data.owner_id || null);
             setIsActivated(Boolean(data.is_activated));
             setIsLocked(Boolean(data.locked));
@@ -106,7 +113,7 @@ export function usePoolData(): UsePoolDataReturn {
             const nextGame = {
                 ...INITIAL_GAME,
                 ...data,
-                payouts: data.payouts || INITIAL_GAME.payouts,
+                payouts: data.payouts || data.payout_labels || INITIAL_GAME.payouts,
                 scoreSnapshot: data.score || null,
             };
             delete (nextGame as any).board;
@@ -129,7 +136,6 @@ export function usePoolData(): UsePoolDataReturn {
 
     // Create a board through the authenticated API.
     const publishPool = useCallback(async (
-        _legacyToken: string,
         currentData?: { game: GameState; board: BoardData }
     ): Promise<string | void> => {
         const g = currentData?.game || game;
@@ -160,7 +166,9 @@ export function usePoolData(): UsePoolDataReturn {
 
             setActivePoolId(poolId);
             setShareCode(data.shareCode || null);
-            setRevision(Number.isInteger(data.revision) ? data.revision : null);
+            const nextRevision = Number.isInteger(data.revision) ? data.revision : null;
+            setRevision(nextRevision);
+            revisionRef.current = nextRevision;
             return poolId;
         } catch (err: any) {
             setError(err.message);
@@ -169,61 +177,70 @@ export function usePoolData(): UsePoolDataReturn {
     }, [game, board]);
 
     // Update existing pool in Supabase
-    const updatePool = useCallback(async (
+    const updatePool = useCallback((
         poolId: string,
         data: { game: GameState; board: BoardData }
     ): Promise<boolean> => {
-        try {
-            if (!revision) throw new Error('Reload this board before saving.');
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData.session?.access_token;
-            if (!token) throw new Error('Sign in before saving.');
-            const response = await fetch(`/api/pools/${poolId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ ...data, revision }),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Unable to save the board.');
-            setRevision(result.revision);
-            return true;
-        } catch (err: any) {
-            console.error("Update Pool Error:", err);
-            setError(err.message);
-            return false;
-        }
-    }, [revision]);
+        const run = async () => {
+            try {
+                const currentRevision = revisionRef.current;
+                if (!currentRevision) throw new Error('Reload this board before saving.');
+                const { data: sessionData } = await supabase.auth.getSession();
+                const token = sessionData.session?.access_token;
+                if (!token) throw new Error('Sign in before saving.');
+                const response = await fetch(`/api/pools/${poolId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ ...data, revision: currentRevision }),
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Unable to save the board.');
+                revisionRef.current = result.revision;
+                setRevision(result.revision);
+                return true;
+            } catch (err: any) {
+                console.error("Update Pool Error:", err);
+                setError(err.message);
+                return false;
+            }
+        };
+        const queued = updateQueueRef.current.then(run, run);
+        updateQueueRef.current = queued.then(() => undefined, () => undefined);
+        return queued;
+    }, []);
 
     // Migrate guest board to Supabase
     const migrateGuestBoard = useCallback(async (
-        user: any,
+        _user: unknown,
         guestData: { game: GameState; board: BoardData }
     ): Promise<string> => {
         try {
-            // If title is missing, use a fallback that indicates error but allows debugging
             const leagueTitle = guestData.game.title?.trim();
             if (!leagueTitle) {
-                console.error("Migration Error: Missing Title in Guest Data", guestData);
-                throw new Error("Cannot migrate board: Missing Title");
+                throw new Error("Cannot recover this board because its name is missing.");
             }
-
-            const payload = {
-                owner_id: user.id,
-                title: leagueTitle,
-                settings: { ...guestData.game, title: leagueTitle },
-                board_data: guestData.board,
-                created_at: new Date().toISOString()
-            };
-
-            const { data, error } = await supabase
-                .from('contests')
-                .insert([payload])
-                .select('id')
-                .single();
-
-            if (error) throw error;
-
-            return data.id;
+            if (!guestData.game.gameExternalId) {
+                throw new Error("This recovered board is not linked to an NFL game. Recreate it and choose the scheduled game.");
+            }
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData.session?.access_token;
+            if (!accessToken) throw new Error("Sign in before recovering this board.");
+            const response = await fetch('/api/pools', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    game: { ...guestData.game, title: leagueTitle },
+                    board: guestData.board,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'The recovered board could not be saved.');
+            const id = result.boardId || result.poolId;
+            if (!id) throw new Error('The recovered board did not return an ID.');
+            return id;
         } catch (err: any) {
             console.error("Migration Error:", err);
             throw err;

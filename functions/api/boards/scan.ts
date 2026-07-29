@@ -2,13 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
-interface Env {
-  VITE_SUPABASE_URL: string;
-  VITE_SUPABASE_ANON_KEY: string;
-  GEMINI_API_KEY?: string;
-  OCR_MODEL?: string;
-}
-
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -40,21 +33,27 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
 {"bearsAxis":[10 unique digits 0-9 top to bottom],"oppAxis":[10 unique digits 0-9 left to right],"squaresGrid":[10 rows of 10 strings]}
 Use "" for blank cells and "???" when text is genuinely unreadable. Never invent names.`;
   const model = env.OCR_MODEL || 'gemini-2.5-flash';
-  const providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: match[1], data: match[2] } },
-        ],
-      }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-    }),
-  });
-  const raw = await providerResponse.json() as any;
+  let providerResponse: Response;
+  let raw: any;
+  try {
+    providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: match[1], data: match[2] } },
+          ],
+        }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+      }),
+    });
+    raw = await providerResponse.json();
+  } catch {
+    return json({ error: 'The scan provider is unavailable.' }, 502);
+  }
   if (!providerResponse.ok) return json({ error: raw?.error?.message || 'The scan provider is unavailable.' }, 502);
   const text = raw?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('');
   if (!text) return json({ error: 'The scan provider returned no board data.' }, 502);

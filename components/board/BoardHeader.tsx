@@ -4,36 +4,28 @@ import { GameState } from '../../types';
 
 interface BoardHeaderProps {
     game: GameState;
-    adminToken: string;
     isOwner: boolean;
     activePoolId: string | null;
     isActivated: boolean;
     isSynced: boolean;
-    activeTab: 'live' | 'board';
-    onTabChange: (tab: 'live' | 'board') => void;
     isPreviewMode: boolean;
     onTogglePreview: (enabled: boolean) => void;
-    adminStartTab: 'overview' | 'edit';
     onAdminStartTab: (tab: 'overview' | 'edit') => void;
     onShareClick: () => void;
 }
 
 const BoardHeader: React.FC<BoardHeaderProps> = ({
     game,
-    adminToken,
     isOwner,
     activePoolId,
     isActivated,
     isSynced,
-    activeTab,
-    onTabChange,
     isPreviewMode,
     onTogglePreview,
-    adminStartTab,
     onAdminStartTab,
     onShareClick,
 }) => {
-    const showAdminHeader = (adminToken || isOwner) && !isPreviewMode;
+    const showAdminHeader = isOwner && !isPreviewMode;
 
     if (showAdminHeader) {
         return (

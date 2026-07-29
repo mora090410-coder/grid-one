@@ -7,7 +7,8 @@
 - **Data store:** Supabase (`contests`, `contest_entries` tables) via `services/supabase.ts`. Row Level Security enforced on all tables.
 - **API layer:** Cloudflare Pages Functions under `functions/api/`. Each function is a separate edge handler.
 - **Payment:** Stripe checkout session creation + webhook-based activation.
-- **Live scoring:** Google Gemini Search Grounding via `services/geminiService.ts`, consumed by `hooks/useLiveScoring.ts`.
+- **NFL schedule and live scoring:** Cloudflare Functions resolve one ESPN event ID, persist its canonical teams/kickoff, and refresh that exact event through the server-authoritative score endpoint.
+- **Paper-board import:** Gemini OCR runs only in the server-side board scan function.
 
 ## Frontend Boundaries
 
@@ -42,7 +43,7 @@
 - Network resilience:
   - Exponential retry utility in `/Users/amm13/00-Projects/GridOneApp/utils/retry.ts`.
   - Applied to checkout and critical board action API calls.
-  - Live scoring already includes retry/backoff for upstream ESPN proxy failures.
+  - Schedule failures keep the organizer in the picker with Retry; score failures preserve the last accepted snapshot and manual scoring path.
 
 ## Core Engineering Rules
 - Keep UI logic out of API handlers.

@@ -167,7 +167,11 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
                   const cellIndex = (rowIndex * 10) + colIndex;
                   const players = board.squares[cellIndex] || [];
-                  const hasSelectedPlayer = selectedPlayer && players.some(p => p.toLowerCase().includes(selectedPlayer.toLowerCase()));
+                  const normalizedSelectedPlayer = selectedPlayer.trim().toLocaleLowerCase();
+                  const hasSelectedPlayer = Boolean(
+                    normalizedSelectedPlayer
+                    && players.some(p => p.trim().toLocaleLowerCase() === normalizedSelectedPlayer)
+                  );
 
                   // Use new cell ID based approach for winner matching
                   const cellId = getCellId(tDigit, lDigit);
@@ -267,6 +271,8 @@ const arePropsEqual = (prev: BoardGridProps, next: BoardGridProps) => {
   // Check board reference (should change if board updates)
   if (prev.board !== next.board) return false;
   if (prev.selectedPlayer !== next.selectedPlayer) return false;
+  if (prev.leftTeamName !== next.leftTeamName) return false;
+  if (prev.topTeamName !== next.topTeamName) return false;
 
   // Highlighted Coords deep check
   const pCoords = prev.highlightedCoords;

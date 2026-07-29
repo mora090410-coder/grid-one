@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
     const [migrating, setMigrating] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [dashboardMessage, setDashboardMessage] = useState<string | null>(null);
+    const [dashboardLoadError, setDashboardLoadError] = useState<string | null>(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [showMigratedToast, setShowMigratedToast] = useState(false);
@@ -66,15 +67,6 @@ const Dashboard: React.FC = () => {
     const handleManualMigration = async () => {
         if (!user || !pendingGuestBoard || migrating) return;
 
-        const alreadyExists = contests.some(c => c.title === pendingGuestBoard.game.title);
-        if (alreadyExists) {
-            console.log("Board already exists in cloud, clearing local storage.");
-            localStorage.removeItem('squares_game');
-            localStorage.removeItem('squares_board');
-            setPendingGuestBoard(null);
-            return;
-        }
-
         setMigrating(true);
         try {
             const newId = await migrateGuestBoard(user, pendingGuestBoard);
@@ -95,29 +87,30 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        async function fetchContests() {
-            if (!user) return;
-            try {
-                const { data, error } = await supabase
-                    .from('contests')
-                    .select('id, title, created_at, settings, board_activations(id)')
-                    .eq('owner_id', user.id)
-                    .order('created_at', { ascending: false });
+    const fetchContests = React.useCallback(async () => {
+        if (!user) return;
+        setLoading(true);
+        setDashboardLoadError(null);
+        try {
+            const { data, error } = await supabase
+                .from('contests')
+                .select('id, title, created_at, settings, board_activations(id)')
+                .eq('owner_id', user.id)
+                .order('created_at', { ascending: false });
 
-                if (error) throw error;
-                setContests(data || []);
-            } catch (err) {
-                console.error('Error fetching contests:', err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (user) {
-            fetchContests();
+            if (error) throw error;
+            setContests(data || []);
+        } catch (err: any) {
+            console.error('Error fetching contests:', err);
+            setDashboardLoadError(err?.message || 'Your boards could not be loaded.');
+        } finally {
+            setLoading(false);
         }
     }, [user]);
+
+    useEffect(() => {
+        if (user) void fetchContests();
+    }, [user, fetchContests]);
 
     const handleDelete = async (e: React.MouseEvent, contestId: string) => {
         e.preventDefault();
@@ -163,6 +156,14 @@ const Dashboard: React.FC = () => {
             {dashboardMessage && (
                 <div className="max-w-6xl mx-auto mb-6 border border-cardinal bg-cardinal-subtle p-4 text-sm text-cardinal" role="alert">
                     {dashboardMessage}
+                </div>
+            )}
+            {dashboardLoadError && (
+                <div className="max-w-6xl mx-auto mb-6 border border-cardinal bg-cardinal-subtle p-4 text-sm text-cardinal flex flex-wrap items-center justify-between gap-3" role="alert">
+                    <span>Your boards could not be loaded. {dashboardLoadError}</span>
+                    <button type="button" onClick={() => void fetchContests()} className="oa-btn oa-btn-ghost">
+                        Retry
+                    </button>
                 </div>
             )}
 
@@ -351,6 +352,7 @@ const Dashboard: React.FC = () => {
 
                                 <button
                                     onClick={(e) => handleDelete(e, contest.id)}
+                                    aria-label={deleteConfirmId === contest.id ? `Confirm deletion of ${contest.title}` : `Delete ${contest.title}`}
                                     className={`absolute top-4 right-4 z-20 min-h-11 p-2 rounded-none border transition-all ${deleteConfirmId === contest.id ? 'bg-cardinal text-broadcast-white border-cardinal-deep w-auto px-3' : 'bg-newsprint text-ink/40 border-newsprint hover:bg-cardinal-subtle hover:text-cardinal hover:border-cardinal min-w-11 flex items-center justify-center'}`}
                                 >
                                     {deleteConfirmId === contest.id ? (

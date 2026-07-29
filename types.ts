@@ -4,9 +4,26 @@ export interface Team {
   name: string;
 }
 
+export type ScheduledGameState = 'pre' | 'in' | 'post';
+
+/** A provider-backed NFL event whose matchup and kickoff stay together. */
+export interface ScheduledGame {
+  id: string;
+  kickoffAt: string;
+  state: ScheduledGameState;
+  season: number;
+  week: number | string;
+  homeTeam: Team;
+  awayTeam: Team;
+}
+
 export interface GameState {
   title: string;
   meta: string;
+  /** ESPN event id used for exact-event score lookups. */
+  gameExternalId?: string;
+  /** Canonical provider kickoff instant. */
+  kickoffAt?: string;
   leftAbbr: string;
   leftName: string;
   topAbbr: string;

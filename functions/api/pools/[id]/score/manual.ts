@@ -24,7 +24,7 @@ const authenticatedOwner = async (request: Request, env: any, contestId: string)
   });
   const { data: contest } = await admin
     .from('contests')
-    .select('id, status')
+    .select('id, status, game_external_id')
     .eq('id', contestId)
     .eq('owner_id', authData.user.id)
     .maybeSingle();
@@ -61,42 +61,20 @@ export const onRequestPost: PagesFunction = async ({ request, env, params, waitU
   const effectivePeriod = state === 'post' ? (hasOvertimeScore ? 5 : 4) : period;
   const now = new Date();
   const admin = owner.admin!;
-  const { error: modeError } = await admin.from('contest_score_state').upsert({
-    contest_id: contestId,
-    scoring_mode: 'manual',
-    manual_mode_started_at: now.toISOString(),
-    manual_mode_started_by: owner.user!.id,
-    updated_at: now.toISOString(),
-  }, { onConflict: 'contest_id' });
-  if (modeError) return json({ error: modeError.message }, 500);
-  const { data: snapshot, error: snapshotError } = await admin
-    .from('score_snapshots')
-    .insert({
-      contest_id: contestId,
-      source_mode: 'manual',
-      provider: 'organizer',
-      game_state: state,
-      period: effectivePeriod,
-      side_score: total('left'),
-      top_score: total('top'),
-      quarter_scores: quarterScores,
-      clock: String(body.clock || '').slice(0, 32),
-      detail: 'Organizer-entered score',
-      validation_status: 'accepted',
-      source_name: 'Organizer',
-      source_observed_at: now.toISOString(),
-      retrieved_at: now.toISOString(),
-      stale_after: new Date(now.getTime() + 31_536_000_000).toISOString(),
-      created_by: owner.user!.id,
-    })
-    .select('*')
-    .single();
-  if (snapshotError) return json({ error: snapshotError.message }, 500);
-  const { data: promoted, error: promoteError } = await admin.rpc('gridone_promote_score_snapshot', {
+  const { data: committed, error: commitError } = await admin.rpc('gridone_commit_manual_score', {
     p_contest_id: contestId,
-    p_snapshot_id: snapshot.id,
+    p_owner_id: owner.user!.id,
+    p_game_state: state,
+    p_period: effectivePeriod,
+    p_side_score: total('left'),
+    p_top_score: total('top'),
+    p_quarter_scores: quarterScores,
+    p_clock: String(body.clock || '').slice(0, 32),
+    p_observed_at: now.toISOString(),
   });
-  if (promoteError || !promoted) return json({ error: promoteError?.message || 'The manual score could not become current.' }, 409);
+  if (commitError) return json({ error: commitError.message }, 500);
+  const snapshot = Array.isArray(committed) ? committed[0] : committed;
+  if (!snapshot?.id) return json({ error: 'The manual score was not committed.' }, 500);
   const publicScore = {
     leftScore: snapshot.side_score,
     topScore: snapshot.top_score,
@@ -113,18 +91,6 @@ export const onRequestPost: PagesFunction = async ({ request, env, params, waitU
     staleAfter: snapshot.stale_after,
     freshness: 'fresh',
   };
-  await admin.from('public_board_snapshots').update({
-    score: publicScore,
-    updated_at: now.toISOString(),
-  }).eq('contest_id', contestId);
-  await admin.from('contest_audit_events').insert({
-    contest_id: contestId,
-    actor_id: owner.user!.id,
-    event_type: 'score.manual_updated',
-    entity_type: 'score_snapshot',
-    entity_id: snapshot.id,
-    details: { state, period: snapshot.period },
-  });
   const winnerHistory = await resolveMilestonesAndNotify(
     admin,
     env,
@@ -142,20 +108,17 @@ export const onRequestDelete: PagesFunction = async ({ request, env, params }) =
   const contestId = String(params.id || '');
   const owner = await authenticatedOwner(request, env, contestId);
   if (owner.error) return owner.error;
-  const now = new Date().toISOString();
-  const { error } = await owner.admin!.from('contest_score_state').upsert({
-    contest_id: contestId,
-    scoring_mode: 'automatic',
-    manual_mode_started_at: null,
-    manual_mode_started_by: null,
-    updated_at: now,
-  }, { onConflict: 'contest_id' });
-  if (error) return json({ error: error.message }, 500);
-  await owner.admin!.from('contest_audit_events').insert({
-    contest_id: contestId,
-    actor_id: owner.user!.id,
-    event_type: 'score.automatic_enabled',
-    details: {},
+  if (!owner.contest?.game_external_id) {
+    return json({
+      error: 'Link this legacy board to a scheduled NFL game before enabling automatic scoring.',
+    }, 409);
+  }
+  const { data: enabled, error } = await owner.admin!.rpc('gridone_enable_automatic_scoring', {
+    p_contest_id: contestId,
+    p_owner_id: owner.user!.id,
+    p_changed_at: new Date().toISOString(),
   });
+  if (error) return json({ error: error.message }, 500);
+  if (!enabled) return json({ error: 'Automatic scoring could not be enabled.' }, 409);
   return json({ scoringMode: 'automatic' });
 };
