@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   generateStaticSeoPages,
   outputPathForRoute,
+  trailingSlashOutputPathForRoute,
 } from '../build/staticSeoPages';
 import {
   DEFAULT_OG_IMAGE,
@@ -137,6 +138,21 @@ describe('build-time public route metadata', () => {
         expect(schema['@graph'].some((entry) => entry['@type'] === 'Article'), route.path)
           .toBe(true);
       }
+    }
+  });
+
+  it('writes both extensionless canonical HTML and trailing-slash directory aliases', async () => {
+    for (const route of PUBLIC_ROUTE_METADATA) {
+      const canonicalHtml = await readFile(
+        outputPathForRoute(outputDirectory, route.path),
+        'utf8',
+      );
+      const trailingSlashHtml = await readFile(
+        trailingSlashOutputPathForRoute(outputDirectory, route.path),
+        'utf8',
+      );
+
+      expect(trailingSlashHtml, route.path).toBe(canonicalHtml);
     }
   });
 
