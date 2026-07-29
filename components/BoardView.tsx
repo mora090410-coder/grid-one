@@ -5,14 +5,13 @@
  * FIRST VIEWPORT: Split Stage places live/personal context above the exact board on one horizon; the primary action is Find my squares.
  * FORM: Game-Day Horizon, Composition C Split Stage, chosen staging from stagecraft cyclorama; seed 356916de.
  */
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
-// Lazy load heavy components
-const AdminPanel = lazy(() => import('./AdminPanel'));
+import AdminPanel from './AdminPanel';
 import GameDayHorizon from './GameDayHorizon';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
@@ -237,26 +236,24 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
             {isCommissionerMode && (
                 <div className="oa-root fixed inset-0 z-[80] bg-broadcast-white p-0 overflow-y-auto scrollbar-hide">
-                    <Suspense fallback={<div className="oa-slab flex items-center justify-center h-full text-ink/50">Loading Organizer...</div>}>
-                        <AdminPanel
-                            game={game}
-                            board={board}
-                            activePoolId={activePoolId || ''}
-                            liveData={liveData}
-                            initialTab={adminStartTab}
-                            onApply={(g, b) => { setGame(g); setBoard(b); }}
-                            onPublish={handlePublish}
-                            onLogout={handleLogout}
-                            isActivated={isActivated}
-                            isPublished={isPublished}
-                            shareCode={shareCode}
-                            renderPreview={() => (
-                                <div className="flex-1 flex flex-col relative z-50 w-full h-full">
-                                    {renderMainContent(true)}
-                                </div>
-                            )}
-                        />
-                    </Suspense>
+                    <AdminPanel
+                        game={game}
+                        board={board}
+                        activePoolId={activePoolId || ''}
+                        liveData={liveData}
+                        initialTab={adminStartTab}
+                        onApply={(g, b) => { setGame(g); setBoard(b); }}
+                        onPublish={handlePublish}
+                        onLogout={handleLogout}
+                        isActivated={isActivated}
+                        isPublished={isPublished}
+                        shareCode={shareCode}
+                        renderPreview={() => (
+                            <div className="flex-1 flex flex-col relative z-50 w-full h-full">
+                                {renderMainContent(true)}
+                            </div>
+                        )}
+                    />
                 </div>
             )}
         </div>
