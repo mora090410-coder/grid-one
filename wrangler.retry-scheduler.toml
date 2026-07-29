@@ -1,0 +1,9 @@
+name = "gridone-notification-retry-scheduler"
+main = "workers/notification-retry-scheduler.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+RETRY_ENDPOINT = "https://www.getgridone.com/api/notifications/retry"

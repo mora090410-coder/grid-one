@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { resolveMilestonesAndNotify } from '../../../../_lib/winnerNotifications';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 type QuarterKey = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT';
@@ -32,7 +31,7 @@ const authenticatedOwner = async (request: Request, env: any, contestId: string)
   return { admin, user: authData.user, contest };
 };
 
-export const onRequestPost: PagesFunction = async ({ request, env, params, waitUntil }) => {
+export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
   const contestId = String(params.id || '');
   const owner = await authenticatedOwner(request, env, contestId);
   if (owner.error) return owner.error;
@@ -91,17 +90,39 @@ export const onRequestPost: PagesFunction = async ({ request, env, params, waitU
     staleAfter: snapshot.stale_after,
     freshness: 'fresh',
   };
-  const winnerHistory = await resolveMilestonesAndNotify(
-    admin,
-    env,
-    contestId,
-    snapshot,
-    { sendNotifications: false },
-  ) || [];
-  const resolutionWork = resolveMilestonesAndNotify(admin, env, contestId, snapshot);
-  if (waitUntil) waitUntil(resolutionWork);
-  else await resolutionWork;
-  return json({ score: publicScore, winnerHistory });
+  const { data: milestoneProjection, error: projectionError } = await admin
+    .from('public_board_snapshots')
+    .select('winner_history, pending_milestones')
+    .eq('contest_id', contestId)
+    .maybeSingle();
+  if (projectionError) return json({ error: projectionError.message }, 500);
+  return json({
+    score: publicScore,
+    winnerHistory: Array.isArray(milestoneProjection?.winner_history)
+      ? milestoneProjection.winner_history
+      : [],
+    pendingMilestones: Array.isArray(milestoneProjection?.pending_milestones)
+      ? milestoneProjection.pending_milestones
+      : [],
+  });
+};
+
+export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
+  const contestId = String(params.id || '');
+  const owner = await authenticatedOwner(request, env, contestId);
+  if (owner.error) return owner.error;
+  const { data: enabled, error } = await owner.admin!.rpc('gridone_enable_manual_scoring', {
+    p_contest_id: contestId,
+    p_owner_id: owner.user!.id,
+    p_changed_at: new Date().toISOString(),
+  });
+  if (error) return json({ error: error.message }, 500);
+  if (!enabled) return json({ error: 'Manual scoring could not be enabled.' }, 409);
+  return json({
+    scoringMode: 'manual',
+    scoreState: 'awaiting_organizer_entry',
+    message: 'Manual scoring is on. Waiting for the organizer to enter a score.',
+  });
 };
 
 export const onRequestDelete: PagesFunction = async ({ request, env, params }) => {

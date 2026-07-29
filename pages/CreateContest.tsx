@@ -11,7 +11,8 @@ import ScheduledGamePicker from '../components/ScheduledGamePicker';
 const CreateContest: React.FC = () => {
     const { user, session } = useAuth();
     const navigate = useNavigate();
-    const scoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
+    const requestedScoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
+    const [scoreTestMode, setScoreTestMode] = useState(false);
 
     // Wizard State
     const [step, setStep] = useState(1);
@@ -45,6 +46,26 @@ const CreateContest: React.FC = () => {
             sessionStorage.removeItem('gridone_draft_board');
         }
     }, []); // Run once on mount
+
+    useEffect(() => {
+        const accessToken = session?.access_token;
+        if (!requestedScoreTestMode || !accessToken) {
+            setScoreTestMode(false);
+            return;
+        }
+        const controller = new AbortController();
+        void fetch('/api/nfl/games?scope=completed&limit=1', {
+            signal: controller.signal,
+            headers: { Authorization: `Bearer ${accessToken}` },
+        })
+            .then(async response => response.ok ? response.json() : null)
+            .then(data => setScoreTestMode(data?.scoreTestMode === true))
+            .catch(error => {
+                if (error instanceof Error && error.name === 'AbortError') return;
+                setScoreTestMode(false);
+            });
+        return () => controller.abort();
+    }, [requestedScoreTestMode, session?.access_token]);
 
     const handleGameChange = (scheduledGame: ScheduledGame) => {
         setGame(prev => ({
@@ -106,7 +127,7 @@ const CreateContest: React.FC = () => {
             } catch {
                 // sessionStorage unavailable — user will lose draft state on redirect
             }
-            const returnTo = encodeURIComponent(scoreTestMode ? '/create?scoreTest=1' : '/create');
+            const returnTo = encodeURIComponent(requestedScoreTestMode ? '/create?scoreTest=1' : '/create');
             navigate(`/login?mode=signup&returnTo=${returnTo}`);
             return;
         }
@@ -257,6 +278,7 @@ const CreateContest: React.FC = () => {
                                 onChange={handleGameChange}
                                 scope={scoreTestMode ? 'completed' : 'upcoming'}
                                 limit={scoreTestMode ? 5 : undefined}
+                                accessToken={scoreTestMode ? session?.access_token : undefined}
                             />
 
                             <div className="pt-4 flex gap-4">

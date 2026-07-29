@@ -44,6 +44,8 @@ const env = {
   VITE_SUPABASE_ANON_KEY: 'anon',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role',
   PUBLIC_SITE_URL: 'https://getgridone.com',
+  SCORE_TEST_MODE_ENABLED: 'true',
+  SCORE_TEST_MODE_OWNER_IDS: '22222222-2222-4222-8222-222222222222',
 };
 
 const authClient = (overrides: Record<string, unknown> = {}) => ({
@@ -548,6 +550,7 @@ describe('scheduled-game persistence', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({
         data: {
           share_code: 'ABCDEFGH',
@@ -567,6 +570,10 @@ describe('scheduled-game persistence', () => {
           payout_labels: { Q1: 50, Q2: 100, Q3: 50, Final: 300 },
           published_at: '2026-09-01T00:00:00.000Z',
           updated_at: '2026-09-01T00:00:00.000Z',
+          contest: {
+            id: '11111111-1111-4111-8111-111111111111',
+            status: 'published',
+          },
         },
         error: null,
       }),
@@ -635,10 +642,16 @@ describe('scheduled-game persistence', () => {
         retrieved_at: '2026-09-13T18:00:00.000Z',
         stale_after: '2027-09-13T18:00:00.000Z',
       },
+      notification_deliveries: [],
     };
     const from = vi.fn((table: string) => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({
+        data: rowsByTable[table],
+        error: null,
+      }),
       maybeSingle: vi.fn().mockResolvedValue({
         data: rowsByTable[table],
         error: null,

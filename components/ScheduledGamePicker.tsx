@@ -6,6 +6,7 @@ export interface ScheduledGamePickerProps {
     onChange: (game: ScheduledGame) => void;
     scope?: 'upcoming' | 'completed';
     limit?: number;
+    accessToken?: string;
     disabled?: boolean;
     className?: string;
 }
@@ -50,6 +51,7 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
     onChange,
     scope = 'upcoming',
     limit,
+    accessToken,
     disabled = false,
     className = '',
 }) => {
@@ -68,7 +70,10 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
             try {
                 const query = new URLSearchParams({ scope });
                 if (limit != null) query.set('limit', String(limit));
-                const response = await fetch(`/api/nfl/games?${query}`, { signal: controller.signal });
+                const response = await fetch(`/api/nfl/games?${query}`, {
+                    signal: controller.signal,
+                    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+                });
                 const payload = await response.json().catch(() => null);
                 if (!response.ok) {
                     throw new Error(payload?.error || payload?.message || 'The NFL schedule is unavailable.');
@@ -87,7 +92,7 @@ export const ScheduledGamePicker: React.FC<ScheduledGamePickerProps> = ({
 
         void fetchGames();
         return () => controller.abort();
-    }, [scope, limit, requestKey]);
+    }, [accessToken, scope, limit, requestKey]);
 
     const groups = useMemo(() => {
         const result = new Map<string, ScheduledGame[]>();

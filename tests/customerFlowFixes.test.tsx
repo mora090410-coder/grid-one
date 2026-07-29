@@ -199,4 +199,88 @@ describe('customer flow regressions', () => {
             screen.getByRole('link', { name: 'Open organizer view' }),
         ).toHaveAttribute('href', '/boards/contest-2'));
     });
+
+    it('plainly distinguishes a delayed payment from a failed checkout', async () => {
+        mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                orderStatus: 'awaiting_payment',
+                activated: false,
+                contestId: 'contest-1',
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                orderStatus: 'failed',
+                activated: false,
+                contestId: 'contest-1',
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const delayed = render(
+            <MemoryRouter initialEntries={['/paid?order=order-delayed']}>
+                <Paid />
+            </MemoryRouter>,
+        );
+        expect(await screen.findByText(/payment is still processing/i)).toBeInTheDocument();
+        expect(screen.getByText(/do not start another checkout/i)).toBeInTheDocument();
+        delayed.unmount();
+
+        render(
+            <MemoryRouter initialEntries={['/paid?order=order-failed']}>
+                <Paid />
+            </MemoryRouter>,
+        );
+        expect(await screen.findByText(/payment did not complete/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Return to dashboard' })).toBeInTheDocument();
+    });
+
+    it('surfaces a duplicate payment for refund review instead of implying another pass was granted', async () => {
+        mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+            orderStatus: 'duplicate_paid',
+            activated: false,
+            contestId: 'contest-1',
+            refundable: true,
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        })));
+
+        render(
+            <MemoryRouter initialEntries={['/paid?order=order-duplicate']}>
+                <Paid />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText(/second payment was received/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Refund review.' })).toBeInTheDocument();
+        expect(screen.queryByText(/board unlocked/i)).not.toBeInTheDocument();
+    });
+
+    it('does not call an active replacement pass inactive when an older payment is refunded', async () => {
+        mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+            orderStatus: 'refunded',
+            activated: false,
+            contestId: 'contest-1',
+            entitlementStatus: 'active',
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        })));
+
+        render(
+            <MemoryRouter initialEntries={['/paid?order=order-refunded']}>
+                <Paid />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText(/current season pass remains active/i)).toBeInTheDocument();
+        expect(screen.queryByText(/season pass is inactive/i)).not.toBeInTheDocument();
+    });
 });

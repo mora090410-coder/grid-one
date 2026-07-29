@@ -11,6 +11,7 @@ test('landing page leads with the live board and paid unlock model', async ({ pa
 test('demo board renders the sample game', async ({ page }) => {
   await page.goto('/demo');
   await expect(page.getByText(/Demo: Super Bowl LIX/i).first()).toBeVisible();
+  await expect(page.getByText('Score updates about every minute')).toBeVisible();
   await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();
 });
 

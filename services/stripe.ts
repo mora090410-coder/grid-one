@@ -9,7 +9,13 @@ import { supabase } from './supabase';
 export const activateWithEntitlement = async (
     contestId: string,
     accessToken: string
-): Promise<{ activated: boolean; needsPayment?: boolean }> => {
+): Promise<{
+    activated: boolean;
+    needsPayment?: boolean;
+    code?: string;
+    message?: string;
+    canRepurchase?: boolean;
+}> => {
     const res = await fetch('/api/pools/activate', {
         method: 'POST',
         headers: {
@@ -20,7 +26,15 @@ export const activateWithEntitlement = async (
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.activated) return { activated: true };
-    if (res.status === 402) return { activated: false, needsPayment: true };
+    if (res.status === 402) {
+        return {
+            activated: false,
+            needsPayment: true,
+            code: typeof data.code === 'string' ? data.code : undefined,
+            message: typeof data.error === 'string' ? data.error : undefined,
+            canRepurchase: data.canRepurchase === true,
+        };
+    }
     throw new Error(data.error || `Activation failed (status ${res.status})`);
 };
 

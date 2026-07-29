@@ -15,6 +15,7 @@ import AdminPanel from './AdminPanel';
 import GameDayHorizon from './GameDayHorizon';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
+import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
 
 // Board sub-components
 import BoardHeader from './board/BoardHeader';
@@ -41,7 +42,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
         ownerId, loadingPool, dataReady, loadPoolData, error: poolError,
-        isActivated, isLocked, isPublished, winnerHistory, updatePool, publishPool
+        isActivated, isLocked, isPublished, winnerHistory, pendingMilestones,
+        notificationDeliveryIssues, updatePool, publishPool
     } = poolData;
 
     const auth = useAuth();
@@ -55,8 +57,15 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         scoringBoardRef,
         winnerHistory,
         boardServicesEnabled,
+        pendingMilestones,
     );
-    const { liveData, liveStatus, isSynced, winnerHistory: liveWinnerHistory } = liveScoring;
+    const {
+        liveData,
+        liveStatus,
+        isSynced,
+        winnerHistory: liveWinnerHistory,
+        pendingMilestones: livePendingMilestones,
+    } = liveScoring;
 
     const requiresAuthForRoute = !demoMode && Boolean(
         routeBoardId || forceAdmin || (legacyPoolId && legacyPoolId.length > 8),
@@ -175,6 +184,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     isSynced={isSynced}
                     highlights={highlights}
                     winnerHistory={liveWinnerHistory}
+                    pendingMilestones={livePendingMilestones}
                     selectedPlayer={selectedPlayer}
                     onClearPlayer={() => setSelectedPlayer('')}
                     onFindSquares={() => setShowFindSquaresModal(true)}
@@ -209,6 +219,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     return (
         <div className="oa-root gdh-root min-h-[100dvh] w-full bg-ink flex flex-col text-broadcast-white">
+            {game.scoreTestMode && <SyntheticScoreTestBanner />}
+
             {showShareModal && (
                 <ShareModal shareUrl={shareUrl} onClose={() => setShowShareModal(false)} />
             )}
@@ -251,6 +263,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         board={board}
                         activePoolId={activePoolId || ''}
                         liveData={liveData}
+                        winnerHistory={liveWinnerHistory}
+                        notificationDeliveryIssues={notificationDeliveryIssues}
                         initialTab={adminStartTab}
                         onApply={(g, b) => { setGame(g); setBoard(b); }}
                         onPublish={handlePublish}

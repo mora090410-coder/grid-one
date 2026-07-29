@@ -2,7 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useContestEntries } from '../hooks/useContestEntries';
 import { OrganizerDashboard } from './OrganizerDashboard';
-import { GameState, BoardData, EntryMeta, LiveGameData, ScheduledGame } from '../types';
+import {
+  GameState,
+  BoardData,
+  EntryMeta,
+  LiveGameData,
+  NotificationDeliveryIssue,
+  ScheduledGame,
+  WinnerResolution,
+} from '../types';
 import { supabase } from '../services/supabase';
 import { parseBoardImage } from '../services/geminiService';
 import { ScheduledGamePicker } from './ScheduledGamePicker';
@@ -66,6 +74,8 @@ interface AdminPanelProps {
   board: BoardData;
   activePoolId: string | null;
   liveData: LiveGameData | null;
+  winnerHistory: WinnerResolution[];
+  notificationDeliveryIssues: NotificationDeliveryIssue[];
   onApply: (game: GameState, board: BoardData) => void;
   onPublish: (currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
   onLogout: () => void;
@@ -76,7 +86,7 @@ interface AdminPanelProps {
   renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, liveData, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, liveData, winnerHistory, notificationDeliveryIssues, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -112,7 +122,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showMenu, setShowMenu] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [repurchaseOffered, setRepurchaseOffered] = useState(false);
   const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [correctionHistory, setCorrectionHistory] = useState<WinnerResolution[]>(winnerHistory);
+  const [correctionDraft, setCorrectionDraft] = useState<{
+    milestone: WinnerResolution['milestone'];
+    expectedVersion: number;
+    sideScore: number;
+    topScore: number;
+    reason: string;
+  } | null>(null);
   const [drawPreview, setDrawPreview] = useState<{ side: number[]; top: number[] } | null>(null);
   const [clearArmed, setClearArmed] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
@@ -128,6 +147,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   useEffect(() => {
     onPublishRef.current = onPublish;
   }, [onPublish]);
+
+  useEffect(() => {
+    setCorrectionHistory(winnerHistory);
+  }, [winnerHistory]);
 
   useEffect(() => {
     latestDraftRef.current = { game: localGame, board: localBoard };
@@ -361,24 +384,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     });
   };
 
-  const enableManualScoring = () => {
-    setLocalGame((current) => {
-      const snapshot = current.scoreSnapshot ?? liveData;
-      const seed = seedManualScoreFromSnapshot(snapshot);
-      return {
-        ...current,
-        useManualScores: true,
-        manualQuarterScores: current.useManualScores
-          ? current.manualQuarterScores ?? seed.manualQuarterScores
-          : seed.manualQuarterScores,
-        manualPeriod: current.useManualScores
-          ? current.manualPeriod ?? seed.manualPeriod
-          : seed.manualPeriod,
-        manualGameState: current.useManualScores
-          ? current.manualGameState ?? seed.manualGameState
-          : seed.manualGameState,
-      };
-    });
+  const enableManualScoring = async () => {
+    if (!activePoolId || localGame.useManualScores) return;
+    setScoreSaveStatus('saving');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Sign in before changing score authority.');
+      const response = await fetch(`/api/pools/${activePoolId}/score/manual`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Manual scoring could not be enabled.');
+      }
+      setLocalGame((current) => {
+        const snapshot = current.scoreSnapshot ?? liveData;
+        const seed = seedManualScoreFromSnapshot(snapshot);
+        return {
+          ...current,
+          useManualScores: true,
+          scoreSnapshot: null,
+          manualQuarterScores: seed.manualQuarterScores,
+          manualPeriod: seed.manualPeriod,
+          manualGameState: seed.manualGameState,
+        };
+      });
+      setScoreSaveStatus('idle');
+      setActionMessage('Manual scoring authority is on. Enter and publish the organizer score.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionMessage(error.message || 'Manual scoring could not be enabled.');
+    }
   };
 
   const updateManualGameState = (state: NonNullable<GameState['manualGameState']>) => {
@@ -466,6 +504,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       setActionMessage('Automatic score checks are enabled.');
     } catch (error: any) {
       setActionMessage(error.message || 'Automatic scoring could not be enabled.');
+    }
+  };
+
+  const publishMilestoneCorrection = async () => {
+    if (!activePoolId || !correctionDraft) return;
+    setScoreSaveStatus('saving');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('Sign in before correcting a result.');
+      const response = await fetch(
+        `/api/pools/${activePoolId}/milestones/${correctionDraft.milestone}/correct`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(correctionDraft),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'The correction could not be published.');
+      if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
+      setCorrectionDraft(null);
+      setScoreSaveStatus('saved');
+      setActionMessage('Correction published. Both correction notices were queued for verified recipients.');
+    } catch (error: any) {
+      setScoreSaveStatus('error');
+      setActionMessage(error.message || 'The correction could not be published.');
     }
   };
 
@@ -739,20 +807,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       if (!isPublished) await flushDraftSave();
 
       if (!isActivated) {
+        if (repurchaseOffered) {
+          await createCheckoutSession(activePoolId);
+          return;
+        }
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) throw new Error('Sign in before unlocking this board.');
-        try {
-          const result = await activateWithEntitlement(activePoolId, session.access_token);
-          if (result.activated) {
-            setActionMessage('Board unlocked — covered by your season pass.');
-            window.location.reload();
-            return;
-          }
-        } catch (error) {
-          console.error('Entitlement check failed, falling back to checkout:', error);
+        const result = await activateWithEntitlement(activePoolId, session.access_token);
+        if (result.activated) {
+          setActionMessage('Board unlocked — covered by your season pass.');
+          window.location.reload();
+          return;
         }
-        await createCheckoutSession(activePoolId);
-        return;
+        if (result.code === 'SEASON_PASS_INACTIVE' && result.canRepurchase) {
+          setRepurchaseOffered(true);
+          setActionMessage(result.message || 'Your prior season pass is inactive. Published boards remain available. Purchase a new pass to unlock another board.');
+          return;
+        }
+        if (result.needsPayment) {
+          await createCheckoutSession(activePoolId);
+          return;
+        }
+        throw new Error(result.message || 'The season-pass status could not be confirmed.');
       }
 
       if (!isPublished) {
@@ -919,7 +995,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Unlock sharing ($4.99 covers 20 boards in 2026)
+                        {repurchaseOffered
+                          ? 'Purchase a new 2026 pass ($4.99)'
+                          : 'Unlock sharing ($4.99 covers 20 boards in 2026)'}
                       </>
                     ) : !isPublished ? (
                       <>
@@ -1012,8 +1090,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       </div>
 
       {actionMessage && !showMenu && (
-        <div className="border border-ink bg-newsprint px-4 py-3 text-sm text-ink" role="status" aria-live="polite">
-          {actionMessage}
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-ink bg-newsprint px-4 py-3 text-sm text-ink">
+          <span role="status" aria-live="polite">{actionMessage}</span>
+          {repurchaseOffered && activePoolId && (
+            <button
+              type="button"
+              className="oa-btn oa-btn-primary"
+              onClick={() => createCheckoutSession(activePoolId).catch((error) => {
+                setActionMessage(error?.message || 'Checkout could not be started. Try again.');
+              })}
+            >
+              Purchase a new 2026 pass
+            </button>
+          )}
         </div>
       )}
 
@@ -1219,6 +1308,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         </button>
                         <button
                           onClick={enableManualScoring}
+                          disabled={scoreSaveStatus === 'saving'}
                           className={`min-h-11 px-3 py-2 rounded-none text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
                         >
                           Manual
@@ -1315,7 +1405,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                           </div>
                         </div>
                         <p className="text-[11px] text-ink/50 leading-relaxed">
-                          Enter each quarter's points (not running totals). Save only after the period ends; that resolves its winner and sends verified emails once.
+                          Enter each quarter's points (not running totals). Publishing a settled period confirms its result and queues verified winner notifications.
                         </p>
                         <button
                           type="button"
@@ -1328,6 +1418,113 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       </div>
                     )}
                     </>
+                    )}
+                    {notificationDeliveryIssues.length > 0 && (
+                      <section className="mt-6 border border-cardinal/40 bg-cardinal-subtle p-4" role="alert">
+                        <p className="oa-slab text-cardinal">Notification action needed</p>
+                        <h6 className="oa-headline !text-xl">Some winner emails could not be delivered</h6>
+                        <p className="oa-body mt-2 text-sm text-ink/65">
+                          GridOne stopped retrying these messages after five attempts or a permanent provider rejection. The board result is still published.
+                        </p>
+                        <ul className="mt-3 grid gap-2 text-sm">
+                          {notificationDeliveryIssues.map((issue) => (
+                            <li key={issue.id} className="border-t border-cardinal/20 pt-2">
+                              <strong>{issue.milestone === 'Q2' ? 'Halftime' : issue.milestone || 'Winner'} email</strong>
+                              {' · '}{issue.attemptCount} attempt{issue.attemptCount === 1 ? '' : 's'}
+                              {issue.error ? ` · ${issue.error}` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    {correctionHistory.length > 0 && (
+                      <section className="mt-6 border-t border-newsprint pt-5" aria-labelledby="milestone-corrections-title">
+                        <p className="oa-slab text-cardinal">Settled result history</p>
+                        <h6 id="milestone-corrections-title" className="oa-headline !text-xl">Milestone corrections</h6>
+                        <p className="oa-body mt-2 text-sm text-ink/65">
+                          Corrections are public, preserve the earlier version, and queue notices for both the earlier recipient and the corrected winner.
+                        </p>
+                        <div className="mt-4 grid gap-2">
+                          {correctionHistory.map((resolution) => (
+                            <button
+                              key={`${resolution.milestone}-${resolution.resolutionVersion || 1}`}
+                              type="button"
+                              className="oa-btn oa-btn-secondary justify-between"
+                              onClick={() => setCorrectionDraft({
+                                milestone: resolution.milestone,
+                                expectedVersion: resolution.resolutionVersion || 1,
+                                sideScore: resolution.sideScore ?? resolution.sideDigit,
+                                topScore: resolution.topScore ?? resolution.topDigit,
+                                reason: '',
+                              })}
+                            >
+                              <span>{resolution.milestone === 'Q2' ? 'Halftime' : resolution.milestone}</span>
+                              <span>{resolution.topScore ?? resolution.topDigit}–{resolution.sideScore ?? resolution.sideDigit} · v{resolution.resolutionVersion || 1}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {correctionDraft && (
+                          <div className="mt-4 grid gap-3 border border-cardinal/40 bg-cardinal-subtle p-4">
+                            <strong>Correct {correctionDraft.milestone === 'Q2' ? 'Halftime' : correctionDraft.milestone}</strong>
+                            <div className="grid grid-cols-2 gap-3">
+                              <label className="grid gap-1 text-xs font-bold">
+                                {localGame.leftAbbr || 'Side'} score
+                                <input
+                                  className="oa-input"
+                                  type="number"
+                                  min={0}
+                                  max={255}
+                                  value={correctionDraft.sideScore}
+                                  onChange={(event) => setCorrectionDraft((current) => current && ({
+                                    ...current,
+                                    sideScore: Number(event.target.value),
+                                  }))}
+                                />
+                              </label>
+                              <label className="grid gap-1 text-xs font-bold">
+                                {localGame.topAbbr || 'Top'} score
+                                <input
+                                  className="oa-input"
+                                  type="number"
+                                  min={0}
+                                  max={255}
+                                  value={correctionDraft.topScore}
+                                  onChange={(event) => setCorrectionDraft((current) => current && ({
+                                    ...current,
+                                    topScore: Number(event.target.value),
+                                  }))}
+                                />
+                              </label>
+                            </div>
+                            <label className="grid gap-1 text-xs font-bold">
+                              Public correction reason
+                              <textarea
+                                className="oa-input min-h-24"
+                                maxLength={500}
+                                value={correctionDraft.reason}
+                                onChange={(event) => setCorrectionDraft((current) => current && ({
+                                  ...current,
+                                  reason: event.target.value,
+                                }))}
+                                placeholder="Example: Extra point posted after the quarter ended."
+                              />
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="oa-btn oa-btn-primary flex-1"
+                                disabled={scoreSaveStatus === 'saving' || correctionDraft.reason.trim().length < 3}
+                                onClick={publishMilestoneCorrection}
+                              >
+                                Publish correction and email both people
+                              </button>
+                              <button type="button" className="oa-btn oa-btn-secondary" onClick={() => setCorrectionDraft(null)}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </section>
                     )}
                   </div>
 

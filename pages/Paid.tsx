@@ -5,7 +5,9 @@ import { supabase } from '../services/supabase';
 
 const Paid: React.FC = () => {
     const [searchParams] = useSearchParams();
-    const [state, setState] = useState<'checking' | 'ready' | 'delayed' | 'error' | 'signin'>('checking');
+    const [state, setState] = useState<
+        'checking' | 'processing' | 'ready' | 'duplicate' | 'payment_review' | 'inactive' | 'payment_failed' | 'delayed' | 'error' | 'signin'
+    >('checking');
     const [message, setMessage] = useState('Confirming payment and activating your board…');
     const [contestId, setContestId] = useState<string | null>(null);
     const [retryKey, setRetryKey] = useState(0);
@@ -45,6 +47,39 @@ const Paid: React.FC = () => {
                 if (cancelled) return;
                 transientFailures = 0;
                 setContestId(result.contestId || null);
+                if (result.orderStatus === 'duplicate_paid') {
+                    setState('duplicate');
+                    setMessage('A second payment was received, but it did not add another season pass or board allowance. It is marked for refund review.');
+                    return;
+                }
+                if (result.orderStatus === 'awaiting_payment') {
+                    setState('processing');
+                    setMessage('Your payment is still processing. Do not start another checkout; GridOne will unlock the board after Stripe confirms it.');
+                    return;
+                }
+                if (result.orderStatus === 'failed' || result.orderStatus === 'expired') {
+                    setState('payment_failed');
+                    setMessage(
+                        result.orderStatus === 'failed'
+                            ? 'The payment did not complete. No season pass was activated.'
+                            : 'The checkout expired before payment completed. No season pass was activated.',
+                    );
+                    return;
+                }
+                if (result.orderStatus === 'refunded' || result.orderStatus === 'disputed') {
+                    if (result.entitlementStatus === 'active') {
+                        setState('payment_review');
+                        setMessage(
+                            result.orderStatus === 'refunded'
+                                ? 'This payment was refunded. Your current season pass remains active.'
+                                : 'This payment has a dispute under review. Your current season pass remains active.',
+                        );
+                    } else {
+                        setState('inactive');
+                        setMessage('This season pass is inactive. Previously published boards remain available, but a new pass is required to unlock another board.');
+                    }
+                    return;
+                }
                 if (result.activated) {
                     setState('ready');
                     setMessage('Payment confirmed. Your board is unlocked.');
@@ -96,14 +131,30 @@ const Paid: React.FC = () => {
                 noIndex
             />
             <p className="gdh-kicker">2026 season pass</p>
-            <h1>{state === 'ready' ? 'Board unlocked.' : state === 'checking' ? 'Finishing checkout.' : 'Activation needs attention.'}</h1>
+            <h1>
+                {state === 'ready'
+                    ? 'Board unlocked.'
+                    : state === 'checking'
+                        ? 'Finishing checkout.'
+                        : state === 'processing'
+                            ? 'Payment processing.'
+                            : state === 'duplicate'
+                                ? 'Refund review.'
+                                : state === 'payment_review'
+                                    ? 'Payment updated.'
+                                : state === 'inactive'
+                                    ? 'Season pass inactive.'
+                                    : 'Activation needs attention.'}
+            </h1>
             <p>{message}</p>
             {state === 'checking' && <span className="oa-data">Secure verification in progress</span>}
             {state === 'ready' && contestId && <Link className="oa-btn oa-btn-primary" to={`/boards/${contestId}`}>Open organizer view</Link>}
             {state === 'signin' && <Link className="oa-btn oa-btn-primary" to={loginUrl}>Sign in to continue</Link>}
-            {(state === 'delayed' || state === 'error') && (
+            {(state === 'processing' || state === 'duplicate' || state === 'payment_review' || state === 'inactive' || state === 'payment_failed' || state === 'delayed' || state === 'error') && (
                 <div className="flex flex-wrap justify-center gap-3">
-                    {orderId && <button type="button" className="oa-btn oa-btn-primary" onClick={retry}>Check again</button>}
+                    {orderId && (state === 'processing' || state === 'delayed' || state === 'error') && (
+                        <button type="button" className="oa-btn oa-btn-primary" onClick={retry}>Check again</button>
+                    )}
                     <Link className="oa-btn oa-btn-ghost" to="/dashboard">Return to dashboard</Link>
                 </div>
             )}

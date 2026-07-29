@@ -3,7 +3,13 @@
  * Manages pool loading, saving, and state
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, BoardData, WinnerResolution } from '../types';
+import {
+    GameState,
+    BoardData,
+    NotificationDeliveryIssue,
+    PendingMilestone,
+    WinnerResolution,
+} from '../types';
 import { supabase } from '../services/supabase';
 
 const INITIAL_GAME: GameState = {
@@ -50,6 +56,8 @@ interface PoolDataState {
     isLocked: boolean;
     isPublished: boolean;
     winnerHistory: WinnerResolution[];
+    pendingMilestones: PendingMilestone[];
+    notificationDeliveryIssues: NotificationDeliveryIssue[];
 }
 
 interface UsePoolDataReturn extends PoolDataState {
@@ -79,6 +87,8 @@ export function usePoolData(): UsePoolDataReturn {
     const [isLocked, setIsLocked] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>([]);
+    const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>([]);
+    const [notificationDeliveryIssues, setNotificationDeliveryIssues] = useState<NotificationDeliveryIssue[]>([]);
 
     useEffect(() => {
         revisionRef.current = revision;
@@ -109,6 +119,12 @@ export function usePoolData(): UsePoolDataReturn {
             setIsLocked(Boolean(data.locked));
             setIsPublished(Boolean(data.published_at));
             setWinnerHistory(Array.isArray(data.winner_history) ? data.winner_history : []);
+            setPendingMilestones(Array.isArray(data.pending_milestones) ? data.pending_milestones : []);
+            setNotificationDeliveryIssues(
+                Array.isArray(data.notification_delivery_issues)
+                    ? data.notification_delivery_issues
+                    : [],
+            );
 
             const nextGame = {
                 ...INITIAL_GAME,
@@ -280,7 +296,9 @@ export function usePoolData(): UsePoolDataReturn {
         isPaid: isActivated,
         isLocked,
         isPublished,
-        winnerHistory
+        winnerHistory,
+        pendingMilestones,
+        notificationDeliveryIssues,
     };
 }
 

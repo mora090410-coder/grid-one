@@ -33,6 +33,7 @@ const Privacy: React.FC = () => {
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li><strong>Account info:</strong> Email address for authentication (via Supabase Auth).</li>
               <li><strong>Optional winner email:</strong> A viewer may verify an email address for the purchaser identity they select. The organizer does not receive that address through the public board.</li>
+              <li><strong>Abuse-prevention data:</strong> We temporarily log the requesting IP address and a one-way keyed hash of the submitted email address to limit verification-email abuse. We retain these logs only as long as needed for security and operations.</li>
               <li><strong>Board data:</strong> Board names, purchaser labels, square assignments, and game scores you enter.</li>
               <li><strong>Uploaded images:</strong> When you upload a board image for beta scanning, we process it to extract purchaser labels and positions. Images are processed temporarily and are not stored as board records.</li>
               <li><strong>Usage data:</strong> Basic analytics like page views to improve the service.</li>
@@ -60,6 +61,7 @@ const Privacy: React.FC = () => {
               <li>To improve the service and fix bugs.</li>
               <li>We do not sell your personal data to third parties.</li>
               <li>To send verified winner emails through our email delivery provider and honor unsubscribe requests.</li>
+              <li>To protect viewers and our sending domain from automated verification-email abuse.</li>
             </ul>
           </section>
 

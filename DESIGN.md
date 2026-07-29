@@ -83,6 +83,7 @@ The product must feel engineered and calm at the level of leading consumer platf
 
 - The board or personal viewer summary sits against a controlled ink-to-cardinal horizon.
 - Live green is a small redundant signal paired with “LIVE.”
+- Score authority states plainly that viewer updates arrive about every minute; never imply instant or realtime delivery.
 - Scores and current-quarter scenarios are the highest-contrast instruments.
 - The background never competes with names or numbers.
 

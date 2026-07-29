@@ -19,18 +19,10 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const hash = await hashToken(token);
-  const { data } = await admin
-    .from('notification_subscriptions')
-    .update({
-      status: 'verified',
-      verified_at: new Date().toISOString(),
-      verification_token_hash: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('verification_token_hash', hash)
-    .gte('verification_sent_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-    .select('id')
-    .maybeSingle();
-  return Response.redirect(`${site}/b/${encodeURIComponent(board)}?email=${data ? 'verified' : 'invalid'}`, 302);
+  const { data, error } = await admin.rpc('gridone_verify_notification_subscription', {
+    p_subscription_id: id,
+    p_verification_token_hash: hash,
+  });
+  const verified = !error && data === true;
+  return Response.redirect(`${site}/b/${encodeURIComponent(board)}?email=${verified ? 'verified' : 'invalid'}`, 302);
 };

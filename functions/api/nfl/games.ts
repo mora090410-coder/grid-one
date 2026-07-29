@@ -1,4 +1,6 @@
+import { createClient } from '@supabase/supabase-js';
 import { fetchScheduledGames } from '../../_lib/espnNfl';
+import { scoreTestModeAllowed } from '../../_lib/scoreTestMode';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -13,25 +15,40 @@ const json = (body: unknown, status = 200, cacheControl = 'no-store') => new Res
   },
 );
 
-export const onRequestGet: PagesFunction = async ({ request }) => {
+export const onRequestGet: PagesFunction = async ({ request, env }) => {
   const url = new URL(request.url);
-  const scope = url.searchParams.get('scope') || 'upcoming';
+  const requestedScope = url.searchParams.get('scope') || 'upcoming';
   const rawLimit = url.searchParams.get('limit');
-  const limit = rawLimit === null ? (scope === 'completed' ? 5 : 50) : Number(rawLimit);
-  if ((scope !== 'upcoming' && scope !== 'completed')
+  const limit = rawLimit === null ? (requestedScope === 'completed' ? 5 : 50) : Number(rawLimit);
+  if ((requestedScope !== 'upcoming' && requestedScope !== 'completed')
     || !Number.isInteger(limit)
     || limit < 1
     || limit > 50) {
-    return json({ error: 'Use scope=upcoming|completed and a limit from 1 to 50.' }, 400);
+    return json({ error: 'Use a supported schedule scope and a limit from 1 to 50.' }, 400);
   }
 
   try {
+    let completedAccess = false;
+    if (requestedScope === 'completed' && env.SCORE_TEST_MODE_ENABLED === 'true') {
+      const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+      if (bearer) {
+        const client = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${bearer}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data } = await client.auth.getUser(bearer);
+        completedAccess = Boolean(
+          data.user?.id && scoreTestModeAllowed(env, data.user.id),
+        );
+      }
+    }
+    const scope = completedAccess ? 'completed' : 'upcoming';
     const games = await fetchScheduledGames({ scope, limit });
     return json(
-      { games },
+      completedAccess ? { games, scoreTestMode: true } : { games },
       200,
-      scope === 'completed'
-        ? 'public, max-age=3600, stale-while-revalidate=86400'
+      requestedScope === 'completed'
+        ? 'private, no-store'
         : 'public, max-age=300, stale-while-revalidate=900',
     );
   } catch (error) {

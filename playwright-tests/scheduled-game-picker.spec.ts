@@ -63,7 +63,10 @@ test('hidden score-test mode requests at most five completed games', async ({ pa
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ games: upcomingGames.map((game) => ({ ...game, state: 'post' })) }),
+    body: JSON.stringify({
+      games: upcomingGames.map((game) => ({ ...game, state: 'post' })),
+      scoreTestMode: true,
+    }),
   }));
 
   await page.goto('/create?scoreTest=1');
@@ -73,6 +76,22 @@ test('hidden score-test mode requests at most five completed games', async ({ pa
   await scheduleRequest;
   await expect(page.getByText('Completed-game score test')).toBeVisible();
   await expect(page.getByText(/five most recent final games/i)).toBeVisible();
+});
+
+test('score-test query stays on ordinary upcoming UX without server capability', async ({ page }) => {
+  await installOrganizerSession(page);
+  await page.route('**/api/nfl/games?**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ games: upcomingGames }),
+  }));
+
+  await page.goto('/create?scoreTest=1');
+  await page.getByPlaceholder('e.g. Super Bowl LIX Party').fill('Ordinary board');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(page.getByText('Completed-game score test')).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: /DAL.*at.*WAS/i })).toBeVisible();
 });
 
 test('matchup selection works by keyboard on a phone-sized viewport', async ({ page }) => {

@@ -1,10 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
-import { resolveMilestonesAndNotify } from '../../../_lib/winnerNotifications';
 import {
   fetchEspnSummary,
   normalizeEspnScoreSummary,
   normalizeTeamAbbreviation,
 } from '../../../_lib/espnNfl';
+import {
+  findVisiblePublicBoard,
+  publicBoardNotFoundResponse,
+} from '../../../_lib/publicBoardVisibility';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -32,18 +35,32 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
 
-const readWinnerHistory = async (admin: any, contestId: string) => {
+const readMilestoneProjection = async (admin: any, contestId: string) => {
   const { data, error } = await admin
     .from('public_board_snapshots')
-    .select('winner_history')
+    .select('winner_history, pending_milestones')
     .eq('contest_id', contestId)
     .maybeSingle();
   if (error) {
-    console.error('Winner history read failed:', error);
-    return undefined;
+    console.error('Milestone projection read failed:', error);
+    return { winnerHistory: [], pendingMilestones: [] };
   }
-  return Array.isArray(data?.winner_history) ? data.winner_history : [];
+  return {
+    winnerHistory: Array.isArray(data?.winner_history) ? data.winner_history : [],
+    pendingMilestones: Array.isArray(data?.pending_milestones) ? data.pending_milestones : [],
+  };
 };
+
+export const pendingMilestoneConfirmationDue = (
+  pendingMilestones: any[],
+  now = Date.now(),
+) => pendingMilestones.some((pending: any) => {
+  if (pending.milestone === 'FINAL') return false;
+  const observedAt = new Date(
+    pending.lastObservedAt || pending.last_observed_at || 0,
+  ).getTime();
+  return Number.isFinite(observedAt) && now - observedAt >= 45_000;
+});
 
 const isIntegerScore = (value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 255;
 
@@ -163,10 +180,10 @@ export const scoreStaleAfter = (
   return new Date(Math.max(retrievedAt.getTime(), Math.min(defaultStaleAt, kickoffTime))).toISOString();
 };
 
-export const onRequestGet: PagesFunction = async ({ request, env, params, waitUntil }) => {
+export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'Server configuration is incomplete.' }, 503);
   const ref = String(params.id || '').toUpperCase();
-  if (!uuidPattern.test(ref) && !sharePattern.test(ref)) return json({ error: 'Invalid board reference.' }, 404);
+  if (!uuidPattern.test(ref) && !sharePattern.test(ref)) return publicBoardNotFoundResponse();
   const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -182,15 +199,31 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
     ownerId = data.user?.id || null;
     if (!ownerId) return json({ error: 'Your session has expired.' }, 401);
   }
-  let contestQuery = admin
-    .from('contests')
-    .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
-  if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
-  const { data: contest, error: contestError } = uuidPattern.test(ref)
-    ? await contestQuery.eq('id', ref).maybeSingle()
-    : await contestQuery.eq('share_code', ref).in('status', ['published', 'live', 'final', 'archived']).maybeSingle();
-  if (contestError) return json({ error: contestError.message }, 500);
-  if (!contest) return json({ error: 'Board not found or not published.' }, 404);
+  let contest: any = null;
+  if (uuidPattern.test(ref)) {
+    let contestQuery = admin
+      .from('contests')
+      .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
+    if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
+    const { data, error } = await contestQuery.eq('id', ref).maybeSingle();
+    if (error) return json({ error: error.message }, 500);
+    contest = data;
+  } else {
+    try {
+      const visibleBoard = await findVisiblePublicBoard(admin, ref, {
+        snapshot: 'contest_id',
+        contest: 'id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)',
+      });
+      contest = visibleBoard?.contest || null;
+    } catch (error: any) {
+      return json({ error: error?.message || 'Unable to load the board.' }, 500);
+    }
+  }
+  if (!contest) {
+    return uuidPattern.test(ref)
+      ? json({ error: 'Board not found or not published.' }, 404)
+      : publicBoardNotFoundResponse();
+  }
   if (!hasActivatedBoardServices(contest)) {
     return json({ error: 'Unlock this board to use automatic live scoring and updates.' }, 402);
   }
@@ -203,33 +236,56 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
   const { data: current } = state?.current_snapshot_id
     ? await admin.from('score_snapshots').select('*').eq('id', state.current_snapshot_id).maybeSingle()
     : { data: null };
+  let milestoneProjection = await readMilestoneProjection(admin, contest.id);
+
+  if (state?.scoring_mode === 'manual' && !current) {
+    return json({
+      score: null,
+      ...milestoneProjection,
+      scoringMode: 'manual',
+      scoreState: 'awaiting_organizer_entry',
+      message: 'Manual scoring is on. Waiting for the organizer to enter a score.',
+      refreshAttempted: false,
+    });
+  }
 
   const isFresh = current && new Date(current.stale_after).getTime() > Date.now();
-  if (current && (isFresh || current.game_state === 'post' || state?.scoring_mode === 'manual')) {
-    const winnerHistory = await resolveMilestonesAndNotify(
-      admin,
-      env,
-      contest.id,
-      current,
-      { sendNotifications: false },
-    ) || [];
-    const resolutionWork = resolveMilestonesAndNotify(admin, env, contest.id, current);
-    if (waitUntil) waitUntil(resolutionWork);
-    else await resolutionWork;
-    return json({ score: toClientScore(current), winnerHistory, refreshAttempted: false });
+  const pendingConfirmationDue = Boolean(current)
+    && pendingMilestoneConfirmationDue(milestoneProjection.pendingMilestones);
+  if (
+    current
+    && (isFresh || current.game_state === 'post' || state?.scoring_mode === 'manual')
+    && !pendingConfirmationDue
+  ) {
+    return json({
+      score: toClientScore(current),
+      ...milestoneProjection,
+      refreshAttempted: false,
+    });
   }
 
   const leaseToken = crypto.randomUUID();
-  const { data: acquired, error: leaseError } = await admin.rpc('gridone_acquire_score_refresh_lease', {
+  const { data: acquiredRows, error: leaseError } = await admin.rpc('gridone_acquire_score_refresh_lease_v2', {
     p_contest_id: contest.id,
     p_lease_token: leaseToken,
     p_seconds: 45,
   });
+  const lease = Array.isArray(acquiredRows) ? acquiredRows[0] : acquiredRows;
   if (leaseError) return json({ error: leaseError.message, score: toClientScore(current, 'offline') }, current ? 200 : 503);
-  if (!acquired) {
+  if (!lease?.acquired) {
+    if (lease?.scoring_mode === 'manual') {
+      return json({
+        score: null,
+        ...milestoneProjection,
+        scoringMode: 'manual',
+        scoreState: 'awaiting_organizer_entry',
+        message: 'Manual scoring is on. Waiting for the organizer to enter a score.',
+        refreshAttempted: false,
+      });
+    }
     return json({
       score: toClientScore(current, 'refreshing'),
-      winnerHistory: await readWinnerHistory(admin, contest.id),
+      ...milestoneProjection,
       refreshAttempted: false,
     });
   }
@@ -257,6 +313,9 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
         source_observed_at: provider.score.sourceObservedAt,
         retrieved_at: retrievedAt.toISOString(),
         stale_after: staleAfter,
+        authority_generation: lease.authority_generation,
+        refresh_sequence: lease.refresh_sequence,
+        refresh_started_at: lease.refresh_started_at,
       })
       .select('*')
       .single();
@@ -267,29 +326,44 @@ export const onRequestGet: PagesFunction = async ({ request, env, params, waitUn
       p_snapshot_id: inserted.id,
     });
     if (promoteError) throw promoteError;
-    const effective = promoted ? inserted : current;
-    let winnerHistory = await readWinnerHistory(admin, contest.id);
+    let effective = promoted ? inserted : current;
     if (promoted) {
-      await admin.from('public_board_snapshots').update({
-        score: toClientScore(inserted),
-        updated_at: new Date().toISOString(),
-      }).eq('contest_id', contest.id);
-      winnerHistory = await resolveMilestonesAndNotify(
-        admin,
-        env,
-        contest.id,
-        inserted,
-        { sendNotifications: false },
-      ) || [];
-      const resolutionWork = resolveMilestonesAndNotify(admin, env, contest.id, inserted);
-      if (waitUntil) waitUntil(resolutionWork);
-      else await resolutionWork;
+      milestoneProjection = await readMilestoneProjection(admin, contest.id);
+    } else {
+      const { data: latestState } = await admin
+        .from('contest_score_state')
+        .select('scoring_mode, current_snapshot_id')
+        .eq('contest_id', contest.id)
+        .maybeSingle();
+      const { data: latestSnapshot } = latestState?.current_snapshot_id
+        ? await admin
+          .from('score_snapshots')
+          .select('*')
+          .eq('id', latestState.current_snapshot_id)
+          .maybeSingle()
+        : { data: null };
+      effective = latestSnapshot;
+      milestoneProjection = await readMilestoneProjection(admin, contest.id);
+      if (latestState?.scoring_mode === 'manual' && !latestSnapshot) {
+        return json({
+          score: null,
+          ...milestoneProjection,
+          scoringMode: 'manual',
+          scoreState: 'awaiting_organizer_entry',
+          message: 'Manual scoring is on. Waiting for the organizer to enter a score.',
+          refreshAttempted: true,
+        });
+      }
     }
-    return json({ score: toClientScore(effective), winnerHistory, refreshAttempted: true });
+    return json({
+      score: toClientScore(effective),
+      ...milestoneProjection,
+      refreshAttempted: true,
+    });
   } catch (error: any) {
     if (current) return json({
       score: toClientScore(current, 'stale'),
-      winnerHistory: await readWinnerHistory(admin, contest.id),
+      ...await readMilestoneProjection(admin, contest.id),
       refreshAttempted: true,
       warning: error.message,
     });

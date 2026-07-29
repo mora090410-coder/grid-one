@@ -31,10 +31,14 @@ type ScriptedResult = { data?: any; error?: any };
 
 const scriptedAdmin = (results: ScriptedResult[] = []) => {
   const operations: Array<{ table: string; method: string; value?: any }> = [];
+  const rpc = vi.fn((name: string, value: any) => {
+    operations.push({ table: name, method: 'rpc', value });
+    return Promise.resolve(results.shift() || { data: null, error: null });
+  });
   const from = vi.fn((table: string) => {
     const terminal = () => Promise.resolve(results.shift() || { data: null, error: null });
     const chain: any = {};
-    for (const method of ['select', 'eq', 'is', 'gte', 'ilike']) {
+    for (const method of ['select', 'eq', 'is', 'in', 'gte', 'ilike']) {
       chain[method] = vi.fn((...args: any[]) => {
         operations.push({ table, method, value: args });
         return chain;
@@ -51,17 +55,27 @@ const scriptedAdmin = (results: ScriptedResult[] = []) => {
     chain.then = (resolve: any, reject: any) => terminal().then(resolve, reject);
     return chain;
   });
-  return { from, operations };
+  return { from, rpc, operations };
 };
 
 const subscribeRequest = (body: Record<string, unknown>) => new Request(
   'https://example.test/api/boards/ABCDEFGH/subscribe',
   {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'CF-Connecting-IP': '203.0.113.10',
+    },
     body: JSON.stringify(body),
   },
 );
+
+const PARTICIPANT_ID = '11111111-1111-4111-8111-111111111111';
+const OTHER_PARTICIPANT_ID = '22222222-2222-4222-8222-222222222222';
+const ACCEPTED = {
+  accepted: true,
+  message: 'If this address needs verification, check your inbox. Any already verified address remains active.',
+};
 
 const redirectLocation = (response: Response) => response.headers.get('location') || '';
 
@@ -103,7 +117,7 @@ beforeEach(() => {
 describe.sequential('winner email subscription endpoint', () => {
   it('rejects invalid email before reading board data', async () => {
     const response = await subscribe({
-      request: subscribeRequest({ participantId: 'participant-1', email: 'not-an-email' }),
+      request: subscribeRequest({ participantId: PARTICIPANT_ID, email: 'not-an-email' }),
       env,
       params: { shareCode: 'ABCDEFGH' },
     });
@@ -115,7 +129,7 @@ describe.sequential('winner email subscription endpoint', () => {
   it('requires a currently published board snapshot', async () => {
     mocks.clients.push(scriptedAdmin([{ data: null }]));
     const response = await subscribe({
-      request: subscribeRequest({ participantId: 'participant-1', email: 'parent@example.com' }),
+      request: subscribeRequest({ participantId: PARTICIPANT_ID, email: 'parent@example.com' }),
       env,
       params: { shareCode: 'ABCDEFGH' },
     });
@@ -124,48 +138,70 @@ describe.sequential('winner email subscription endpoint', () => {
     expect(body).not.toContain('parent@example.com');
   });
 
-  it('requires the participant to belong to the published board', async () => {
-    mocks.clients.push(scriptedAdmin([
-      { data: { contest_id: 'contest-1', board_title: 'Week One' } },
-      { data: null },
-    ]));
+  it('does not reveal whether the participant belongs to the published board', async () => {
+    const admin = scriptedAdmin([
+      { data: {
+        contest_id: 'contest-1',
+        board_title: 'Week One',
+        contest: { id: 'contest-1', status: 'published' },
+      } },
+      { data: [{
+        claim_id: null,
+        should_send: false,
+        is_throttled: false,
+        subscription_id: null,
+        participant_name: null,
+      }] },
+    ]);
+    mocks.clients.push(admin);
+    const providerFetch = vi.fn();
+    vi.stubGlobal('fetch', providerFetch);
     const response = await subscribe({
-      request: subscribeRequest({ participantId: 'other-board-player', email: 'parent@example.com' }),
+      request: subscribeRequest({ participantId: OTHER_PARTICIPANT_ID, email: 'parent@example.com' }),
       env,
       params: { shareCode: 'ABCDEFGH' },
     });
-    expect(response.status).toBe(400);
-    const body = await response.text();
-    expect(body).not.toContain('parent@example.com');
-    expect(body).not.toContain('other-board-player');
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual(ACCEPTED);
+    expect(providerFetch).not.toHaveBeenCalled();
   });
 
-  it('normalizes email, stores only token hashes, and returns no email or raw token', async () => {
+  it('normalizes email, claims with token hashes, and returns no email or raw token', async () => {
     const admin = scriptedAdmin([
-      { data: { contest_id: 'contest-1', board_title: 'Week One' } },
-      { data: { id: 'participant-1', display_name: 'Parent One' } },
-      { data: null },
-      { data: { id: 'subscription-1' }, error: null },
+      { data: {
+        contest_id: 'contest-1',
+        board_title: 'Week One',
+        contest: { id: 'contest-1', status: 'published' },
+      } },
+      { data: [{
+        claim_id: 'claim-1',
+        should_send: true,
+        is_throttled: false,
+        subscription_id: 'subscription-1',
+        participant_name: 'Parent One',
+      }], error: null },
+      { data: true, error: null },
     ]);
     mocks.clients.push(admin);
     const providerFetch = vi.fn(async (..._args: any[]) => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', providerFetch);
 
     const response = await subscribe({
-      request: subscribeRequest({ participantId: 'participant-1', email: '  Parent@Example.COM  ' }),
+      request: subscribeRequest({ participantId: PARTICIPANT_ID, email: '  Parent@Example.COM  ' }),
       env,
       params: { shareCode: 'abcdefgh' },
     });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(202);
     const responseBody = await response.text();
-    expect(JSON.parse(responseBody)).toEqual({ sent: true });
+    expect(JSON.parse(responseBody)).toEqual(ACCEPTED);
 
-    const inserted = admin.operations.find(operation =>
-      operation.table === 'notification_subscriptions' && operation.method === 'insert'
+    const claim = admin.operations.find(operation =>
+      operation.table === 'gridone_claim_notification_send' && operation.method === 'rpc'
     )?.value;
-    expect(inserted.email).toBe('parent@example.com');
-    expect(inserted.verification_token_hash).toMatch(/^[a-f0-9]{64}$/);
-    expect(inserted.unsubscribe_token_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(claim.p_email).toBe('parent@example.com');
+    expect(claim.p_address_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(claim.p_verification_token_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(claim.p_unsubscribe_token_hash).toMatch(/^[a-f0-9]{64}$/);
 
     const providerBody = JSON.parse(String(providerFetch.mock.calls[0][1]?.body));
     expect(providerBody.to).toEqual(['parent@example.com']);
@@ -173,29 +209,38 @@ describe.sequential('winner email subscription endpoint', () => {
     expect(verifyHref).toBeTruthy();
     const rawVerificationToken = new URL(String(verifyHref)).searchParams.get('token');
     expect(rawVerificationToken).toBeTruthy();
-    expect(inserted.verification_token_hash).not.toBe(rawVerificationToken);
+    expect(claim.p_verification_token_hash).not.toBe(rawVerificationToken);
     expect(responseBody).not.toContain('parent@example.com');
   });
 
-  it('reports provider failure without leaking email or verification token', async () => {
+  it('returns the accepted contract after provider failure without leaking email or verification token', async () => {
     const admin = scriptedAdmin([
-      { data: { contest_id: 'contest-1', board_title: 'Week One' } },
-      { data: { id: 'participant-1', display_name: 'Parent One' } },
-      { data: null },
-      { data: { id: 'subscription-1' }, error: null },
-      { data: null, error: null },
+      { data: {
+        contest_id: 'contest-1',
+        board_title: 'Week One',
+        contest: { id: 'contest-1', status: 'published' },
+      } },
+      { data: [{
+        claim_id: 'claim-1',
+        should_send: true,
+        is_throttled: false,
+        subscription_id: 'subscription-1',
+        participant_name: 'Parent One',
+      }], error: null },
+      { data: true, error: null },
     ]);
     mocks.clients.push(admin);
     const providerFetch = vi.fn(async (..._args: any[]) => new Response('provider detail', { status: 503 }));
     vi.stubGlobal('fetch', providerFetch);
 
     const response = await subscribe({
-      request: subscribeRequest({ participantId: 'participant-1', email: 'parent@example.com' }),
+      request: subscribeRequest({ participantId: PARTICIPANT_ID, email: 'parent@example.com' }),
       env,
       params: { shareCode: 'ABCDEFGH' },
     });
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(202);
     const responseBody = await response.text();
+    expect(JSON.parse(responseBody)).toEqual(ACCEPTED);
     expect(responseBody).not.toContain('parent@example.com');
     expect(responseBody).not.toContain('provider detail');
     const providerBody = JSON.parse(String(providerFetch.mock.calls[0][1]?.body));
@@ -213,20 +258,23 @@ describe.sequential('winner email verification endpoint', () => {
   );
 
   it('redirects a valid, unexpired token to the verified board state', async () => {
-    const admin = scriptedAdmin([{ data: { id: 'subscription-1' } }]);
+    const admin = scriptedAdmin([{ data: true, error: null }]);
     mocks.clients.push(admin);
     const response = await verifyEmail({ request: verifyRequest('valid-token'), env });
     expect(response.status).toBe(302);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=verified');
     expect(redirectLocation(response)).not.toContain('valid-token');
-    expect(admin.operations.some(operation => operation.method === 'gte')).toBe(true);
+    expect(admin.operations).toContainEqual(expect.objectContaining({
+      table: 'gridone_verify_notification_subscription',
+      method: 'rpc',
+    }));
   });
 
   it.each([
     ['expired', 'expired-token'],
     ['invalid', 'invalid-token'],
   ])('redirects an %s token without exposing it', async (_label, token) => {
-    mocks.clients.push(scriptedAdmin([{ data: null }]));
+    mocks.clients.push(scriptedAdmin([{ data: false, error: null }]));
     const response = await verifyEmail({ request: verifyRequest(token), env });
     expect(response.status).toBe(302);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=invalid');

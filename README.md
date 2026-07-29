@@ -83,7 +83,10 @@ Create `.env.local` with the following variables:
 | `EMAIL_PROVIDER_API_KEY` | Server-only Resend sending key |
 | `EMAIL_FROM` | Verified sender identity — `GridOne <updates@parksideag.com>` in production |
 | `CRON_SECRET` | High-entropy token for scheduled notification processing |
+| `RETRY_ENDPOINT` | HTTPS URL the one-minute Cron Worker calls to process notification retries |
 | `NOTIFICATION_TOKEN_SECRET` | High-entropy signing key for verification and unsubscribe links |
+| `SCORE_TEST_MODE_ENABLED` | Server-only kill switch; score-test requests are honored only for the exact value `true` |
+| `SCORE_TEST_MODE_OWNER_IDS` | Comma-separated authenticated owner UUID allowlist; both this and the kill switch are required |
 
 See `.env.example` for a template.
 
