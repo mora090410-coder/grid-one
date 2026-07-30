@@ -252,6 +252,28 @@ Execution boundary: local code, migrations, tests, copy, and documentation are a
 - Verification passed: 230/230 non-integration Vitest tests; 41/41 PostgreSQL integration tests with one credential-gated hosted test skipped; strict TypeScript; production build; `git diff --check`; and 44/44 Chromium/WebKit Playwright tests with 10 intentional visual-capture tests skipped.
 - No live Stripe price was created or archived, no production environment variable or database was changed, and nothing was deployed. `PAID_SIGNUP_ENABLED=false` remains the checkout hold until the owner approves the explicit live-price and production steps.
 
+### Approved production rollout — July 30, 2026
+
+Approval received for the previously held production sequence: create the live Game Day and Organization prices, archive the retired `$4.99` price, configure the production price IDs, apply migration `019`, deploy, enable checkout, and verify the live boundaries.
+
+- [x] Reconfirm the canonical Stripe account, Supabase project, Cloudflare Pages project/domain, branch, and committed revision.
+- [ ] Create one-time live prices for Game Day at `$9.99` and Organization at `$79.00`, then archive the retired price.
+- [x] Configure both server-side production price IDs while keeping `PAID_SIGNUP_ENABLED=false`.
+- [x] Apply and verify production migration `019_pricing_tiers.sql` without rewriting or deleting existing rows.
+- [ ] Build and deploy the committed revision to Cloudflare Pages production.
+- [ ] Verify production health, public routes, unauthenticated API boundaries, and checkout hold.
+- [ ] Enable paid signup only after the price, migration, deployment, and held-state checks all pass.
+- [ ] Run the narrow approved checkout smoke path without submitting a real charge.
+- [ ] Record exact production evidence and any remaining owner-attended boundary.
+
+Rollout notes:
+
+- Stripe account `Parkside Advisory Group` (`acct_1TsBjcFwSi8ogxSr`) now has verified live one-time prices for Game Day `$9.99` and Organization `$79.00`. The retired `$4.99` price was briefly archived, then immediately restored when the live-state preflight showed the old production checkout was still enabled.
+- A database-compatible temporary production deployment (`fd8558c`, deployment `17cd99ca-66d8-41df-a4f5-c0f1808595f2`) sets `PAID_SIGNUP_ENABLED=false` before the schema and application cutover. Health returned `200`, and the apex redirect preserved path and query.
+- Canonical production database was visibly confirmed as `GridOneApp` under `Sideline Hacks`, ref `illqymckwqiawdwxhwcy`. Pre-migration checks found zero open checkout orders, zero active entitlements, and zero active entitlements without activations.
+- The first SQL Editor attempt was rejected before execution because the editor appended migration `019` to a truncated preflight query. The exact editor contents were then replaced and verified byte-for-byte against SHA-256 `5ecb3f9c775312802c8bd9ef7bcb505dce2164eb5c0ba10a20fc6a23c9e027a2`.
+- The exact migration then completed with `Success. No rows returned.` Post-migration queries confirmed the three new pricing/organization columns, the new atomic publish RPC, zero open checkout orders, and zero active entitlements.
+
 ### Phase 1 payment implementation
 
 - [x] Scope checkout claims and live sessions to owner + 2026 season, with an atomic database claim and attach path.
