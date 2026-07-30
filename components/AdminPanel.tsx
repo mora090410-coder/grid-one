@@ -1015,6 +1015,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       </>
                     )}
                   </button>
+                  {isPublished && shareCode && (
+                    <a
+                      href={`/b/${shareCode}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-ink/80 transition-colors hover:bg-newsprint hover:text-ink"
+                    >
+                      <svg className="h-4 w-4 text-ink/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14 3h7v7m0-7L10 14m-3-9H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                      </svg>
+                      Open viewer
+                    </a>
+                  )}
 
                   <div className="my-1.5 border-t border-newsprint" />
 
