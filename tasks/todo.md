@@ -25,7 +25,14 @@
 - [x] Isolate the landing release on `agent/film-landing-release` without staging unrelated `.impeccable` or documentation files.
 - [x] Preserve the landing-only Lenis ownership contract and replace obsolete board-animation browser assertions with film-specific progression, reduced-motion, responsive, pricing, and route-cleanup coverage.
 - [x] Pass the production build, all 46 Vitest files (271 passed, one expected hosted Stripe skip), and all 44 Chromium/WebKit workflows (10 intentional visual-capture skips).
-- [ ] Commit and push the isolated landing release, merge it to `main`, and verify the new production page after Cloudflare completes.
+- [x] Commit and push the isolated landing release, merge it to `main`, and verify the new production page after Cloudflare completes.
+
+### Production landing follow-through review
+
+- PR `#8` merged the isolated film landing as `0006a8d`; Cloudflare production deployment `cb992398-e8c4-4a23-987d-c121e2583d86` serves that revision.
+- A fresh headless Chromium visit to `https://www.getgridone.com/` rendered the film opening and `THE BOARD WATCHES THE GAME`, showed `Your first published board is free`, displayed `$9.99` and `$79`, and did not contain the old `Run your game day` headline.
+- The production frame asset `film/frames/frame_0300.jpg` returned HTTP 200.
+- Unrelated untracked `.impeccable` and documentation files remain untouched.
 
 # GridOne Friday launch
 
