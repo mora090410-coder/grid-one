@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { isValidAxis } from '../../../../utils/boardValidation';
+import { hasBoardActivation } from '../../../../utils/boardActivation';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -24,7 +25,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     .maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
-  if (!Array.isArray(contest.board_activations) || !contest.board_activations.length) {
+  if (!hasBoardActivation(contest.board_activations)) {
     return Response.json({ error: 'Unlock this board with the 2026 season pass before publishing.' }, { status: 402 });
   }
 
