@@ -42,6 +42,18 @@
 - [ ] Run a production subscribe-endpoint abuse test and observe throttling.
 - [ ] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
 
+### Phase 4 completion run — July 29, 2026
+
+- [x] Re-confirm canonical repository `main` at `0b59dd5`, Cloudflare account `a675816e0fde9aff2ebda171a6e39ead`, Pages project `grid-one`, Stripe account `acct_1TsBjcFwSi8ogxSr`, and Supabase project `illqymckwqiawdwxhwcy`.
+- [ ] Add and test an explicit production checkout hold with a named organizer smoke-test allowlist.
+- [ ] Deploy the checkout hold before correcting the production Stripe credential.
+- [ ] Replace the Pages `STRIPE_SECRET_KEY` with the confirmed live Parkside key without exposing its value.
+- [ ] Deploy the one-minute notification retry Worker with the matching `CRON_SECRET`.
+- [ ] Complete the production organizer and independent-viewer path through publish, manual score, notification, checkout, webhook, and entitlement.
+- [ ] Refund the smoke-test charge and verify entitlement revocation while the published board remains viewable.
+- [ ] Run the bounded production subscribe abuse proof and observe a 429 without sending to an unowned address.
+- [ ] Run a clean-install verification at final `main`, reconcile the detailed verification checklist, commit, push, and record the production release evidence.
+
 ### Phase 4 execution boundary
 
 - Phase 1–3 commit `8e1cafd` is pushed on `agent/launch-hardening-phases-1-3`; draft PR `#2` targets `main`.
