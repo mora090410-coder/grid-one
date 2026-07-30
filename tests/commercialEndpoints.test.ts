@@ -37,6 +37,7 @@ const env = {
   STRIPE_WEBHOOK_SECRET: 'webhook-secret',
   STRIPE_2026_PRICE_ID: 'price_2026',
   PUBLIC_SITE_URL: 'https://www.getgridone.com',
+  PAID_SIGNUP_ENABLED: 'true',
 };
 
 const jsonRequest = (
@@ -253,6 +254,47 @@ describe.sequential('checkout session endpoint', () => {
     });
     expect(response.status).toBe(403);
     expect(mocks.Stripe).not.toHaveBeenCalled();
+  });
+
+  it('keeps paid signup closed outside the named production smoke board', async () => {
+    mocks.clients.push(
+      authClient(),
+      adminClient([{ data: { id: 'board-1', owner_id: 'user-1', season_year: 2026 }, error: null }]),
+    );
+    const response = await createCheckout({
+      request: jsonRequest('https://example.test/api/stripe/create-checkout-session', { contestId: 'board-1' }),
+      env: {
+        ...env,
+        PAID_SIGNUP_ENABLED: 'false',
+        CHECKOUT_SMOKE_CONTEST_IDS: 'board-smoke',
+      },
+    });
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      code: 'PAID_SIGNUP_CLOSED',
+      error: 'Paid signup is not open yet.',
+    });
+    expect(mocks.Stripe).not.toHaveBeenCalled();
+  });
+
+  it('allows the named production smoke board through the launch hold', async () => {
+    const admin = adminClient([
+      { data: { id: 'board-smoke', owner_id: 'user-1', season_year: 2026 }, error: null },
+      { data: { id: 'entitlement-1' }, error: null },
+    ]);
+    mocks.clients.push(authClient(), admin);
+    const response = await createCheckout({
+      request: jsonRequest('https://example.test/api/stripe/create-checkout-session', { contestId: 'board-smoke' }),
+      env: {
+        ...env,
+        PAID_SIGNUP_ENABLED: 'false',
+        CHECKOUT_SMOKE_CONTEST_IDS: 'board-other, board-smoke',
+      },
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'SEASON_PASS_ALREADY_ACTIVE',
+    });
   });
 
   it('rejects checkout when the organizer already has the non-stacking season pass', async () => {

@@ -30,6 +30,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       .maybeSingle();
     if (!contest) return Response.json({ error: 'You do not own this board.' }, { status: 403 });
 
+    const paidSignupEnabled = String(env.PAID_SIGNUP_ENABLED || '').toLowerCase() === 'true';
+    const smokeContestIds = new Set(
+      String(env.CHECKOUT_SMOKE_CONTEST_IDS || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    );
+    if (!paidSignupEnabled && !smokeContestIds.has(contest.id)) {
+      return Response.json({
+        code: 'PAID_SIGNUP_CLOSED',
+        error: 'Paid signup is not open yet.',
+      }, { status: 503 });
+    }
+
     const { data: entitlement } = await admin
       .from('season_entitlements')
       .select('id')
