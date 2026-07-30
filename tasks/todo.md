@@ -40,7 +40,7 @@
 - [x] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
 - [x] Prove one end-to-end refund and observe entitlement revocation without unpublishing the board.
 - [x] Run a production subscribe-endpoint abuse test and observe throttling.
-- [ ] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
+- [x] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
 
 ### Phase 4 completion run — July 29, 2026
 
@@ -52,7 +52,7 @@
 - [x] Complete the production organizer and independent-viewer path through publish, manual score, notification, checkout, webhook, and entitlement.
 - [x] Refund the smoke-test charge and verify entitlement revocation while the published board remains viewable.
 - [x] Run the bounded production subscribe abuse proof and observe a 429 without sending to an unowned address.
-- [ ] Run a clean-install verification at final `main`, reconcile the detailed verification checklist, commit, push, and record the production release evidence.
+- [x] Run a clean-install verification at final `main`, reconcile the detailed verification checklist, commit, push, and record the production release evidence.
 - [x] Correct and deploy the production activation-relation shape mismatch exposed by the paid smoke test, then re-prove organizer, publish, and scoring gates against the fulfilled order.
 
 ### Phase 4 execution boundary
@@ -95,6 +95,7 @@
 - The organizer-owned `mora090410@gmail.com` address received one verification email, verified successfully, and then received the exact production Q1 winner email from `updates@parksideag.com`.
 - Stripe payment `pi_3TyihYFwSi8ogxSr1s61MtAx` was fully refunded for $4.99 at the owner's requested-customer reason. The webhook changed the paid-return state to “Season pass inactive,” while `/b/BDRNUWDH` remained public with its manual score and Q1 winner history.
 - With the one legitimate verification already counted, four additional same-address requests returned the generic accepted response without new mail; the fifth additional request returned the production 429 throttle response. Gmail still contained only the original verification message.
+- Detached clean checkout `f7a2eba` passed `npm ci`, strict TypeScript, the production build, all 44 Vitest files, and 272 passing tests with only the credential-gated hosted Stripe proof skipped. Production deployment `8b339b21-7a66-44c7-8a42-ebb082481b64` carries `PAID_SIGNUP_ENABLED=true` with an empty smoke allowlist; both the apex and preserved viewer returned 200 after deployment.
 
 ## Launch hardening Phase 3 — July 29, 2026
 
