@@ -4,7 +4,8 @@ test('desktop game arc progresses the demonstration board from pregame to final'
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
 
-  const arc = page.getByRole('heading', { name: /Automatic first/i }).locator('..');
+  const arcHeading = page.getByRole('heading', { name: /Scores come in.*Winners light up/i });
+  const arc = page.locator('section').filter({ has: arcHeading });
   await expect(page.getByText('Board · pregame')).toBeVisible();
   await arc.scrollIntoViewIfNeeded();
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' }));
@@ -32,7 +33,7 @@ test('narrow landing page stays within the viewport and exposes the real board',
   const heading = page.getByRole('heading', { name: /The board watches the game/i });
   await expect(heading).toBeVisible();
   const firstBand = page.locator('section').filter({ has: heading });
-  await expect(firstBand.getByRole('table', { name: /Demonstration squares board/i })).toBeVisible();
+  await expect(firstBand.getByRole('table', { name: /Sample football squares board/i })).toBeVisible();
   const boardScroller = firstBand.getByRole('group', {
     name: /Squares board, scrolls horizontally on small screens/i,
   });
@@ -62,7 +63,7 @@ test('landing game arc reverses, releases its sticky board, and reaches post-her
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
 
-  const arcHeading = page.getByRole('heading', { name: /Automatic first/i });
+  const arcHeading = page.getByRole('heading', { name: /Scores come in.*Winners light up/i });
   const arc = page.locator('section').filter({ has: arcHeading });
   const arcBoard = arc.getByRole('group', {
     name: /Squares board, scrolls horizontally on small screens/i,
@@ -94,7 +95,7 @@ test('landing game arc reverses, releases its sticky board, and reaches post-her
     window.__lenis?.scrollTo((element as HTMLElement).offsetTop, { immediate: true });
   });
   await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Build the board' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Build your board.' })).toBeVisible();
   await expect.poll(async () => (await arcBoard.boundingBox())?.y ?? 0).toBeLessThan(0);
 });
 

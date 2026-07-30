@@ -20,7 +20,7 @@ interface LandingPageProps {
   onLogin: () => void;
 }
 
-/* ── Demonstration data. SYNTHETIC — not real boards, users, or results.
+/* ── Sample data — not real boards, users, or results.
       Quarter winners are derived from the last digit of each score, the
       way a real squares board resolves. ── */
 const DEMO_NAMES = [
@@ -44,28 +44,27 @@ const winnerCell = (q: (typeof QUARTERS)[number]) => ({ row: q.home % 10, col: q
 const FEATURED_USES = ['Booster clubs', 'Office pools', 'Super Bowl parties', 'Youth sports', 'Watch parties'];
 
 const STEPS = [
-  { k: 'Build the board', d: 'Start with a native 10×10 board. If you already used paper, the optional beta scan gives you an editable first pass.' },
-  { k: 'Share one link', d: 'No logins for viewers. Anyone with the private board link gets the same read-only game-day view.' },
-  { k: 'Watch it settle', d: 'Automatic beta score checks update the board; the organizer can take over instantly if the source is late or wrong.' },
+  { k: 'Build your board.', d: 'Type names straight in, or snap a photo of the paper board you already have and fix it up. Ten minutes, start to finish.' },
+  { k: 'Share one link.', d: 'Text it. Post it in the group chat. Tape the QR code to the concession stand. Everyone sees the same live board — nobody needs an account or an app.' },
+  { k: 'Enjoy the game.', d: 'Scores update on their own. Winners light up each quarter and get an email. No more "wait, who won Q3?" texts at halftime.' },
 ];
 
 const FAQ_ITEMS = [
-  { q: 'How does pricing work?', a: 'Creating and editing boards is free. The introductory 2026 season pass is $4.99 once and unlocks up to 20 boards. Build everything first, then pay when your boards are ready to share.' },
-  { q: 'Who needs an account?', a: 'Only the organizer needs an account. Viewers open the share link and see the board, live score state, and winner scenarios in read-only mode.' },
-  { q: 'Can I upload a handwritten board?', a: 'Yes. Upload a board image, let GridOne scan it, then fix any names or squares before you unlock sharing.' },
-  { q: 'What exactly unlocks after I pay?', a: 'Before payment you can build, edit, preview, and test your boards. The $4.99 introductory 2026 season pass lets you publish up to 20 boards with read-only viewer links.' },
-  { q: 'Do viewers get edit access?', a: 'No. Organizers can edit the board. Viewers are read-only and can follow the board, scoreboard, and live winner scenarios.' },
+  { q: 'What does it cost?', a: "Your first board is free — build it, share it, run it all game day. Running more than one? $9.99 covers up to 5 boards for the whole season. Running squares for a club, school, or league? The Organization plan is $79 per season: up to 50 boards, your organization's name on every one, and one receipt for the treasurer." },
+  { q: 'Who needs an account?', a: 'Only the organizer needs an account. Everyone else opens the share link to follow the board, score, and winner scenarios.' },
+  { q: 'Can I upload a handwritten board?', a: 'Yes. Upload a board image, let GridOne scan it, then fix any names or squares before you publish.' },
+  { q: 'Do viewers get edit access?', a: 'No. Everyone sees the board. Only you can change it.' },
   { q: 'Is GridOne good for fundraisers or team groups?', a: 'Yes. GridOne is built for organizers running football squares for youth sports teams, booster clubs, office pools, watch parties, and local community fundraisers that need one simple live board link.' },
 ];
 
 const TICKER = [
-  'DEMONSTRATION BOARD — SYNTHETIC DATA',
-  'BUILDING AND EDITING IS FREE',
-  '$4.99 UNLOCKS UP TO 20 BOARDS IN 2026',
-  'READ-ONLY VIEWER LINK',
-  'VIEWERS NEED NO ACCOUNT',
-  'NOT A BETTING SITE',
-  'AUTOMATIC SCORE CHECKS · MANUAL FALLBACK',
+  'SAMPLE GAME',
+  'Q1 — RIVERA HITS ON 7–3',
+  'WINNER EMAILED',
+  '84 OF 100 SQUARES CLAIMED',
+  'BOARD LINK OPENED 61 TIMES',
+  'Q3 — OKAFOR HITS ON 1–0',
+  'YOUR FIRST BOARD IS FREE',
 ];
 
 /* ── Digit roll. Each column is a 0-9 strip translated to its value. ── */
@@ -150,9 +149,9 @@ const Board: React.FC<{ q: number; compact?: boolean }> = ({ q, compact }) => {
 
   return (
     <div className="overflow-x-auto border-y-[3px] border-ink" tabIndex={0} role="group" aria-label="Squares board, scrolls horizontally on small screens">
-    <table className="w-full min-w-[30rem] table-fixed border-collapse" aria-label="Demonstration squares board (synthetic data)">
+    <table className="w-full min-w-[30rem] table-fixed border-collapse" aria-label="Sample football squares board">
       <caption className="sr-only">
-        A 10 by 10 football squares board using synthetic demonstration data. Winning squares fill as each quarter ends.
+        A sample 10 by 10 football squares board. Winning squares fill as each quarter ends.
       </caption>
       <thead>
         <tr>
@@ -251,7 +250,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
             applicationCategory: 'SportsApplication',
             operatingSystem: 'Any',
             description,
-            offers: { '@type': 'Offer', price: '4.99', priceCurrency: 'USD', description: '$4.99 introductory 2026 season pass for up to 20 boards' },
+            offers: [
+              { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: 'One published board per season' },
+              { '@type': 'Offer', name: 'Game Day', price: '9.99', priceCurrency: 'USD', description: 'Up to 5 published boards for the 2026 season' },
+              { '@type': 'Offer', name: 'Organization', price: '79', priceCurrency: 'USD', description: 'Up to 50 published boards plus organization features for the season' },
+            ],
           },
           { '@type': 'FAQPage', mainEntity: FAQ_ITEMS.map((item) => ({ '@type': 'Question', name: item.q, acceptedAnswer: { '@type': 'Answer', text: item.a } })) },
         ]}
@@ -281,29 +284,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
         {/* ── BAND 1 — thesis + the board ── */}
         <section className="grid border-b-[3px] border-ink lg:grid-cols-2">
           <div className="flex min-w-0 flex-col justify-center gap-7 px-5 py-14 md:px-10 md:py-20">
+            <p className="oa-slab text-cardinal">Paper had a good run.</p>
             <h1 className="oa-chyron text-ink">
               The board<br />watches<br />the game
             </h1>
             <p className="oa-body max-w-md text-ink/80">
-              Football squares for booster clubs, teams, and church halls. Share one link and let
-              automatic beta scoring do the routine work, with a clear organizer fallback whenever it needs help.
+              Football squares for booster clubs, offices, and game-day crews. Build your board in minutes,
+              share one link — and everyone watches their squares hit, live, all game.
             </p>
             <div className="oa-data flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-ink/70">
-              <span>FREE TO BUILD</span><span aria-hidden>/</span>
-              <span>$4.99 UNLOCKS UP TO 20 BOARDS IN 2026</span><span aria-hidden>/</span>
-              <span>VIEWERS NEED NO ACCOUNT</span><span aria-hidden>/</span>
-              <span>AUTO BETA + MANUAL FALLBACK</span>
+              <span>FREE TO START</span><span aria-hidden>/</span>
+              <span>ONE LINK, NO APP</span><span aria-hidden>/</span>
+              <span>LIVE SCORES &amp; WINNERS</span><span aria-hidden>/</span>
+              <span>YOU STAY IN CONTROL</span>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button onClick={onCreate} className="oa-btn oa-btn-primary">Build your board</button>
+              <button onClick={onCreate} className="oa-btn oa-btn-primary">Build your board — free</button>
               <Link to="/demo" className="oa-btn oa-btn-ghost">See a live board</Link>
             </div>
           </div>
 
           <div className="flex min-w-0 flex-col justify-center bg-cardinal">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 pb-2 pt-3">
-              <span className="oa-slab text-broadcast-white">Live board</span>
-              <span className="oa-board-axis text-broadcast-white/70">SYNTHETIC DEMONSTRATION DATA</span>
+              <span className="oa-slab text-broadcast-white">Sample board</span>
             </div>
             <Board q={q} />
           </div>
@@ -314,10 +317,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                exact moment each quarter settles. ── */}
         <section ref={arcRef} className="border-b-[3px] border-ink bg-ink px-5 py-16 lg:min-h-[150vh] md:px-10 md:py-24">
           <div className="mb-4 h-[3px] w-full bg-gold" aria-hidden data-wipe />
-          <h2 className="oa-chyron mb-5 text-broadcast-white" data-wipe>Automatic first.<br />Manual when needed.</h2>
+          <h2 className="oa-chyron mb-5 text-broadcast-white" data-wipe>Scores come in.<br />Winners light up.</h2>
           <p className="oa-body mb-12 max-w-xl text-broadcast-white/70">
-            GridOne checks a grounded game source and fills completed-quarter winners. Every score shows its source and freshness, and the organizer can take over when needed.
-            Scroll to watch a synthetic game settle.
+            GridOne follows the game and fills in each quarter&apos;s winner as it happens. Every score shows where it came from and when — and you can take over and enter scores yourself anytime.
+            Scroll to watch a sample game play out.
           </p>
 
           <div className="grid gap-10 lg:min-h-[100vh] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-12">
@@ -326,7 +329,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
                 <span className="oa-slab text-broadcast-white">
                   {q === 0 ? 'Board · pregame' : q === 4 ? 'Board · final' : `Board · through ${QUARTERS[q - 1].label}`}
                 </span>
-                <span className="oa-board-axis text-broadcast-white/70">SYNTHETIC DEMONSTRATION DATA</span>
+                <span className="oa-board-axis text-broadcast-white/70">Sample game</span>
               </div>
               <Board q={q} />
             </div>
@@ -452,7 +455,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
               <span className="oa-slab">GridOne</span>
             </div>
             <p className="oa-data text-[11px] text-broadcast-white/55">
-              © {new Date().getFullYear()} GRIDONE. NOT A BETTING SITE.
+              GridOne tracks the board. It never touches the money — squares and payouts stay between you and your group.
+            </p>
+            <p className="oa-data mt-2 text-[11px] text-broadcast-white/55">
+              © {new Date().getFullYear()} GridOne
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -486,7 +492,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onCreate, onLogin }) => {
           ))}
         </div>
         <span className="sr-only">
-          Building and editing is free. The $4.99 introductory 2026 season pass unlocks up to 20 boards. Viewers need no account. GridOne does not handle square money or payouts.
+          Sample game. Q1: Rivera hits on 7–3. Winner emailed. 84 of 100 squares claimed. Board link opened 61 times. Q3: Okafor hits on 1–0. Your first board is free.
         </span>
       </div>
     </div>

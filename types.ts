@@ -20,6 +20,7 @@ export interface ScheduledGame {
 export interface GameState {
   title: string;
   meta: string;
+  organizationDisplayName?: string;
   /** Permanent marker for completed-game synthetic scoring demonstrations. */
   scoreTestMode?: boolean;
   /** ESPN event id used for exact-event score lookups. */

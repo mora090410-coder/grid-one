@@ -547,6 +547,7 @@ body:has(.gdh-root) {
 }
 
 .gdh-kicker,
+.gdh-organization,
 .gdh-date,
 .gdh-authority,
 .gdh-current span,
@@ -573,6 +574,13 @@ body:has(.gdh-root) {
     margin: 0;
     color: color-mix(in srgb, currentColor 68%, transparent);
     font-size: 0.75rem;
+}
+
+.gdh-organization {
+    margin: 0 auto 0 0;
+    color: color-mix(in srgb, currentColor 78%, transparent);
+    font-size: 0.75rem;
+    font-weight: 650;
 }
 
 .gdh-score-line {

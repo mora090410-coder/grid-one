@@ -15,7 +15,7 @@ import { supabase } from '../services/supabase';
 import { parseBoardImage } from '../services/geminiService';
 import { ScheduledGamePicker } from './ScheduledGamePicker';
 
-import { createCheckoutSession, activateWithEntitlement } from '../services/stripe';
+import { createCheckoutSession } from '../services/stripe';
 import { useDialogFocus } from '../hooks/useDialogFocus';
 import { OrganizerDestination } from '../utils/organizerFlow';
 
@@ -122,7 +122,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [showMenu, setShowMenu] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [repurchaseOffered, setRepurchaseOffered] = useState(false);
+  const [upgradeOffer, setUpgradeOffer] = useState<'gameday' | 'org' | null>(null);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [organizationName, setOrganizationName] = useState('');
   const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [correctionHistory, setCorrectionHistory] = useState<WinnerResolution[]>(winnerHistory);
   const [correctionDraft, setCorrectionDraft] = useState<{
@@ -799,37 +801,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
   const handleBoardLifecycleAction = async () => {
     if (!activePoolId) {
-      setActionMessage('Save this board before unlocking or publishing.');
+      setActionMessage('Save this board before publishing.');
       return;
     }
     setShowMenu(false);
     try {
       if (!isPublished) await flushDraftSave();
-
-      if (!isActivated) {
-        if (repurchaseOffered) {
-          await createCheckoutSession(activePoolId);
-          return;
-        }
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error('Sign in before unlocking this board.');
-        const result = await activateWithEntitlement(activePoolId, session.access_token);
-        if (result.activated) {
-          setActionMessage('Board unlocked — covered by your season pass.');
-          window.location.reload();
-          return;
-        }
-        if (result.code === 'SEASON_PASS_INACTIVE' && result.canRepurchase) {
-          setRepurchaseOffered(true);
-          setActionMessage(result.message || 'Your prior season pass is inactive. Published boards remain available. Purchase a new pass to unlock another board.');
-          return;
-        }
-        if (result.needsPayment) {
-          await createCheckoutSession(activePoolId);
-          return;
-        }
-        throw new Error(result.message || 'The season-pass status could not be confirmed.');
-      }
 
       if (!isPublished) {
         setActionMessage('Checking the latest saved board and publishing the viewer link…');
@@ -840,6 +817,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const result = await response.json();
+        if (response.status === 402 && (result.upgradeTo === 'gameday' || result.upgradeTo === 'org')) {
+          setUpgradeError(null);
+          setUpgradeOffer(result.upgradeTo);
+          setActionMessage(result.error || 'Choose a plan to publish another board.');
+          return;
+        }
         if (!response.ok) throw new Error(result.error || 'The board could not be published.');
         try {
           await navigator.clipboard.writeText(`${window.location.origin}${result.viewerUrl}`);
@@ -988,18 +971,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                   )}
                   <button
                     onClick={handleBoardLifecycleAction}
-                    className={`w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-3 ${!isActivated || !isPublished ? 'text-ink hover:bg-gold' : 'text-ink/80 hover:bg-newsprint hover:text-ink'}`}
+                    className={`w-full min-h-11 px-4 py-2.5 text-left text-sm font-medium transition-colors flex items-center gap-3 ${!isPublished ? 'text-ink hover:bg-gold' : 'text-ink/80 hover:bg-newsprint hover:text-ink'}`}
                   >
-                    {!isActivated ? (
-                      <>
-                        <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        {repurchaseOffered
-                          ? 'Purchase a new 2026 pass ($4.99)'
-                          : 'Unlock sharing ($4.99 covers 20 boards in 2026)'}
-                      </>
-                    ) : !isPublished ? (
+                    {!isPublished ? (
                       <>
                         <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v14m-7-7h14" />
@@ -1105,18 +1079,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       {actionMessage && !showMenu && (
         <div className="flex flex-wrap items-center justify-between gap-3 border border-ink bg-newsprint px-4 py-3 text-sm text-ink">
           <span role="status" aria-live="polite">{actionMessage}</span>
-          {repurchaseOffered && activePoolId && (
-            <button
-              type="button"
-              className="oa-btn oa-btn-primary"
-              onClick={() => createCheckoutSession(activePoolId).catch((error) => {
-                setActionMessage(error?.message || 'Checkout could not be started. Try again.');
-              })}
-            >
-              Purchase a new 2026 pass
-            </button>
-          )}
         </div>
+      )}
+
+      {upgradeOffer && activePoolId && (
+        <UpgradePaywall
+          tier={upgradeOffer}
+          error={upgradeError}
+          organizationName={organizationName}
+          onOrganizationNameChange={setOrganizationName}
+          onClose={() => setUpgradeOffer(null)}
+          onCheckout={() => createCheckoutSession(
+            activePoolId,
+            upgradeOffer,
+            upgradeOffer === 'org' ? organizationName : undefined,
+          ).catch((error) => {
+            setUpgradeError(error?.message || 'Checkout could not be started. Try again.');
+          })}
+        />
       )}
 
       {/* Organizer Dashboard */}
@@ -1302,10 +1282,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                   <div id="live-scoring" tabIndex={-1} className="scroll-mt-28 border-t border-newsprint pt-6 mb-8 outline-none">
                     {!isActivated ? (
                       <div className="border border-gold bg-gold/20 p-5 text-ink">
-                        <p className="oa-slab mb-2 text-cardinal">Live service unavailable</p>
-                        <h5 className="oa-headline !text-2xl">Unlock when you are ready for game day.</h5>
+                        <p className="oa-slab mb-2 text-cardinal">Ready when the board goes live</p>
+                        <h5 className="oa-headline !text-2xl">Every published board gets the full game-day experience.</h5>
                         <p className="oa-body mt-3 text-sm text-ink/70">
-                          Your board stays fully editable for free. The season pass adds automatic score checks, live updates, scenarios, notifications, and published sharing.
+                          Keep building and previewing for free. After you publish, scores, scenarios, winner emails, the QR code, and the viewer link all work together.
                         </p>
                       </div>
                     ) : (
@@ -1859,6 +1839,97 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       )}
 
     </div>
+  );
+};
+
+const UpgradePaywall: React.FC<{
+  tier: 'gameday' | 'org';
+  error: string | null;
+  organizationName: string;
+  onOrganizationNameChange: (value: string) => void;
+  onClose: () => void;
+  onCheckout: () => void;
+}> = ({
+  tier,
+  error,
+  organizationName,
+  onOrganizationNameChange,
+  onClose,
+  onCheckout,
+}) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialogRef, onClose);
+  const isOrganization = tier === 'org';
+  const organizationNameIsValid = organizationName.trim().length >= 2
+    && organizationName.trim().length <= 120;
+
+  return ReactDOM.createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-ink/70 p-3 backdrop-blur-sm md:items-center"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upgrade-title"
+        className="w-full max-w-xl border border-ink bg-broadcast-white p-6 text-ink shadow-2xl md:p-8"
+      >
+        <p className="oa-slab mb-3 text-cardinal">
+          {isOrganization ? 'Organization · up to 50 boards' : 'Game Day · up to 5 boards'}
+        </p>
+        <h2 id="upgrade-title" className="oa-headline !text-3xl md:!text-4xl">
+          {isOrganization
+            ? "Sounds like you're running this for a whole organization."
+            : "That board's live. Want another?"}
+        </h2>
+        <p className="oa-body mt-4 text-base text-ink/75">
+          {isOrganization
+            ? "The Organization plan puts your club's name on every board, keeps all of them on one dashboard, and gives your treasurer one clean receipt. $79 for the season, up to 50 boards."
+            : "Your free board is out there doing its thing. $9.99 unlocks up to 5 boards for the whole season — playoffs and the big game included."}
+        </p>
+        {isOrganization && (
+          <div className="mt-6">
+            <label htmlFor="organization-name" className="oa-slab block text-ink/70">
+              Organization name
+            </label>
+            <input
+              id="organization-name"
+              className="oa-input mt-2 w-full"
+              value={organizationName}
+              maxLength={120}
+              onChange={(event) => onOrganizationNameChange(event.target.value)}
+              placeholder="Riverside Ravens Booster Club"
+              autoComplete="organization"
+            />
+            <p className="mt-2 text-sm text-ink/60">
+              This appears on published boards and the payment description.
+            </p>
+          </div>
+        )}
+        {error && (
+          <p className="mt-4 border border-cardinal bg-cardinal-subtle px-4 py-3 text-sm text-cardinal" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" className="oa-btn oa-btn-ghost" onClick={onClose}>
+            Not now
+          </button>
+          <button
+            type="button"
+            className="oa-btn oa-btn-primary"
+            onClick={onCheckout}
+            disabled={isOrganization && !organizationNameIsValid}
+          >
+            Continue to {isOrganization ? '$79' : '$9.99'} checkout
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 };
 

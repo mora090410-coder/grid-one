@@ -189,7 +189,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                     <p className="oa-body mt-4 max-w-[62ch] text-ink/70">
                         {progress.phase === 'fill' && 'Select one or many squares, enter the purchaser or seller label your group recognizes, and keep moving.'}
                         {progress.phase === 'draw' && 'Randomize one fixed set of 0–9 digits for each axis. Payment review stays private and never blocks the draw.'}
-                        {progress.phase === 'preview' && (isActivated ? 'Preview the phone experience, then publish the short viewer link.' : 'The complete board remains editable and previewable for free. Unlock only when you are ready to share it live.')}
+                        {progress.phase === 'preview' && (isActivated ? 'Preview the phone experience, then publish the short viewer link.' : 'The complete board remains editable and previewable for free. Publish only when you are ready to share it live.')}
                         {progress.phase === 'live' && 'Use manual score mode whenever the automatic beta source is stale or cannot confirm the matchup.'}
                     </p>
                     {onNavigate && (

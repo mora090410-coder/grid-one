@@ -7,12 +7,12 @@ const expectTouchTarget = async (locator: Locator) => {
   expect(box!.height).toBeGreaterThanOrEqual(44);
 };
 
-test('landing page leads with the live board and paid unlock model', async ({ page }) => {
+test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /The board watches the game/i })).toBeVisible();
-  await expect(page.getByText(/Football squares for booster clubs, teams, and church halls/i)).toBeVisible();
-  await expect(page.getByRole('button', { name: /Build your board/i })).toBeVisible();
-  await expect(page.getByText(/\$4\.99 unlocks up to 20 boards in 2026/i).first()).toBeVisible();
+  await expect(page.getByText(/Football squares for booster clubs, offices, and game-day crews/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Build your board — free/i })).toBeVisible();
+  await expect(page.locator('.oa-ticker-track').getByText('YOUR FIRST BOARD IS FREE').first()).toBeVisible();
 });
 
 test('demo board renders the sample game', async ({ page }) => {
@@ -25,10 +25,10 @@ test('demo board renders the sample game', async ({ page }) => {
 test('representative landing controls expose names, touch geometry, and keyboard focus', async ({ page }) => {
   await page.goto('/');
 
-  const build = page.getByRole('button', { name: 'Build your board' });
+  const build = page.getByRole('button', { name: 'Build your board — free' });
   const demo = page.getByRole('link', { name: 'See a live board' });
 
-  await expect(build).toHaveAccessibleName('Build your board');
+  await expect(build).toHaveAccessibleName('Build your board — free');
   await expect(demo).toHaveAccessibleName('See a live board');
   await expectTouchTarget(build);
   await expectTouchTarget(demo);

@@ -8,7 +8,7 @@ const Paid: React.FC = () => {
     const [state, setState] = useState<
         'checking' | 'processing' | 'ready' | 'duplicate' | 'payment_review' | 'inactive' | 'payment_failed' | 'delayed' | 'error' | 'signin'
     >('checking');
-    const [message, setMessage] = useState('Confirming payment and activating your board…');
+    const [message, setMessage] = useState('Confirming your plan…');
     const [contestId, setContestId] = useState<string | null>(null);
     const [retryKey, setRetryKey] = useState(0);
     const orderId = searchParams.get('order');
@@ -49,20 +49,20 @@ const Paid: React.FC = () => {
                 setContestId(result.contestId || null);
                 if (result.orderStatus === 'duplicate_paid') {
                     setState('duplicate');
-                    setMessage('A second payment was received, but it did not add another season pass or board allowance. It is marked for refund review.');
+                    setMessage('A second payment was received, but it did not add another plan or board allowance. It is marked for refund review.');
                     return;
                 }
                 if (result.orderStatus === 'awaiting_payment') {
                     setState('processing');
-                    setMessage('Your payment is still processing. Do not start another checkout; GridOne will unlock the board after Stripe confirms it.');
+                    setMessage('Your payment is still processing. Do not start another checkout; GridOne will update your plan after Stripe confirms it.');
                     return;
                 }
                 if (result.orderStatus === 'failed' || result.orderStatus === 'expired') {
                     setState('payment_failed');
                     setMessage(
                         result.orderStatus === 'failed'
-                            ? 'The payment did not complete. No season pass was activated.'
-                            : 'The checkout expired before payment completed. No season pass was activated.',
+                            ? 'The payment did not complete. Your plan did not change.'
+                            : 'The checkout expired before payment completed. Your plan did not change.',
                     );
                     return;
                 }
@@ -71,24 +71,24 @@ const Paid: React.FC = () => {
                         setState('payment_review');
                         setMessage(
                             result.orderStatus === 'refunded'
-                                ? 'This payment was refunded. Your current season pass remains active.'
-                                : 'This payment has a dispute under review. Your current season pass remains active.',
+                                ? 'This payment was refunded. Your current plan remains active.'
+                                : 'This payment has a dispute under review. Your current plan remains active.',
                         );
                     } else {
                         setState('inactive');
-                        setMessage('This season pass is inactive. Previously published boards remain available, but a new pass is required to unlock another board.');
+                        setMessage('This plan is inactive. Previously published boards remain available; choose a plan again when you are ready to publish another.');
                     }
                     return;
                 }
-                if (result.activated) {
+                if (result.paymentConfirmed && result.entitlementStatus === 'active') {
                     setState('ready');
-                    setMessage('Payment confirmed. Your board is unlocked.');
+                    setMessage('Payment confirmed. Return to your draft and publish when you are ready.');
                     return;
                 }
                 attempt += 1;
                 if (attempt >= 10) {
                     setState('delayed');
-                    setMessage('Stripe confirmed your return, but activation is still processing. Your payment is not lost.');
+                    setMessage('Stripe confirmed your return, but the plan update is still processing. Your payment is not lost.');
                     return;
                 }
                 timeout = setTimeout(check, 2000);
@@ -115,7 +115,7 @@ const Paid: React.FC = () => {
     const retry = () => {
         setContestId(null);
         setState('checking');
-        setMessage('Confirming payment and activating your board…');
+        setMessage('Confirming your plan…');
         setRetryKey(key => key + 1);
     };
 
@@ -126,14 +126,14 @@ const Paid: React.FC = () => {
         <main className="oa-root gdh-unavailable min-h-[100dvh]" aria-live="polite">
             <PageMetadata
                 title="Checkout status | GridOne"
-                description="Confirming your GridOne 2026 season-pass payment and board activation."
+                description="Confirming your GridOne 2026 plan payment."
                 path="/paid"
                 noIndex
             />
-            <p className="gdh-kicker">2026 season pass</p>
+            <p className="gdh-kicker">2026 plan</p>
             <h1>
                 {state === 'ready'
-                    ? 'Board unlocked.'
+                    ? 'Plan ready.'
                     : state === 'checking'
                         ? 'Finishing checkout.'
                         : state === 'processing'
@@ -143,8 +143,8 @@ const Paid: React.FC = () => {
                                 : state === 'payment_review'
                                     ? 'Payment updated.'
                                 : state === 'inactive'
-                                    ? 'Season pass inactive.'
-                                    : 'Activation needs attention.'}
+                                    ? 'Plan inactive.'
+                                    : 'Checkout needs attention.'}
             </h1>
             <p>{message}</p>
             {state === 'checking' && <span className="oa-data">Secure verification in progress</span>}

@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { configuredTierForPrice } from '../../_lib/pricingTiers';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -164,7 +165,13 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     if (lineItems.data.length !== 1) return text('Ignored unexpected checkout line items.');
     const line = lineItems.data[0];
     const priceId = stripeId(line.price);
-    if (!priceId || priceId !== env.STRIPE_2026_PRICE_ID || line.amount_total !== 499 || line.currency !== 'usd') {
+    const configuredTier = configuredTierForPrice(priceId, env);
+    if (
+      !configuredTier
+      || line.amount_total !== configuredTier.amountCents
+      || line.currency !== 'usd'
+      || session.metadata?.tier !== configuredTier.tier
+    ) {
       return text('Ignored checkout price mismatch.');
     }
 

@@ -67,10 +67,10 @@ const Terms: React.FC = () => {
           <section>
             <h2 className="text-lg font-semibold text-ink mb-3">5. Payments</h2>
             <p>
-              GridOne charges a one-time introductory fee of $4.99 for the 2026 season, which covers activation of up to 20 boards on your account. Payments are processed securely via Stripe. Repeat purchases do not increase the 2026 allowance.
+              GridOne includes one published board per account per season at no charge. For the 2026 season, the Game Day plan is a one-time $9.99 payment for up to 5 published boards, and the Organization plan is $79 per season for up to 50 published boards and the organization features described at checkout. Payments are processed securely via Stripe.
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>All sales are final once a board has been unlocked for sharing.</li>
+              <li>All sales are final once a paid plan has been used to publish a board.</li>
               <li>Viewer access is read-only; organizer edit controls remain tied to the organizer account.</li>
             </ul>
           </section>

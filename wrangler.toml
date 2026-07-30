@@ -10,8 +10,8 @@ VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 PUBLIC_SITE_URL = "https://www.getgridone.com"
 EMAIL_FROM = "GridOne <updates@parksideag.com>"
 GRIDONE_SEASON = "2026"
-ENTITLEMENT_BOARD_LIMIT = "20"
-STRIPE_2026_PRICE_ID = "price_1TyFoqFwSi8ogxSrY9KvKd70"
-PAID_SIGNUP_ENABLED = "true"
+# STOP: Add STRIPE_GAMEDAY_PRICE_ID and STRIPE_ORG_PRICE_ID only after the
+# product owner creates and verifies both live one-time prices.
+PAID_SIGNUP_ENABLED = "false"
 CHECKOUT_SMOKE_CONTEST_IDS = ""
 OCR_MODEL = "gemini-2.5-flash"

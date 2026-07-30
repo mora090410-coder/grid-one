@@ -226,7 +226,7 @@ const CreateContest: React.FC = () => {
                             <div>
                                 <p className="oa-slab text-cardinal mb-2">01 · Name</p>
                                 <h1 className="oa-headline !text-3xl mb-2">Name your board</h1>
-                                <p className="oa-body text-ink/60">This is the title your group will see after you unlock sharing.</p>
+                                <p className="oa-body text-ink/60">This is the title your group will see after you publish.</p>
                             </div>
 
                             <div className="space-y-4">

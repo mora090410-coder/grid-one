@@ -1,44 +1,11 @@
 import { withRetry } from '../utils/retry';
 import { supabase } from './supabase';
 
-/**
- * Tries to unlock a board using the organizer's season-pass allowance
- * (granted by a prior purchase). Returns needsPayment when the allowance is
- * used up (or none exists) so the caller can fall back to Stripe checkout.
- */
-export const activateWithEntitlement = async (
+export const createCheckoutSession = async (
     contestId: string,
-    accessToken: string
-): Promise<{
-    activated: boolean;
-    needsPayment?: boolean;
-    code?: string;
-    message?: string;
-    canRepurchase?: boolean;
-}> => {
-    const res = await fetch('/api/pools/activate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ contestId }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.activated) return { activated: true };
-    if (res.status === 402) {
-        return {
-            activated: false,
-            needsPayment: true,
-            code: typeof data.code === 'string' ? data.code : undefined,
-            message: typeof data.error === 'string' ? data.error : undefined,
-            canRepurchase: data.canRepurchase === true,
-        };
-    }
-    throw new Error(data.error || `Activation failed (status ${res.status})`);
-};
-
-export const createCheckoutSession = async (contestId: string): Promise<void> => {
+    tier: 'gameday' | 'org',
+    organizationName?: string,
+): Promise<void> => {
     try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
@@ -50,7 +17,11 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ contestId }),
+                body: JSON.stringify({
+                    contestId,
+                    tier,
+                    ...(tier === 'org' ? { organizationName } : {}),
+                }),
             }),
             {
                 retries: 2,
@@ -76,9 +47,7 @@ export const createCheckoutSession = async (contestId: string): Promise<void> =>
             throw new Error(data.error || `Error ${response.status}: ${JSON.stringify(data)}`);
         }
 
-        if (data.alreadyEntitled && data.activated) {
-            window.location.href = `/?poolId=${encodeURIComponent(contestId)}&forceAdmin=true`;
-        } else if (data.url) {
+        if (data.url) {
             window.location.href = data.url;
         } else {
             throw new Error('No checkout URL returned from server');

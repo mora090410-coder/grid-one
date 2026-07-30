@@ -367,70 +367,17 @@ describe.sequential('disposable Postgres transaction boundaries', () => {
     }
   }, 60_000);
 
-  it('serializes 25 handler activations against a 20-board entitlement', async () => {
+  it('retires the pre-publish activation handler without consuming any allowance', async () => {
     const firstRun = await Promise.all(contestIds.map(activate));
-    const successful = firstRun.filter(({ status }) => status === 200);
-    const rejected = firstRun.filter(({ status }) => status === 409);
-
-    expect(firstRun.filter(({ status }) => ![200, 409].includes(status))).toEqual([]);
-    expect(successful).toHaveLength(20);
-    expect(rejected).toHaveLength(5);
-    expect(successful.every(({ body }) => (
-      body.activated === true
-      && typeof body.used === 'number'
-      && body.allowance === 20
-    ))).toBe(true);
-    expect(rejected.every(({ body }) => (
-      body.code === 'BOARD_ALLOWANCE_EXHAUSTED'
-      && typeof body.error === 'string'
-      && body.used === 20
-      && body.allowance === 20
-    ))).toBe(true);
-
-    const state = await queryJson<{
-      activationCount: number;
-      entitlementCount: number;
-      wrongEntitlementCount: number;
-      status: string;
-      allowance: number;
-    }>(`
-      SELECT json_build_object(
-        'activationCount', count(activation.id),
-        'entitlementCount', count(DISTINCT activation.entitlement_id),
-        'wrongEntitlementCount', count(activation.id) FILTER (
-          WHERE activation.entitlement_id <> '${ENTITLEMENT_ID}'::uuid
-        ),
-        'status', min(entitlement.status),
-        'allowance', min(entitlement.boards_allowance)
-      )::text
-      FROM public.season_entitlements entitlement
-      LEFT JOIN public.board_activations activation
-        ON activation.entitlement_id = entitlement.id
-      WHERE entitlement.id = '${ENTITLEMENT_ID}'::uuid
-    `);
-
-    expect(state).toEqual({
-      activationCount: 20,
-      entitlementCount: 1,
-      wrongEntitlementCount: 0,
-      status: 'active',
-      allowance: 20,
-    });
-
-    const firstStatusByContest = new Map(
-      firstRun.map(({ contestId, status }) => [contestId, status]),
-    );
-    const retryRun = await Promise.all(contestIds.map(activate));
-    expect(retryRun.filter(({ status }) => status === 200)).toHaveLength(20);
-    expect(retryRun.filter(({ status }) => status === 409)).toHaveLength(5);
-    expect(retryRun.every(({ contestId, status }) => (
-      status === firstStatusByContest.get(contestId)
+    expect(firstRun.every(({ status, body }) => (
+      status === 410
+      && body.code === 'PUBLISH_IS_ALLOWANCE_BOUNDARY'
     ))).toBe(true);
     expect(await queryScalar(`
       SELECT count(*)::text
       FROM public.board_activations
       WHERE entitlement_id = '${ENTITLEMENT_ID}'::uuid
-    `)).toBe('20');
+    `)).toBe('0');
   }, 120_000);
 
   it('rejects a slow older refresh after a newer-started refresh owns canonical and public score', async () => {

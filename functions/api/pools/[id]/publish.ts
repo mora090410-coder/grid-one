@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { isValidAxis } from '../../../../utils/boardValidation';
-import { hasBoardActivation } from '../../../../utils/boardActivation';
+import { nextUpgradeTier, type PricingTier } from '../../../_lib/pricingTiers';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -13,22 +13,21 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   });
   const { data: authData } = await auth.auth.getUser(token);
   if (!authData.user) return Response.json({ error: 'Your session has expired.' }, { status: 401 });
+  if (!authData.user.email || !authData.user.email_confirmed_at) {
+    return Response.json({ error: 'Verify your email before publishing your free board.' }, { status: 403 });
+  }
 
   const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: contest, error } = await admin
     .from('contests')
-    .select('id, share_code, owner_id, title, revision, settings, board_data, published_at, side_axis, top_axis, side_team_name, side_team_abbr, top_team_name, top_team_abbr, game_external_id, game_starts_at, payout_labels, board_activations(id)')
+    .select('id, share_code, owner_id, title, revision, settings, board_data, published_at, side_axis, top_axis, side_team_name, side_team_abbr, top_team_name, top_team_abbr, game_external_id, game_starts_at, payout_labels')
     .eq('id', String(params.id || ''))
     .eq('owner_id', authData.user.id)
     .maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
-  if (!hasBoardActivation(contest.board_activations)) {
-    return Response.json({ error: 'Unlock this board with the 2026 season pass before publishing.' }, { status: 402 });
-  }
-
   const board = contest.board_data || {};
   const sideAxis = isValidAxis(board.bearsAxis) ? board.bearsAxis : contest.side_axis;
   const topAxis = isValidAxis(board.oppAxis) ? board.oppAxis : contest.top_axis;
@@ -77,9 +76,34 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   });
   if (publishError) {
     const message = publishError.message || 'The board could not be published.';
-    const status = /activation/i.test(message)
-      ? 402
-      : /scheduled NFL game|axis|100 squares/i.test(message)
+    const allowanceMatch = message.match(
+      /PUBLISH_(ALLOWANCE_EXHAUSTED|ENTITLEMENT_INACTIVE):([^:]+):(\d+):(\d+)/i,
+    );
+    if (allowanceMatch) {
+      const [, reason, tierValue, usedValue, allowanceValue] = allowanceMatch;
+      const tier = tierValue.toLowerCase() as PricingTier;
+      const used = Number(usedValue);
+      const allowance = Number(allowanceValue);
+      const upgradeTo = reason.toUpperCase() === 'ENTITLEMENT_INACTIVE'
+        ? tier === 'org'
+          ? 'org'
+          : 'gameday'
+        : nextUpgradeTier(tier);
+      const code = reason.toUpperCase() === 'ENTITLEMENT_INACTIVE'
+        ? 'PUBLISH_ENTITLEMENT_INACTIVE'
+        : 'PUBLISH_ALLOWANCE_EXHAUSTED';
+      return Response.json({
+        code,
+        error: upgradeTo === 'org'
+          ? 'Your Game Day plan has published all 5 boards for this season.'
+          : 'Your first board is live. Choose Game Day to publish another.',
+        tier,
+        used,
+        allowance,
+        upgradeTo,
+      }, { status: 402 });
+    }
+    const status = /scheduled NFL game|axis|100 squares/i.test(message)
         ? 409
         : 500;
     return Response.json({ error: message }, { status });
@@ -96,5 +120,8 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     shareCode: published.share_code,
     viewerUrl: `/b/${published.share_code}`,
     revision: published.next_revision,
+    tier: published.tier,
+    used: Number(published.used),
+    allowance: Number(published.allowance),
   });
 };

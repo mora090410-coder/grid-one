@@ -215,6 +215,43 @@
 - [x] Run the full unit, strict type, build, diff, Chromium, and WebKit gates.
 - [x] Record the Phase 1 review and stop before any production migration or deploy.
 
+## Pricing, gating, and landing-copy amendment — July 29, 2026
+
+Source: `docs/pricing-gating-copy-2026-07-29.md` / attached Version 1.0 amendment.
+
+Execution boundary: local code, migrations, tests, copy, and documentation are authorized by this task. Do not create/archive live Stripe prices, apply the production migration, change production environment variables, deploy, charge, refund, or mutate production data without fresh action-time approval.
+
+### Plan
+
+- [x] Audit the current entitlement, checkout, publish, billing-status, organizer, landing, SEO, and documentation surfaces.
+- [x] Add explicit `free`, `gameday`, `org`, and `legacy` tiers with per-tier allowances and an optional organization display name.
+- [x] Make the atomic publish RPC lazily create the verified organizer's one-board free allowance and consume allowance only when a valid draft is published.
+- [x] Make checkout upgrade an entitlement without consuming or publishing its referenced draft; verify Game Day and Organization prices from a server-owned price map.
+- [x] Return tier, allowance, and used count from billing status and publish allowance-edge details from the server.
+- [x] Replace the pre-publish unlock flow with the exact free-to-Game-Day and Game-Day-to-Organization upgrade edges.
+- [x] Ship the approved landing hero, sample-game ticker, how-it-works, pricing FAQ, footer, and plain-language marketing guardrail.
+- [x] Update `PRODUCT.md`, `README.md`, FAQ/JSON-LD, tracked marketing/product docs, configuration examples, and current operational copy in one sweep.
+- [x] Add migration/RPC, webhook/checkout, API, UI, pricing-contract, and browser coverage.
+- [x] Run focused tests, fresh PostgreSQL migration/integration coverage, strict TypeScript, production build, full Vitest, Playwright, copy grep, and `git diff --check`.
+
+### Design decisions
+
+- Publishing is the only allowance edge. Draft creation, editing, number draw, and preview never call billing or consume allowance.
+- `board_activations` remains the durable record that a board consumed one publish allowance and may keep all live services for the season.
+- A paid webhook upgrades the owner's season entitlement only. The organizer returns to the draft and publishes explicitly; payment success is not publication consent.
+- The free entitlement is created by the same server-side publish transaction used by paid tiers and is keyed by the authenticated owner account and season.
+- Existing historical `$4.99` rows remain auditable as `legacy`, but the migration does not preserve the retired 20-board commercial offer for new publishes.
+- Organization name is stored on the Organization entitlement, copied into new public board snapshots, retroactively applied to the season's existing published snapshots when the upgrade is fulfilled, and included in Stripe payment description/metadata.
+
+### Review
+
+- Migration `019_pricing_tiers.sql` makes publish the sole allowance boundary, lazily creates the one-board free entitlement, atomically validates and consumes allowances, upgrades the same season entitlement to Game Day or Organization, and leaves every previously published board functional through refunds, disputes, or later entitlement state changes.
+- Checkout is server-mapped to exact `$9.99` Game Day and `$79.00` Organization price IDs and amounts, accepts only the next valid allowance-edge upgrade, and never publishes the referenced draft. Organization fulfillment also brands every already-published board in that season.
+- Organizer and dashboard UI now render server-authoritative tier/usage state. The exact upgrade prompt appears only after a publish allowance rejection, requires a deliberate purchase action, and returns the organizer to the draft for a separate publish action after payment.
+- Landing, structured data, public-route metadata, current product/marketing documentation, and operational copy now use the approved three-tier offer and plain-language positioning.
+- Verification passed: 230/230 non-integration Vitest tests; 41/41 PostgreSQL integration tests with one credential-gated hosted test skipped; strict TypeScript; production build; `git diff --check`; and 44/44 Chromium/WebKit Playwright tests with 10 intentional visual-capture tests skipped.
+- No live Stripe price was created or archived, no production environment variable or database was changed, and nothing was deployed. `PAID_SIGNUP_ENABLED=false` remains the checkout hold until the owner approves the explicit live-price and production steps.
+
 ### Phase 1 payment implementation
 
 - [x] Scope checkout claims and live sessions to owner + 2026 season, with an atomic database claim and attach path.

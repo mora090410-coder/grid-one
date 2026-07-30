@@ -61,7 +61,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         <div className="rounded-surface bg-newsprint p-6 ring-1 ring-gold/20">
                             <h3 className="text-xl font-bold text-gold mb-4">GridOne (The Modern Way)</h3>
                             <ul className="space-y-3 text-sm text-ink/80">
-                                <li className="flex items-center gap-2">✓ <strong>Free to build</strong> your board before you unlock sharing</li>
+                                <li className="flex items-center gap-2">✓ <strong>Free to build</strong> your board before you publish</li>
                                 <li className="flex items-center gap-2">✓ <strong>Live Scoring:</strong> Updates about every minute on every device</li>
                                 <li className="flex items-center gap-2">✓ <strong>Scenario Engine:</strong> "If KC scores a TD, who wins?"</li>
                                 <li className="flex items-center gap-2">✓ <strong>Mobile-First:</strong> Beautiful 'liquid glass' UI on phones</li>
@@ -86,7 +86,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         The biggest differentiator between GridOne and every other RunYourPool alternative is the <strong>Live Scenario Engine</strong>. When you're watching the big game in the 4th quarter, everyone is asking: <em>"Who wins if they kick a field goal here?"</em>
                     </p>
                     <p className="text-ink/80 leading-relaxed mb-8">
-                        GridOne calculates this from the current displayed score and puts it beside the board. Automatic score checks are beta and show their source; the organizer can switch to manual authority at any time.
+                        GridOne calculates this from the current displayed score and puts it beside the board. Every score shows where it came from and when, and the organizer can enter scores directly at any time.
                     </p>
 
                     <h2 className="oa-headline text-2xl font-semibold text-ink mt-12 mb-6">Who GridOne is best for</h2>
@@ -103,7 +103,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
                             Build Your Board Now →
                         </Link>
-                        <p className="mt-4 text-sm text-ink/50">Create and edit first. The $4.99 introductory 2026 season pass unlocks up to 20 boards when you are ready.</p>
+                        <p className="mt-4 text-sm text-ink/50">Your first published board is free. Running more than one? Game Day is $9.99 for up to 5 boards this season.</p>
                     </div>
 
                     <ArticleCTA

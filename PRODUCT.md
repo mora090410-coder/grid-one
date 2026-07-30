@@ -67,10 +67,11 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 
 ## Commercial model
 
-- Building, editing, and previewing are free.
-- The 2026 introductory season pass is **$4.99 once**.
-- One pass activates up to 20 boards for that organizer.
-- Repeat 2026 purchases do not stack allowances.
+- Building, editing, and previewing unlimited draft boards are free.
+- The Free tier includes **1 published board per account per season**.
+- The **Game Day** tier is **$9.99 once** for up to 5 published boards in the 2026 season.
+- The **Organization** tier is **$79 per season** for up to 50 published boards, an organization name on each board, one dashboard for all organization boards, and one receipt with the organization name.
+- Payment gates published-board count only. Every published board includes live scores, scenarios, Find My Squares, winner emails, and QR sharing.
 - “100 viewers” is a tested capacity target, not a hard gate or marketing guarantee.
 
 ## Public and private boundaries
@@ -95,7 +96,13 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 
 ## Terminology
 
-Use **Board**, **Organizer**, **Viewer**, **Purchaser**, **Square**, **Axis digits**, **Unlock**, and **Publish**.
+Use **Board**, **Organizer**, **Viewer**, **Purchaser**, **Square**, **Axis digits**, and **Publish**.
+
+Marketing speaks like a game-day organizer, not a system specification. Do not
+use `beta`, `synthetic`, `fallback`, `read-only`, `grounded`, `native`,
+`canonical`, `provenance`, `freshness`, or `entitlement` on sales surfaces.
+Those terms may still appear where the product must explain actual score
+authority, safety state, legal boundaries, or internal architecture.
 
 Do not use pool, contest, player, guest, bet, wager, or payout-processing language when those meanings are not literally intended.
 

@@ -30,7 +30,7 @@ export const HowToRunSquares: React.FC = () => {
                         description,
                         step: [
                             { '@type': 'HowToStep', name: 'Build the board', text: 'Create your football squares board, upload a board photo if needed, and clean up names before sharing.' },
-                            { '@type': 'HowToStep', name: 'Unlock and share', text: 'Unlock sharing and send one live board link to your friends, family, or coworkers.' },
+                            { '@type': 'HowToStep', name: 'Publish and share', text: 'Publish the board and send one live link to your friends, family, or coworkers.' },
                             { '@type': 'HowToStep', name: 'Draw the numbers', text: 'Randomize the numbers only after all squares are claimed.' },
                             { '@type': 'HowToStep', name: 'Watch and win', text: 'Track winners by matching the last digit of each team score at the end of each quarter and final.' },
                         ],
@@ -78,7 +78,7 @@ export const HowToRunSquares: React.FC = () => {
                                 <div className="flex-none flex h-10 w-10 items-center justify-center rounded-control bg-cardinal font-bold text-broadcast-white">2</div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-ink">Unlock and share</h4>
-                                    <p className="mt-2 text-sm text-ink/70">Once the board is ready, unlock sharing and send the viewer link to your friends, family, or coworkers. The $4.99 introductory 2026 season pass unlocks up to 20 boards, and viewers get a clean read-only board.</p>
+                                    <p className="mt-2 text-sm text-ink/70">Once the board is ready, publish it and send the viewer link to your friends, family, or coworkers. Your first published board is free. Game Day is $9.99 for up to 5 boards this season, and Organization is $79 for up to 50.</p>
                                 </div>
                             </div>
 
@@ -105,14 +105,14 @@ export const HowToRunSquares: React.FC = () => {
                         If you've ever organized a pool via email chains, texting pictures of a whiteboard, or forcing people to squint at a low-res image, you know the pain.
                     </p>
                     <p className="text-ink/80 leading-relaxed mb-6">
-                        When you use a purpose-built platform like GridOne, you get a <strong>Live Scenario Engine</strong>. Automatic beta score checks can update the grid, while the organizer always has a manual fallback. The board can then show everyone, "If this team scores a touchdown next, Linda wins," turning a passive grid into an active watch-party view.
+                        When you use a purpose-built platform like GridOne, you get a <strong>Live Scenario Engine</strong>. Scores update on their own, and you can enter them yourself anytime. The board can then show everyone, "If this team scores a touchdown next, Linda wins," turning a passive grid into an active watch-party view.
                     </p>
 
                     <div className="mt-16 text-center">
                         <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-control bg-cardinal px-8 py-4 text-lg font-semibold text-broadcast-white hover:bg-cardinal-deep transition-all active:scale-95">
                             Build Your 2026 Board →
                         </Link>
-                        <p className="mt-4 text-sm text-ink/50">Create and edit first. Unlock sharing when you're ready.</p>
+                        <p className="mt-4 text-sm text-ink/50">Create and edit first. Publish when you're ready.</p>
                     </div>
 
                     <ArticleCTA

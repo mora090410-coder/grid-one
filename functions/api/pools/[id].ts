@@ -174,7 +174,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       ] = await Promise.all([
         admin
           .from('public_board_snapshots')
-          .select('winner_history, pending_milestones, score')
+          .select('winner_history, pending_milestones, score, organization_display_name')
           .eq('contest_id', data.id)
           .maybeSingle(),
         admin
@@ -227,6 +227,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         share_code: data.share_code,
         owner_id: data.owner_id,
         title: data.title,
+        organizationDisplayName: publicSnapshot?.organization_display_name || undefined,
         status: data.status,
         revision: data.revision,
         ...(data.settings || {}),
@@ -274,7 +275,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     }
 
     const visibleBoard = await findVisiblePublicBoard(admin, id, {
-      snapshot: 'share_code, revision, board_title, matchup, board, score, winner_history, pending_milestones, payout_labels, score_test_mode, published_at, updated_at',
+      snapshot: 'share_code, revision, board_title, organization_display_name, matchup, board, score, winner_history, pending_milestones, payout_labels, score_test_mode, published_at, updated_at',
       contest: 'id, status',
     });
     if (!visibleBoard) {
@@ -286,6 +287,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     return json(request, {
       share_code: data.share_code,
       title: data.board_title,
+      organizationDisplayName: data.organization_display_name || undefined,
       revision: data.revision,
       published_at: data.published_at,
       updated_at: data.updated_at,

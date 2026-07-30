@@ -224,7 +224,7 @@ test('draft organizer preview stays fully visible and interactive before activat
     return route.fulfill({
       status: 402,
       contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unlock this board to use automatic live scoring and updates.' }),
+      body: JSON.stringify({ error: 'Publish this board to use automatic live scoring and updates.' }),
     });
   });
   await page.route('**/rest/v1/contest_entries*', (route) => route.fulfill({
@@ -275,7 +275,7 @@ test('draft organizer preview stays fully visible and interactive before activat
   await expect(preview).toBeVisible();
   await expect(preview.locator('..')).not.toHaveClass(/pointer-events-none|opacity-50/);
   await expect(page.getByText(/Private draft · sharing and live services are off/i)).toBeVisible();
-  await expect(page.getByText(/Unlock GridOne services to add live scoring/i)).toBeVisible();
+  await expect(page.getByText(/Publish this board to add live scoring/i)).toBeVisible();
   await expect(page.getByRole('cell', { name: /^Unassigned square/i })).toHaveCount(100);
 
   await page.getByRole('button', { name: /Find my squares/i }).click();

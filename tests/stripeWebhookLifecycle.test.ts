@@ -26,7 +26,8 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
   STRIPE_SECRET_KEY: 'stripe-secret',
   STRIPE_WEBHOOK_SECRET: 'webhook-secret',
-  STRIPE_2026_PRICE_ID: 'price_2026',
+  STRIPE_GAMEDAY_PRICE_ID: 'price_gameday',
+  STRIPE_ORG_PRICE_ID: 'price_org',
 };
 
 const webhookRequest = () => new Request('https://example.test/api/stripe/webhook', {
@@ -47,7 +48,7 @@ const checkoutEvent = (
       id: 'cs_1',
       payment_status: paymentStatus,
       client_reference_id: 'order-1',
-      metadata: { order_id: 'order-1' },
+      metadata: { order_id: 'order-1', tier: 'gameday' },
       payment_intent: 'pi_1',
       customer: 'cus_1',
     },
@@ -61,7 +62,7 @@ const stripeInstance = (event: any) => ({
   checkout: {
     sessions: {
       listLineItems: vi.fn(async () => ({
-        data: [{ price: { id: 'price_2026' }, amount_total: 499, currency: 'usd' }],
+        data: [{ price: { id: 'price_gameday' }, amount_total: 999, currency: 'usd' }],
       })),
       retrieve: vi.fn(),
       expire: vi.fn(),

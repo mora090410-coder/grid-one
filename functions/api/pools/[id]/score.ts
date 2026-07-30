@@ -226,7 +226,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       : publicBoardNotFoundResponse();
   }
   if (!hasActivatedBoardServices(contest)) {
-    return json({ error: 'Unlock this board to use automatic live scoring and updates.' }, 402);
+    return json({ error: 'Publish this board to use automatic live scoring and updates.' }, 402);
   }
 
   const { data: state } = await admin

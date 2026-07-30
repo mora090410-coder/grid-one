@@ -190,6 +190,9 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
       <section className="gdh-score-field" aria-labelledby="game-state-title">
         <div className="gdh-score-meta">
           <p className="gdh-kicker">{game.title || 'Football squares'}</p>
+          {game.organizationDisplayName && (
+            <p className="gdh-organization">{game.organizationDisplayName}</p>
+          )}
           <p className="gdh-date">{game.dates || 'Game date to be announced'}</p>
         </div>
 
@@ -259,7 +262,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             </div>
           </div>
           {!servicesEnabled ? (
-            <p className="gdh-scenario-empty">Unlock GridOne services to add live scoring, automatic updates, winner scenarios, and notifications to this board.</p>
+            <p className="gdh-scenario-empty">Publish this board to add live scoring, automatic updates, winner scenarios, and notifications.</p>
           ) : !live ? (
             <p className="gdh-scenario-empty">Scenarios appear when a score is available.</p>
           ) : (

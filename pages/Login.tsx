@@ -144,7 +144,7 @@ const Login: React.FC = () => {
                         {isSignUp ? 'Create your organizer account' : (isClaim ? 'Sign in to continue' : 'Welcome back')}
                     </h1>
                     <p className="text-sm text-ink/60 mt-2">
-                        {isSignUp ? 'Build your board, edit it freely, and unlock sharing when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
+                        {isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
                     </p>
                 </div>
 

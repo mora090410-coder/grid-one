@@ -1,14 +1,16 @@
 # GridOne
 
-Football squares board builder and live scoring viewer. Organizers create and share boards; viewers get a read-only board with live game scoring.
+Football squares board builder and live scoring viewer. Organizers create and share boards; everyone else follows the live game from one link.
 
 ## Product model
 
 - Organizer creates an account and builds or uploads a board
-- Building, editing, and previewing boards is **free**; payment gates sharing only
-- **$4.99 unlocks up to 20 boards** for the 2026 season (one-time, not per board, not a subscription)
-- Each unlocked board provides one read-only viewer link
-- Viewers get read-only access to the board, scoreboard, and winner highlights
+- Building, editing, and previewing unlimited draft boards is **free**
+- The Free tier includes **1 published board per account per season**
+- **Game Day is $9.99 once** for up to 5 published boards in the 2026 season
+- **Organization is $79 per season** for up to 50 published boards plus organization naming, a shared dashboard, and one organization receipt
+- Payment gates published-board count only; every published board includes live scores, scenarios, Find My Squares, winner emails, and QR sharing
+- Each published board provides one viewer link; everyone can follow it, but only the organizer can make changes
 
 ## Tech stack
 
@@ -77,6 +79,9 @@ Create `.env.local` with the following variables:
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (frontend) |
 | `STRIPE_SECRET_KEY` | Stripe secret key (Cloudflare Functions only) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `STRIPE_GAMEDAY_PRICE_ID` | Verified one-time $9.99 Game Day price ID (server-side only) |
+| `STRIPE_ORG_PRICE_ID` | Verified one-time $79 Organization price ID (server-side only) |
+| `PAID_SIGNUP_ENABLED` | Checkout kill switch; keep `false` until both approved prices are configured |
 | `GEMINI_API_KEY` | Server-only Gemini key for beta paper-board import |
 | `OCR_MODEL` | Gemini model used only for paper-board import |
 | `PUBLIC_SITE_URL` | Canonical site URL — `https://www.getgridone.com` in production |

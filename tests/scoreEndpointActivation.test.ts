@@ -82,7 +82,7 @@ describe.sequential('automatic score service activation boundary', () => {
 
     expect(response.status).toBe(402);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining('Unlock this board'),
+      error: expect.stringContaining('Publish this board'),
     });
     expect(admin.tables).toEqual(['contests']);
     expect(admin.rpc).not.toHaveBeenCalled();

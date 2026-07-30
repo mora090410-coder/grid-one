@@ -150,7 +150,8 @@ describe('customer flow regressions', () => {
                 headers: { 'Content-Type': 'application/json' },
             }))
             .mockResolvedValueOnce(new Response(JSON.stringify({
-                activated: true,
+                paymentConfirmed: true,
+                entitlementStatus: 'active',
                 contestId: 'contest-1',
             }), {
                 status: 200,
@@ -181,7 +182,8 @@ describe('customer flow regressions', () => {
                 headers: { 'Content-Type': 'application/json' },
             }))
             .mockResolvedValueOnce(new Response(JSON.stringify({
-                activated: true,
+                paymentConfirmed: true,
+                entitlementStatus: 'active',
                 contestId: 'contest-2',
             }), {
                 status: 200,
@@ -280,7 +282,7 @@ describe('customer flow regressions', () => {
             </MemoryRouter>,
         );
 
-        expect(await screen.findByText(/current season pass remains active/i)).toBeInTheDocument();
-        expect(screen.queryByText(/season pass is inactive/i)).not.toBeInTheDocument();
+        expect(await screen.findByText(/current plan remains active/i)).toBeInTheDocument();
+        expect(screen.queryByText(/plan is inactive/i)).not.toBeInTheDocument();
     });
 });

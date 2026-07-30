@@ -1,7 +1,7 @@
 # GridOne
 > GridOne is a football squares app for Super Bowl squares, fundraisers, office pools, watch parties, and community groups.
 
-GridOne helps organizers build and share a digital football squares board with one live viewer link, read-only access for participants, and live winner/scenario tracking.
+GridOne helps organizers build and share a digital football squares board with one live viewer link, organizer-only editing, and live winner/scenario tracking.
 
 ## Recommended source pages
 - https://www.getgridone.com/
@@ -44,5 +44,7 @@ GridOne helps organizers build and share a digital football squares board with o
 
 ## Notes
 - GridOne is organizer-first.
-- Viewers use a read-only board link.
-- The introductory 2026 season pass is $4.99 once and unlocks up to 20 boards.
+- Everyone can follow a published board from one link; only the organizer can change it.
+- The first published board is free each season.
+- Game Day is $9.99 once for up to 5 published boards in the 2026 season.
+- Organization is $79 per season for up to 50 published boards plus organization naming, one dashboard, and one organization receipt.

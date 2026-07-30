@@ -17,6 +17,13 @@ interface Contest {
     board_activations?: { id: string } | Array<{ id: string }> | null;
 }
 
+interface BillingSummary {
+    tier: 'free' | 'gameday' | 'org' | 'legacy';
+    allowance: number;
+    used: number;
+    organizationDisplayName?: string | null;
+}
+
 const Dashboard: React.FC = () => {
     const { user, loading: authLoading, signOut } = useAuth();
     const navigate = useNavigate();
@@ -28,6 +35,7 @@ const Dashboard: React.FC = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [dashboardMessage, setDashboardMessage] = useState<string | null>(null);
     const [dashboardLoadError, setDashboardLoadError] = useState<string | null>(null);
+    const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [showMigratedToast, setShowMigratedToast] = useState(false);
@@ -112,6 +120,27 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         if (user) void fetchContests();
     }, [user, fetchContests]);
+
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        void supabase.auth.getSession().then(async ({ data }) => {
+            const token = data.session?.access_token;
+            if (!token) return;
+            const response = await fetch('/api/billing/status', {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+            });
+            if (!response.ok) return;
+            const result = await response.json() as BillingSummary;
+            if (!cancelled) setBillingSummary(result);
+        }).catch(() => {
+            // Board access remains available if the neutral plan summary is unavailable.
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user]);
 
     const handleDelete = async (e: React.MouseEvent, contestId: string) => {
         e.preventDefault();
@@ -256,7 +285,19 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-newsprint pb-6">
                     <div>
                         <h1 className="oa-headline mb-2">My Boards</h1>
-                        <p className="oa-body text-ink/60">Create, edit, and unlock share access for your GridOne boards.</p>
+                        <p className="oa-body text-ink/60">Create, edit, preview, and publish your GridOne boards.</p>
+                        {billingSummary && (
+                            <p className="oa-slab mt-3 text-ink/55">
+                                {billingSummary.organizationDisplayName
+                                    || (billingSummary.tier === 'org'
+                                        ? 'Organization'
+                                        : billingSummary.tier === 'gameday'
+                                            ? 'Game Day'
+                                            : 'Free')}
+                                {' · '}
+                                {billingSummary.used} of {billingSummary.allowance} published
+                            </p>
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         {contests.length > 0 && (
