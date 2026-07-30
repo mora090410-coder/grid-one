@@ -37,23 +37,23 @@
 - [x] T4.1 complete the outstanding clean-install, full-stack, Stripe test-mode, responsive, accessibility, motion, and metadata verification matrix.
 - [x] T4.2 record the approved dated React Router RSC-only advisory exception with a post-season review date.
 - [x] T4.3 remove obsolete prelaunch pricing/capacity claims; retain `$4.99` one-time for up to 20 boards.
-- [ ] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
-- [ ] Prove one end-to-end refund and observe entitlement revocation without unpublishing the board.
-- [ ] Run a production subscribe-endpoint abuse test and observe throttling.
+- [x] T4.4 complete one production organizer create → publish → viewer → manual score → notification → checkout → entitlement flow.
+- [x] Prove one end-to-end refund and observe entitlement revocation without unpublishing the board.
+- [x] Run a production subscribe-endpoint abuse test and observe throttling.
 - [ ] T4.5 open paid signup only after Phases 1–3 are deployed and every launch gate above is proven.
 
 ### Phase 4 completion run — July 29, 2026
 
 - [x] Re-confirm canonical repository `main` at `0b59dd5`, Cloudflare account `a675816e0fde9aff2ebda171a6e39ead`, Pages project `grid-one`, Stripe account `acct_1TsBjcFwSi8ogxSr`, and Supabase project `illqymckwqiawdwxhwcy`.
-- [ ] Add and test an explicit production checkout hold with a named organizer smoke-test allowlist.
-- [ ] Deploy the checkout hold before correcting the production Stripe credential.
-- [ ] Replace the Pages `STRIPE_SECRET_KEY` with the confirmed live Parkside key without exposing its value.
-- [ ] Deploy the one-minute notification retry Worker with the matching `CRON_SECRET`.
-- [ ] Complete the production organizer and independent-viewer path through publish, manual score, notification, checkout, webhook, and entitlement.
-- [ ] Refund the smoke-test charge and verify entitlement revocation while the published board remains viewable.
-- [ ] Run the bounded production subscribe abuse proof and observe a 429 without sending to an unowned address.
+- [x] Add and test an explicit production checkout hold with a named organizer smoke-test allowlist.
+- [x] Deploy the checkout hold before correcting the production Stripe credential.
+- [x] Replace the Pages `STRIPE_SECRET_KEY` with the confirmed live Parkside key without exposing its value.
+- [x] Deploy the one-minute notification retry Worker with the matching `CRON_SECRET`.
+- [x] Complete the production organizer and independent-viewer path through publish, manual score, notification, checkout, webhook, and entitlement.
+- [x] Refund the smoke-test charge and verify entitlement revocation while the published board remains viewable.
+- [x] Run the bounded production subscribe abuse proof and observe a 429 without sending to an unowned address.
 - [ ] Run a clean-install verification at final `main`, reconcile the detailed verification checklist, commit, push, and record the production release evidence.
-- [ ] Correct and deploy the production activation-relation shape mismatch exposed by the paid smoke test, then re-prove organizer, publish, and scoring gates against the fulfilled order.
+- [x] Correct and deploy the production activation-relation shape mismatch exposed by the paid smoke test, then re-prove organizer, publish, and scoring gates against the fulfilled order.
 
 ### Phase 4 execution boundary
 
@@ -87,6 +87,14 @@
 - Created production organizer board `8c40d1b6-c7c8-4626-b46f-22996e25e858`, assigned all 100 squares, and committed both random axes while the unpaid board remained fully editable.
 - The first approved checkout attempt stopped before a charge with Stripe's exact server error `No such price: 'price_1TyFoqFwSi8ogxSrY9KvKd70'`. Production `checkout_orders` contains zero rows for the board, so no open order or payment requires cleanup.
 - Because the same price exists in live mode, the production `STRIPE_SECRET_KEY` is in the wrong mode/account. Correcting the secret and deploying the retry Cron Worker require the Cloudflare account's Apple sign-in/passkey; GitHub and Google were both rejected as a different provider and Wrangler has no local authentication.
+- The owner completed Cloudflare authentication. Pages now has the corrected encrypted live Stripe key, and Worker `gridone-notification-retry-scheduler` runs every minute with the matching encrypted `CRON_SECRET` (versions `aa20cb0d-8c10-4238-b679-a692d2df1a9a` and `5867b2fb-1d1d-4306-9ec2-987f41356f52`).
+- Stripe destination `we_1TyG4zFwSi8ogxSrz4vF0clc` now sends the seven required checkout, refund, and dispute events to `https://www.getgridone.com/api/stripe/webhook`.
+- Live order `add872d6-5336-4250-b0fa-f24e9df81450` completed for $4.99 and activated board `8c40d1b6-c7c8-4626-b46f-22996e25e858`. The paid-return page rendered “Payment confirmed. Your board is unlocked.”
+- The paid proof exposed a PostgREST relation-shape defect: the unique `board_activations.contest_id` relationship arrives as `{ id }`, while organizer, dashboard, publish, and score gates accepted only `[{ id }]`. Shared normalization commit `f04a963` fixed both shapes; commit `cbee047` also added an explicit organizer “Open viewer” link. Production deployment `7345f3a2-b727-4314-ac57-4bf711631171` proved the activation, dashboard, publish, and score gates.
+- Published viewer `https://www.getgridone.com/b/BDRNUWDH` returns 200 without cookies and renders the exact board in a separate browser tab. Manual authority published CAR 3–ARI 0, advancing to Q2 resolved Q1 exactly once for `Phase4 Proof`.
+- The organizer-owned `mora090410@gmail.com` address received one verification email, verified successfully, and then received the exact production Q1 winner email from `updates@parksideag.com`.
+- Stripe payment `pi_3TyihYFwSi8ogxSr1s61MtAx` was fully refunded for $4.99 at the owner's requested-customer reason. The webhook changed the paid-return state to “Season pass inactive,” while `/b/BDRNUWDH` remained public with its manual score and Q1 winner history.
+- With the one legitimate verification already counted, four additional same-address requests returned the generic accepted response without new mail; the fifth additional request returned the production 429 throttle response. Gmail still contained only the original verification message.
 
 ## Launch hardening Phase 3 — July 29, 2026
 
