@@ -257,13 +257,13 @@ Execution boundary: local code, migrations, tests, copy, and documentation are a
 Approval received for the previously held production sequence: create the live Game Day and Organization prices, archive the retired `$4.99` price, configure the production price IDs, apply migration `019`, deploy, enable checkout, and verify the live boundaries.
 
 - [x] Reconfirm the canonical Stripe account, Supabase project, Cloudflare Pages project/domain, branch, and committed revision.
-- [ ] Create one-time live prices for Game Day at `$9.99` and Organization at `$79.00`, then archive the retired price.
+- [x] Create one-time live prices for Game Day at `$9.99` and Organization at `$79.00`, then archive the retired price.
 - [x] Configure both server-side production price IDs while keeping `PAID_SIGNUP_ENABLED=false`.
 - [x] Apply and verify production migration `019_pricing_tiers.sql` without rewriting or deleting existing rows.
-- [ ] Build and deploy the committed revision to Cloudflare Pages production.
-- [ ] Verify production health, public routes, unauthenticated API boundaries, and checkout hold.
-- [ ] Enable paid signup only after the price, migration, deployment, and held-state checks all pass.
-- [ ] Run the narrow approved checkout smoke path without submitting a real charge.
+- [x] Build and deploy the committed revision to Cloudflare Pages production.
+- [x] Verify production health, public routes, unauthenticated API boundaries, and checkout hold.
+- [x] Enable paid signup only after the price, migration, deployment, and held-state checks all pass.
+- [x] Run the narrow approved checkout smoke path without submitting a real charge.
 - [ ] Record exact production evidence and any remaining owner-attended boundary.
 
 Rollout notes:
@@ -273,6 +273,10 @@ Rollout notes:
 - Canonical production database was visibly confirmed as `GridOneApp` under `Sideline Hacks`, ref `illqymckwqiawdwxhwcy`. Pre-migration checks found zero open checkout orders, zero active entitlements, and zero active entitlements without activations.
 - The first SQL Editor attempt was rejected before execution because the editor appended migration `019` to a truncated preflight query. The exact editor contents were then replaced and verified byte-for-byte against SHA-256 `5ecb3f9c775312802c8bd9ef7bcb505dce2164eb5c0ba10a20fc6a23c9e027a2`.
 - The exact migration then completed with `Success. No rows returned.` Post-migration queries confirmed the three new pricing/organization columns, the new atomic publish RPC, zero open checkout orders, and zero active entitlements.
+- Held tier-pricing commit `cffb30f` deployed as Cloudflare production deployment `ce5c484b-2055-428d-bbdf-8a3883e89fa5`. `/`, `/demo`, `/terms`, `/privacy`, `/paid`, and `/api/health` returned `200`; unauthenticated billing status returned `401`; an unsigned webhook returned `400`.
+- The retired `$4.99` live price is archived. The new live prices are `price_1TytcMFwSi8ogxSrCLXjAzRA` for Game Day and `price_1TytdIFwSi8ogxSrTg4WLaNj` for Organization.
+- A temporary allowlist deployment at commit `09505d9` / deployment `b1f68916-e902-45f3-bfa3-01615c0ee6f4` exposed checkout only for draft `46117e9f-118b-4c33-a1c0-0fd8274b1064`. The held path first returned `Paid signup is not open yet`; the allowlisted path then opened Stripe Checkout for `GridOne Game Day — 2026 Season` at exactly `$9.99`.
+- No payment information was entered and `Pay` was not pressed. Production remained unchanged at the entitlement edge: the checkout order was `checkout_created` for `999` cents and tier `gameday`, the referenced board had no public snapshot, and the pre-existing inactive legacy entitlement remained at one used of one allowed board.
 
 ### Phase 1 payment implementation
 
