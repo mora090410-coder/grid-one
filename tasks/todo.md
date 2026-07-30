@@ -1,3 +1,32 @@
+# Landing pricing/Stripe alignment — July 30, 2026
+
+- [x] Confirm the changed landing page belongs to canonical GridOne `main`, not HomeWork.
+- [x] Compare the active landing copy and structured offers with the approved Free, Game Day, and Organization tiers.
+- [x] Verify the matching live Stripe prices and production checkout configuration were deployed before the new landing page.
+- [x] Correct the one misleading first-board payment sentence and extend the pricing-drift test to the new landing component.
+- [x] Run the production build, focused pricing/checkout/publish tests, and `git diff --check`.
+- [x] Move the leftover `_to_delete/film-frames.zip` transfer archive to macOS Trash.
+
+## Review
+
+- Completed 2026-07-30 at 9:23 AM CDT.
+- Production Cloudflare deployment `10e912fa-d716-45ae-91ee-532fede5ba01` is on committed `main` revision `fcf2bc1`, which records the completed pricing rollout.
+- Production already has the approved live one-time Stripe prices configured: Game Day `$9.99` (`price_1TytcMFwSi8ogxSrCLXjAzRA`) and Organization `$79.00` (`price_1TytdIFwSi8ogxSrTg4WLaNj`). Paid signup is enabled, and the earlier authenticated smoke path opened exact `$9.99` Checkout without submitting payment.
+- The live page's server-rendered structured data already advertises Free `$0`, Game Day `$9.99` for up to 5 boards, and Organization `$79` for up to 50 boards.
+- The uncommitted `FilmLanding` uses the same amounts, allowances, and season framing. Replaced `Pay only when you're ready to share it.` with `Your first published board is free. Upgrade only when you need another.` so the closing CTA no longer implies payment is required for the free first board.
+- Added `components/FilmLanding.tsx` to `tests/pricingCopyConsistency.test.ts`, including an explicit assertion for the free-first-board upgrade edge.
+- `npm run build` passed. Focused pricing/checkout/publish verification passed 3 files and 20 tests. `git diff --check` passed.
+- Moved the 13 MB transfer archive to `/Users/amm13/.Trash/gridone-film-frames-transfer-2026-07-30.zip`; it is recoverable from Trash. The empty `_to_delete` directory remains.
+- The landing redesign remains deliberately uncommitted and undeployed with the owner's other working-tree files preserved.
+
+### Production landing follow-through
+
+- [x] Reproduce the reported old production landing page and confirm the film landing existed only in the local worktree.
+- [x] Isolate the landing release on `agent/film-landing-release` without staging unrelated `.impeccable` or documentation files.
+- [x] Preserve the landing-only Lenis ownership contract and replace obsolete board-animation browser assertions with film-specific progression, reduced-motion, responsive, pricing, and route-cleanup coverage.
+- [x] Pass the production build, all 46 Vitest files (271 passed, one expected hosted Stripe skip), and all 44 Chromium/WebKit workflows (10 intentional visual-capture skips).
+- [ ] Commit and push the isolated landing release, merge it to `main`, and verify the new production page after Cloudflare completes.
+
 # GridOne Friday launch
 
 ## Phase 5 design refresh — July 29, 2026

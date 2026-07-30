@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const currentPricingCopyFiles = [
+  'components/FilmLanding.tsx',
   'components/LandingPage.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
@@ -32,10 +33,11 @@ describe('launch pricing copy', () => {
     expect(read('PRODUCT.md')).toContain('The **Game Day** tier is **$9.99 once** for up to 5 published boards');
     expect(read('PRODUCT.md')).toContain('The **Organization** tier is **$79 per season** for up to 50 published boards');
     expect(read('components/LandingPage.tsx')).toContain("Your first board is free — build it, share it, run it all game day.");
+    expect(read('components/FilmLanding.tsx')).toContain('Your first published board is free. Upgrade only when you need another.');
   });
 
   it('keeps system vocabulary out of the landing-page sales copy', () => {
-    const landing = read('components/LandingPage.tsx');
+    const landing = `${read('components/LandingPage.tsx')}\n${read('components/FilmLanding.tsx')}`;
 
     expect(landing).not.toMatch(/\b(?:beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
     expect(landing).toContain("'SAMPLE GAME'");

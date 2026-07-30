@@ -6,7 +6,7 @@ import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
 import BoardView from './components/BoardView';
-import LandingPage from './components/LandingPage';
+import FilmLanding from './components/FilmLanding';
 import CreateContest from './pages/CreateContest';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -40,7 +40,7 @@ const Root = () => {
   }
 
   return (
-    <LandingPage
+    <FilmLanding
       onCreate={() => {
         if (user) {
           navigate('/create');
