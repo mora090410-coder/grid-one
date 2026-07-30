@@ -264,7 +264,7 @@ Approval received for the previously held production sequence: create the live G
 - [x] Verify production health, public routes, unauthenticated API boundaries, and checkout hold.
 - [x] Enable paid signup only after the price, migration, deployment, and held-state checks all pass.
 - [x] Run the narrow approved checkout smoke path without submitting a real charge.
-- [ ] Record exact production evidence and any remaining owner-attended boundary.
+- [x] Record exact production evidence and any remaining owner-attended boundary.
 
 Rollout notes:
 
@@ -277,6 +277,9 @@ Rollout notes:
 - The retired `$4.99` live price is archived. The new live prices are `price_1TytcMFwSi8ogxSrCLXjAzRA` for Game Day and `price_1TytdIFwSi8ogxSrTg4WLaNj` for Organization.
 - A temporary allowlist deployment at commit `09505d9` / deployment `b1f68916-e902-45f3-bfa3-01615c0ee6f4` exposed checkout only for draft `46117e9f-118b-4c33-a1c0-0fd8274b1064`. The held path first returned `Paid signup is not open yet`; the allowlisted path then opened Stripe Checkout for `GridOne Game Day — 2026 Season` at exactly `$9.99`.
 - No payment information was entered and `Pay` was not pressed. Production remained unchanged at the entitlement edge: the checkout order was `checkout_created` for `999` cents and tier `gameday`, the referenced board had no public snapshot, and the pre-existing inactive legacy entitlement remained at one used of one allowed board.
+- Git deployment `a646778e-6461-41a4-8c66-5a720ff76a26` carried commit `5dfff61`, but the Cloudflare configuration read-back exposed the held production-environment override. Checkout therefore remained safely held. Direct production deployment `5e5a4c74-5259-4aad-a99e-2b7e4d7ef6bb` then replaced that override with `PAID_SIGNUP_ENABLED=true`, removed the smoke allowlist, retained both approved price IDs, and deployed the same commit.
+- Final production smoke returned `200` for `/`, `/demo`, `/terms`, `/privacy`, `/paid`, and `/api/health`; `401` for unauthenticated billing status; `400` for an unsigned webhook; and a path/query-preserving `301` from the apex. The authenticated dashboard still rendered `Free · 1 of 1 published`, and the QA board remained a private draft.
+- Exact-release verification passed the production build, `git diff --check`, and all 46 Vitest files: 271 tests passed and the credential-gated hosted lifecycle test remained the one expected skip. A real customer purchase remains deliberately owner/customer-attended; the rollout submitted no charge.
 
 ### Phase 1 payment implementation
 
