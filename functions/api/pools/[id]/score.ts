@@ -8,6 +8,7 @@ import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../../_lib/publicBoardVisibility';
+import { hasBoardActivation } from '../../../../utils/boardActivation';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -28,7 +29,7 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const sharePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
 
 export const hasActivatedBoardServices = (contest: { board_activations?: unknown } | null | undefined) =>
-  Array.isArray(contest?.board_activations) && contest.board_activations.length > 0;
+  hasBoardActivation(contest?.board_activations);
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,

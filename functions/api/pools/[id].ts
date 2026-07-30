@@ -7,6 +7,7 @@ import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../_lib/publicBoardVisibility';
+import { hasBoardActivation } from '../../../utils/boardActivation';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
@@ -242,7 +243,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         topAbbr: data.top_team_abbr || data.settings?.topAbbr || null,
         topName: data.top_team_name || data.settings?.topName || null,
         board: data.board_data,
-        is_activated: Array.isArray(data.board_activations) && data.board_activations.length > 0,
+        is_activated: hasBoardActivation(data.board_activations),
         locked: Boolean(data.published_at),
         published_at: data.published_at,
         winner_history: publicSnapshot?.winner_history || [],

@@ -53,6 +53,7 @@
 - [ ] Refund the smoke-test charge and verify entitlement revocation while the published board remains viewable.
 - [ ] Run the bounded production subscribe abuse proof and observe a 429 without sending to an unowned address.
 - [ ] Run a clean-install verification at final `main`, reconcile the detailed verification checklist, commit, push, and record the production release evidence.
+- [ ] Correct and deploy the production activation-relation shape mismatch exposed by the paid smoke test, then re-prove organizer, publish, and scoring gates against the fulfilled order.
 
 ### Phase 4 execution boundary
 

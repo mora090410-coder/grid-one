@@ -29,7 +29,9 @@ const valid = {
 describe('server score validation', () => {
   it('requires an activated board before automatic score services run', () => {
     expect(hasActivatedBoardServices({ board_activations: [] })).toBe(false);
+    expect(hasActivatedBoardServices({ board_activations: null })).toBe(false);
     expect(hasActivatedBoardServices({ board_activations: [{ id: 'activation-id' }] })).toBe(true);
+    expect(hasActivatedBoardServices({ board_activations: { id: 'activation-id' } })).toBe(true);
   });
 
   it('accepts a complete internally consistent NFL score snapshot', () => {
