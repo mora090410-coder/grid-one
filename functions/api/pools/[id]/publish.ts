@@ -16,6 +16,14 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   if (!authData.user.email || !authData.user.email_confirmed_at) {
     return Response.json({ error: 'Verify your email before publishing your free board.' }, { status: 403 });
   }
+  const body = await request.json().catch(() => ({})) as { allowOpenSquares?: unknown };
+  if (
+    Object.prototype.hasOwnProperty.call(body, 'allowOpenSquares')
+    && typeof body.allowOpenSquares !== 'boolean'
+  ) {
+    return Response.json({ error: 'Open-square confirmation must be true or false.' }, { status: 400 });
+  }
+  const allowOpenSquares = body.allowOpenSquares === true;
 
   const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -41,10 +49,15 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     Array.isArray(cell) ? cell.filter((name) => typeof name === 'string' && name.trim()).map((name) => String(name).trim()) : [],
   );
   const unassigned = normalizedNames.filter((names: string[]) => !names.length).length;
-  if (unassigned) {
+  const persistedOpenSquareOptIn = board.allowOpenSquares === true;
+  const effectiveOpenSquareOptIn = allowOpenSquares && persistedOpenSquareOptIn;
+  if (unassigned === 100) {
+    return Response.json({ error: 'Assign at least one square before publishing.' }, { status: 409 });
+  }
+  if (unassigned && !effectiveOpenSquareOptIn) {
     return Response.json({ error: `${unassigned} squares are still unassigned. Finish the board before publishing.` }, { status: 409 });
   }
-  const multiplyAssigned = normalizedNames.filter((names: string[]) => names.length !== 1).length;
+  const multiplyAssigned = normalizedNames.filter((names: string[]) => names.length > 1).length;
   if (multiplyAssigned) {
     return Response.json({ error: `${multiplyAssigned} squares have more than one name. Use one purchaser identity per square before publishing.` }, { status: 409 });
   }
@@ -54,6 +67,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     oppAxis: topAxis,
     squares: normalizedNames,
     isDynamic: false,
+    allowOpenSquares: effectiveOpenSquareOptIn,
   };
   const matchup = {
     sideTeamName: contest.side_team_name || contest.settings?.leftName,
@@ -73,6 +87,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     p_normalized_names: normalizedNames,
     p_public_board: publicBoard,
     p_matchup: matchup,
+    p_allow_open_squares: effectiveOpenSquareOptIn,
   });
   if (publishError) {
     const message = publishError.message || 'The board could not be published.';
@@ -103,7 +118,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
         upgradeTo,
       }, { status: 402 });
     }
-    const status = /scheduled NFL game|axis|100 squares/i.test(message)
+    const status = /scheduled NFL game|axis|100 squares|open square|purchaser name/i.test(message)
         ? 409
         : 500;
     return Response.json({ error: message }, { status });

@@ -257,6 +257,39 @@ describe.sequential('winner email verification endpoint', () => {
     `https://example.test/api/notifications/verify?subscription=subscription-1&token=${encodeURIComponent(token)}&board=ABCDEFGH`,
   );
 
+  it('returns a configuration error to the board when its share code is available', async () => {
+    const token = 'configuration-token';
+    const response = await verifyEmail({
+      request: verifyRequest(token),
+      env: { ...env, SUPABASE_SERVICE_ROLE_KEY: '' },
+    });
+
+    expect(response.status).toBe(302);
+    expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=configuration-error');
+    expect(redirectLocation(response)).not.toContain(token);
+    expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+
+  it('returns a branded no-store error page when configuration is missing without a board', async () => {
+    const token = 'configuration-token';
+    const request = new Request(
+      `https://example.test/api/notifications/verify?subscription=subscription-1&token=${token}`,
+    );
+    const response = await verifyEmail({
+      request,
+      env: { ...env, SUPABASE_SERVICE_ROLE_KEY: '' },
+    });
+    const body = await response.text();
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(body).toContain('GridOne');
+    expect(body).toContain('Email verification is temporarily unavailable');
+    expect(body).not.toContain(token);
+    expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+
   it('redirects a valid, unexpired token to the verified board state', async () => {
     const admin = scriptedAdmin([{ data: true, error: null }]);
     mocks.clients.push(admin);

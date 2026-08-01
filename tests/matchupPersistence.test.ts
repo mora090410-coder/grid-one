@@ -545,7 +545,7 @@ describe('scheduled-game persistence', () => {
     expect(migration).not.toContain(') TO authenticated;');
   });
 
-  it('returns a published viewer snapshot as available with normalized payouts', async () => {
+  it('returns a published viewer snapshot with organizer-authored payout descriptions only', async () => {
     const query = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -568,6 +568,7 @@ describe('scheduled-game persistence', () => {
           score: null,
           winner_history: [],
           payout_labels: { Q1: 50, Q2: 100, Q3: 50, Final: 300 },
+          payout_descriptions: { Q1: 'A pie', FINAL: 'Winner gets the trophy' },
           published_at: '2026-09-01T00:00:00.000Z',
           updated_at: '2026-09-01T00:00:00.000Z',
           contest: {
@@ -589,11 +590,14 @@ describe('scheduled-game persistence', () => {
     });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
+    const result = await response.json() as Record<string, unknown>;
+    expect(result).toMatchObject({
       locked: false,
       gameExternalId: scheduledGame.id,
-      payouts: { Q1: 50, Q2: 100, Q3: 50, Final: 300 },
+      payoutDescriptions: { Q1: 'A pie', FINAL: 'Winner gets the trophy' },
     });
+    expect(result).not.toHaveProperty('payouts');
+    expect(result).not.toHaveProperty('payout_labels');
   });
 
   it('restores authoritative manual scoring mode and current snapshot for the owner', async () => {

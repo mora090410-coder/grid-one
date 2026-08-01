@@ -18,7 +18,7 @@ const LEGACY_BOARD_IDS = [
   '20000000-0000-4000-8000-000000000012',
 ] as const;
 const BOARD_IDS = Array.from(
-  { length: 8 },
+  { length: 10 },
   (_, index) => `10000000-0000-4000-8000-${String(index + 11).padStart(12, '0')}`,
 );
 
@@ -215,13 +215,24 @@ const applyMigrationsThrough = async (lastNumber: number) => {
 
 const applyPricingMigration = async () => {
   const directory = resolve(process.cwd(), 'supabase/migrations');
-  const files = migrationFiles();
+  const files = migrationFiles().filter(file => Number(file.slice(0, 3)) <= 19);
   expect(files.map(file => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: 21 }, (_, index) => index),
+    Array.from({ length: 20 }, (_, index) => index),
   );
   await executeSql(
     readFileSync(resolve(directory, '019_pricing_tiers.sql'), 'utf8'),
   );
+};
+
+const applyPostPricingMigrations = async () => {
+  const directory = resolve(process.cwd(), 'supabase/migrations');
+  for (const file of [
+    '020_score_refresh_scheduler.sql',
+    '021_payout_descriptions.sql',
+    '022_open_squares.sql',
+  ]) {
+    await executeSql(readFileSync(resolve(directory, file), 'utf8'));
+  }
 };
 
 const seedPrePricingFixtures = async () => {
@@ -240,7 +251,7 @@ const seedPrePricingFixtures = async () => {
     (contestId, index) => `(
       '${contestId}'::uuid,
       '${OWNER_ID}'::uuid,
-      'BBBBB${String(index + 2).padStart(3, '2')}',
+      'BBBBB22${'23456789AB'[index]}',
       'Pricing board ${index + 1}',
       2026,
       'owner-game-${index + 1}',
@@ -327,13 +338,16 @@ const publishBoard = async ({
   normalizedNames = validNames,
   sideAxis = VALID_SIDE_AXIS,
   topAxis = VALID_TOP_AXIS,
+  allowOpenSquares = false,
 }: {
   contestId: string;
   expectedRevision?: number;
   normalizedNames?: string[][];
   sideAxis?: string;
   topAxis?: string;
+  allowOpenSquares?: boolean;
 }) => {
+  const projectedBoard = { ...publicBoard, squares: normalizedNames };
   const output = await queryScalar(`
     SET ROLE service_role;
     SELECT row_to_json(result)::text
@@ -344,8 +358,9 @@ const publishBoard = async ({
       ${sideAxis},
       ${topAxis},
       ${sqlText(JSON.stringify(normalizedNames))}::jsonb,
-      ${sqlText(JSON.stringify(publicBoard))}::jsonb,
-      ${sqlText(JSON.stringify(matchup))}::jsonb
+      ${sqlText(JSON.stringify(projectedBoard))}::jsonb,
+      ${sqlText(JSON.stringify(matchup))}::jsonb,
+      ${allowOpenSquares}::boolean
     ) AS result
   `);
   return output ? JSON.parse(output) as PublishResult : null;
@@ -371,6 +386,7 @@ describe.sequential('pricing tiers on disposable PostgreSQL 17', () => {
     await applyMigrationsThrough(18);
     await seedPrePricingFixtures();
     await applyPricingMigration();
+    await applyPostPricingMigrations();
   }, 240_000);
 
   afterAll(async () => {
@@ -675,5 +691,337 @@ describe.sequential('pricing tiers on disposable PostgreSQL 17', () => {
       FROM public.public_board_snapshots
       WHERE contest_id = '${BOARD_IDS[5]}'::uuid
     `)).toBe('Riverside Ravens Booster Club');
+  }, 60_000);
+
+  it('projects payout descriptions on publish and updates them atomically afterward', async () => {
+    const contestId = BOARD_IDS[6];
+    const draftUpdate = await queryJson<{
+      next_revision: number;
+      payout_descriptions: Record<string, string>;
+    }>(`
+      SET ROLE service_role;
+      SELECT row_to_json(result)::text
+      FROM public.gridone_update_payout_descriptions(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        1::bigint,
+        '{"Q1":"A pie","notes":"Organizer rules apply."}'::jsonb
+      ) AS result
+    `);
+    expect(draftUpdate).toMatchObject({
+      next_revision: 2,
+      payout_descriptions: { Q1: 'A pie', notes: 'Organizer rules apply.' },
+    });
+
+    expect(await queryScalar(`
+      SELECT payout_labels::text
+      FROM public.contests
+      WHERE id = '${contestId}'::uuid
+    `)).toBe('{}');
+
+    expect(await publishBoard({ contestId, expectedRevision: 2 })).toMatchObject({
+      published: true,
+      tier: 'org',
+      used: 7,
+      allowance: 50,
+    });
+    expect(await queryJson<Record<string, string>>(`
+      SELECT payout_descriptions::text
+      FROM public.public_board_snapshots
+      WHERE contest_id = '${contestId}'::uuid
+    `)).toEqual({ Q1: 'A pie', notes: 'Organizer rules apply.' });
+
+    const publishedUpdate = await queryJson<{
+      next_revision: number;
+      payout_descriptions: Record<string, string>;
+    }>(`
+      SET ROLE service_role;
+      SELECT row_to_json(result)::text
+      FROM public.gridone_update_payout_descriptions(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        3::bigint,
+        '{"FINAL":"Winner gets the trophy"}'::jsonb
+      ) AS result
+    `);
+    expect(publishedUpdate).toMatchObject({
+      next_revision: 4,
+      payout_descriptions: { FINAL: 'Winner gets the trophy' },
+    });
+    expect(await queryJson<{
+      revision: number;
+      payoutDescriptions: Record<string, string>;
+    }>(`
+      SELECT json_build_object(
+        'revision', revision,
+        'payoutDescriptions', payout_descriptions
+      )::text
+      FROM public.public_board_snapshots
+      WHERE contest_id = '${contestId}'::uuid
+    `)).toEqual({
+      revision: 4,
+      payoutDescriptions: { FINAL: 'Winner gets the trophy' },
+    });
+
+    await expect(queryScalar(`
+      SET ROLE authenticated;
+      SELECT *
+      FROM public.gridone_update_payout_descriptions(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        4::bigint,
+        '{}'::jsonb
+      )
+    `)).rejects.toThrow(/permission denied/i);
+
+    await expect(executeSql(`
+      SET ROLE service_role;
+      UPDATE public.contests
+      SET payout_descriptions = '{"Q1":"https://example.com"}'::jsonb
+      WHERE id = '${contestId}'::uuid;
+    `)).rejects.toThrow(/contests_payout_descriptions_check/i);
+  }, 60_000);
+
+  it('publishes open squares only by opt-in, fills only before kickoff, and resolves an open milestone without email', async () => {
+    const contestId = BOARD_IDS[8];
+    const openNames = validNames.map((cell, index) => index < 94 ? cell : []);
+    const openBoard = { ...publicBoard, allowOpenSquares: true, squares: openNames };
+    await executeSql(`
+      UPDATE public.contests
+      SET board_data = ${sqlText(JSON.stringify(openBoard))}::jsonb
+      WHERE id = '${contestId}'::uuid
+    `);
+
+    await expect(publishBoard({
+      contestId,
+      expectedRevision: 2,
+      normalizedNames: openNames,
+    })).rejects.toThrow(/confirm open-square publication/i);
+
+    expect(await publishBoard({
+      contestId,
+      expectedRevision: 2,
+      normalizedNames: openNames,
+      allowOpenSquares: true,
+    })).toMatchObject({ published: true, tier: 'org' });
+
+    expect(await queryJson<{
+      optedIn: boolean;
+      projectedOptIn: boolean;
+      assignments: number;
+      openCells: number;
+    }>(`
+      SELECT json_build_object(
+        'optedIn', contest.allow_open_squares,
+        'projectedOptIn', (snapshot.board ->> 'allowOpenSquares')::boolean,
+        'assignments', (
+          SELECT count(*)::integer FROM public.square_assignments assignment
+          WHERE assignment.contest_id = contest.id
+        ),
+        'openCells', (
+          SELECT count(*)::integer
+          FROM jsonb_array_elements(snapshot.board -> 'squares') cell(value)
+          WHERE jsonb_array_length(cell.value) = 0
+        )
+      )::text
+      FROM public.contests contest
+      JOIN public.public_board_snapshots snapshot ON snapshot.contest_id = contest.id
+      WHERE contest.id = '${contestId}'::uuid
+    `)).toEqual({ optedIn: true, projectedOptIn: true, assignments: 94, openCells: 6 });
+
+    const lateNames = openNames.map((cell) => [...cell]);
+    lateNames[94] = ['Late Buyer'];
+    const fillResult = await queryJson<{
+      next_revision: number;
+      filled_count: number;
+    }>(`
+      SET ROLE service_role;
+      SELECT row_to_json(result)::text
+      FROM public.gridone_fill_open_squares(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        3::bigint,
+        ${sqlText(JSON.stringify(lateNames))}::jsonb
+      ) AS result
+    `);
+    expect(fillResult).toMatchObject({ next_revision: 4, filled_count: 1 });
+
+    expect(await queryJson<{
+      assignmentName: string;
+      snapshotName: string;
+      auditFilled: number;
+    }>(`
+      SELECT json_build_object(
+        'assignmentName', participant.display_name,
+        'snapshotName', snapshot.board -> 'squares' -> 94 ->> 0,
+        'auditFilled', (audit.details ->> 'filledCount')::integer
+      )::text
+      FROM public.square_assignments assignment
+      JOIN public.contest_participants participant ON participant.id = assignment.participant_id
+      JOIN public.public_board_snapshots snapshot ON snapshot.contest_id = assignment.contest_id
+      JOIN public.contest_audit_events audit
+        ON audit.contest_id = assignment.contest_id
+       AND audit.event_type = 'board.open_squares_filled'
+      WHERE assignment.contest_id = '${contestId}'::uuid
+        AND assignment.cell_index = 94
+    `)).toEqual({ assignmentName: 'Late Buyer', snapshotName: 'Late Buyer', auditFilled: 1 });
+
+    const occupiedMutation = lateNames.map((cell) => [...cell]);
+    occupiedMutation[0] = ['Replacement'];
+    await expect(queryScalar(`
+      SET ROLE service_role;
+      SELECT * FROM public.gridone_fill_open_squares(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        4::bigint,
+        ${sqlText(JSON.stringify(occupiedMutation))}::jsonb
+      )
+    `)).rejects.toThrow(/occupied squares cannot be changed/i);
+
+    const participantId = await queryScalar(`
+      SELECT participant_id::text FROM public.square_assignments
+      WHERE contest_id = '${contestId}'::uuid AND cell_index = 0
+    `);
+    await executeSql(`
+      INSERT INTO public.notification_subscriptions (
+        contest_id, participant_id, email, status, unsubscribe_token_hash, verified_at
+      ) VALUES (
+        '${contestId}'::uuid,
+        '${participantId}'::uuid,
+        'buyer@example.test',
+        'verified',
+        'unsubscribe-hash',
+        now()
+      );
+
+      INSERT INTO public.contest_score_state (contest_id)
+      VALUES ('${contestId}'::uuid)
+      ON CONFLICT (contest_id) DO NOTHING;
+
+      WITH inserted AS (
+        INSERT INTO public.score_snapshots (
+          contest_id, source_mode, provider, game_state, period,
+          side_score, top_score, quarter_scores, validation_status,
+          retrieved_at, stale_after, is_current
+        ) VALUES (
+          '${contestId}'::uuid, 'manual', 'organizer', 'in', 2,
+          9, 4, '{"Q1":{"left":9,"top":4}}'::jsonb, 'accepted',
+          now(), now() + interval '5 minutes', true
+        ) RETURNING id
+      )
+      UPDATE public.contest_score_state state
+      SET current_snapshot_id = inserted.id
+      FROM inserted
+      WHERE state.contest_id = '${contestId}'::uuid;
+    `);
+    const snapshotId = await queryScalar(`
+      SELECT current_snapshot_id::text FROM public.contest_score_state
+      WHERE contest_id = '${contestId}'::uuid
+    `);
+    await queryScalar(`
+      SET ROLE service_role;
+      SELECT count(*)::text FROM public.gridone_observe_milestones(
+        '${contestId}'::uuid,
+        '${snapshotId}'::uuid
+      )
+    `);
+
+    expect(await queryJson<{
+      openSquare: boolean;
+      assignmentId: string | null;
+      participantId: string | null;
+      projectedOpenSquare: boolean;
+      deliveries: number;
+    }>(`
+      SELECT json_build_object(
+        'openSquare', resolution.open_square,
+        'assignmentId', resolution.assignment_id,
+        'participantId', resolution.participant_id,
+        'projectedOpenSquare', (snapshot.winner_history -> 0 ->> 'openSquare')::boolean,
+        'deliveries', (
+          SELECT count(*)::integer FROM public.notification_deliveries delivery
+          WHERE delivery.resolution_id = resolution.id
+        )
+      )::text
+      FROM public.milestone_resolutions resolution
+      JOIN public.public_board_snapshots snapshot ON snapshot.contest_id = resolution.contest_id
+      WHERE resolution.contest_id = '${contestId}'::uuid
+        AND resolution.milestone = 'Q1'
+    `)).toEqual({
+      openSquare: true,
+      assignmentId: null,
+      participantId: null,
+      projectedOpenSquare: true,
+      deliveries: 0,
+    });
+
+    await queryScalar(`
+      SET ROLE service_role;
+      SELECT row_to_json(result)::text
+      FROM public.gridone_correct_milestone(
+        '${contestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        'Q1',
+        1,
+        0,
+        9,
+        'Corrected organizer score'
+      ) AS result
+    `);
+    expect(await queryJson<{
+      openSquare: boolean;
+      projectedOpenSquare: boolean;
+      originalVersionOpenSquare: boolean;
+      correctionDeliveries: number;
+    }>(`
+      WITH current_resolution AS (
+        SELECT * FROM public.milestone_resolutions
+        WHERE contest_id = '${contestId}'::uuid AND milestone = 'Q1'
+        ORDER BY resolution_version DESC LIMIT 1
+      )
+      SELECT json_build_object(
+        'openSquare', resolution.open_square,
+        'projectedOpenSquare', (snapshot.winner_history -> 0 ->> 'openSquare')::boolean,
+        'originalVersionOpenSquare',
+          (snapshot.winner_history -> 0 -> 'versions' -> 0 ->> 'openSquare')::boolean,
+        'correctionDeliveries', (
+          SELECT count(*)::integer FROM public.notification_deliveries delivery
+          WHERE delivery.resolution_id = resolution.id
+        )
+      )::text
+      FROM current_resolution resolution
+      JOIN public.public_board_snapshots snapshot ON snapshot.contest_id = resolution.contest_id
+    `)).toEqual({
+      openSquare: false,
+      projectedOpenSquare: false,
+      originalVersionOpenSquare: true,
+      correctionDeliveries: 1,
+    });
+
+    const frozenContestId = BOARD_IDS[9];
+    await executeSql(`
+      UPDATE public.contests
+      SET
+        board_data = ${sqlText(JSON.stringify(openBoard))}::jsonb,
+        game_starts_at = clock_timestamp() - interval '1 second'
+      WHERE id = '${frozenContestId}'::uuid
+    `);
+    await publishBoard({
+      contestId: frozenContestId,
+      expectedRevision: 2,
+      normalizedNames: openNames,
+      allowOpenSquares: true,
+    });
+    const anotherFill = openNames.map((cell) => [...cell]);
+    anotherFill[94] = ['Too Late'];
+    await expect(queryScalar(`
+      SET ROLE service_role;
+      SELECT * FROM public.gridone_fill_open_squares(
+        '${frozenContestId}'::uuid,
+        '${OWNER_ID}'::uuid,
+        3::bigint,
+        ${sqlText(JSON.stringify(anotherFill))}::jsonb
+      )
+    `)).rejects.toThrow(/frozen at kickoff/i);
   }, 60_000);
 });

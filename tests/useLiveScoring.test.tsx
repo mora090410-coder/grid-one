@@ -141,7 +141,7 @@ describe('legacy manual live scoring', () => {
         game: {
           ...initialGame,
           title: `Unrelated edit ${index}`,
-          payouts: { Q1: index, Q2: 25, Q3: 25, Final: 50 },
+          payoutDescriptions: { Q1: `Description ${index}` },
         },
       });
     }

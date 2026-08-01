@@ -32,8 +32,8 @@ const contrast = (first: Rgb, second: Rgb) => {
 describe('Phase 5 visual system', () => {
   const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
   const componentPaths = execFileSync(
-    'git',
-    ['ls-files', 'components/**/*.tsx', 'components/*.tsx', 'pages/*.tsx'],
+    'rg',
+    ['--files', 'components', 'pages', '-g', '*.tsx'],
     { cwd: process.cwd(), encoding: 'utf8' },
   ).trim().split('\n').filter(Boolean);
   const componentCorpus = componentPaths.map(

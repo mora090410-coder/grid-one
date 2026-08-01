@@ -99,7 +99,7 @@ test('organizer creates a board from one scheduled NFL event', async ({ page }) 
   expect(submitted.board.squares).toHaveLength(100);
 });
 
-test('published viewer renders the board and exact-name square finder', async ({ page }) => {
+test('published viewer renders the board and persists its canonical square selection', async ({ page }) => {
   const squares = Array.from({ length: 100 }, () => [] as string[]);
   squares[0] = ['Ann'];
   squares[1] = ['Anna'];
@@ -146,7 +146,11 @@ test('published viewer renders the board and exact-name square finder', async ({
       board,
       score,
       winner_history: [],
-      payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+      payoutDescriptions: {
+        Q1: 'Winner gets bragging rights',
+        HALF: 'A homemade pie',
+        notes: 'Organizer rules apply.',
+      },
       is_activated: true,
       locked: false,
     }),
@@ -160,9 +164,20 @@ test('published viewer renders the board and exact-name square finder', async ({
   await page.goto('/b/ABCDEFGH');
   await expect(page.getByRole('main', { name: /Published Week 1 game day/i })).toBeVisible();
   await expect(page.getByText(/This board is not published yet/i)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Payouts' })).toBeVisible();
+  await expect(page.getByText('Winner gets bragging rights')).toBeVisible();
+  await expect(page.getByText('A homemade pie')).toBeVisible();
+  await expect(page.getByText('GridOne tracks the board. It does not collect square money or pay winners.')).toBeVisible();
   await page.getByRole('button', { name: /Find my squares/i }).click();
-  await page.getByLabel('Find Player:').selectOption('Ann');
+  await page.getByLabel('Name used on board').fill('ann');
+  await page.getByLabel('Name used on board').press('Enter');
 
+  await expect(page.getByText('1 square', { exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
+  await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
+  await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
+
+  await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: /^Ann,/ })).toHaveClass(/ring-cardinal/);
   await expect(page.getByRole('cell', { name: /^Anna,/ })).not.toHaveClass(/ring-cardinal/);
@@ -210,7 +225,7 @@ test('draft organizer preview stays fully visible and interactive before activat
       leftName: 'Dallas Cowboys',
       topAbbr: 'WAS',
       topName: 'Washington Commanders',
-      payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+      payoutDescriptions: {},
       board,
       score: null,
       is_activated: false,
@@ -246,7 +261,7 @@ test('draft organizer preview stays fully visible and interactive before activat
   expect(await page.evaluate(() =>
     document.documentElement.scrollWidth <= document.documentElement.clientWidth
   )).toBe(true);
-  await page.getByRole('button', { name: 'Assign 100 squares' }).click();
+  await page.getByRole('button', { name: 'Fill 100 squares open' }).click();
   await expect(page.getByRole('heading', { name: 'Grid Editor' })).toBeVisible();
   await expect(page.getByLabel('Label to apply')).toBeFocused();
   const gridPosition = await page.getByRole('heading', { name: 'Grid Editor' }).boundingBox();
@@ -344,7 +359,7 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
         leftName: 'Dallas Cowboys',
         topAbbr: 'WAS',
         topName: 'Washington Commanders',
-        payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+        payoutDescriptions: {},
         board: fullBoard,
         score,
         is_activated: true,

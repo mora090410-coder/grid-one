@@ -5,6 +5,11 @@ import {
   type ScheduledGame,
 } from '../_lib/espnNfl';
 import { scoreTestModeAllowed } from '../_lib/scoreTestMode';
+import {
+  PayoutDescriptionsValidationError,
+  type PayoutDescriptions,
+  validatePayoutDescriptions,
+} from '../_lib/payoutDescriptions';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
@@ -19,7 +24,7 @@ interface CreateBoardPayload {
     leftName?: string;
     topAbbr?: string;
     topName?: string;
-    payouts?: Record<string, number | string>;
+    payoutDescriptions?: PayoutDescriptions;
     [key: string]: unknown;
   };
   board: {
@@ -90,7 +95,19 @@ const validate = (input: unknown): CreateBoardPayload => {
   if (!candidate.board || !Array.isArray(candidate.board.squares) || candidate.board.squares.length !== 100) {
     throw new Error('A board must contain exactly 100 squares.');
   }
-  return candidate as CreateBoardPayload;
+  const payoutDescriptions = validatePayoutDescriptions(
+    candidate.game?.payoutDescriptions ?? {},
+  );
+  const sanitizedGame: Record<string, unknown> = {
+    ...candidate.game,
+    payoutDescriptions,
+  };
+  delete sanitizedGame.payouts;
+  delete sanitizedGame.payout_labels;
+  return {
+    ...candidate,
+    game: sanitizedGame,
+  } as CreateBoardPayload;
 };
 
 export const onRequestOptions: PagesFunction = ({ request, env }) =>
@@ -181,7 +198,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
         top_team_name: scheduledGame.homeTeam.name,
         side_axis: sideAxis,
         top_axis: topAxis,
-        payout_labels: game.payouts || {},
+        payout_labels: {},
+        payout_descriptions: game.payoutDescriptions || {},
         settings: game,
         board_data: payload.board,
       })
@@ -198,7 +216,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     }, 201, env.PUBLIC_SITE_URL);
   } catch (error: any) {
     const message = error?.message || 'Unable to create the board.';
-    const validationError = /board name|100 squares|invalid request|scheduled NFL game/i.test(message);
+    const validationError = error instanceof PayoutDescriptionsValidationError
+      || /board name|100 squares|invalid request|scheduled NFL game/i.test(message);
     return json(request, { error: message }, validationError ? 400 : 500, env.PUBLIC_SITE_URL);
   }
 };

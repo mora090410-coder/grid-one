@@ -67,8 +67,8 @@ const Dashboard: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const isClaimMode = searchParams.get('mode') === 'claim';
-        if (user && pendingGuestBoard && !migrating && isClaimMode) {
+        const isAdoptDraftMode = searchParams.get('mode') === 'adopt-draft';
+        if (user && pendingGuestBoard && !migrating && isAdoptDraftMode) {
             handleManualMigration();
         }
     }, [user, pendingGuestBoard, searchParams]);

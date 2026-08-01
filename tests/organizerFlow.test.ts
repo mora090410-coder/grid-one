@@ -35,6 +35,14 @@ describe('organizer progress', () => {
     })).toMatchObject({ phase: 'draw', destination: 'draw', paymentReviewCount: 100 });
   });
 
+  it('advances an explicitly drawn board with open squares to Preview', () => {
+    expect(getOrganizerProgress({
+      board: boardWith(94, digits),
+      entryMetaByIndex: {},
+      isPublished: false,
+    })).toMatchObject({ phase: 'preview', destination: 'preview', assigned: 94, open: 6 });
+  });
+
   it('keeps unique out-of-range axes in draw so UI and publish validation agree', () => {
     expect(getOrganizerProgress({
       board: boardWith(100, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),

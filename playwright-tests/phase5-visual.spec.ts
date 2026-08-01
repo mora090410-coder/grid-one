@@ -146,7 +146,7 @@ const installOrganizerFixture = async (
         leftName: 'Dallas Cowboys',
         topAbbr: 'WAS',
         topName: 'Washington Commanders',
-        payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+        payoutDescriptions: {},
         board,
         score: phase === 'draw' ? score : null,
         is_activated: phase === 'draw',
@@ -208,7 +208,7 @@ const installPublishedViewerFixture = async (page: Page) => {
       board,
       score,
       winner_history: [],
-      payouts: { Q1: 25, Q2: 25, Q3: 25, Final: 25 },
+      payoutDescriptions: {},
       is_activated: true,
       locked: false,
     }),
@@ -230,7 +230,7 @@ test('capture organizer Fill desktop', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await installOrganizerFixture(page, 'fill');
   await page.goto(`/boards/${ownerId}`);
-  await page.getByRole('button', { name: 'Assign 100 squares' }).click();
+  await page.getByRole('button', { name: 'Fill 100 squares open' }).click();
   await expect(page.getByRole('heading', { name: 'Grid Editor' })).toBeVisible();
   await expect(page.getByLabel('Label to apply')).toBeFocused();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();

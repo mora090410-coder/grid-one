@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 
 const currentPricingCopyFiles = [
   'components/FilmLanding.tsx',
-  'components/LandingPage.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',
@@ -32,15 +31,25 @@ describe('launch pricing copy', () => {
     expect(read('PRODUCT.md')).toContain('The Free tier includes **1 published board per account per season**.');
     expect(read('PRODUCT.md')).toContain('The **Game Day** tier is **$9.99 once** for up to 5 published boards');
     expect(read('PRODUCT.md')).toContain('The **Organization** tier is **$79 per season** for up to 50 published boards');
-    expect(read('components/LandingPage.tsx')).toContain("Your first board is free — build it, share it, run it all game day.");
     expect(read('components/FilmLanding.tsx')).toContain('Your first published board is free. Upgrade only when you need another.');
   });
 
   it('keeps system vocabulary out of the landing-page sales copy', () => {
-    const landing = `${read('components/LandingPage.tsx')}\n${read('components/FilmLanding.tsx')}`;
+    const landing = read('components/FilmLanding.tsx');
 
     expect(landing).not.toMatch(/\b(?:beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
-    expect(landing).toContain("'SAMPLE GAME'");
-    expect(landing).toContain("'YOUR FIRST BOARD IS FREE'");
+    expect(landing).toContain('See a live board');
+    expect(landing).toContain('FREE TO START');
+  });
+
+  it('does not ship invented payout amounts in live board surfaces', () => {
+    const payoutSurfaces = [
+      read('components/AdminPanel.tsx'),
+      read('components/GameDayHorizon.tsx'),
+      read('hooks/usePoolData.ts'),
+    ].join('\n');
+
+    expect(payoutSurfaces).not.toMatch(/\$(?:125|250)\b/);
+    expect(payoutSurfaces).not.toMatch(/payout[^\n]*(?:\?\?|:)\s*(?:125|250)\b/i);
   });
 });

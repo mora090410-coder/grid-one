@@ -21,11 +21,12 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
 };
 
-const request = () => new Request(
+const request = (body?: unknown) => new Request(
   'https://example.test/api/pools/board-1/publish',
   {
     method: 'POST',
     headers: { Authorization: 'Bearer access-token' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   },
 );
 
@@ -80,6 +81,7 @@ const contest = {
 };
 
 const adminClient = ({
+  contestData = contest,
   rpcData = [{
     share_code: 'ABCDEFGH',
     next_revision: 5,
@@ -89,6 +91,7 @@ const adminClient = ({
   }],
   rpcError = null as null | { message: string },
 }: {
+  contestData?: any;
   rpcData?: any;
   rpcError?: null | { message: string };
 } = {}) => {
@@ -96,7 +99,7 @@ const adminClient = ({
   chain.select = vi.fn(() => chain);
   chain.eq = vi.fn(() => chain);
   chain.maybeSingle = vi.fn(async () => ({
-    data: contest,
+    data: contestData,
     error: null,
   }));
   return {
@@ -160,8 +163,81 @@ describe.sequential('publish entitlement boundary', () => {
         p_contest_id: 'board-1',
         p_owner_id: 'user-1',
         p_expected_revision: 4,
+        p_allow_open_squares: false,
       }),
     );
+  });
+
+  it('keeps open-square publication behind explicit confirmation', async () => {
+    const openContest = {
+      ...contest,
+      board_data: {
+        ...contest.board_data,
+        allowOpenSquares: true,
+        squares: contest.board_data.squares.map((cell, index) => index < 6 ? [] : cell),
+      },
+    };
+    const admin = adminClient({ contestData: openContest });
+    mocks.clients.push(authClient(), admin);
+
+    const rejected = await publishBoard({
+      request: request(),
+      env,
+      params: { id: 'board-1' },
+    });
+
+    expect(rejected.status).toBe(409);
+    await expect(rejected.json()).resolves.toEqual({
+      error: '6 squares are still unassigned. Finish the board before publishing.',
+    });
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('publishes a partially assigned board only with allowOpenSquares true', async () => {
+    const openContest = {
+      ...contest,
+      board_data: {
+        ...contest.board_data,
+        allowOpenSquares: true,
+        squares: contest.board_data.squares.map((cell, index) => index < 6 ? [] : cell),
+      },
+    };
+    const admin = adminClient({ contestData: openContest });
+    mocks.clients.push(authClient(), admin);
+
+    const response = await publishBoard({
+      request: request({ allowOpenSquares: true }),
+      env,
+      params: { id: 'board-1' },
+    });
+
+    expect(response.status).toBe(200);
+    expect(admin.rpc).toHaveBeenCalledWith('gridone_publish_board', expect.objectContaining({
+      p_allow_open_squares: true,
+      p_normalized_names: expect.arrayContaining([[]]),
+      p_public_board: expect.objectContaining({ allowOpenSquares: true }),
+    }));
+  });
+
+  it('rejects request-only confirmation that was not persisted with the draw', async () => {
+    const openContest = {
+      ...contest,
+      board_data: {
+        ...contest.board_data,
+        squares: contest.board_data.squares.map((cell, index) => index < 6 ? [] : cell),
+      },
+    };
+    const admin = adminClient({ contestData: openContest });
+    mocks.clients.push(authClient(), admin);
+
+    const response = await publishBoard({
+      request: request({ allowOpenSquares: true }),
+      env,
+      params: { id: 'board-1' },
+    });
+
+    expect(response.status).toBe(409);
+    expect(admin.rpc).not.toHaveBeenCalled();
   });
 
   it.each([

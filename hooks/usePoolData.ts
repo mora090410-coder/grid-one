@@ -8,6 +8,7 @@ import {
     BoardData,
     NotificationDeliveryIssue,
     PendingMilestone,
+    PayoutDescriptions,
     WinnerResolution,
 } from '../types';
 import { supabase } from '../services/supabase';
@@ -26,12 +27,7 @@ const INITIAL_GAME: GameState = {
     manualLeftScore: 0,
     manualTopScore: 0,
     coverImage: '',
-    payouts: {
-        Q1: 125,
-        Q2: 125,
-        Q3: 125,
-        Final: 250
-    }
+    payoutDescriptions: {},
 };
 
 const EMPTY_BOARD: BoardData = {
@@ -67,6 +63,8 @@ interface UsePoolDataReturn extends PoolDataState {
     loadPoolData: (poolId: string) => Promise<void>;
     publishPool: (currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
     updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
+    updatePayoutDescriptions: (poolId: string, descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
+    updatePublishedOpenSquares: (poolId: string, squares: string[][]) => Promise<void>;
     migrateGuestBoard: (_user: unknown, guestData: { game: GameState; board: BoardData }) => Promise<string>;
     clearError: () => void;
 }
@@ -129,9 +127,11 @@ export function usePoolData(): UsePoolDataReturn {
             const nextGame = {
                 ...INITIAL_GAME,
                 ...data,
-                payouts: data.payouts || data.payout_labels || INITIAL_GAME.payouts,
+                payoutDescriptions: data.payoutDescriptions || {},
                 scoreSnapshot: data.score || null,
             };
+            delete (nextGame as any).payouts;
+            delete (nextGame as any).payout_labels;
             delete (nextGame as any).board;
             delete (nextGame as any).locked;
             delete (nextGame as any).owner_id;
@@ -234,6 +234,78 @@ export function usePoolData(): UsePoolDataReturn {
         return queued;
     }, []);
 
+    const updatePayoutDescriptions = useCallback((
+        poolId: string,
+        descriptions: PayoutDescriptions,
+    ): Promise<PayoutDescriptions> => {
+        const run = async () => {
+            const currentRevision = revisionRef.current;
+            if (!currentRevision) throw new Error('Reload this board before saving payout descriptions.');
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            if (!token) throw new Error('Sign in before saving payout descriptions.');
+            const response = await fetch(`/api/pools/${poolId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ payoutDescriptions: descriptions, revision: currentRevision }),
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                if (
+                    response.status === 409
+                    && result.code === 'REVISION_CONFLICT'
+                    && Number.isInteger(result.currentRevision)
+                ) {
+                    revisionRef.current = result.currentRevision;
+                    setRevision(result.currentRevision);
+                }
+                throw new Error(result.error || 'Unable to save payout descriptions.');
+            }
+            revisionRef.current = result.revision;
+            setRevision(result.revision);
+            const normalized = result.payoutDescriptions || {};
+            setGame((current) => ({ ...current, payoutDescriptions: normalized }));
+            return normalized;
+        };
+        const queued = updateQueueRef.current.then(run, run);
+        updateQueueRef.current = queued.then(() => undefined, () => undefined);
+        return queued;
+    }, []);
+
+    const updatePublishedOpenSquares = useCallback(async (
+        poolId: string,
+        squares: string[][],
+    ): Promise<void> => {
+        const currentRevision = revisionRef.current;
+        if (!currentRevision) throw new Error('Reload this board before assigning open squares.');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('Sign in before assigning open squares.');
+
+        const response = await fetch(`/api/pools/${poolId}/open-squares`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ revision: currentRevision, squares }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            if (
+                response.status === 409
+                && result.code === 'REVISION_CONFLICT'
+                && Number.isInteger(result.currentRevision)
+            ) {
+                revisionRef.current = result.currentRevision;
+                setRevision(result.currentRevision);
+            }
+            throw new Error(result.error || 'Open squares could not be assigned.');
+        }
+        if (!result.success || !Number.isInteger(result.revision)) {
+            throw new Error('The board update returned an invalid response. Reload and try again.');
+        }
+        revisionRef.current = result.revision;
+        setRevision(result.revision);
+    }, []);
+
     // Migrate guest board to Supabase
     const migrateGuestBoard = useCallback(async (
         _user: unknown,
@@ -290,6 +362,8 @@ export function usePoolData(): UsePoolDataReturn {
         loadPoolData,
         publishPool,
         updatePool,
+        updatePayoutDescriptions,
+        updatePublishedOpenSquares,
         migrateGuestBoard,
         clearError,
         isActivated,

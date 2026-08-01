@@ -8,6 +8,10 @@ import {
   publicBoardNotFoundResponse,
 } from '../../_lib/publicBoardVisibility';
 import { hasBoardActivation } from '../../../utils/boardActivation';
+import {
+  PayoutDescriptionsValidationError,
+  validatePayoutDescriptions,
+} from '../../_lib/payoutDescriptions';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
@@ -37,7 +41,7 @@ const responseHeaders = (request: Request, siteOrigin?: string) => {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': allowed.has(origin) ? origin : 'https://www.getgridone.com',
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, PUT, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Vary': 'Origin',
   };
@@ -162,7 +166,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (uuidPattern.test(id) && auth.userId) {
       const { data, error } = await admin
         .from('contests')
-        .select('id, share_code, owner_id, title, status, revision, score_test_mode, settings, board_data, payout_labels, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+        .select('id, share_code, owner_id, title, status, revision, score_test_mode, settings, board_data, payout_descriptions, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
         .eq('id', id)
         .eq('owner_id', auth.userId)
         .maybeSingle();
@@ -232,7 +236,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         revision: data.revision,
         ...(data.settings || {}),
         scoreTestMode: data.score_test_mode === true,
-        payouts: data.payout_labels || data.settings?.payouts || {},
+        payoutDescriptions: data.payout_descriptions || {},
         gameExternalId: data.game_external_id || data.settings?.gameExternalId || null,
         gameStartsAt: data.game_starts_at || data.settings?.gameStartsAt || null,
         kickoffAt: data.game_starts_at || data.settings?.kickoffAt || null,
@@ -275,7 +279,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     }
 
     const visibleBoard = await findVisiblePublicBoard(admin, id, {
-      snapshot: 'share_code, revision, board_title, organization_display_name, matchup, board, score, winner_history, pending_milestones, payout_labels, score_test_mode, published_at, updated_at',
+      snapshot: 'share_code, revision, board_title, organization_display_name, matchup, board, score, winner_history, pending_milestones, payout_descriptions, score_test_mode, published_at, updated_at',
       contest: 'id, status',
     });
     if (!visibleBoard) {
@@ -305,8 +309,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       score: data.score,
       winner_history: data.winner_history,
       pending_milestones: data.pending_milestones,
-      payout_labels: data.payout_labels,
-      payouts: data.payout_labels,
+      payoutDescriptions: data.payout_descriptions || {},
       scoreTestMode: data.score_test_mode === true,
       is_activated: true,
       locked: false,
@@ -314,6 +317,85 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
   } catch (error: any) {
     const message = error?.message || 'Unable to load the board.';
     return json(request, { error: message }, /configuration/i.test(message) ? 503 : 500, env.PUBLIC_SITE_URL);
+  }
+};
+
+export const onRequestPatch: PagesFunction = async ({ request, env, params }) => {
+  const id = String(params.id || '');
+  if (!uuidPattern.test(id)) return json(request, { error: 'Invalid board ID.' }, 400, env.PUBLIC_SITE_URL);
+
+  try {
+    const auth = await requester(request, env);
+    if (!auth.bearer || !auth.userId) {
+      return json(request, { error: 'Sign in to edit this board.' }, 401, env.PUBLIC_SITE_URL);
+    }
+    const parsedBody = await request.json() as unknown;
+    if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) {
+      return json(request, { error: 'Invalid request body.' }, 400, env.PUBLIC_SITE_URL);
+    }
+    const body = parsedBody as { payoutDescriptions?: unknown; revision?: number };
+    if (!Object.prototype.hasOwnProperty.call(body, 'payoutDescriptions')) {
+      return json(request, { error: 'No payout descriptions were provided.' }, 400, env.PUBLIC_SITE_URL);
+    }
+    if (!Number.isInteger(body.revision) || Number(body.revision) < 1) {
+      return json(request, { error: 'A current board revision is required.' }, 409, env.PUBLIC_SITE_URL);
+    }
+    const payoutDescriptions = validatePayoutDescriptions(body.payoutDescriptions);
+
+    const ownerClient = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${auth.bearer}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: currentContest, error: currentError } = await ownerClient
+      .from('contests')
+      .select('revision')
+      .eq('id', id)
+      .eq('owner_id', auth.userId)
+      .maybeSingle();
+    if (currentError) throw currentError;
+    if (!currentContest) return json(request, { error: 'Board not found.' }, 404, env.PUBLIC_SITE_URL);
+    if (currentContest.revision !== body.revision) {
+      return json(request, {
+        error: 'This board changed in another session. Reload before saving again.',
+        code: 'REVISION_CONFLICT',
+        currentRevision: currentContest.revision,
+      }, 409, env.PUBLIC_SITE_URL);
+    }
+
+    const admin = requireServiceClient(env);
+    const { data: rpcData, error: rpcError } = await admin.rpc(
+      'gridone_update_payout_descriptions',
+      {
+        p_contest_id: id,
+        p_owner_id: auth.userId,
+        p_expected_revision: body.revision,
+        p_payout_descriptions: payoutDescriptions,
+      },
+    );
+    if (rpcError) throw rpcError;
+    const updated = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!updated) {
+      return json(request, {
+        error: 'This board changed in another session. Reload before saving again.',
+        code: 'REVISION_CONFLICT',
+        currentRevision: currentContest.revision,
+      }, 409, env.PUBLIC_SITE_URL);
+    }
+
+    return json(request, {
+      ok: true,
+      revision: updated.next_revision,
+      updatedAt: updated.contest_updated_at,
+      payoutDescriptions: updated.payout_descriptions || {},
+    }, 200, env.PUBLIC_SITE_URL);
+  } catch (error: any) {
+    const message = error?.message || 'Unable to save payout descriptions.';
+    const status = error instanceof PayoutDescriptionsValidationError
+      ? 400
+      : /configuration/i.test(message)
+        ? 503
+        : 500;
+    return json(request, { error: message }, status, env.PUBLIC_SITE_URL);
   }
 };
 
@@ -366,18 +448,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
           error: 'Board name must be between 1 and 100 characters.',
         }, 400, env.PUBLIC_SITE_URL);
       }
-      const submittedPayouts = body.game.payouts;
-      if (
-        submittedPayouts !== undefined
-        && (
-          !submittedPayouts
-          || typeof submittedPayouts !== 'object'
-          || Array.isArray(submittedPayouts)
-        )
-      ) {
-        return json(request, { error: 'Payout labels must be an object.' }, 400, env.PUBLIC_SITE_URL);
-      }
-      const payoutLabels = submittedPayouts || currentContest.payout_labels || {};
+      const payoutLabels = currentContest.payout_labels || {};
 
       let scheduledGame = storedScheduledGame(currentContest, gameExternalId);
       if (!scheduledGame) {
@@ -402,7 +473,10 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
         }, 409, env.PUBLIC_SITE_URL);
       }
 
-      const settings = canonicalizeUpdatedGame({ ...body.game, title, payouts: payoutLabels }, scheduledGame);
+      const submittedGame = { ...body.game };
+      delete submittedGame.payouts;
+      delete submittedGame.payout_labels;
+      const settings = canonicalizeUpdatedGame({ ...submittedGame, title }, scheduledGame);
       const admin = requireServiceClient(env);
       const { data: rpcData, error: rpcError } = await admin.rpc('gridone_update_draft_matchup', {
         p_contest_id: id,
