@@ -4,6 +4,8 @@ export interface Team {
   name: string;
 }
 
+export type PayoutDescriptions = Partial<Record<'Q1' | 'HALF' | 'Q3' | 'FINAL' | 'notes', string>>;
+
 export type ScheduledGameState = 'pre' | 'in' | 'post';
 
 /** A provider-backed NFL event whose matchup and kickoff stay together. */
@@ -48,12 +50,7 @@ export interface GameState {
   manualPeriod?: number; // 0 = scheduled, 1-4 = quarter, 5 = OT
   manualGameState?: 'pre' | 'in' | 'post';
   coverImage?: string; // Base64 image string for board cover
-  payouts?: {
-    Q1: number;
-    Q2: number;
-    Q3: number;
-    Final: number;
-  };
+  payoutDescriptions?: PayoutDescriptions;
   scoreSnapshot?: LiveGameData | null;
 }
 
@@ -71,6 +68,8 @@ export interface BoardData {
   bearsAxis: (number | null)[];   // Standard board (backward compatible)
   oppAxis: (number | null)[];     // Standard board (backward compatible)
   squares: string[][];
+  /** Explicit organizer opt-in recorded with a number draw that includes open squares. */
+  allowOpenSquares?: boolean;
 
   // Dynamic board support (optional - defaults to standard)
   isDynamic?: boolean;
@@ -121,6 +120,7 @@ export interface WinnerResolution {
   sideDigit: number;
   topDigit: number;
   participantName: string | null;
+  openSquare?: boolean;
   resolvedAt: string;
   resolutionVersion?: number;
   corrected?: boolean;
@@ -133,6 +133,7 @@ export interface WinnerResolution {
     sideDigit: number;
     topDigit: number;
     participantName: string | null;
+    openSquare?: boolean;
     resolvedAt: string;
     corrected: boolean;
     correctedAt?: string | null;

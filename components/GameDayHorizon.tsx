@@ -94,8 +94,8 @@ const formatFreshness = (live: LiveGameData | null) => {
   return `Checked ${timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
 };
 
-const shortName = (names: string[]) => {
-  if (!names.length) return 'Unassigned';
+const shortName = (names: string[], emptyLabel = 'Unassigned') => {
+  if (!names.length) return emptyLabel;
   if (names.length === 1) return names[0];
   return `${names[0]} +${names.length - 1}`;
 };
@@ -132,19 +132,31 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   );
   const selectedCount = useMemo(
     () => selectedPlayer
-      ? board.squares.filter((names) => names.some((name) => name.toLowerCase() === selectedPlayer.toLowerCase())).length
+      ? board.squares.filter((names) => names.includes(selectedPlayer)).length
       : 0,
     [board.squares, selectedPlayer],
   );
   const selectedParticipant = board.participants?.find(
-    (participant) => participant.displayName.toLowerCase() === selectedPlayer.toLowerCase(),
+    (participant) => participant.displayName === selectedPlayer,
   );
   const authority = authorityLabel(live, liveStatus, isSynced);
   const freshness = formatFreshness(live);
   const isLive = authority.tone === 'live';
   const isFinal = authority.tone === 'final';
   const horizonClass = isFinal ? 'gdh-final' : isLive ? 'gdh-live' : 'gdh-pregame';
+  const showOpenSquares = board.allowOpenSquares === true;
   const isEmpty = !board.squares.some((names) => names.length);
+  const payoutRows = useMemo(() => ([
+    ['Q1', 'Q1'],
+    ['HALF', 'Halftime'],
+    ['Q3', 'Q3'],
+    ['FINAL', 'Final'],
+  ] as const).flatMap(([key, label]) => {
+    const description = game.payoutDescriptions?.[key]?.trim();
+    return description ? [{ key, label, description }] : [];
+  }), [game.payoutDescriptions]);
+  const payoutNotes = game.payoutDescriptions?.notes?.trim();
+  const hasPayoutDescriptions = payoutRows.length > 0 || Boolean(payoutNotes);
 
   const scenarios = useMemo(() => {
     if (!live) return [];
@@ -171,6 +183,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
         : resolution.milestone,
     digits: `${resolution.topDigit} / ${resolution.sideDigit}`,
     name: resolution.participantName || 'Unassigned',
+    openSquare: Boolean(resolution.openSquare),
     resolvedAt: resolution.resolvedAt,
     corrected: Boolean(resolution.corrected),
     correctionReason: resolution.correctionReason,
@@ -183,7 +196,8 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
         <div className={`gdh-email-result ${emailResult.includes('invalid') || emailResult.includes('error') ? 'is-error' : ''}`} role="status">
           {emailResult === 'verified' && 'Winner emails are verified for this board name.'}
           {emailResult === 'unsubscribed' && 'Winner emails are turned off for this board name.'}
-          {(emailResult === 'invalid' || emailResult === 'configuration-error') && 'That email verification link is invalid or expired.'}
+          {emailResult === 'invalid' && 'That email verification link is invalid or expired.'}
+          {emailResult === 'configuration-error' && 'Email verification is temporarily unavailable. Please try again later.'}
           {emailResult === 'unsubscribe-invalid' && 'That unsubscribe link is invalid or expired.'}
         </div>
       )}
@@ -204,7 +218,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
 
           <div className="gdh-current">
             <span id="game-state-title">{periodLabel(live)}</span>
-            <strong>{live ? shortName(currentWinners) : 'Waiting for score'}</strong>
+            <strong>{live ? shortName(currentWinners, showOpenSquares ? 'Open square' : 'Unassigned') : 'Waiting for score'}</strong>
             <small>Current {currentQuarter === 'Q2' ? 'halftime' : currentQuarter} result</small>
           </div>
 
@@ -227,6 +241,34 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
           {live?.detail && <span>{live.detail}</span>}
           {live?.warning && <span>{live.warning}</span>}
         </div>
+
+        {hasPayoutDescriptions && (
+          <section className="mt-6 border border-gold bg-ink/30 p-5 text-broadcast-white" aria-labelledby="payouts-title">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="payouts-title" className="oa-headline !text-2xl">Payouts</h2>
+              <span className="oa-slab text-xs text-gold">Organizer-published descriptions</span>
+            </div>
+            {payoutRows.length > 0 && (
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {payoutRows.map((row) => (
+                  <div key={row.key} className="border-t border-broadcast-white/20 pt-2">
+                    <dt className="oa-slab text-xs text-gold">{row.label}</dt>
+                    <dd className="oa-body mt-1 text-sm text-broadcast-white">{row.description}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {payoutNotes && (
+              <div id="board-rules" className="scroll-mt-6 mt-4 border-t border-broadcast-white/20 pt-3">
+                <h3 className="oa-slab text-xs text-gold">Board rules / notes</h3>
+                <p className="oa-body mt-1 text-sm text-broadcast-white">{payoutNotes}</p>
+              </div>
+            )}
+            <p className="oa-body mt-4 text-xs text-broadcast-white/70">
+              GridOne tracks the board. It does not collect square money or pay winners.
+            </p>
+          </section>
+        )}
 
         <div className="gdh-personal-row">
           <button type="button" className="gdh-find-action" onClick={onFindSquares}>
@@ -269,7 +311,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             <div className="gdh-scenario-list">
               {scenarios.map((scenario) => {
                 const helpsSelected = Boolean(selectedPlayer && scenario.names.some(
-                  (name) => name.toLowerCase() === selectedPlayer.toLowerCase(),
+                  (name) => name === selectedPlayer,
                 ));
                 return (
                   <button
@@ -284,7 +326,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
                   >
                     <span>{scenario.team} · {scenario.label} +{scenario.points}</span>
                     <strong>{scenario.top} / {scenario.left}</strong>
-                    <small>{helpsSelected ? 'Makes you the winner' : shortName(scenario.names)}</small>
+                    <small>{helpsSelected ? 'Makes you the winner' : shortName(scenario.names, showOpenSquares ? 'Open square' : 'Unassigned')}</small>
                   </button>
                 );
               })}
@@ -317,7 +359,13 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
                 {resolvedWinners.map((winner) => (
                   <li key={`${winner.label}-${winner.resolutionVersion}`} className={winner.corrected ? 'is-corrected' : undefined}>
                     <span>{winner.label}</span>
-                    <strong>{winner.name}</strong>
+                    <strong>
+                      {winner.openSquare ? (
+                        payoutNotes
+                          ? <>Open square — <a href="#board-rules" className="underline underline-offset-2">see board rules</a></>
+                          : 'Open square'
+                      ) : winner.name}
+                    </strong>
                     <small>{winner.digits}</small>
                     {winner.corrected && (
                       <em>Corrected result · {winner.correctionReason || 'Organizer correction'}</em>
@@ -370,6 +418,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
                   highlightedCoords={highlightedCoords}
                   leftTeamName={game.leftName || game.leftAbbr}
                   topTeamName={game.topName || game.topAbbr}
+                  showOpenSquares={showOpenSquares}
                 />
               </div>
             )}

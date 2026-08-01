@@ -8,6 +8,7 @@ import {
   EntryMeta,
   LiveGameData,
   NotificationDeliveryIssue,
+  PayoutDescriptions,
   ScheduledGame,
   WinnerResolution,
 } from '../types';
@@ -69,6 +70,26 @@ export const seedManualScoreFromSnapshot = (
   };
 };
 
+export const publishedOpenSquaresAreAssignable = ({
+  isPublished,
+  openSquareCount,
+  kickoffAt,
+  now = Date.now(),
+}: {
+  isPublished: boolean;
+  openSquareCount: number;
+  kickoffAt?: string;
+  now?: number;
+}) => {
+  const kickoffTime = kickoffAt ? Date.parse(kickoffAt) : Number.NaN;
+  return Boolean(
+    isPublished
+    && openSquareCount > 0
+    && Number.isFinite(kickoffTime)
+    && now < kickoffTime
+  );
+};
+
 interface AdminPanelProps {
   game: GameState;
   board: BoardData;
@@ -78,6 +99,8 @@ interface AdminPanelProps {
   notificationDeliveryIssues: NotificationDeliveryIssue[];
   onApply: (game: GameState, board: BoardData) => void;
   onPublish: (currentData: { game: GameState, board: BoardData }) => Promise<string | void>;
+  onSavePayoutDescriptions: (descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
+  onAssignOpenSquares: (squares: string[][]) => Promise<void>;
   onLogout: () => void;
   isActivated: boolean;
   isPublished: boolean;
@@ -86,7 +109,7 @@ interface AdminPanelProps {
   renderPreview?: () => React.ReactNode;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, liveData, winnerHistory, notificationDeliveryIssues, onApply, onPublish, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, liveData, winnerHistory, notificationDeliveryIssues, onApply, onPublish, onSavePayoutDescriptions, onAssignOpenSquares, onLogout, isActivated, isPublished, shareCode, initialTab = 'overview', renderPreview }) => {
   const [localGame, setLocalGame] = useState<GameState>(game);
   const [localBoard, setLocalBoard] = useState<BoardData>(board);
   const [isScanning, setIsScanning] = useState(false);
@@ -126,6 +149,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState('');
   const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [payoutSaveStatus, setPayoutSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [correctionHistory, setCorrectionHistory] = useState<WinnerResolution[]>(winnerHistory);
   const [correctionDraft, setCorrectionDraft] = useState<{
     milestone: WinnerResolution['milestone'];
@@ -135,6 +159,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     reason: string;
   } | null>(null);
   const [drawPreview, setDrawPreview] = useState<{ side: number[]; top: number[] } | null>(null);
+  const [confirmOpenDraw, setConfirmOpenDraw] = useState(false);
+  const [assigningOpenSquares, setAssigningOpenSquares] = useState(false);
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [clearArmed, setClearArmed] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -153,6 +180,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   useEffect(() => {
     setCorrectionHistory(winnerHistory);
   }, [winnerHistory]);
+
+  useEffect(() => {
+    if (!isPublished) return;
+    const interval = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, [isPublished]);
 
   useEffect(() => {
     latestDraftRef.current = { game: localGame, board: localBoard };
@@ -379,6 +412,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     setLocalGame(prev => ({ ...prev, [field]: val }));
   };
 
+  const updatePayoutDescription = (field: keyof PayoutDescriptions, value: string) => {
+    setPayoutSaveStatus('idle');
+    setLocalGame((current) => ({
+      ...current,
+      payoutDescriptions: { ...current.payoutDescriptions, [field]: value },
+    }));
+  };
+
+  const savePayoutDescriptions = async () => {
+    setPayoutSaveStatus('saving');
+    setActionMessage(null);
+    try {
+      const saved = await onSavePayoutDescriptions(localGame.payoutDescriptions || {});
+      setLocalGame((current) => ({ ...current, payoutDescriptions: saved }));
+      setPayoutSaveStatus('saved');
+      setActionMessage('Payout descriptions saved. Published viewers will see them on reload.');
+    } catch (error: any) {
+      setPayoutSaveStatus('error');
+      setActionMessage(error.message || 'Payout descriptions could not be saved.');
+    }
+  };
+
   const updateManualQuarter = (q: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', side: 'left' | 'top', val: number) => {
     setLocalGame(prev => {
       const base = prev.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
@@ -433,14 +488,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     }));
   };
 
+  const openSquareCount = localBoard.squares.filter((names) => !names.length).length;
+  const canFillPublishedOpenSquares = publishedOpenSquaresAreAssignable({
+    isPublished,
+    openSquareCount,
+    kickoffAt: localGame.kickoffAt,
+    now: clockNow,
+  });
+  const canAssignSquares = !isPublished || canFillPublishedOpenSquares;
+
+  const createNumberDrawPreview = () => {
+    setConfirmOpenDraw(false);
+    setDrawPreview({ side: secureShuffleDigits(), top: secureShuffleDigits() });
+  };
+
   const stageNumberDraw = () => {
     if (isPublished) return;
-    const unassigned = localBoard.squares.filter((names) => !names.length).length;
-    if (unassigned) {
-      setActionMessage(`Assign all 100 squares before drawing numbers. ${unassigned} remain.`);
+    if (openSquareCount) {
+      setConfirmOpenDraw(true);
       return;
     }
-    setDrawPreview({ side: secureShuffleDigits(), top: secureShuffleDigits() });
+    createNumberDrawPreview();
   };
 
   const commitNumberDraw = () => {
@@ -452,6 +520,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       isDynamic: false,
       bearsAxisByQuarter: undefined,
       oppAxisByQuarter: undefined,
+      allowOpenSquares: openSquareCount > 0,
     }));
     setDrawPreview(null);
     setActionMessage('Number draw committed to the draft. Publishing will lock these axes.');
@@ -610,7 +679,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     updated_at: string;
   }
 
-  const applyAssignToIndices = (indices: number[], options?: { keepAssignMode?: boolean; resetLabel?: boolean }) => {
+  const applyAssignToIndices = async (indices: number[], options?: { keepAssignMode?: boolean; resetLabel?: boolean }) => {
     if (!isManualApplyRef.current) {
       return;
     }
@@ -623,6 +692,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     // Check for conflicts
     const conflicts = indices.filter(idx => localBoard.squares[idx] && localBoard.squares[idx].length > 0);
 
+    if (isPublished && conflicts.length > 0) {
+      setActionMessage('Published assignments cannot be changed. Select OPEN squares only.');
+      return;
+    }
     if (conflicts.length > 0) setActionMessage(`Replaced existing names in ${conflicts.length} selected squares.`);
 
     const newBoard = {
@@ -657,11 +730,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       }
     });
 
+    if (isPublished) {
+      setAssigningOpenSquares(true);
+      setActionMessage(null);
+      try {
+        await onAssignOpenSquares(newBoard.squares);
+      } catch (error: any) {
+        setActionMessage(error.message || 'The OPEN squares could not be assigned. Reload and try again.');
+        return;
+      } finally {
+        setAssigningOpenSquares(false);
+      }
+    }
+
     // 1. Update Local Board State
     setLocalBoard(newBoard);
 
     // 2. Update Local Metadata State
-    if (metaUpdates.length > 0) {
+    if (!isPublished && metaUpdates.length > 0) {
       setEntryMetaByIndex(newEntryMetaByIndex);
 
       // 3. Batch Upsert to Supabase (Non-blocking)
@@ -706,10 +792,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     }
   };
 
-  const handleBulkApply = () => {
+  const handleBulkApply = async () => {
     isManualApplyRef.current = true;
-    applyAssignToIndices(Array.from(selectedCellIndicesRef.current), { keepAssignMode: false, resetLabel: true });
-    isManualApplyRef.current = false;
+    try {
+      await applyAssignToIndices(Array.from(selectedCellIndicesRef.current), { keepAssignMode: false, resetLabel: true });
+    } finally {
+      isManualApplyRef.current = false;
+    }
   };
 
   const endDragAssign = () => {
@@ -814,7 +903,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         if (!session?.access_token) throw new Error('Sign in before publishing this board.');
         const response = await fetch(`/api/pools/${activePoolId}/publish`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify(
+            localBoard.allowOpenSquares && openSquareCount > 0
+              ? { allowOpenSquares: true }
+              : {},
+          ),
         });
         const result = await response.json();
         if (response.status === 402 && (result.upgradeTo === 'gameday' || result.upgradeTo === 'org')) {
@@ -1242,41 +1336,88 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
               {/* Right Column: Pool Configuration */}
               <div className="flex flex-col space-y-6">
                 <div className="bg-broadcast-white ring-1 ring-inset ring-ink p-6 md:p-8 rounded-surface flex-1">
-                  <h4 className="text-lg font-semibold text-ink mb-6">Payout Configuration</h4>
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-ink">Payouts</h4>
+                    <p className="oa-body mt-2 text-sm text-ink/60">
+                      Describe what the organizer will provide. GridOne displays these rules but never handles the money.
+                    </p>
+                  </div>
 
-                  {/* Payout Configuration */}
-                  <fieldset disabled={isPublished} className="space-y-5 mb-8">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label htmlFor="payout-q1" className="oa-slab text-ink/60">Q1 Payout</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input id="payout-q1" min={0} type="number" value={localGame.payouts?.Q1 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q1: parseInt(e.target.value) || 0, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
+                  <div className="space-y-5 mb-8">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {([
+                        ['Q1', 'Q1'],
+                        ['HALF', 'Halftime'],
+                        ['Q3', 'Q3'],
+                        ['FINAL', 'Final'],
+                      ] as const).map(([key, label]) => (
+                        <div className="space-y-1" key={key}>
+                          <label htmlFor={`payout-${key.toLowerCase()}`} className="oa-slab text-ink/60">{label}</label>
+                          <input
+                            id={`payout-${key.toLowerCase()}`}
+                            type="text"
+                            maxLength={120}
+                            value={localGame.payoutDescriptions?.[key] || ''}
+                            onChange={(event) => updatePayoutDescription(key, event.target.value)}
+                            placeholder="e.g. Winner gets bragging rights"
+                            className="w-full oa-input"
+                          />
                         </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label htmlFor="payout-q2" className="oa-slab text-ink/60">Q2 Payout</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input id="payout-q2" min={0} type="number" value={localGame.payouts?.Q2 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q2: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q3: p.payouts?.Q3 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label htmlFor="payout-q3" className="oa-slab text-ink/60">Q3 Payout</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/50 text-sm">$</span>
-                          <input id="payout-q3" min={0} type="number" value={localGame.payouts?.Q3 ?? 125} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Q3: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Final: p.payouts?.Final ?? 250 } }))} className="w-full oa-input pl-7" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label htmlFor="payout-final" className="oa-slab text-ink/60">Final Payout</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/60 text-sm">$</span>
-                          <input id="payout-final" min={0} type="number" value={localGame.payouts?.Final ?? 250} onChange={(e) => setLocalGame(p => ({ ...p, payouts: { ...p.payouts, Final: parseInt(e.target.value) || 0, Q1: p.payouts?.Q1 ?? 125, Q2: p.payouts?.Q2 ?? 125, Q3: p.payouts?.Q3 ?? 125 } }))} className="w-full oa-input pl-7 font-bold" />
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </fieldset>
+                    <div className="space-y-1">
+                      <label htmlFor="payout-notes" className="oa-slab text-ink/60">Board rules / notes</label>
+                      <textarea
+                        id="payout-notes"
+                        maxLength={280}
+                        rows={3}
+                        value={localGame.payoutDescriptions?.notes || ''}
+                        onChange={(event) => updatePayoutDescription('notes', event.target.value)}
+                        className="w-full oa-input min-h-24 resize-y"
+                      />
+                    </div>
+
+                    {Object.values(localGame.payoutDescriptions || {}).some((value) => value?.trim()) && (
+                      <div className="border border-ink bg-newsprint p-4" aria-label="Payout description preview">
+                        <p className="oa-slab text-ink/55">Viewer preview</p>
+                        <dl className="mt-3 grid gap-2 text-sm">
+                          {([
+                            ['Q1', 'Q1'],
+                            ['HALF', 'Halftime'],
+                            ['Q3', 'Q3'],
+                            ['FINAL', 'Final'],
+                          ] as const).map(([key, label]) => localGame.payoutDescriptions?.[key]?.trim() ? (
+                            <div key={key} className="grid grid-cols-[5rem_1fr] gap-3">
+                              <dt className="oa-slab text-ink/60">{label}</dt>
+                              <dd className="oa-body text-ink">{localGame.payoutDescriptions[key]}</dd>
+                            </div>
+                          ) : null)}
+                          {localGame.payoutDescriptions?.notes?.trim() && (
+                            <div className="border-t border-ink/20 pt-2">
+                              <dt className="oa-slab text-ink/60">Notes</dt>
+                              <dd className="oa-body mt-1 text-ink">{localGame.payoutDescriptions.notes}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={savePayoutDescriptions}
+                        disabled={payoutSaveStatus === 'saving' || !activePoolId}
+                        className="oa-btn oa-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {payoutSaveStatus === 'saving' ? 'Saving payouts…' : 'Save payout descriptions'}
+                      </button>
+                      {payoutSaveStatus === 'saved' && <span className="oa-data text-sm text-ink/70">Saved</span>}
+                      {payoutSaveStatus === 'error' && <span className="oa-data text-sm text-cardinal">Not saved</span>}
+                    </div>
+                    <p className="oa-body text-xs text-ink/55">
+                      GridOne tracks the board. It does not collect square money or pay winners.
+                    </p>
+                  </div>
 
                   {/* Live Scoring */}
                   <div id="live-scoring" tabIndex={-1} className="scroll-mt-28 border-t border-newsprint pt-6 mb-8 outline-none">
@@ -1526,7 +1667,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest mb-4">Board Actions</h5>
                     {isPublished ? (
                       <p className="oa-body border border-gold bg-gold/20 p-4 text-ink">
-                        Published board data is locked. Scanning, clearing names, and editing squares are disabled so winner history stays tied to the exact shared grid.
+                        {canFillPublishedOpenSquares
+                          ? `${openSquareCount} OPEN ${openSquareCount === 1 ? 'square may' : 'squares may'} still be assigned until kickoff. Axis digits and sold squares stay locked.`
+                          : 'This board is frozen. Axis digits and sold squares cannot be changed, and OPEN squares cannot be assigned after kickoff.'}
                       </p>
                     ) : (
                     <div className="flex gap-4">
@@ -1552,12 +1695,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-newsprint pb-6">
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-ink tracking-tight">Grid Editor</h3>
-                  <p className="text-sm font-medium text-ink/60 mt-1">Assign purchaser names, then run one random number draw. Publishing locks both axes.</p>
+                  <p className="text-sm font-medium text-ink/60 mt-1">
+                    {canFillPublishedOpenSquares
+                      ? 'Assign remaining OPEN squares before kickoff. Existing names and both axes stay locked.'
+                      : 'Assign purchaser names, then run one random number draw. Publishing locks both axes.'}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   {/* Bulk Assign Toggle */}
-                  {!isPublished && <button
+                  {canAssignSquares && <button
                     onClick={() => {
                       setIsAssignMode(!isAssignMode);
                       isDragAssigningRef.current = false;
@@ -1577,7 +1724,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
               </div>
 
               {/* Bulk Assign Panel */}
-              {isAssignMode && !isPublished && (
+              {isAssignMode && canAssignSquares && (
                 <div className="bg-cardinal-subtle border border-cardinal rounded-surface p-4">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-5 space-y-1">
@@ -1593,7 +1740,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     />
                     </div>
 
-                    <div className="md:col-span-3 space-y-1">
+                    {!isPublished && <div className="md:col-span-3 space-y-1">
                     <label className="text-[10px] font-bold text-cardinal uppercase tracking-widest">Payment Status</label>
                     <div className="w-full flex bg-broadcast-white rounded-control p-1 border border-newsprint">
                       {(['unpaid', 'paid'] as const).map(status => (
@@ -1606,7 +1753,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         </button>
                       ))}
                     </div>
-                    </div>
+                    </div>}
 
                     <div className="md:col-span-4 flex items-end justify-start md:justify-end gap-2">
                       <button
@@ -1627,15 +1774,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       </button>
                       <button
                         onClick={handleBulkApply}
-                        disabled={!assignLabel.trim() || selectedCellIndices.size === 0}
+                        disabled={!assignLabel.trim() || selectedCellIndices.size === 0 || assigningOpenSquares}
                         className="min-h-11 px-6 py-2 rounded-control text-sm font-bold bg-cardinal text-broadcast-white hover:bg-cardinal-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
-                        Apply to {selectedCellIndices.size}
+                        {assigningOpenSquares ? 'Assigning…' : `Apply to ${selectedCellIndices.size}`}
                       </button>
                     </div>
 
                     <div className="md:col-span-12 text-[11px] text-cardinal">
-                      Click cells to toggle selection, or click-drag to select a range. Then press Apply to update all selected squares.
+                      {isPublished
+                        ? 'Only OPEN squares can be selected. Sold squares and axis digits remain unchanged.'
+                        : 'Click cells to toggle selection, or click-drag to select a range. Then press Apply to update all selected squares.'}
                     </div>
                   </div>
                 </div>
@@ -1651,8 +1800,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <p className="oa-body mt-2 max-w-2xl opacity-80">
                       {isPublished
                         ? 'The published viewer board and winner history remain tied to this committed draw.'
-                        : localBoard.squares.some((names) => !names.length)
-                          ? `Assign all 100 squares first. ${localBoard.squares.filter((names) => !names.length).length} remain before the random draw unlocks.`
+                        : openSquareCount > 0
+                          ? `${openSquareCount} ${openSquareCount === 1 ? 'square is' : 'squares are'} still open. You can keep assigning, or explicitly draw with those squares marked OPEN.`
                           : 'GridOne uses your browser’s cryptographic random generator. You can redraw before committing; publication makes the committed result permanent.'}
                     </p>
                   </div>
@@ -1660,13 +1809,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <button
                       type="button"
                       onClick={stageNumberDraw}
-                      disabled={localBoard.squares.some((names) => !names.length)}
-                      className="oa-btn oa-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      className="oa-btn oa-btn-primary"
                     >
                       Draw numbers
                     </button>
                   )}
                 </div>
+                {confirmOpenDraw && !drawPreview && !isPublished && (
+                  <div className="border-t border-ink bg-gold p-5 text-ink" role="group" aria-labelledby="open-draw-confirmation-title">
+                    <p className="oa-slab text-xs">Open-square draw</p>
+                    <h4 id="open-draw-confirmation-title" className="oa-headline !text-xl mt-1">
+                      {openSquareCount} {openSquareCount === 1 ? 'square is' : 'squares are'} open. Draw anyway?
+                    </h4>
+                    <p className="oa-body mt-2 max-w-2xl text-sm">
+                      Open squares stay marked OPEN. If a result lands there, viewers see “Open square — see board rules.” Add the organizer’s house rule in Payout notes; GridOne will not roll over or redistribute anything.
+                    </p>
+                    <div className="mt-4 flex flex-wrap justify-end gap-3">
+                      <button type="button" onClick={() => setConfirmOpenDraw(false)} className="oa-btn oa-btn-ghost">Keep assigning</button>
+                      <button type="button" onClick={createNumberDrawPreview} className="oa-btn oa-btn-primary">
+                        Draw with {openSquareCount} OPEN
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {drawPreview && !isPublished && (
                   <div className="border-t border-ink bg-broadcast-white p-5 text-ink overflow-x-auto">
                     <dl className="min-w-[42rem] grid gap-4">
@@ -1681,7 +1846,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     </dl>
                     <div className="mt-5 flex flex-wrap justify-end gap-3">
                       <button type="button" onClick={() => setDrawPreview(null)} className="oa-btn oa-btn-ghost">Cancel</button>
-                      <button type="button" onClick={stageNumberDraw} className="oa-btn oa-btn-ghost">Redraw</button>
+                      <button type="button" onClick={createNumberDrawPreview} className="oa-btn oa-btn-ghost">Redraw</button>
                       <button type="button" onClick={commitNumberDraw} className="oa-btn oa-btn-primary">Commit draw</button>
                     </div>
                   </div>
@@ -1735,6 +1900,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                         [...Array(10)].map((_, c) => {
                           const cellIdx = (r * 10) + c;
                           const players = localBoard.squares[cellIdx] || [];
+                          const publishedOpenCell = isPublished && players.length === 0;
+                          const cellCanBeAssigned = !isPublished || (canFillPublishedOpenSquares && publishedOpenCell);
 
                           return (
                             <div key={cellIdx} className="relative group h-12">
@@ -1742,39 +1909,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (isPublished) return;
+                                  if (!cellCanBeAssigned) return;
                                   if (isAssignMode) {
                                     if (justFinishedDragRef.current) return;
                                     toggleCellSelection(cellIdx);
                                     return;
                                   }
-                                  setEditingMetaIndex(cellIdx);
+                                  if (!isPublished) setEditingMetaIndex(cellIdx);
                                 }}
                                 onPointerDown={(e) => {
-                                  if (isPublished || !isAssignMode) return;
+                                  if (!cellCanBeAssigned || !isAssignMode) return;
                                   e.preventDefault();
                                   beginDragAssign(cellIdx);
                                 }}
                                 onPointerEnter={(e) => {
-                                  if (!isPublished) continueDragAssign(cellIdx, e.buttons);
+                                  if (cellCanBeAssigned) continueDragAssign(cellIdx, e.buttons);
                                 }}
                                 onPointerOver={(e) => {
-                                  if (!isPublished) continueDragAssign(cellIdx, e.buttons);
+                                  if (cellCanBeAssigned) continueDragAssign(cellIdx, e.buttons);
                                 }}
                                 onPointerUp={() => {
-                                  if (isPublished || !isAssignMode) return;
+                                  if (!cellCanBeAssigned || !isAssignMode) return;
                                   endDragAssign();
                                 }}
-                                disabled={isPublished}
+                                disabled={!cellCanBeAssigned}
                                 aria-pressed={isAssignMode ? selectedCellIndices.has(cellIdx) : undefined}
                                 aria-label={`Square ${cellIdx + 1}${players[0] ? `, assigned to ${players[0]}` : ', unassigned'}${isAssignMode ? ', toggle selection' : ', edit purchaser details'}`}
-                                className={`w-full h-full border rounded-grid flex flex-col items-center justify-center p-1 transition-all group ${isPublished ? 'cursor-default' : 'cursor-pointer active:scale-95'} ${isAssignMode && selectedCellIndices.has(cellIdx)
+                                className={`w-full h-full border rounded-grid flex flex-col items-center justify-center p-1 transition-all group ${cellCanBeAssigned ? 'cursor-pointer active:scale-95' : 'cursor-default'} ${isAssignMode && selectedCellIndices.has(cellIdx)
                                   ? 'bg-cardinal-subtle border-cardinal '
                                   : 'bg-newsprint border-newsprint hover:bg-newsprint hover:border-newsprint'
                                   }`}
                               >
                                 <span className="oa-board-name font-bold text-ink/90 truncate w-full text-center">
-                                  {players[0] || ''}
+                                  {players[0] || (isPublished ? 'OPEN' : '')}
                                 </span>
                                 {players.length === 0 && (
                                   <span className="oa-board-name text-ink/30 select-none">

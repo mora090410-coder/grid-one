@@ -3,8 +3,7 @@
  * One continuous 5-chapter film scrubbed by scroll (canvas + pre-extracted
  * frames, ImageBitmap sliding window), copy beats over the film, then the
  * content bands. Frames live in /public/film/frames (301 JPEGs).
- * Replaces the previous LandingPage at the root route; LandingPage.tsx is
- * retained in the tree as reference.
+ * This is the public landing page rendered at the root route.
  */
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';

@@ -53,16 +53,18 @@ test('find-squares dialog traps focus, closes with Escape, and returns focus', a
 
   const dialog = page.getByRole('dialog', { name: 'Find my squares' });
   const close = dialog.getByRole('button', { name: 'Close' });
-  const player = dialog.getByLabel('Find Player:');
+  const player = dialog.getByLabel('Name used on board');
   await expect(dialog).toBeVisible();
   await expect(close).toBeFocused();
   await expect(close).toHaveAccessibleName('Close');
-  await expect(player).toHaveAccessibleName('Find Player:');
+  await expect(player).toHaveAccessibleName('Name used on board');
   await expectTouchTarget(close);
   await expectTouchTarget(player);
 
-  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
   await expect(player).toBeFocused();
+  const lastBrowseName = dialog.getByTestId('browse-name-list').getByRole('button').last();
+  await lastBrowseName.focus();
   await page.keyboard.press('Tab');
   await expect(close).toBeFocused();
   await page.keyboard.press('Escape');

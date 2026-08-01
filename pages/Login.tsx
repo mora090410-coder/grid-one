@@ -25,7 +25,7 @@ const Login: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    const isClaim = searchParams.get('mode') === 'claim';
+    const isAdoptDraft = searchParams.get('mode') === 'adopt-draft';
 
     // If already logged in, redirect to dashboard or return URL
     React.useEffect(() => {
@@ -33,13 +33,13 @@ const Login: React.FC = () => {
             const returnTo = safeReturnTo(searchParams.get('returnTo'));
             if (returnTo) {
                 navigate(returnTo);
-            } else if (isClaim) {
-                navigate('/dashboard?mode=claim');
+            } else if (isAdoptDraft) {
+                navigate('/dashboard?mode=adopt-draft');
             } else {
                 navigate('/dashboard');
             }
         }
-    }, [session, navigate, isClaim, searchParams]);
+    }, [session, navigate, isAdoptDraft, searchParams]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,7 +78,7 @@ const Login: React.FC = () => {
                 // SMART PIVOT: Check if user identity is empty (Indicates email exists but user tried to sign up)
                 if (data.user && data.user.identities && data.user.identities.length === 0) {
                     setIsSignUp(false); // Pivot to Sign In
-                    setError('This email is already registered. Please sign in with your password to claim your board.');
+                    setError('This email is already registered. Please sign in with your password to save your draft board.');
                     setLoading(false);
                     return; // Stop here, let them type password and click Sign In
                 }
@@ -141,7 +141,7 @@ const Login: React.FC = () => {
                 <div className="text-center mb-8">
                     <img src="/icons/gridone-icon-256.png" alt="GridOne" className="w-16 h-16 rounded-surface mx-auto mb-4 transition-transform ring-1 ring-gold/50" />
                     <h1 className="text-2xl font-bold text-ink tracking-tight">
-                        {isSignUp ? 'Create your organizer account' : (isClaim ? 'Sign in to continue' : 'Welcome back')}
+                        {isSignUp ? 'Create your organizer account' : (isAdoptDraft ? 'Sign in to save your draft' : 'Welcome back')}
                     </h1>
                     <p className="text-sm text-ink/60 mt-2">
                         {isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
@@ -242,7 +242,7 @@ const Login: React.FC = () => {
                         disabled={loading}
                         className="oa-btn oa-btn-cardinal w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isClaim ? 'Sign In & Claim Board' : 'Sign In'))}
+                        {loading ? 'Processing...' : (isSignUp ? 'Create Account' : (isAdoptDraft ? 'Sign In & Save Draft' : 'Sign In'))}
                     </button>
                 </form>
 

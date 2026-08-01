@@ -1,3 +1,42 @@
+# Gap remediation — August 1, 2026
+
+Source: `docs/gap-remediation-plan-2026-08-01.md` and the attached owner brief.
+
+Execution boundary: Gaps 4, 1, and 2 were completed locally on top of the PR #9 score-cron revision. On August 1 the owner approved Gap 3's recommended “Open square — see board rules” behavior and explicitly authorized commit, push, production migrations, and deployment. Do not send live email, change payment objects, or mutate production board data beyond applying the reviewed migrations and normal release smoke paths.
+
+## Plan
+
+- [x] Confirm the PR #9 baseline, worktree ownership, migration sequence, and current test baseline; isolate the work on a `codex/` branch without touching unrelated untracked files.
+- [x] Gap 4: remove verified-dead payout/landing/scenario code and empty directories, preserve live pricing assertions, rename guest-board draft adoption terminology, and make verification configuration failures visible at the board or in branded HTML.
+- [x] Verify Gap 4 with reference scans, strict TypeScript, and focused Vitest coverage before proceeding; the repository-wide suite remains in the final verification gate so it runs against the complete stable tree.
+- [x] Gap 1: add RLS-safe migration `021`, owner-only payout-description validation/write support, organizer editing and preview, public snapshot projection, viewer display beside the off-platform disclaimer, and focused regression tests.
+- [x] Gap 2: add a single normalized tiered name matcher, human-resolved suggestions/browse fallback, share-code-scoped persisted selection, and focused component/unit tests without changing organizer `PlayerFilter` behavior.
+- [x] Run migration/database coverage where available, strict TypeScript, production build, full Vitest, relevant Playwright workflows, and `git diff --check`.
+- [x] Review the final diff for scope, integrity, money-handling language, and elegance; record exact evidence and the deferred Gap 3 decision below.
+- [x] Gap 3: add an explicit allow-open draw confirmation, publish 1–99 open squares without changing the default full-board path, and render OPEN cells distinctly.
+- [x] Enforce owner-only post-publish assignment of previously open squares before kickoff; reject occupied-square edits, existing-name mutations, axis changes, and all edits at/after kickoff.
+- [x] Add deterministic open-square milestone resolutions, public history projection, and notification suppression without payout adjudication.
+- [x] Apply migrations `021`–`022` to disposable PostgreSQL and run focused endpoint/UI/browser coverage plus the complete verification gates.
+- [ ] Stage only remediation-owned files, commit, push, open the GitHub PR/release path appropriate to PR #9 status, apply production migrations in order, deploy Cloudflare Pages, and verify the canonical production revision and public behavior.
+
+## Review
+
+- Baseline: branch `codex/gap-remediation-2026-08-01` starts at PR #9 revision `984313b`; strict TypeScript and all 48 Vitest files pass (285 passed, one expected hosted Stripe skip).
+- Scope correction: the live organizer, `usePoolData`, and create API still use numeric `payouts`/`payout_labels` with invented `$125/$250` defaults. Gap 1 must replace that live editor/default path with optional text descriptions, not merely delete dead components or add a second contradictory payout model.
+- Gap 4: deleted the three import-free legacy components, removed empty cleanup directories, preserved pricing assertions against `FilmLanding`, renamed guest migration to `adopt-draft`, and fixed verification configuration failures with a board-scoped redirect or branded no-store 503 page. Focused coverage passes 18/18 and strict TypeScript passes.
+- Gap 1: migration `021` adds validated optional description JSON to canonical contests and public snapshots. Owner-authenticated, revision-checked PATCH updates the canonical row and published projection atomically through a service-only RPC. The numeric organizer editor and invented defaults are gone; new boards no longer seed legacy payout labels. Organizer text remains editable after publish, previews locally, and renders anonymously only when present beside the exact off-platform disclaimer.
+- Gap 2: the viewer modal now normalizes case, whitespace, punctuation, and accents; exact normalized matches resolve only on submit, while token/substring matches and normalization collisions require a human choice. Zero results expose the distinct assigned-name list. The selected canonical label persists per share code and is revalidated after load, preserving exact highlighting and participant identity.
+- Focused remediation coverage passes 78/78 with strict TypeScript and `git diff --check`. Disposable PostgreSQL applies through migration `021` and proves initial projection, post-publish atomic edits, URL constraints, revision behavior, and service-only write authority.
+- Final verification: `npm run build` passes; the full Vitest run passes 54/54 files with 325 tests passing and one expected hosted Stripe skip. The full Docker-backed run used `--testTimeout=15000`; default-timeout concurrency failures were rerun in isolation and passed, confirming timing flakes rather than behavior failures.
+- Playwright passes all 44 non-visual workflows across Chromium and WebKit (10 intentional capture skips), including normalized viewer search, reload persistence, focus containment, and the published payout block. The rendered desktop viewer review is captured at `/Users/amm13/.codex/visualizations/2026/08/01/019fbe70-b161-79e0-a311-fd6a9feadf3a/gridone-payout-viewer.png`; the block is clear, ordered, and adjacent to the exact disclaimer.
+- The active numeric payout model is removed from client types, organizer controls, new-board settings, and public responses. Legacy database `payout_labels` remains only as an unexposed compatibility column for existing migrations/RPC signatures; new boards write `{}` there.
+- Gap 3 approval: the owner selected “Open square — see board rules,” no participant email, no automated rollover or redistribution, and allowed late assignment of only previously open cells before kickoff.
+- Release authorization: commit, push, production migrations, and deployment are now approved. Migration `021` must deploy before the API/client revision, followed by the new Gap 3 migration.
+- Gap 3 implementation: an organizer may explicitly commit a number draw with 1–99 open cells; the persisted draft opt-in and action-time publish confirmation are both required. The default publish path still rejects open cells, and a 100-cell open board cannot publish.
+- Gap 3 integrity: the service-only late-fill RPC accepts only the complete normalized name array, proves every occupied cell is unchanged, permits only `[] -> [name]` before kickoff, and atomically advances canonical board data, assignments, participants, public projection, revision, and audit history.
+- Gap 3 resolution behavior: open winners are stored and projected explicitly, render as `Open square` with a board-rules link only when organizer notes exist, and enqueue no notification delivery. Corrections preserve append-only resolution versions and can move between open and assigned outcomes without inventing a payout decision.
+- Final local verification after the open-square draft-display correction: strict TypeScript, production build, both Worker dry-runs, and `git diff --check` pass; full Vitest passes 56/56 files with 343 tests passing and one expected hosted Stripe skip; full Playwright passes all 44 non-visual Chromium/WebKit workflows with 10 intentional capture skips.
+
 # Landing pricing/Stripe alignment — July 30, 2026
 
 - [x] Confirm the changed landing page belongs to canonical GridOne `main`, not HomeWork.

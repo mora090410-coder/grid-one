@@ -10,6 +10,7 @@ interface BoardGridProps {
   leftTeamName: string;
   topTeamName: string;
   highlightedCoords?: { left: number; top: number } | null;
+  showOpenSquares?: boolean;
 }
 
 // Get initials from a name (first letter of first and last name)
@@ -27,7 +28,7 @@ const formatCellDisplay = (players: string[]): string => {
   return `${getInitials(players[0])}+${players.length - 1}`;
 };
 
-const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selectedPlayer, leftTeamName, topTeamName, highlightedCoords }) => {
+const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selectedPlayer, leftTeamName, topTeamName, highlightedCoords, showOpenSquares = false }) => {
   const isFinal = live?.state === 'post';
   const isFilteringByPlayer = selectedPlayer.trim().length > 0;
   const [viewQuarter, setViewQuarter] = React.useState<'Q1' | 'Q2' | 'Q3' | 'Q4'>('Q1');
@@ -167,10 +168,10 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
 
                   const cellIndex = (rowIndex * 10) + colIndex;
                   const players = board.squares[cellIndex] || [];
-                  const normalizedSelectedPlayer = selectedPlayer.trim().toLocaleLowerCase();
+                  const isOpenSquare = showOpenSquares && players.length === 0;
                   const hasSelectedPlayer = Boolean(
-                    normalizedSelectedPlayer
-                    && players.some(p => p.trim().toLocaleLowerCase() === normalizedSelectedPlayer)
+                    selectedPlayer
+                    && players.includes(selectedPlayer)
                   );
 
                   // Use new cell ID based approach for winner matching
@@ -200,6 +201,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                   } else {
                     cellClass += "bg-broadcast-white hover:bg-newsprint ";
                   }
+                  if (isOpenSquare) cellClass += "ring-1 ring-inset ring-ink/35 ";
 
                   // Highlight states — opaque fills + inset key lines, never glow
                   if (isHighlightedScenario) {
@@ -223,14 +225,14 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                       key={colIndex}
                       className={`${cellClass} group focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-cardinal`}
                       tabIndex={0}
-                      aria-label={`${players.length > 0 ? players.join(', ') : 'Unassigned square'}, ${topTeamName} ${tDigit}, ${leftTeamName} ${lDigit}${winningLabels.length ? `, winner for ${winningLabels.join(', ')}` : ''}`}
+                      aria-label={`${players.length > 0 ? players.join(', ') : isOpenSquare ? 'Open square' : 'Unassigned square'}, ${topTeamName} ${tDigit}, ${leftTeamName} ${lDigit}${winningLabels.length ? `, winner for ${winningLabels.join(', ')}` : ''}`}
                     >
                       <div className="w-full h-full flex items-center justify-center">
                         <div
                           className={`oa-board-name text-center flex items-center justify-center w-full ${isWonCell ? 'text-ink font-bold' : hasSelectedPlayer ? 'text-ink font-bold' : isHighlightedScenario ? 'text-ink font-bold' : 'text-ink/70'
                             }`}
                         >
-                          {formatCellDisplay(players)}
+                          {isOpenSquare ? <span className="oa-slab text-[9px] text-ink/65 md:text-[10px]">OPEN</span> : formatCellDisplay(players)}
                         </div>
                       </div>
 
@@ -242,7 +244,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                       {/* Tooltip — opaque chyron slab, hard corners */}
                       <div className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1.5 bg-chyron ring-[3px] ring-ink opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity duration-150 pointer-events-none whitespace-nowrap">
                         <div className="oa-slab text-broadcast-white">
-                          {players.length > 0 ? players.join(', ') : 'Empty'}
+                          {players.length > 0 ? players.join(', ') : isOpenSquare ? 'OPEN' : 'Empty'}
                         </div>
                         <div className="oa-data text-[10px] text-broadcast-white/60">
                           {lDigit}/{tDigit}
@@ -273,6 +275,7 @@ const arePropsEqual = (prev: BoardGridProps, next: BoardGridProps) => {
   if (prev.selectedPlayer !== next.selectedPlayer) return false;
   if (prev.leftTeamName !== next.leftTeamName) return false;
   if (prev.topTeamName !== next.topTeamName) return false;
+  if (prev.showOpenSquares !== next.showOpenSquares) return false;
 
   // Highlighted Coords deep check
   const pCoords = prev.highlightedCoords;

@@ -5,7 +5,7 @@
  * FIRST VIEWPORT: Split Stage places live/personal context above the exact board on one horizon; the primary action is Find my squares.
  * FORM: Game-Day Horizon, Composition C Split Stage, chosen staging from stagecraft cyclorama; seed 356916de.
  */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { WinnerHighlights } from '../types';
@@ -22,6 +22,7 @@ import BoardHeader from './board/BoardHeader';
 import ShareModal from './board/ShareModal';
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
+import { distinctAssignedNames } from '../utils/playerNameMatching';
 
 // Custom Hooks
 import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
@@ -43,7 +44,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
         ownerId, loadingPool, dataReady, loadPoolData, error: poolError,
         isActivated, isLocked, isPublished, winnerHistory, pendingMilestones,
-        notificationDeliveryIssues, updatePool, publishPool
+        notificationDeliveryIssues, updatePool, updatePayoutDescriptions, updatePublishedOpenSquares, publishPool
     } = poolData;
 
     const auth = useAuth();
@@ -85,7 +86,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [adminStartTab, setAdminStartTab] = useState<'overview' | 'edit'>('overview');
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
 
-    const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+    const publicSelectionShareCode = routeShareCode || (!requiresAuthForRoute ? shareCode : null);
+    const selectionStorageKey = publicSelectionShareCode
+        ? `gridone:find-squares:${publicSelectionShareCode.toUpperCase()}`
+        : null;
+    const selectionScope = selectionStorageKey || (demoMode ? 'demo' : `board:${urlPoolId || 'local'}`);
+    const [playerSelection, setPlayerSelection] = useState({ scope: selectionScope, displayName: '' });
+    const hydratedSelectionKey = useRef<string | null>(null);
+    const selectedPlayer = playerSelection.scope === selectionScope ? playerSelection.displayName : '';
     const [highlightedCoords, setHighlightedCoords] = useState<{ left: number, top: number } | null>(null);
 
     // 3. Action Hooks
@@ -148,6 +156,52 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         localStorage.setItem('squares_board', JSON.stringify(board));
     }, [game, board, dataReady, loadingPool, urlPoolId]);
 
+    useEffect(() => {
+        if (!selectionStorageKey || !dataReady || loadingPool || poolError) return;
+        if (hydratedSelectionKey.current === selectionStorageKey) return;
+
+        let displayName = '';
+        try {
+            const raw = localStorage.getItem(selectionStorageKey);
+            const saved = raw ? JSON.parse(raw) : null;
+            const assignedNames = distinctAssignedNames(board.squares);
+            if (
+                saved?.version === 1
+                && typeof saved.displayName === 'string'
+                && assignedNames.includes(saved.displayName)
+            ) {
+                displayName = saved.displayName;
+            } else if (raw) {
+                localStorage.removeItem(selectionStorageKey);
+            }
+        } catch {
+            // Storage may be unavailable or contain malformed data; selection still works for this visit.
+        }
+
+        hydratedSelectionKey.current = selectionStorageKey;
+        setPlayerSelection({ scope: selectionScope, displayName });
+    }, [board.squares, dataReady, loadingPool, poolError, selectionScope, selectionStorageKey]);
+
+    useEffect(() => {
+        if (
+            !selectionStorageKey
+            || hydratedSelectionKey.current !== selectionStorageKey
+            || playerSelection.scope !== selectionScope
+        ) return;
+        try {
+            if (playerSelection.displayName) {
+                localStorage.setItem(selectionStorageKey, JSON.stringify({
+                    version: 1,
+                    displayName: playerSelection.displayName,
+                }));
+            } else {
+                localStorage.removeItem(selectionStorageKey);
+            }
+        } catch {
+            // Storage is an enhancement; keep the in-memory selection when it is unavailable.
+        }
+    }, [playerSelection, selectionScope, selectionStorageKey]);
+
     // 6. Helpers
     const handleTogglePreview = (enabled: boolean) => {
         setIsPreviewMode(enabled);
@@ -186,7 +240,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     winnerHistory={liveWinnerHistory}
                     pendingMilestones={livePendingMilestones}
                     selectedPlayer={selectedPlayer}
-                    onClearPlayer={() => setSelectedPlayer('')}
+                    onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
                     onFindSquares={() => setShowFindSquaresModal(true)}
                     highlightedCoords={highlightedCoords}
                     onScenarioFocus={setHighlightedCoords}
@@ -251,7 +305,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 <FindSquaresModal
                     board={board}
                     selectedPlayer={selectedPlayer}
-                    onSelectPlayer={setSelectedPlayer}
+                    onSelectPlayer={(displayName) => setPlayerSelection({ scope: selectionScope, displayName })}
                     onClose={() => setShowFindSquaresModal(false)}
                 />
             )}
@@ -268,6 +322,15 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         initialTab={adminStartTab}
                         onApply={(g, b) => { setGame(g); setBoard(b); }}
                         onPublish={handlePublish}
+                        onSavePayoutDescriptions={(descriptions) => {
+                            if (!activePoolId) throw new Error('Save this board before adding payout descriptions.');
+                            return updatePayoutDescriptions(activePoolId, descriptions);
+                        }}
+                        onAssignOpenSquares={async (squares) => {
+                            if (!activePoolId) throw new Error('Reload this board before assigning OPEN squares.');
+                            await updatePublishedOpenSquares(activePoolId, squares);
+                            await loadPoolData(activePoolId);
+                        }}
                         onLogout={handleLogout}
                         isActivated={isActivated}
                         isPublished={isPublished}

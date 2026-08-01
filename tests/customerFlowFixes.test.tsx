@@ -112,6 +112,26 @@ describe('customer flow regressions', () => {
         expect(screen.queryByText('Washington')).not.toBeInTheDocument();
     });
 
+    it('renders published empty cells as accessible OPEN inventory without changing draft cells', () => {
+        const board = boardWithNames();
+        const props = {
+            board,
+            highlights,
+            live: null,
+            selectedPlayer: '',
+            leftTeamName: 'Away',
+            topTeamName: 'Home',
+        };
+        const { rerender } = render(<BoardGrid {...props} />);
+        expect(screen.getAllByRole('cell', { name: /^Unassigned square,/ })).toHaveLength(98);
+        expect(screen.queryByText('OPEN')).not.toBeInTheDocument();
+
+        rerender(<BoardGrid {...props} showOpenSquares />);
+        const openCells = screen.getAllByRole('cell', { name: /^Open square,/ });
+        expect(openCells).toHaveLength(98);
+        openCells.forEach((cell) => expect(cell).toHaveTextContent('OPEN'));
+    });
+
     it('does not claim a link was copied when clipboard permission is denied', async () => {
         Object.defineProperty(navigator, 'clipboard', {
             configurable: true,

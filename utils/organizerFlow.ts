@@ -46,7 +46,7 @@ export const getOrganizerProgress = ({
     };
   }
 
-  if (open > 0) {
+  if (open > 0 && !axesReady) {
     return {
       phase: 'fill',
       destination: 'assign',
