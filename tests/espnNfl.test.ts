@@ -175,9 +175,11 @@ describe('ESPN NFL schedule fetches', () => {
       id: '401000003',
       homeTeam: { abbr: 'WAS' },
     });
-    expect(fetchMock).toHaveBeenCalledWith(espnSummaryUrl('401000003'), {
+    expect(fetchMock).toHaveBeenCalledWith(espnSummaryUrl('401000003'), expect.objectContaining({
       headers: { Accept: 'application/json' },
-    });
+      // Every ESPN request now carries an 8s timeout signal.
+      signal: expect.any(AbortSignal),
+    }));
   });
 
   it('separates invalid or missing exact events from malformed provider data', async () => {

@@ -217,7 +217,7 @@ const applyPricingMigration = async () => {
   const directory = resolve(process.cwd(), 'supabase/migrations');
   const files = migrationFiles();
   expect(files.map(file => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: 20 }, (_, index) => index),
+    Array.from({ length: 21 }, (_, index) => index),
   );
   await executeSql(
     readFileSync(resolve(directory, '019_pricing_tiers.sql'), 'utf8'),

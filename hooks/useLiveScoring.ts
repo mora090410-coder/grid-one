@@ -57,6 +57,9 @@ export function useLiveScoring(
     const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>(initialPendingMilestones);
     const pollRef = useRef<NodeJS.Timeout | null>(null);
     const isFinalRef = useRef(false);
+    // Server-driven cadence: the score endpoint reports nextPollSeconds from
+    // the SCORE_POLL_SECONDS env var, so the rate is tunable without a deploy.
+    const [pollIntervalMs, setPollIntervalMs] = useState(60_000);
     const clearPoll = useCallback(() => {
         if (!pollRef.current) return;
         clearInterval(pollRef.current);
@@ -209,6 +212,10 @@ export function useLiveScoring(
             setLiveData(data);
             if (result.winnerHistory) setWinnerHistory(result.winnerHistory);
             if (result.pendingMilestones) setPendingMilestones(result.pendingMilestones);
+            const nextSeconds = result.nextPollSeconds;
+            if (Number.isInteger(nextSeconds) && nextSeconds! >= 30 && nextSeconds! <= 300) {
+                setPollIntervalMs(current => current === nextSeconds! * 1000 ? current : nextSeconds! * 1000);
+            }
 
             if (data.freshness === 'offline') {
                 setLiveStatus('OFFLINE · LAST KNOWN');
@@ -271,7 +278,7 @@ export function useLiveScoring(
                 || isFinalRef.current
             ) return;
             void fetchLive();
-            if (externalEventId) pollRef.current = setInterval(fetchLive, 60_000);
+            if (externalEventId) pollRef.current = setInterval(fetchLive, pollIntervalMs);
         };
         const handleVisibility = () => {
             if (document.hidden) clearPoll();
@@ -291,6 +298,7 @@ export function useLiveScoring(
         externalEventId,
         fetchLive,
         manualScoringEnabled,
+        pollIntervalMs,
     ]);
 
     return {

@@ -39,6 +39,33 @@ export interface EspnScoreSnapshot {
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
+import { withRetry } from '../../utils/retry';
+
+const ESPN_FETCH_TIMEOUT_MS = 8_000;
+
+const espnRequestInit = (): RequestInit => ({
+  headers: { Accept: 'application/json' },
+  ...(typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
+    ? { signal: AbortSignal.timeout(ESPN_FETCH_TIMEOUT_MS) }
+    : {}),
+});
+
+const isRetryableEspnError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  if (error.name === 'TimeoutError' || error.name === 'AbortError') return true;
+  const message = error.message.toLowerCase();
+  return message.includes('network') || message.includes('timeout') || message.includes('http 5');
+};
+
+// One retry keeps the worst case (~2 fetch timeouts + backoff) well inside the
+// 45-second score refresh lease.
+const ESPN_RETRY_OPTIONS = {
+  retries: 1,
+  baseDelayMs: 400,
+  maxDelayMs: 1_500,
+  shouldRetry: isRetryableEspnError,
+};
+
 const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 export const ESPN_SCOREBOARD_URL = `${ESPN_BASE_URL}/scoreboard`;
 export const espnSummaryUrl = (eventId: string) =>
@@ -178,13 +205,7 @@ const normalizeScoredTeam = (
   return { ...normalizeTeam(raw), score, quarterScores };
 };
 
-/**
- * Normalizes an ESPN exact-event summary into team-oriented scoring.
- * Every period after the fourth is accumulated into OT.
- */
-export const normalizeEspnScoreSummary = (rawSummary: unknown): EspnScoreSnapshot => {
-  const summary = requireRecord(rawSummary, 'ESPN summary was malformed.');
-  const parts = eventParts(summary.header);
+const scoreSnapshotFromParts = (parts: ReturnType<typeof eventParts>): EspnScoreSnapshot => {
   const status = parts.competition.status || parts.event.status;
   const observedPeriods = [parts.home, parts.away].reduce((highest, competitor) => {
     const linescores = Array.isArray(competitor?.linescores) ? competitor.linescores : [];
@@ -205,6 +226,19 @@ export const normalizeEspnScoreSummary = (rawSummary: unknown): EspnScoreSnapsho
   };
 };
 
+/**
+ * Normalizes an ESPN exact-event summary into team-oriented scoring.
+ * Every period after the fourth is accumulated into OT.
+ */
+export const normalizeEspnScoreSummary = (rawSummary: unknown): EspnScoreSnapshot => {
+  const summary = requireRecord(rawSummary, 'ESPN summary was malformed.');
+  return scoreSnapshotFromParts(eventParts(summary.header));
+};
+
+/** Normalizes a single scoreboard `events[]` entry into the same score shape. */
+export const normalizeEspnScoreboardEvent = (rawEvent: unknown): EspnScoreSnapshot =>
+  scoreSnapshotFromParts(eventParts(rawEvent));
+
 const parseJsonResponse = async (response: Response, context: string): Promise<any> => {
   if (!response.ok) throw new Error(`${context} failed with HTTP ${response.status}.`);
   try {
@@ -220,11 +254,44 @@ export const fetchEspnSummary = async (
 ): Promise<any | null> => {
   const normalizedId = String(eventId || '').trim();
   if (!/^\d+$/.test(normalizedId)) return null;
-  const response = await fetchImpl(espnSummaryUrl(normalizedId), {
-    headers: { Accept: 'application/json' },
-  });
-  if (response.status === 400 || response.status === 404) return null;
-  return parseJsonResponse(response, 'ESPN event lookup');
+  return withRetry(async () => {
+    const response = await fetchImpl(espnSummaryUrl(normalizedId), espnRequestInit());
+    if (response.status === 400 || response.status === 404) return null;
+    return parseJsonResponse(response, 'ESPN event lookup');
+  }, ESPN_RETRY_OPTIONS);
+};
+
+export interface LiveScoreboardResult {
+  raw: any;
+  /** Live/scheduled games keyed by ESPN event id. Malformed events are dropped. */
+  games: Map<string, { snapshot: EspnScoreSnapshot; rawEvent: unknown }>;
+}
+
+/**
+ * Fetches ESPN's current scoreboard once and normalizes every parseable event.
+ * This is the single upstream call the score-refresh cron uses to cover the
+ * entire live slate, instead of one /summary request per board.
+ */
+export const fetchLiveScoreboard = async (
+  fetchImpl: FetchLike = fetch,
+): Promise<LiveScoreboardResult> => {
+  const payload = await withRetry(async () => {
+    const response = await fetchImpl(ESPN_SCOREBOARD_URL, espnRequestInit());
+    return parseJsonResponse(response, 'ESPN scoreboard request');
+  }, ESPN_RETRY_OPTIONS);
+  if (!Array.isArray(payload?.events)) {
+    throw new Error('ESPN scoreboard response did not contain events.');
+  }
+  const games = new Map<string, { snapshot: EspnScoreSnapshot; rawEvent: unknown }>();
+  for (const event of payload.events) {
+    try {
+      const snapshot = normalizeEspnScoreboardEvent(event);
+      games.set(snapshot.eventId, { snapshot, rawEvent: event });
+    } catch {
+      // Pro Bowl and auxiliary events are not scoreable NFL matchups.
+    }
+  }
+  return { raw: payload, games };
 };
 
 export const fetchScheduledGameById = async (
@@ -271,8 +338,10 @@ export const fetchScheduledGames = async (
   const url = new URL(ESPN_SCOREBOARD_URL);
   url.searchParams.set('dates', `${dateKey(rangeStart)}-${dateKey(rangeEnd)}`);
   url.searchParams.set('limit', '1000');
-  const response = await fetchImpl(url, { headers: { Accept: 'application/json' } });
-  const payload = await parseJsonResponse(response, 'ESPN schedule request');
+  const payload = await withRetry(async () => {
+    const response = await fetchImpl(url, espnRequestInit());
+    return parseJsonResponse(response, 'ESPN schedule request');
+  }, ESPN_RETRY_OPTIONS);
   if (!Array.isArray(payload?.events)) throw new Error('ESPN schedule response did not contain events.');
 
   const games = payload.events.flatMap((event: unknown) => {

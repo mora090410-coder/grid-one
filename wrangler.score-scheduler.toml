@@ -1,0 +1,9 @@
+name = "gridone-score-refresh-scheduler"
+main = "workers/score-refresh-scheduler.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+REFRESH_ENDPOINT = "https://www.getgridone.com/api/scores/refresh"
