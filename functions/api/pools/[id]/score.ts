@@ -1,32 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 import {
-  fetchEspnSummary,
-  normalizeEspnScoreSummary,
-  normalizeTeamAbbreviation,
-} from '../../../_lib/espnNfl';
-import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../../_lib/publicBoardVisibility';
 import { hasBoardActivation } from '../../../../utils/boardActivation';
+import {
+  applyProviderScore,
+  fetchExactEventScore,
+  liveScoringEnabled,
+  scorePollSeconds,
+} from '../../../_lib/scoreRefresh';
+
+// Re-exported for existing consumers and tests; implementations now live in
+// the shared refresh library so the cron endpoint uses the exact same logic.
+export {
+  fetchExactEventScore,
+  scoreStaleAfter,
+  validateScore,
+} from '../../../_lib/scoreRefresh';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
-type QuarterScore = { left: number; top: number };
-type ProviderScore = {
-  leftScore: number;
-  topScore: number;
-  quarterScores: Record<'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', QuarterScore>;
-  clock: string;
-  period: number;
-  state: 'pre' | 'in' | 'post';
-  detail: string;
-  isOvertime: boolean;
-  sourceObservedAt: string;
-};
-
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const sharePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
+
+// How long past stale_after the anonymous share-code path tolerates before it
+// falls back to an inline ESPN refresh. The cron normally keeps snapshots
+// fresh; this only fires when the cron has stumbled for several minutes.
+const PUBLIC_REFRESH_GRACE_MS = 5 * 60_000;
+const PUBLIC_CACHE_CONTROL = 'public, s-maxage=30, stale-while-revalidate=60';
 
 export const hasActivatedBoardServices = (contest: { board_activations?: unknown } | null | undefined) =>
   hasBoardActivation(contest?.board_activations);
@@ -63,41 +65,6 @@ export const pendingMilestoneConfirmationDue = (
   return Number.isFinite(observedAt) && now - observedAt >= 45_000;
 });
 
-const isIntegerScore = (value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 255;
-
-export const validateScore = (candidate: any): ProviderScore => {
-  if (!candidate || !isIntegerScore(candidate.leftScore) || !isIntegerScore(candidate.topScore)) {
-    throw new Error('Provider returned invalid score totals.');
-  }
-  if (!['pre', 'in', 'post'].includes(candidate.state) || !Number.isInteger(candidate.period) || candidate.period < 0 || candidate.period > 5) {
-    throw new Error('Provider returned an invalid game state.');
-  }
-  const keys = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const;
-  for (const key of keys) {
-    if (!candidate.quarterScores?.[key] || !isIntegerScore(candidate.quarterScores[key].left) || !isIntegerScore(candidate.quarterScores[key].top)) {
-      throw new Error(`Provider returned invalid ${key} scoring.`);
-    }
-  }
-  const leftTotal = keys.reduce((sum, key) => sum + candidate.quarterScores[key].left, 0);
-  const topTotal = keys.reduce((sum, key) => sum + candidate.quarterScores[key].top, 0);
-  if (candidate.state !== 'pre' && (leftTotal !== candidate.leftScore || topTotal !== candidate.topScore)) {
-    throw new Error('Quarter scoring does not match the reported total.');
-  }
-  const observed = new Date(candidate.sourceObservedAt);
-  if (Number.isNaN(observed.getTime())) throw new Error('Provider did not report when the source score was observed.');
-  return {
-    leftScore: candidate.leftScore,
-    topScore: candidate.topScore,
-    quarterScores: candidate.quarterScores,
-    clock: String(candidate.clock || '').slice(0, 32),
-    period: candidate.period,
-    state: candidate.state,
-    detail: String(candidate.detail || '').slice(0, 160),
-    isOvertime: Boolean(candidate.isOvertime),
-    sourceObservedAt: observed.toISOString(),
-  };
-};
-
 export const toClientScore = (snapshot: any, freshness?: string) => snapshot ? ({
   leftScore: snapshot.side_score,
   topScore: snapshot.top_score,
@@ -116,81 +83,63 @@ export const toClientScore = (snapshot: any, freshness?: string) => snapshot ? (
   freshness: freshness || (new Date(snapshot.stale_after).getTime() > Date.now() ? 'fresh' : 'stale'),
 }) : null;
 
-export const fetchExactEventScore = async (contest: any, fetchImpl: typeof fetch = fetch) => {
-  const eventId = String(contest.game_external_id || '').trim();
-  if (!/^\d+$/.test(eventId)) {
-    throw new Error('Automatic scoring requires a linked scheduled NFL game. Use manual scoring for this legacy board.');
-  }
-  const raw = await fetchEspnSummary(eventId, fetchImpl);
-  if (!raw) throw new Error('The linked NFL game was not found.');
-  const provider = normalizeEspnScoreSummary(raw);
-  const expectedSide = normalizeTeamAbbreviation(contest.side_team_abbr);
-  const expectedTop = normalizeTeamAbbreviation(contest.top_team_abbr);
-  const expectedKickoff = new Date(contest.game_starts_at).getTime();
-  const providerKickoff = new Date(provider.kickoffAt).getTime();
-  if (
-    provider.eventId !== eventId
-    || provider.awayTeam.abbr !== expectedSide
-    || provider.homeTeam.abbr !== expectedTop
-    || Number.isNaN(expectedKickoff)
-    || providerKickoff !== expectedKickoff
-  ) {
-    throw new Error('The score provider returned a different NFL game than the board is linked to.');
-  }
-  const observedAt = new Date().toISOString();
-  const score = validateScore({
-    leftScore: provider.awayTeam.score,
-    topScore: provider.homeTeam.score,
-    quarterScores: {
-      Q1: { left: provider.awayTeam.quarterScores.Q1, top: provider.homeTeam.quarterScores.Q1 },
-      Q2: { left: provider.awayTeam.quarterScores.Q2, top: provider.homeTeam.quarterScores.Q2 },
-      Q3: { left: provider.awayTeam.quarterScores.Q3, top: provider.homeTeam.quarterScores.Q3 },
-      Q4: { left: provider.awayTeam.quarterScores.Q4, top: provider.homeTeam.quarterScores.Q4 },
-      OT: { left: provider.awayTeam.quarterScores.OT, top: provider.homeTeam.quarterScores.OT },
-    },
-    clock: provider.clock,
-    // GridOne models every period after Q4 as the single OT milestone.
-    period: Math.min(provider.period, 5),
-    state: provider.state,
-    detail: provider.detail,
-    isOvertime: provider.period > 4,
-    sourceObservedAt: observedAt,
-  });
-  return {
-    score,
-    source: {
-      title: 'ESPN',
-      uri: `https://www.espn.com/nfl/game/_/gameId/${encodeURIComponent(eventId)}`,
-    },
-    raw,
-  };
+const publicResponseEtag = (body: Record<string, any>) => {
+  const parts = [
+    String(body?.score?.retrievedAt || 'none'),
+    String(body?.score?.freshness || ''),
+    Array.isArray(body?.winnerHistory) ? body.winnerHistory.length : 0,
+    Array.isArray(body?.pendingMilestones) ? body.pendingMilestones.length : 0,
+  ];
+  return `W/"${parts.join(':')}"`;
 };
 
-export const scoreStaleAfter = (
-  scoreState: ProviderScore['state'],
-  retrievedAt: Date,
-  kickoffAt?: string | null,
-) => {
-  const staleSeconds = scoreState === 'in' ? 120 : scoreState === 'post' ? 31_536_000 : 900;
-  const defaultStaleAt = retrievedAt.getTime() + staleSeconds * 1000;
-  if (scoreState !== 'pre' || !kickoffAt) return new Date(defaultStaleAt).toISOString();
-  const kickoffTime = new Date(kickoffAt).getTime();
-  if (Number.isNaN(kickoffTime)) return new Date(defaultStaleAt).toISOString();
-  // A pre-game snapshot must become stale no later than kickoff. Equality with
-  // retrieved_at is valid and forces the next request to recheck immediately.
-  return new Date(Math.max(retrievedAt.getTime(), Math.min(defaultStaleAt, kickoffTime))).toISOString();
-};
-
-export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
+export const onRequestGet: PagesFunction = async (context) => {
+  const { request, env, params } = context;
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'Server configuration is incomplete.' }, 503);
   const ref = String(params.id || '').toUpperCase();
   if (!uuidPattern.test(ref) && !sharePattern.test(ref)) return publicBoardNotFoundResponse();
+  const isPublicRef = !uuidPattern.test(ref);
+  const nextPollSeconds = scorePollSeconds(env);
+  const refreshAllowed = liveScoringEnabled(env);
+
+  // The anonymous share-code path is edge-cached: Pages Functions do not cache
+  // on Cache-Control alone, so N viewers collapse into ~2 origin hits per
+  // minute per board only if we consult the Cache API explicitly.
+  const edgeCache = isPublicRef && typeof (globalThis as any).caches?.default?.match === 'function'
+    ? (globalThis as any).caches.default
+    : null;
+  if (edgeCache) {
+    const cached = await edgeCache.match(request.url).catch(() => null);
+    if (cached) return cached;
+  }
+
+  /** Success responder: attaches nextPollSeconds and, on the public path,
+   * shared-cache headers + ETag, then populates the edge cache. */
+  const respond = (body: Record<string, unknown>, status = 200) => {
+    const withPoll = status === 200 ? { ...body, nextPollSeconds } : body;
+    if (!isPublicRef || status !== 200) return json(withPoll, status);
+    const etag = publicResponseEtag(withPoll);
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cache-Control': PUBLIC_CACHE_CONTROL,
+      ETag: etag,
+    };
+    if (request.headers.get('If-None-Match') === etag) {
+      return new Response(null, { status: 304, headers });
+    }
+    const response = new Response(JSON.stringify(withPoll), { status: 200, headers });
+    if (edgeCache && typeof context.waitUntil === 'function') {
+      context.waitUntil(edgeCache.put(request.url, response.clone()).catch(() => undefined));
+    }
+    return response;
+  };
+
   const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   let ownerId: string | null = null;
-  if (uuidPattern.test(ref)) {
+  if (!isPublicRef) {
     const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'Sign in before refreshing an organizer board.' }, 401);
     const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
@@ -201,13 +150,16 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (!ownerId) return json({ error: 'Your session has expired.' }, 401);
   }
   let contest: any = null;
-  if (uuidPattern.test(ref)) {
+  if (!isPublicRef) {
     let contestQuery = admin
       .from('contests')
       .select('id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
     if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
     const { data, error } = await contestQuery.eq('id', ref).maybeSingle();
-    if (error) return json({ error: error.message }, 500);
+    if (error) {
+      console.error('Score contest lookup failed:', error);
+      return json({ error: 'Unable to load the board.' }, 500);
+    }
     contest = data;
   } else {
     try {
@@ -217,11 +169,12 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       });
       contest = visibleBoard?.contest || null;
     } catch (error: any) {
-      return json({ error: error?.message || 'Unable to load the board.' }, 500);
+      console.error('Public board lookup failed:', error);
+      return json({ error: 'Unable to load the board.' }, 500);
     }
   }
   if (!contest) {
-    return uuidPattern.test(ref)
+    return !isPublicRef
       ? json({ error: 'Board not found or not published.' }, 404)
       : publicBoardNotFoundResponse();
   }
@@ -240,7 +193,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
   let milestoneProjection = await readMilestoneProjection(admin, contest.id);
 
   if (state?.scoring_mode === 'manual' && !current) {
-    return json({
+    return respond({
       score: null,
       ...milestoneProjection,
       scoringMode: 'manual',
@@ -250,19 +203,27 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     });
   }
 
-  const isFresh = current && new Date(current.stale_after).getTime() > Date.now();
+  // Public viewers tolerate a grace window past stale_after before triggering
+  // an inline ESPN refresh — the cron owns routine freshness, and the grace
+  // keeps anonymous polls from becoming an upstream/DB amplifier.
+  const graceMs = isPublicRef ? PUBLIC_REFRESH_GRACE_MS : 0;
+  const isFreshEnough = Boolean(current)
+    && new Date(current.stale_after).getTime() + graceMs > Date.now();
   const pendingConfirmationDue = Boolean(current)
-    && pendingMilestoneConfirmationDue(milestoneProjection.pendingMilestones);
+    && pendingMilestoneConfirmationDue(milestoneProjection.pendingMilestones, Date.now() - graceMs);
   if (
     current
-    && (isFresh || current.game_state === 'post' || state?.scoring_mode === 'manual')
-    && !pendingConfirmationDue
+    && (isFreshEnough || current.game_state === 'post' || state?.scoring_mode === 'manual' || !refreshAllowed)
+    && !(pendingConfirmationDue && refreshAllowed)
   ) {
-    return json({
+    return respond({
       score: toClientScore(current),
       ...milestoneProjection,
       refreshAttempted: false,
     });
+  }
+  if (!refreshAllowed) {
+    return json({ error: 'Automatic score is unavailable.' }, 503);
   }
 
   const leaseToken = crypto.randomUUID();
@@ -272,10 +233,16 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     p_seconds: 45,
   });
   const lease = Array.isArray(acquiredRows) ? acquiredRows[0] : acquiredRows;
-  if (leaseError) return json({ error: leaseError.message, score: toClientScore(current, 'offline') }, current ? 200 : 503);
+  if (leaseError) {
+    console.error('Score refresh lease failed:', leaseError);
+    return json({
+      error: 'Live scoring is temporarily unavailable.',
+      score: toClientScore(current, 'offline'),
+    }, current ? 200 : 503);
+  }
   if (!lease?.acquired) {
     if (lease?.scoring_mode === 'manual') {
-      return json({
+      return respond({
         score: null,
         ...milestoneProjection,
         scoringMode: 'manual',
@@ -284,7 +251,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         refreshAttempted: false,
       });
     }
-    return json({
+    return respond({
       score: toClientScore(current, 'refreshing'),
       ...milestoneProjection,
       refreshAttempted: false,
@@ -293,40 +260,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
 
   try {
     const provider = await fetchExactEventScore(contest);
-    const retrievedAt = new Date();
-    const staleAfter = scoreStaleAfter(provider.score.state, retrievedAt, contest.game_starts_at);
-    const { data: inserted, error: insertError } = await admin
-      .from('score_snapshots')
-      .insert({
-        contest_id: contest.id,
-        source_mode: 'automatic',
-        provider: 'espn',
-        game_state: provider.score.state,
-        period: provider.score.period,
-        side_score: provider.score.leftScore,
-        top_score: provider.score.topScore,
-        quarter_scores: provider.score.quarterScores,
-        clock: provider.score.clock,
-        detail: provider.score.detail,
-        validation_status: 'accepted',
-        source_name: provider.source.title,
-        source_url: provider.source.uri,
-        source_observed_at: provider.score.sourceObservedAt,
-        retrieved_at: retrievedAt.toISOString(),
-        stale_after: staleAfter,
-        authority_generation: lease.authority_generation,
-        refresh_sequence: lease.refresh_sequence,
-        refresh_started_at: lease.refresh_started_at,
-      })
-      .select('*')
-      .single();
-    if (insertError) throw insertError;
-    await admin.from('score_provider_payloads').insert({ snapshot_id: inserted.id, raw_payload: provider.raw });
-    const { data: promoted, error: promoteError } = await admin.rpc('gridone_promote_score_snapshot', {
-      p_contest_id: contest.id,
-      p_snapshot_id: inserted.id,
-    });
-    if (promoteError) throw promoteError;
+    const { promoted, inserted } = await applyProviderScore(admin, contest, lease, provider, current);
     let effective = promoted ? inserted : current;
     if (promoted) {
       milestoneProjection = await readMilestoneProjection(admin, contest.id);
@@ -346,7 +280,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
       effective = latestSnapshot;
       milestoneProjection = await readMilestoneProjection(admin, contest.id);
       if (latestState?.scoring_mode === 'manual' && !latestSnapshot) {
-        return json({
+        return respond({
           score: null,
           ...milestoneProjection,
           scoringMode: 'manual',
@@ -356,19 +290,28 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         });
       }
     }
-    return json({
+    return respond({
       score: toClientScore(effective),
       ...milestoneProjection,
       refreshAttempted: true,
     });
   } catch (error: any) {
+    console.error('Score refresh failed:', error);
+    const warning = isPublicRef
+      ? 'Live score refresh is temporarily unavailable. Showing the last known score.'
+      : error.message;
     if (current) return json({
       score: toClientScore(current, 'stale'),
       ...await readMilestoneProjection(admin, contest.id),
       refreshAttempted: true,
-      warning: error.message,
+      warning,
+      nextPollSeconds,
     });
-    return json({ error: error?.message || 'Automatic score is unavailable.' }, 503);
+    return json({
+      error: isPublicRef
+        ? 'Automatic score is unavailable.'
+        : (error?.message || 'Automatic score is unavailable.'),
+    }, 503);
   } finally {
     await admin.rpc('gridone_release_score_refresh_lease', {
       p_contest_id: contest.id,

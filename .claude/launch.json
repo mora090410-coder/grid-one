@@ -12,6 +12,17 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["wrangler", "pages", "dev", "--port", "8788"],
       "port": 8788
+    },
+    {
+      "name": "api-smoke",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler", "pages", "dev", "--port", "8791",
+        "--binding", "CRON_SECRET=local-smoke-secret",
+        "--binding", "SUPABASE_SERVICE_ROLE_KEY=dummy-service-key",
+        "--binding", "LIVE_SCORING_ENABLED=false"
+      ],
+      "port": 8791
     }
   ]
 }

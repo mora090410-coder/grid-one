@@ -7,6 +7,7 @@ export async function fetchLiveScore(boardRef: string, accessToken?: string | nu
     message?: string;
     winnerHistory?: WinnerResolution[];
     pendingMilestones?: PendingMilestone[];
+    nextPollSeconds?: number;
 }> {
     let token = accessToken;
     if (token === undefined) {
@@ -39,5 +40,6 @@ export async function fetchLiveScore(boardRef: string, accessToken?: string | nu
       message: data.message,
       winnerHistory: Array.isArray(data.winnerHistory) ? data.winnerHistory : undefined,
       pendingMilestones: Array.isArray(data.pendingMilestones) ? data.pendingMilestones : undefined,
+      nextPollSeconds: Number.isInteger(data.nextPollSeconds) ? data.nextPollSeconds : undefined,
     };
 }

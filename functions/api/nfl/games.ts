@@ -44,10 +44,13 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     }
     const scope = completedAccess ? 'completed' : 'upcoming';
     const games = await fetchScheduledGames({ scope, limit });
+    // Derive cacheability from the RESOLVED scope: an unauthorized
+    // `scope=completed` request is served upcoming data and must stay
+    // edge-cacheable, or it becomes an uncached ESPN amplification vector.
     return json(
       completedAccess ? { games, scoreTestMode: true } : { games },
       200,
-      requestedScope === 'completed'
+      completedAccess
         ? 'private, no-store'
         : 'public, max-age=300, stale-while-revalidate=900',
     );

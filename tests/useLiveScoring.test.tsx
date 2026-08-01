@@ -236,4 +236,53 @@ describe('legacy manual live scoring', () => {
     unmount();
     vi.useRealTimers();
   });
+
+  it('adopts the server-driven nextPollSeconds cadence without a redeploy', async () => {
+    vi.useFakeTimers();
+    const liveSnapshot: LiveGameData = {
+      ...manualSnapshot,
+      state: 'in',
+      period: 2,
+      isManual: false,
+    };
+    vi.mocked(fetchLiveScore).mockResolvedValue({
+      score: liveSnapshot,
+      nextPollSeconds: 90,
+    });
+    const game = {
+      ...legacyGame,
+      gameExternalId: '401772988',
+      scoreSnapshot: liveSnapshot,
+    };
+    const { unmount } = renderHook(() =>
+      useLiveScoring(game, true, false, 'board-id'));
+
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(1));
+    });
+    // Let the fetch promise resolve so nextPollSeconds re-arms the interval,
+    // which triggers one immediate fetch.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
+    });
+
+    // The old 60s cadence must NOT fire once the server said 90s.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(3));
+    });
+
+    unmount();
+    vi.useRealTimers();
+  });
 });

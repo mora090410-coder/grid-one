@@ -366,12 +366,21 @@ describe('manual scoring mode transitions', () => {
       resolve(process.cwd(), 'functions/api/pools/[id]/score.ts'),
       'utf8',
     );
-    expect(handler).toContain('gridone_acquire_score_refresh_lease_v2');
-    expect(handler).toContain('authority_generation: lease.authority_generation');
-    expect(handler).toContain('refresh_sequence: lease.refresh_sequence');
-    expect(handler).toContain('refresh_started_at: lease.refresh_started_at');
-    expect(handler).not.toMatch(
-      /from\(['"]public_board_snapshots['"]\)\.update\(\{[\s\S]*score:/,
+    // The snapshot insert lives in the shared refresh library so the cron
+    // endpoint and the viewer endpoint persist scores identically.
+    const refreshLibrary = readFileSync(
+      resolve(process.cwd(), 'functions/_lib/scoreRefresh.ts'),
+      'utf8',
     );
+    expect(handler).toContain('gridone_acquire_score_refresh_lease_v2');
+    expect(handler).toContain('applyProviderScore');
+    expect(refreshLibrary).toContain('authority_generation: lease.authority_generation');
+    expect(refreshLibrary).toContain('refresh_sequence: lease.refresh_sequence');
+    expect(refreshLibrary).toContain('refresh_started_at: lease.refresh_started_at');
+    for (const source of [handler, refreshLibrary]) {
+      expect(source).not.toMatch(
+        /from\(['"]public_board_snapshots['"]\)\.update\(\{[\s\S]*score:/,
+      );
+    }
   });
 });

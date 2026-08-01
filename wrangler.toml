@@ -13,5 +13,8 @@ GRIDONE_SEASON = "2026"
 STRIPE_GAMEDAY_PRICE_ID = "price_1TytcMFwSi8ogxSrCLXjAzRA"
 STRIPE_ORG_PRICE_ID = "price_1TytdIFwSi8ogxSrTg4WLaNj"
 PAID_SIGNUP_ENABLED = "true"
+# Live-scoring cadence and kill switch — dashboard-editable without a deploy.
+SCORE_POLL_SECONDS = "60"
+LIVE_SCORING_ENABLED = "true"
 CHECKOUT_SMOKE_CONTEST_IDS = ""
 OCR_MODEL = "gemini-2.5-flash"
