@@ -17,7 +17,7 @@ Execution boundary: Gaps 4, 1, and 2 were completed locally on top of the PR #9 
 - [x] Enforce owner-only post-publish assignment of previously open squares before kickoff; reject occupied-square edits, existing-name mutations, axis changes, and all edits at/after kickoff.
 - [x] Add deterministic open-square milestone resolutions, public history projection, and notification suppression without payout adjudication.
 - [x] Apply migrations `021`–`022` to disposable PostgreSQL and run focused endpoint/UI/browser coverage plus the complete verification gates.
-- [ ] Stage only remediation-owned files, commit, push, open the GitHub PR/release path appropriate to PR #9 status, apply production migrations in order, deploy Cloudflare Pages, and verify the canonical production revision and public behavior.
+- [x] Stage only remediation-owned files, commit, push, open the GitHub PR/release path appropriate to PR #9 status, apply production migrations in order, deploy Cloudflare Pages, and verify the canonical production revision and public behavior.
 
 ## Review
 
@@ -38,6 +38,7 @@ Execution boundary: Gaps 4, 1, and 2 were completed locally on top of the PR #9 
 - Final local verification after the open-square draft-display correction: strict TypeScript, production build, both Worker dry-runs, and `git diff --check` pass; full Vitest passes 56/56 files with 343 tests passing and one expected hosted Stripe skip; full Playwright passes all 44 non-visual Chromium/WebKit workflows with 10 intentional capture skips.
 - Production release in progress: migrations `020`–`022` applied successfully to confirmed Supabase project `illqymckwqiawdwxhwcy`; schema/function/ACL postflight returned true for every required check. PR `#9` merged as `d2b8068` and deployed as Pages production `b318c4a1-4539-4ace-a8ed-9bc54934fac9`; PR `#10` merged as `0f3804c` and deployed as `6fc42c7d-200d-4d01-9a77-b2ebd5fbbe38`. Canonical landing, demo, and preserved viewer return 200, while the protected score, publish, and open-square endpoints return the expected unauthenticated 401 after route propagation.
 - Scheduler rollout: score Worker upload `20286d55-b297-4750-87c5-0eb767748484` and secret version `d34068c9-06b8-4133-8f92-bc1f68bf9c2b` are deployed on the one-minute cron. One fresh encrypted `CRON_SECRET` was rotated across score Worker, retry Worker, and Pages; the first observed tick correctly exposed that Pages secrets require a subsequent Git-backed deployment before the new binding reaches the Functions runtime. This evidence commit intentionally triggers that deployment before the final cron proof.
+- Final production proof: Pages secret activation required the reviewed manual fallback after Git-backed deployments continued serving the previous Functions binding. Manual production deployment `a9b03748-517d-45f3-83ed-6db7fe1cb8ea` is attached to exact `main` commit `e7f664f`; the authenticated score endpoint returned 200 with `{ "skipped": true, "pollSeconds": 60 }`. Score Worker version `c9fbacf7-cb95-46d7-8e7e-4f0bedb087aa` and retry Worker version `fded8114-f3b6-4047-9a86-6aab5e994799` each completed the next real one-minute cron event with outcome `ok`, no exception, and the same rotated secret.
 
 # Landing pricing/Stripe alignment — July 30, 2026
 
