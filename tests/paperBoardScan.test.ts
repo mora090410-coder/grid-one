@@ -31,8 +31,8 @@ const squaresGrid = Array.from({ length: 10 }, (_, row) =>
   Array.from({ length: 10 }, (_, column) => row === 0 && column === 0 ? '  Parent One  ' : ''),
 );
 const normalizedBoard = {
-  bearsAxis: axis,
-  oppAxis: [...axis].reverse(),
+  leftAxis: axis,
+  topAxis: [...axis].reverse(),
   squares: [['Parent One'], ...Array.from({ length: 99 }, () => [])],
   isDynamic: false,
 };
@@ -151,8 +151,8 @@ describe('paper-board scan endpoint', () => {
         content: {
           parts: [{
             text: JSON.stringify({
-              bearsAxis: axis,
-              oppAxis: [...axis].reverse(),
+              leftAxis: axis,
+              topAxis: [...axis].reverse(),
               squaresGrid,
             }),
           }],
@@ -201,8 +201,8 @@ describe('paper-board scan endpoint', () => {
         content: {
           parts: [{
             text: JSON.stringify({
-              bearsAxis: Array(10).fill(0),
-              oppAxis: axis,
+              leftAxis: Array(10).fill(0),
+              topAxis: axis,
               squaresGrid,
             }),
           }],

@@ -408,22 +408,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       let changed = false;
       const copy = { ...localBoard };
 
-      if (!copy.bearsAxisByQuarter) {
-        copy.bearsAxisByQuarter = {
-          Q1: [...copy.bearsAxis],
-          Q2: [...copy.bearsAxis],
-          Q3: [...copy.bearsAxis],
-          Q4: [...copy.bearsAxis]
+      if (!copy.leftAxisByQuarter) {
+        copy.leftAxisByQuarter = {
+          Q1: [...copy.leftAxis],
+          Q2: [...copy.leftAxis],
+          Q3: [...copy.leftAxis],
+          Q4: [...copy.leftAxis]
         };
         changed = true;
       }
 
-      if (!copy.oppAxisByQuarter) {
-        copy.oppAxisByQuarter = {
-          Q1: [...copy.oppAxis],
-          Q2: [...copy.oppAxis],
-          Q3: [...copy.oppAxis],
-          Q4: [...copy.oppAxis]
+      if (!copy.topAxisByQuarter) {
+        copy.topAxisByQuarter = {
+          Q1: [...copy.topAxis],
+          Q2: [...copy.topAxis],
+          Q3: [...copy.topAxis],
+          Q4: [...copy.topAxis]
         };
         changed = true;
       }
@@ -433,7 +433,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         setLocalBoard(copy);
       }
     }
-  }, [localBoard.isDynamic, localBoard.bearsAxisByQuarter, localBoard.oppAxisByQuarter]);
+  }, [localBoard.isDynamic, localBoard.leftAxisByQuarter, localBoard.topAxisByQuarter]);
 
 
   const applyScanResult = (newBoard: BoardData) => {
@@ -593,11 +593,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     if (!drawPreview || isPublished) return;
     setLocalBoard((current) => ({
       ...current,
-      bearsAxis: drawPreview.side,
-      oppAxis: drawPreview.top,
+      leftAxis: drawPreview.side,
+      topAxis: drawPreview.top,
       isDynamic: false,
-      bearsAxisByQuarter: undefined,
-      oppAxisByQuarter: undefined,
+      leftAxisByQuarter: undefined,
+      topAxisByQuarter: undefined,
       allowOpenSquares: openSquareCount > 0,
     }));
     setDrawPreview(null);
@@ -964,13 +964,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   }, [selectedCellIndices]);
 
   // Axis values to display based on dynamic mode
-  const currentOppAxis = localBoard.isDynamic
-    ? localBoard.oppAxisByQuarter?.[activeAxisQuarter]
-    : localBoard.oppAxis;
+  const currentTopAxis = localBoard.isDynamic
+    ? localBoard.topAxisByQuarter?.[activeAxisQuarter]
+    : localBoard.topAxis;
 
-  const currentBearsAxis = localBoard.isDynamic
-    ? localBoard.bearsAxisByQuarter?.[activeAxisQuarter]
-    : localBoard.bearsAxis;
+  const currentLeftAxis = localBoard.isDynamic
+    ? localBoard.leftAxisByQuarter?.[activeAxisQuarter]
+    : localBoard.leftAxis;
 
   const handleBoardLifecycleAction = async () => {
     if (!activePoolId) {
@@ -1980,7 +1980,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <div className="flex-1">
                       <div className="text-center text-[10px] font-black text-ink/50 uppercase tracking-widest mb-3">{localGame.topName}</div>
                       <div className="grid grid-cols-10 gap-2">
-                        {currentOppAxis?.map((val, idx) => (
+                        {currentTopAxis?.map((val, idx) => (
                           <div key={idx} className="space-y-1">
                             <output className="oa-data flex h-10 w-full items-center justify-center bg-broadcast-white border border-newsprint text-sm font-bold">
                               {val ?? '—'}
@@ -2001,9 +2001,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     </div>
 
                     <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-newsprint">
-                      {currentBearsAxis?.map((val, idx) => (
+                      {currentLeftAxis?.map((val, idx) => (
                         <div key={idx} className="flex items-center justify-end gap-1 group h-12 relative">
-                          <output className={`oa-data flex h-12 w-10 items-center justify-center bg-broadcast-white border text-sm font-bold ${currentBearsAxis.length > 10 ? 'border-cardinal' : 'border-newsprint'}`}>
+                          <output className={`oa-data flex h-12 w-10 items-center justify-center bg-broadcast-white border text-sm font-bold ${currentLeftAxis.length > 10 ? 'border-cardinal' : 'border-newsprint'}`}>
                             {val ?? '—'}
                           </output>
                         </div>
@@ -2062,7 +2062,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                 </span>
                                 {players.length === 0 && (
                                   <span className="oa-board-name text-ink/30 select-none">
-                                    {currentOppAxis?.[c] ?? '?'}-{currentBearsAxis?.[r] ?? '?'}
+                                    {currentTopAxis?.[c] ?? '?'}-{currentLeftAxis?.[r] ?? '?'}
                                   </span>
                                 )}
                               </button>

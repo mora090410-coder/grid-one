@@ -37,8 +37,8 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
   const board = contest.board_data || {};
-  const sideAxis = isValidAxis(board.bearsAxis) ? board.bearsAxis : contest.side_axis;
-  const topAxis = isValidAxis(board.oppAxis) ? board.oppAxis : contest.top_axis;
+  const sideAxis = isValidAxis(board.leftAxis) ? board.leftAxis : contest.side_axis;
+  const topAxis = isValidAxis(board.topAxis) ? board.topAxis : contest.top_axis;
   if (!isValidAxis(sideAxis) || !isValidAxis(topAxis)) {
     return Response.json({ error: 'Draw all ten unique axis digits before publishing.' }, { status: 409 });
   }
@@ -63,8 +63,8 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   }
 
   const publicBoard = {
-    bearsAxis: sideAxis,
-    oppAxis: topAxis,
+    leftAxis: sideAxis,
+    topAxis: topAxis,
     squares: normalizedNames,
     isDynamic: false,
     allowOpenSquares: effectiveOpenSquareOptIn,

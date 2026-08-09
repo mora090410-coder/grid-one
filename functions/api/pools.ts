@@ -29,8 +29,8 @@ interface CreateBoardPayload {
   };
   board: {
     squares: unknown[];
-    bearsAxis?: Array<number | null>;
-    oppAxis?: Array<number | null>;
+    leftAxis?: Array<number | null>;
+    topAxis?: Array<number | null>;
     [key: string]: unknown;
   };
 }
@@ -168,11 +168,11 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       ...payload.game,
       title: payload.game.title.trim(),
     }, scheduledGame);
-    const sideAxis = Array.isArray(payload.board.bearsAxis) && payload.board.bearsAxis.every(Number.isInteger)
-      ? payload.board.bearsAxis
+    const sideAxis = Array.isArray(payload.board.leftAxis) && payload.board.leftAxis.every(Number.isInteger)
+      ? payload.board.leftAxis
       : null;
-    const topAxis = Array.isArray(payload.board.oppAxis) && payload.board.oppAxis.every(Number.isInteger)
-      ? payload.board.oppAxis
+    const topAxis = Array.isArray(payload.board.topAxis) && payload.board.topAxis.every(Number.isInteger)
+      ? payload.board.topAxis
       : null;
     if (scoreTestMode && !env.SUPABASE_SERVICE_ROLE_KEY) {
       return json(request, { error: 'Server configuration is incomplete.' }, 503, env.PUBLIC_SITE_URL);

@@ -24,7 +24,7 @@ describe('board axis validation', () => {
   });
 
   it('requires both board axes to be valid', () => {
-    expect(hasValidAxes({ bearsAxis: axis, oppAxis: [...axis].reverse() })).toBe(true);
-    expect(hasValidAxes({ bearsAxis: axis, oppAxis: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).toBe(false);
+    expect(hasValidAxes({ leftAxis: axis, topAxis: [...axis].reverse() })).toBe(true);
+    expect(hasValidAxes({ leftAxis: axis, topAxis: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).toBe(false);
   });
 });

@@ -65,16 +65,16 @@ export interface QuarterAxes {
 }
 
 export interface BoardData {
-  bearsAxis: (number | null)[];   // Standard board (backward compatible)
-  oppAxis: (number | null)[];     // Standard board (backward compatible)
+  leftAxis: (number | null)[];   // Standard board (backward compatible)
+  topAxis: (number | null)[];     // Standard board (backward compatible)
   squares: string[][];
   /** Explicit organizer opt-in recorded with a number draw that includes open squares. */
   allowOpenSquares?: boolean;
 
   // Dynamic board support (optional - defaults to standard)
   isDynamic?: boolean;
-  bearsAxisByQuarter?: QuarterAxes;
-  oppAxisByQuarter?: QuarterAxes;
+  leftAxisByQuarter?: QuarterAxes;
+  topAxisByQuarter?: QuarterAxes;
   participants?: Array<{ id: string; displayName: string; publicLabel: string }>;
 }
 

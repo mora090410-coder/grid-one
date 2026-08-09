@@ -60,25 +60,25 @@ export const TEAM_THEMES: Record<string, { primary: string; secondary: string }>
 
 // Empty board template for new pools (standard mode)
 export const EMPTY_BOARD: BoardData = {
-  bearsAxis: Array(10).fill(null),
-  oppAxis: Array(10).fill(null),
+  leftAxis: Array(10).fill(null),
+  topAxis: Array(10).fill(null),
   squares: Array(100).fill([]),
   isDynamic: false,
 };
 
 // Empty board template for dynamic mode (per-quarter axes)
 export const EMPTY_DYNAMIC_BOARD: BoardData = {
-  bearsAxis: Array(10).fill(null),
-  oppAxis: Array(10).fill(null),
+  leftAxis: Array(10).fill(null),
+  topAxis: Array(10).fill(null),
   squares: Array(100).fill([]),
   isDynamic: true,
-  bearsAxisByQuarter: {
+  leftAxisByQuarter: {
     Q1: Array(10).fill(null),
     Q2: Array(10).fill(null),
     Q3: Array(10).fill(null),
     Q4: Array(10).fill(null),
   },
-  oppAxisByQuarter: {
+  topAxisByQuarter: {
     Q1: Array(10).fill(null),
     Q2: Array(10).fill(null),
     Q3: Array(10).fill(null),

@@ -287,8 +287,8 @@ export const renderBoardPng = async (options: BoardImageOptions): Promise<Blob> 
   ctx.fillStyle = PALETTE.broadcastWhite;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const sideAxis = (board.bearsAxis || []).slice(0, 10);
-  const topAxis = (board.oppAxis || []).slice(0, 10);
+  const sideAxis = (board.leftAxis || []).slice(0, 10);
+  const topAxis = (board.topAxis || []).slice(0, 10);
 
   drawHeader(ctx, game, mode);
   drawAxisLabels(ctx, game);

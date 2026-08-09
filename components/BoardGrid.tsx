@@ -44,14 +44,14 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
   }, [live?.period, live?.state, board.isDynamic]);
 
   // Determine current axes to display
-  const currentBearsAxis = React.useMemo(() => {
-    if (!board.isDynamic) return board.bearsAxis.slice(0, 10);
-    return (board.bearsAxisByQuarter?.[viewQuarter] || board.bearsAxis).slice(0, 10);
+  const currentLeftAxis = React.useMemo(() => {
+    if (!board.isDynamic) return board.leftAxis.slice(0, 10);
+    return (board.leftAxisByQuarter?.[viewQuarter] || board.leftAxis).slice(0, 10);
   }, [board, viewQuarter]);
 
-  const currentOppAxis = React.useMemo(() => {
-    if (!board.isDynamic) return board.oppAxis.slice(0, 10);
-    return (board.oppAxisByQuarter?.[viewQuarter] || board.oppAxis).slice(0, 10);
+  const currentTopAxis = React.useMemo(() => {
+    if (!board.isDynamic) return board.topAxis.slice(0, 10);
+    return (board.topAxisByQuarter?.[viewQuarter] || board.topAxis).slice(0, 10);
   }, [board, viewQuarter]);
 
   // Build a map of winning cell IDs to their milestone labels
@@ -132,7 +132,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
               <th className="oa-board-axis bg-cardinal-deep text-broadcast-white/40 border-r border-b border-cardinal-deep relative p-0 sticky top-8 md:top-10 z-40">
                 <div className="absolute inset-0 flex items-center justify-center rotate-[-45deg]">TOP</div>
               </th>
-              {currentOppAxis.map((n, i) => (
+              {currentTopAxis.map((n, i) => (
                 <th key={i} className="oa-board-axis bg-cardinal-deep text-broadcast-white border-b border-r border-cardinal last:border-r-0 align-middle sticky top-8 md:top-10 z-40">
                   <div className="flex items-center justify-center h-9 md:h-11 w-full">{n}</div>
                 </th>
@@ -140,7 +140,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
             </tr>
           </thead>
           <tbody>
-            {currentBearsAxis.map((leftDigit, rowIndex) => (
+            {currentLeftAxis.map((leftDigit, rowIndex) => (
               <tr key={rowIndex} className="h-[8.6%] md:h-auto">
                 {/* Left Team Header — opaque chyron slab, vertical */}
                 {rowIndex === 0 && (
@@ -162,7 +162,7 @@ const BoardGrid: React.FC<BoardGridProps> = ({ board, highlights, live, selected
                 </th>
 
                 {/* The Squares */}
-                {currentOppAxis.map((topDigit, colIndex) => {
+                {currentTopAxis.map((topDigit, colIndex) => {
                   const tDigit = topDigit ?? -1;
                   const lDigit = leftDigit ?? -1;
 

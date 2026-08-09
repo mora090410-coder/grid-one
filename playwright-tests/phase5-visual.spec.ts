@@ -109,8 +109,8 @@ const installOrganizerFixture = async (
     ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     : Array.from({ length: 10 }, () => null);
   const board = {
-    bearsAxis: axes,
-    oppAxis: [...axes].reverse(),
+    leftAxis: axes,
+    topAxis: [...axes].reverse(),
     squares,
     isDynamic: false,
   };
@@ -174,8 +174,8 @@ const installPublishedViewerFixture = async (page: Page) => {
   squares[1] = ['Anna'];
   squares[24] = ['Mora'];
   const board = {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    topAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     squares,
     isDynamic: false,
     participants: [

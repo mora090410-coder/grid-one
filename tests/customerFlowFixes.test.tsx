@@ -34,8 +34,8 @@ const boardWithNames = (): BoardData => {
     squares[0] = ['Ann'];
     squares[1] = ['Anna'];
     return {
-        bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        topAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         squares,
         isDynamic: false,
     };

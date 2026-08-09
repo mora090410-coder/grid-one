@@ -28,8 +28,8 @@ const VALID_SIDE_AXIS = 'ARRAY[0,1,2,3,4,5,6,7,8,9]::smallint[]';
 const VALID_TOP_AXIS = 'ARRAY[9,8,7,6,5,4,3,2,1,0]::smallint[]';
 const names = Array.from({ length: 100 }, (_, index) => [`Buyer ${index + 1}`]);
 const publicBoard = {
-  bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-  oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+  leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
   squares: names,
   isDynamic: false,
 };
@@ -368,7 +368,7 @@ describe.sequential('published square rename on disposable PostgreSQL 17', () =>
 
   it('leaves the axis digits locked even on the rename path', async () => {
     const axisBefore = await queryScalar(
-      `SELECT board_data -> 'bearsAxis' FROM public.contests WHERE id = '${CONTEST_ID}'::uuid`,
+      `SELECT board_data -> 'leftAxis' FROM public.contests WHERE id = '${CONTEST_ID}'::uuid`,
     );
 
     await executeSql(asUser(OWNER_ID, `
@@ -376,7 +376,7 @@ describe.sequential('published square rename on disposable PostgreSQL 17', () =>
     `));
 
     expect(await queryScalar(
-      `SELECT board_data -> 'bearsAxis' FROM public.contests WHERE id = '${CONTEST_ID}'::uuid`,
+      `SELECT board_data -> 'leftAxis' FROM public.contests WHERE id = '${CONTEST_ID}'::uuid`,
     )).toBe(axisBefore);
   });
 });
