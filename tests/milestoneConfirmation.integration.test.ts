@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { expectedMigrationNumbers } from './fixtures/migrationSequence';
 
 const DATABASE_NAME = 'gridone_milestones';
 const DATABASE_USER = 'postgres';
@@ -194,7 +195,7 @@ const applyMigrations = async () => {
     .sort();
 
   expect(migrationFiles.map(file => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: 18 }, (_, index) => index),
+    expectedMigrationNumbers(17),
   );
 
   for (const migrationFile of migrationFiles) {

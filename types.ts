@@ -167,6 +167,21 @@ export interface EntryMeta {
   notify_opt_in: boolean;
   contact_type: 'sms' | 'email' | null;
   contact_value: string | null;
+  /**
+   * Who sold this square, kept alongside the buyer name in board_data.squares.
+   * A coach hands a block to a parent to sell, then the buyer's name replaces
+   * the placeholder — this is what still answers "who collected that money".
+   */
+  seller_label?: string | null;
+}
+
+/** One entry in the append-only rename log kept for published boards. */
+export interface SquareEdit {
+  id: string;
+  cell_index: number;
+  previous_name: string | null;
+  new_name: string | null;
+  changed_at: string;
 }
 
 export interface PoolDataWrapper {

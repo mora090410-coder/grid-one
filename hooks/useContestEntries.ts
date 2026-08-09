@@ -19,7 +19,7 @@ export const useContestEntries = (activePoolId: string | null) => {
 
             const { data, error } = await supabase
                 .from('contest_entries')
-                .select('cell_index, paid_status, notify_opt_in, contact_type, contact_value')
+                .select('cell_index, paid_status, notify_opt_in, contact_type, contact_value, seller_label')
                 .eq('contest_id', activePoolId);
 
             if (error) {

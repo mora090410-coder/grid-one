@@ -39,7 +39,7 @@ Each reviewer reads its file set fully and reports: severity (critical/high/medi
 - **Hunts for:** polling that never stops / stale closures; malformed-API-response crashes; axis-orientation bugs (home vs away rows/cols); winners computed before digits assigned; manual scores overwritten by live polling (and vice versa); per-viewer client polling hitting API rate limits on game day; quarter/final/OT detection errors; duplicate winner announcements.
 
 ### 1.3 Payments & Entitlements (Stripe season pass — $4.99 once / up to 20 boards)
-- **Files:** `services/stripe.ts`, `functions/api/stripe/create-checkout-session.ts`, `functions/api/stripe/webhook.ts`, `functions/api/pools.ts`, `functions/api/pools/activate.ts`, `functions/api/pools/[id].ts`, `supabase/migrations/004_entitlements.sql`, `pages/Paid.tsx`, `pages/CreateContest.tsx`, `hooks/useContestEntries.ts`, `components/BoardWizard/WizardModal.tsx`.
+- **Files:** `services/stripe.ts`, `functions/api/stripe/create-checkout-session.ts`, `functions/api/stripe/webhook.ts`, `functions/api/pools.ts`, `functions/api/pools/activate.ts`, `functions/api/pools/[id].ts`, `supabase/migrations/005_canonical_launch_schema.sql`, `pages/Paid.tsx`, `pages/CreateContest.tsx`, `hooks/useContestEntries.ts`, `components/BoardWizard/WizardModal.tsx`.
 - **Hunts for:** client-controlled pricing; webhook idempotency (double-grant on Stripe retries); lost grants on webhook errors; 20-board cap enforced client-side only; users inserting their own entitlement rows via RLS gaps; paid-but-webhook-delayed UX dead ends; secret handling for Stripe keys.
 
 ### 1.4 Data Layer & Concurrency

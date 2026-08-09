@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { expectedMigrationNumbers } from './fixtures/migrationSequence';
 
 const DATABASE_NAME = 'gridone_pricing_test';
 const DATABASE_USER = 'postgres';
@@ -206,7 +207,7 @@ const applyMigrationsThrough = async (lastNumber: number) => {
     file => Number(file.slice(0, 3)) <= lastNumber,
   );
   expect(files.map(file => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: lastNumber + 1 }, (_, index) => index),
+    expectedMigrationNumbers(lastNumber),
   );
   for (const file of files) {
     await executeSql(readFileSync(resolve(directory, file), 'utf8'));
@@ -217,7 +218,7 @@ const applyPricingMigration = async () => {
   const directory = resolve(process.cwd(), 'supabase/migrations');
   const files = migrationFiles().filter(file => Number(file.slice(0, 3)) <= 19);
   expect(files.map(file => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: 20 }, (_, index) => index),
+    expectedMigrationNumbers(19),
   );
   await executeSql(
     readFileSync(resolve(directory, '019_pricing_tiers.sql'), 'utf8'),
