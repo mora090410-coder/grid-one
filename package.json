@@ -9,6 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
