@@ -31,8 +31,8 @@ If build or tests fail, reviewers are briefed on the failure so they investigate
 Each reviewer reads its file set fully and reports: severity (critical/high/medium/low) · `file:line` · one-sentence defect · concrete failure scenario. Verified-in-code issues only; no speculation. Each also notes what is genuinely solid.
 
 ### 1.1 Auth & Security
-- **Files:** `context/AuthContext.tsx`, `hooks/useAuth.ts`, `components/auth/RequireAuth.tsx`, `pages/Login.tsx`, `services/supabase.ts`, all 4 migrations (RLS focus), all `functions/api/*`, `wrangler.toml`, `vite.config.ts`, `services/geminiService.ts`, `components/AdminPanel.tsx`, `components/board/RecoveryModal.tsx`.
-- **Hunts for:** RLS holes (non-organizer writing scores, stealing squares, self-granting entitlements); missing server-side auth on API endpoints; Stripe webhook signature verification; secrets leaking into the client bundle (the Gemini key in a Vite SPA is a prime suspect); XSS via player names; open redirects; guessable recovery codes; CORS and rate-limiting gaps.
+- **Files:** `context/AuthContext.tsx`, `hooks/useAuth.ts`, `components/auth/RequireAuth.tsx`, `pages/Login.tsx`, `services/supabase.ts`, all migrations under `supabase/migrations/` (RLS focus), all `functions/api/*`, `wrangler.toml`, `vite.config.ts`, `services/boardImportService.ts`, `components/AdminPanel.tsx`, `components/board/RecoveryModal.tsx`.
+- **Hunts for:** RLS holes (non-organizer writing scores, stealing squares, self-granting entitlements); missing server-side auth on API endpoints; Stripe webhook signature verification; secrets leaking into the client bundle (the vision key now lives only in the Pages Function — re-check on every new integration); XSS via player names; open redirects; guessable recovery codes; CORS and rate-limiting gaps.
 
 ### 1.2 Live Scoring & Winner Logic
 - **Files:** `hooks/useLiveScoring.ts`, `services/scoreService.ts`, `utils/winnerLogic.ts` + tests, `utils/retry.ts`, `components/AdminPanel.tsx` (manual per-quarter entry), realtime propagation in `hooks/usePoolData.ts`, `fixtures/sampleBoard.fixture.ts`.

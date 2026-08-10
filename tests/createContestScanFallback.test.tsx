@@ -16,7 +16,7 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../services/geminiService', () => ({
+vi.mock('../services/boardImportService', () => ({
   parseBoardImage: mocks.parseBoardImage,
 }));
 

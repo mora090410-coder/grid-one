@@ -39,13 +39,40 @@ export default defineConfig({
     },
   },
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'tests/setup.ts'],
     },
+    // Split so the two kinds of test get the scheduling each needs. The
+    // integration suites each start a disposable Postgres container; running
+    // their files in parallel puts ~9 containers up at once and they time out
+    // waiting on Docker. Unit tests stay fully parallel.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: ['./tests/setup.ts'],
+          include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+          exclude: ['**/node_modules/**', '**/dist/**', '**/*.integration.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: ['./tests/setup.ts'],
+          include: ['tests/**/*.integration.test.ts'],
+          // One container at a time — the whole point of this split.
+          fileParallelism: false,
+          testTimeout: 120_000,
+          hookTimeout: 300_000,
+        },
+      },
+    ],
   },
 });

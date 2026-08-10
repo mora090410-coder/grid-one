@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
-import { parseBoardImage } from '../services/geminiService';
+import { parseBoardImage } from '../services/boardImportService';
 import { GameState, BoardData, ScheduledGame } from '../types';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';

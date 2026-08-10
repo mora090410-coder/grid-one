@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseBoardImage } from '../services/geminiService';
+import { parseBoardImage } from '../services/boardImportService';
 import { onRequestPost as scanBoard } from '../functions/api/boards/scan';
 
 const mocks = vi.hoisted(() => ({

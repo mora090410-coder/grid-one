@@ -13,7 +13,7 @@ import {
   WinnerResolution,
 } from '../types';
 import { supabase } from '../services/supabase';
-import { parseBoardImage } from '../services/geminiService';
+import { parseBoardImage } from '../services/boardImportService';
 import { ScheduledGamePicker } from './ScheduledGamePicker';
 
 import { createCheckoutSession } from '../services/stripe';
