@@ -7,5 +7,5 @@ export const isValidAxis = (axis: unknown): axis is number[] =>
   && new Set(axis).size === 10;
 
 export const hasValidAxes = (
-  board: Pick<BoardData, 'bearsAxis' | 'oppAxis'>,
-) => isValidAxis(board.bearsAxis) && isValidAxis(board.oppAxis);
+  board: Pick<BoardData, 'leftAxis' | 'topAxis'>,
+) => isValidAxis(board.leftAxis) && isValidAxis(board.topAxis);

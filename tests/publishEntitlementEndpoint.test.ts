@@ -64,8 +64,8 @@ const contest = {
     dates: '2026-09-13',
   },
   board_data: {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     squares: Array.from({ length: 100 }, (_, index) => [`Buyer ${index + 1}`]),
   },
   published_at: null,

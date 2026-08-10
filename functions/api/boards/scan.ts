@@ -30,7 +30,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   }
 
   const prompt = `Read this football squares board as a 10 by 10 grid. Return JSON only:
-{"bearsAxis":[10 unique digits 0-9 top to bottom],"oppAxis":[10 unique digits 0-9 left to right],"squaresGrid":[10 rows of 10 strings]}
+{"leftAxis":[10 unique digits 0-9 top to bottom],"topAxis":[10 unique digits 0-9 left to right],"squaresGrid":[10 rows of 10 strings]}
 Use "" for blank cells and "???" when text is genuinely unreadable. Never invent names.`;
   const model = env.OCR_MODEL || 'gemini-2.5-flash';
   let providerResponse: Response;
@@ -60,7 +60,7 @@ Use "" for blank cells and "???" when text is genuinely unreadable. Never invent
 
   try {
     const parsed = JSON.parse(text);
-    if (!validAxis(parsed.bearsAxis) || !validAxis(parsed.oppAxis)) {
+    if (!validAxis(parsed.leftAxis) || !validAxis(parsed.topAxis)) {
       throw new Error('The axis digits could not be read reliably.');
     }
     if (!Array.isArray(parsed.squaresGrid) || parsed.squaresGrid.length !== 10) {
@@ -76,8 +76,8 @@ Use "" for blank cells and "???" when text is genuinely unreadable. Never invent
     }
     return json({
       board: {
-        bearsAxis: parsed.bearsAxis,
-        oppAxis: parsed.oppAxis,
+        leftAxis: parsed.leftAxis,
+        topAxis: parsed.topAxis,
         squares,
         isDynamic: false,
       },

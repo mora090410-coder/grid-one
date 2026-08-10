@@ -31,8 +31,8 @@ const INITIAL_GAME: GameState = {
 };
 
 const EMPTY_BOARD: BoardData = {
-    bearsAxis: [null, null, null, null, null, null, null, null, null, null],
-    oppAxis: [null, null, null, null, null, null, null, null, null, null],
+    leftAxis: [null, null, null, null, null, null, null, null, null, null],
+    topAxis: [null, null, null, null, null, null, null, null, null, null],
     squares: Array(100).fill(null).map(() => []),
     isDynamic: false
 };

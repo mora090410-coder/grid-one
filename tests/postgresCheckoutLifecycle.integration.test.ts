@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import Stripe from 'stripe';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { onRequestPost as stripeWebhook } from '../functions/api/stripe/webhook';
+import { expectedMigrationNumbers } from './fixtures/migrationSequence';
 
 const supabaseMocks = vi.hoisted(() => ({
   createClient: vi.fn(),
@@ -285,7 +286,7 @@ const applyMigrations = async () => {
     .sort();
 
   expect(migrationFiles.map((file) => Number(file.slice(0, 3)))).toEqual(
-    Array.from({ length: 13 }, (_, index) => index),
+    expectedMigrationNumbers(12),
   );
 
   for (const migrationFile of migrationFiles) {

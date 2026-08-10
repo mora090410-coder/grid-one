@@ -9,12 +9,12 @@ export const getAxisForQuarter = (
     quarter?: string
 ): (number | null)[] => {
     if (!board.isDynamic || !quarter) {
-        return side === 'left' ? board.bearsAxis : board.oppAxis;
+        return side === 'left' ? board.leftAxis : board.topAxis;
     }
     // Map quarter to axis key (Final uses Q4)
     const qKey = (quarter === 'Final' ? 'Q4' : quarter) as 'Q1' | 'Q2' | 'Q3' | 'Q4';
-    const axes = side === 'left' ? board.bearsAxisByQuarter : board.oppAxisByQuarter;
-    return axes?.[qKey] || (side === 'left' ? board.bearsAxis : board.oppAxis);
+    const axes = side === 'left' ? board.leftAxisByQuarter : board.topAxisByQuarter;
+    return axes?.[qKey] || (side === 'left' ? board.leftAxis : board.topAxis);
 };
 
 export const calculateWinnerHighlights = (liveData: LiveGameData | null): WinnerHighlights => {

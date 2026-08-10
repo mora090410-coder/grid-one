@@ -13,7 +13,7 @@ const generateSyntheticSquares = (): string[][] =>
   });
 
 export const SAMPLE_BOARD: BoardData = {
-  bearsAxis: [7, 1, 8, 4, 6, 9, 2, 5, 0, 3],
-  oppAxis: [9, 4, 8, 6, 2, 0, 1, 7, 5, 3],
+  leftAxis: [7, 1, 8, 4, 6, 9, 2, 5, 0, 3],
+  topAxis: [9, 4, 8, 6, 2, 0, 1, 7, 5, 3],
   squares: generateSyntheticSquares(),
 };

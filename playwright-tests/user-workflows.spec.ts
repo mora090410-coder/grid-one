@@ -104,8 +104,8 @@ test('published viewer renders the board and persists its canonical square selec
   squares[0] = ['Ann'];
   squares[1] = ['Anna'];
   const board = {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    topAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     squares,
     isDynamic: false,
     participants: [
@@ -202,8 +202,8 @@ test('draft organizer preview stays fully visible and interactive before activat
   let automaticScoreRequests = 0;
   let scheduleRequests = 0;
   const board = {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     squares: Array.from({ length: 100 }, () => [] as string[]),
     isDynamic: false,
   };
@@ -302,8 +302,8 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
   await installOrganizerSession(page);
   const boardId = ownerId;
   const fullBoard = {
-    bearsAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    oppAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
     squares: Array.from({ length: 100 }, () => ['Mora']),
     isDynamic: false,
   };

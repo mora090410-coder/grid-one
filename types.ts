@@ -65,16 +65,16 @@ export interface QuarterAxes {
 }
 
 export interface BoardData {
-  bearsAxis: (number | null)[];   // Standard board (backward compatible)
-  oppAxis: (number | null)[];     // Standard board (backward compatible)
+  leftAxis: (number | null)[];   // Standard board (backward compatible)
+  topAxis: (number | null)[];     // Standard board (backward compatible)
   squares: string[][];
   /** Explicit organizer opt-in recorded with a number draw that includes open squares. */
   allowOpenSquares?: boolean;
 
   // Dynamic board support (optional - defaults to standard)
   isDynamic?: boolean;
-  bearsAxisByQuarter?: QuarterAxes;
-  oppAxisByQuarter?: QuarterAxes;
+  leftAxisByQuarter?: QuarterAxes;
+  topAxisByQuarter?: QuarterAxes;
   participants?: Array<{ id: string; displayName: string; publicLabel: string }>;
 }
 
@@ -167,6 +167,21 @@ export interface EntryMeta {
   notify_opt_in: boolean;
   contact_type: 'sms' | 'email' | null;
   contact_value: string | null;
+  /**
+   * Who sold this square, kept alongside the buyer name in board_data.squares.
+   * A coach hands a block to a parent to sell, then the buyer's name replaces
+   * the placeholder — this is what still answers "who collected that money".
+   */
+  seller_label?: string | null;
+}
+
+/** One entry in the append-only rename log kept for published boards. */
+export interface SquareEdit {
+  id: string;
+  cell_index: number;
+  previous_name: string | null;
+  new_name: string | null;
+  changed_at: string;
 }
 
 export interface PoolDataWrapper {

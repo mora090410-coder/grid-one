@@ -13,6 +13,7 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 import { onRequestPost as activateBoard } from '../functions/api/pools/activate';
+import { expectedMigrationNumbers } from './fixtures/migrationSequence';
 
 const DATABASE_NAME = 'gridone_test';
 const DATABASE_USER = 'postgres';
@@ -229,7 +230,7 @@ const applyMigrations = async () => {
 
   const migrationNumbers = migrationFiles.map((file) => Number(file.slice(0, 3)));
   expect(migrationNumbers).toEqual(
-    Array.from({ length: 15 }, (_, index) => index),
+    expectedMigrationNumbers(14),
   );
 
   for (const migrationFile of migrationFiles) {

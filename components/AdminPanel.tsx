@@ -17,6 +17,7 @@ import { parseBoardImage } from '../services/geminiService';
 import { ScheduledGamePicker } from './ScheduledGamePicker';
 
 import { createCheckoutSession } from '../services/stripe';
+import { renderBoardPng, shareBoardPng, boardImageFilename } from '../utils/boardImage';
 import { useDialogFocus } from '../hooks/useDialogFocus';
 import { OrganizerDestination } from '../utils/organizerFlow';
 
@@ -128,6 +129,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   // Bulk Assign State
   const [isAssignMode, setIsAssignMode] = useState(false);
   const [assignLabel, setAssignLabel] = useState('');
+  // Phase one of a fundraiser board: the label being painted is the seller, and
+  // it should survive being overwritten by the buyer's name later.
+  const [assignAsSeller, setAssignAsSeller] = useState(false);
+  const [exportingImage, setExportingImage] = useState(false);
   const assignLabelRef = useRef<HTMLInputElement>(null);
   const [assignPaidDefault, setAssignPaidDefault] = useState<EntryMeta['paid_status']>('unpaid');
   const [selectedCellIndices, setSelectedCellIndices] = useState<Set<number>>(new Set());
@@ -266,6 +271,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         notify_opt_in: meta.notify_opt_in,
         contact_type: meta.contact_type || null,
         contact_value: meta.contact_value || null,
+        seller_label: meta.seller_label?.trim() || null,
         updated_at: new Date().toISOString()
       }, { onConflict: 'contest_id, cell_index' });
 
@@ -273,6 +279,78 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       console.error("Error saving metadata:", error);
       setActionMessage(`Square details were not saved: ${error.message || 'Unknown error'}`);
     }
+  };
+
+  const hasSellerLabels = Object.values(entryMetaByIndex).some(meta => !!meta?.seller_label);
+
+  /**
+   * Renders the current board to a PNG and hands it to the OS share sheet,
+   * falling back to a download on desktop.
+   */
+  const exportBoardImage = async (mode: 'owners' | 'sellers') => {
+    setExportingImage(true);
+    setActionMessage(null);
+    try {
+      const sellersByIndex: Record<number, string | null | undefined> = {};
+      Object.entries(entryMetaByIndex).forEach(([index, meta]) => {
+        sellersByIndex[Number(index)] = meta?.seller_label;
+      });
+
+      const blob = await renderBoardPng({
+        board: localBoard,
+        game: localGame,
+        sellersByIndex,
+        mode,
+        shareUrl: shareCode ? `${window.location.origin}/b/${shareCode}` : undefined,
+      });
+
+      const outcome = await shareBoardPng(
+        blob,
+        boardImageFilename(localGame, mode),
+        `${localGame.title || 'Squares board'} — ${localGame.dates || ''}`.trim(),
+      );
+
+      if (outcome === 'downloaded') setActionMessage('Board image saved to your downloads.');
+    } catch (error: any) {
+      setActionMessage(error?.message || 'The board image could not be created.');
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  /**
+   * Renames one square on a published board through the audited server path.
+   * Direct writes to board_data are rejected by the publish trigger, so this
+   * is the only route — it logs the change and refreshes the viewer snapshot.
+   */
+  const renamePublishedSquare = async (cellIndex: number, nextName: string) => {
+    if (!activePoolId) return;
+    const previous = localBoard.squares[cellIndex]?.[0] || '';
+
+    // Optimistic: the organizer should see the square change immediately.
+    const optimistic = { ...localBoard, squares: [...localBoard.squares] };
+    optimistic.squares[cellIndex] = nextName ? [nextName] : [];
+    setLocalBoard(optimistic);
+
+    const { error } = await supabase.rpc('gridone_rename_published_square', {
+      p_contest_id: activePoolId,
+      p_cell_index: cellIndex,
+      p_new_name: nextName,
+    });
+
+    if (error) {
+      const reverted = { ...localBoard, squares: [...localBoard.squares] };
+      reverted.squares[cellIndex] = previous ? [previous] : [];
+      setLocalBoard(reverted);
+      setActionMessage(`Square ${cellIndex + 1} was not renamed: ${error.message || 'Unknown error'}`);
+      return;
+    }
+
+    setActionMessage(
+      previous
+        ? `Square ${cellIndex + 1} changed from ${previous} to ${nextName || 'OPEN'}. The change is in the board history.`
+        : `Square ${cellIndex + 1} assigned to ${nextName}.`,
+    );
   };
 
   // Apply changes locally (for real-time preview)
@@ -330,22 +408,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       let changed = false;
       const copy = { ...localBoard };
 
-      if (!copy.bearsAxisByQuarter) {
-        copy.bearsAxisByQuarter = {
-          Q1: [...copy.bearsAxis],
-          Q2: [...copy.bearsAxis],
-          Q3: [...copy.bearsAxis],
-          Q4: [...copy.bearsAxis]
+      if (!copy.leftAxisByQuarter) {
+        copy.leftAxisByQuarter = {
+          Q1: [...copy.leftAxis],
+          Q2: [...copy.leftAxis],
+          Q3: [...copy.leftAxis],
+          Q4: [...copy.leftAxis]
         };
         changed = true;
       }
 
-      if (!copy.oppAxisByQuarter) {
-        copy.oppAxisByQuarter = {
-          Q1: [...copy.oppAxis],
-          Q2: [...copy.oppAxis],
-          Q3: [...copy.oppAxis],
-          Q4: [...copy.oppAxis]
+      if (!copy.topAxisByQuarter) {
+        copy.topAxisByQuarter = {
+          Q1: [...copy.topAxis],
+          Q2: [...copy.topAxis],
+          Q3: [...copy.topAxis],
+          Q4: [...copy.topAxis]
         };
         changed = true;
       }
@@ -355,7 +433,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
         setLocalBoard(copy);
       }
     }
-  }, [localBoard.isDynamic, localBoard.bearsAxisByQuarter, localBoard.oppAxisByQuarter]);
+  }, [localBoard.isDynamic, localBoard.leftAxisByQuarter, localBoard.topAxisByQuarter]);
 
 
   const applyScanResult = (newBoard: BoardData) => {
@@ -515,11 +593,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     if (!drawPreview || isPublished) return;
     setLocalBoard((current) => ({
       ...current,
-      bearsAxis: drawPreview.side,
-      oppAxis: drawPreview.top,
+      leftAxis: drawPreview.side,
+      topAxis: drawPreview.top,
       isDynamic: false,
-      bearsAxisByQuarter: undefined,
-      oppAxisByQuarter: undefined,
+      leftAxisByQuarter: undefined,
+      topAxisByQuarter: undefined,
       allowOpenSquares: openSquareCount > 0,
     }));
     setDrawPreview(null);
@@ -676,6 +754,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     notify_opt_in: boolean;
     contact_type: EntryMeta['contact_type'] | null;
     contact_value: string | null;
+    seller_label: string | null;
     updated_at: string;
   }
 
@@ -712,16 +791,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
       // Update Name
       newBoard.squares[idx] = [label];
 
-      // Update Metadata if specific status selected
-      if (assignPaidDefault !== 'unknown') {
+      // Write metadata when a payment status was chosen, or when this label is
+      // a seller that must outlive the buyer rename.
+      if (assignPaidDefault !== 'unknown' || assignAsSeller) {
         const currentM = entryMetaByIndex[idx];
         const newMeta = {
           contest_id: activePoolId,
           cell_index: idx,
-          paid_status: assignPaidDefault,
+          paid_status: assignPaidDefault !== 'unknown'
+            ? assignPaidDefault
+            : (currentM?.paid_status ?? 'unknown'),
           notify_opt_in: currentM?.notify_opt_in ?? false,
           contact_type: currentM?.contact_type ?? null,
           contact_value: currentM?.contact_value ?? null,
+          seller_label: assignAsSeller ? label : (currentM?.seller_label ?? null),
           updated_at: new Date().toISOString()
         };
 
@@ -760,6 +843,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
           notify_opt_in: m.notify_opt_in,
           contact_type: m.contact_type || null,
           contact_value: m.contact_value || null,
+          seller_label: m.seller_label || null,
           updated_at: m.updated_at
         }));
 
@@ -880,13 +964,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
   }, [selectedCellIndices]);
 
   // Axis values to display based on dynamic mode
-  const currentOppAxis = localBoard.isDynamic
-    ? localBoard.oppAxisByQuarter?.[activeAxisQuarter]
-    : localBoard.oppAxis;
+  const currentTopAxis = localBoard.isDynamic
+    ? localBoard.topAxisByQuarter?.[activeAxisQuarter]
+    : localBoard.topAxis;
 
-  const currentBearsAxis = localBoard.isDynamic
-    ? localBoard.bearsAxisByQuarter?.[activeAxisQuarter]
-    : localBoard.bearsAxis;
+  const currentLeftAxis = localBoard.isDynamic
+    ? localBoard.leftAxisByQuarter?.[activeAxisQuarter]
+    : localBoard.leftAxis;
 
   const handleBoardLifecycleAction = async () => {
     if (!activePoolId) {
@@ -1703,6 +1787,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* Send the board as an image — the share sheet on a phone
+                      drops it straight into a team group text. */}
+                  <button
+                    onClick={() => exportBoardImage('owners')}
+                    disabled={exportingImage}
+                    className="min-h-11 px-4 py-2 rounded-control text-xs font-bold bg-newsprint text-ink/70 hover:bg-newsprint disabled:opacity-50 transition-all"
+                  >
+                    {exportingImage ? 'Preparing…' : 'Send board'}
+                  </button>
+                  {hasSellerLabels && (
+                    <button
+                      onClick={() => exportBoardImage('sellers')}
+                      disabled={exportingImage}
+                      className="min-h-11 px-4 py-2 rounded-control text-xs font-bold bg-newsprint text-ink/70 hover:bg-newsprint disabled:opacity-50 transition-all"
+                    >
+                      Send seller view
+                    </button>
+                  )}
+
                   {/* Bulk Assign Toggle */}
                   {canAssignSquares && <button
                     onClick={() => {
@@ -1738,6 +1841,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                       placeholder="e.g. Mora"
                       className="w-full bg-broadcast-white border border-newsprint rounded-control px-3 py-2 text-sm text-ink focus:border-cardinal outline-none"
                     />
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        id="assign-as-seller"
+                        type="checkbox"
+                        checked={assignAsSeller}
+                        onChange={(e) => setAssignAsSeller(e.target.checked)}
+                        className="h-4 w-4 accent-[#8F1D2C]"
+                      />
+                      <label htmlFor="assign-as-seller" className="text-[11px] text-ink/70 leading-tight">
+                        This person is <span className="font-bold">selling</span> these squares — keep their name as the seller after the buyer's name replaces it
+                      </label>
+                    </div>
                     </div>
 
                     {!isPublished && <div className="md:col-span-3 space-y-1">
@@ -1865,7 +1980,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     <div className="flex-1">
                       <div className="text-center text-[10px] font-black text-ink/50 uppercase tracking-widest mb-3">{localGame.topName}</div>
                       <div className="grid grid-cols-10 gap-2">
-                        {currentOppAxis?.map((val, idx) => (
+                        {currentTopAxis?.map((val, idx) => (
                           <div key={idx} className="space-y-1">
                             <output className="oa-data flex h-10 w-full items-center justify-center bg-broadcast-white border border-newsprint text-sm font-bold">
                               {val ?? '—'}
@@ -1886,9 +2001,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                     </div>
 
                     <div className="w-16 flex flex-col gap-2 pr-3 pt-0 border-r border-newsprint">
-                      {currentBearsAxis?.map((val, idx) => (
+                      {currentLeftAxis?.map((val, idx) => (
                         <div key={idx} className="flex items-center justify-end gap-1 group h-12 relative">
-                          <output className={`oa-data flex h-12 w-10 items-center justify-center bg-broadcast-white border text-sm font-bold ${currentBearsAxis.length > 10 ? 'border-cardinal' : 'border-newsprint'}`}>
+                          <output className={`oa-data flex h-12 w-10 items-center justify-center bg-broadcast-white border text-sm font-bold ${currentLeftAxis.length > 10 ? 'border-cardinal' : 'border-newsprint'}`}>
                             {val ?? '—'}
                           </output>
                         </div>
@@ -1909,13 +2024,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (!cellCanBeAssigned) return;
                                   if (isAssignMode) {
+                                    if (!cellCanBeAssigned) return;
                                     if (justFinishedDragRef.current) return;
                                     toggleCellSelection(cellIdx);
                                     return;
                                   }
-                                  if (!isPublished) setEditingMetaIndex(cellIdx);
+                                  // Published squares open the same editor: the
+                                  // seller-to-owner rename is audited, not blocked.
+                                  setEditingMetaIndex(cellIdx);
                                 }}
                                 onPointerDown={(e) => {
                                   if (!cellCanBeAssigned || !isAssignMode) return;
@@ -1932,10 +2049,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                   if (!cellCanBeAssigned || !isAssignMode) return;
                                   endDragAssign();
                                 }}
-                                disabled={!cellCanBeAssigned}
+                                disabled={isAssignMode && !cellCanBeAssigned}
                                 aria-pressed={isAssignMode ? selectedCellIndices.has(cellIdx) : undefined}
-                                aria-label={`Square ${cellIdx + 1}${players[0] ? `, assigned to ${players[0]}` : ', unassigned'}${isAssignMode ? ', toggle selection' : ', edit purchaser details'}`}
-                                className={`w-full h-full border rounded-grid flex flex-col items-center justify-center p-1 transition-all group ${cellCanBeAssigned ? 'cursor-pointer active:scale-95' : 'cursor-default'} ${isAssignMode && selectedCellIndices.has(cellIdx)
+                                aria-label={`Square ${cellIdx + 1}${players[0] ? `, assigned to ${players[0]}` : ', unassigned'}${entryMetaByIndex[cellIdx]?.seller_label ? `, sold by ${entryMetaByIndex[cellIdx]?.seller_label}` : ''}${isAssignMode ? ', toggle selection' : ', edit square details'}`}
+                                className={`w-full h-full border rounded-grid flex flex-col items-center justify-center p-1 transition-all group ${(!isAssignMode || cellCanBeAssigned) ? 'cursor-pointer active:scale-95' : 'cursor-default'} ${isAssignMode && selectedCellIndices.has(cellIdx)
                                   ? 'bg-cardinal-subtle border-cardinal '
                                   : 'bg-newsprint border-newsprint hover:bg-newsprint hover:border-newsprint'
                                   }`}
@@ -1945,7 +2062,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
                                 </span>
                                 {players.length === 0 && (
                                   <span className="oa-board-name text-ink/30 select-none">
-                                    {currentOppAxis?.[c] ?? '?'}-{currentBearsAxis?.[r] ?? '?'}
+                                    {currentTopAxis?.[c] ?? '?'}-{currentLeftAxis?.[r] ?? '?'}
                                   </span>
                                 )}
                               </button>
@@ -1977,21 +2094,33 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
       {/* Metadata Edit Modal */}
       {
-        editingMetaIndex !== null && !isPublished && (
+        editingMetaIndex !== null && (
           <MetadataModal
             cellIndex={editingMetaIndex}
             currentName={localBoard.squares[editingMetaIndex]?.[0] || ''}
             currentMeta={entryMetaByIndex[editingMetaIndex]}
+            isPublished={isPublished}
             onSave={(name, meta) => {
-              // 1. Update Board Name (triggers debounce save)
-              const newBoard = { ...localBoard, squares: [...localBoard.squares] };
-              newBoard.squares[editingMetaIndex] = name ? [name] : [];
-              setLocalBoard(newBoard);
+              const cellIndex = editingMetaIndex;
+              const previousName = localBoard.squares[cellIndex]?.[0] || '';
 
-              // 2. Save Metadata (immediate)
+              // Seller and payment status are plain entry metadata either way.
               saveEntryMeta(meta);
-
               setEditingMetaIndex(null);
+
+              if (name === previousName) return;
+
+              if (isPublished) {
+                // Published squares are frozen at the database level; the
+                // audited rename path is the only way through, and it updates
+                // the shared viewer snapshot in the same transaction.
+                void renamePublishedSquare(cellIndex, name);
+                return;
+              }
+
+              const newBoard = { ...localBoard, squares: [...localBoard.squares] };
+              newBoard.squares[cellIndex] = name ? [name] : [];
+              setLocalBoard(newBoard);
             }}
             onClose={() => setEditingMetaIndex(null)}
           />
@@ -2105,10 +2234,12 @@ const MetadataModal: React.FC<{
   cellIndex: number;
   currentName: string;
   currentMeta?: EntryMeta;
+  isPublished?: boolean;
   onSave: (name: string, meta: EntryMeta) => void;
   onClose: () => void;
-}> = ({ cellIndex, currentName, currentMeta, onSave, onClose }) => {
+}> = ({ cellIndex, currentName, currentMeta, isPublished = false, onSave, onClose }) => {
   const [name, setName] = useState(currentName);
+  const [sellerLabel, setSellerLabel] = useState(currentMeta?.seller_label || '');
   const [paidStatus, setPaidStatus] = useState<EntryMeta['paid_status']>(currentMeta?.paid_status && currentMeta.paid_status !== 'unknown' ? currentMeta.paid_status : 'unpaid');
   const dialogRef = useRef<HTMLDivElement>(null);
   useDialogFocus(dialogRef, onClose);
@@ -2119,7 +2250,8 @@ const MetadataModal: React.FC<{
       paid_status: paidStatus,
       notify_opt_in: false,
       contact_type: null,
-      contact_value: null
+      contact_value: null,
+      seller_label: sellerLabel.trim() || null
     });
   };
 
@@ -2148,7 +2280,7 @@ const MetadataModal: React.FC<{
 
           {/* Name Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-ink/50 uppercase tracking-widest">Purchaser or seller name</label>
+            <label className="text-xs font-bold text-ink/50 uppercase tracking-widest">Square owner</label>
             <input
               type="text"
               value={name}
@@ -2156,6 +2288,23 @@ const MetadataModal: React.FC<{
               placeholder="Enter Name"
               className="w-full oa-input"
               autoFocus
+            />
+            {isPublished && (
+              <p className="oa-body text-[12px] text-ink/60 leading-tight">
+                This board is published. Renaming a square is recorded in the board history and updates the shared link right away.
+              </p>
+            )}
+          </div>
+
+          {/* Seller — survives the placeholder-to-owner rename */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-ink/50 uppercase tracking-widest">Sold by <span className="normal-case font-normal text-ink/40">(optional)</span></label>
+            <input
+              type="text"
+              value={sellerLabel}
+              onChange={(e) => setSellerLabel(e.target.value)}
+              placeholder="Who sold this square"
+              className="w-full oa-input"
             />
           </div>
 

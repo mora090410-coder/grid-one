@@ -5,8 +5,8 @@ import { getOrganizerProgress } from '../utils/organizerFlow';
 const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const boardWith = (assigned: number, axes: number[] = Array(10).fill(null)): BoardData => ({
   squares: Array.from({ length: 100 }, (_, index) => index < assigned ? ['Organizer'] : []),
-  bearsAxis: axes,
-  oppAxis: axes,
+  leftAxis: axes,
+  topAxis: axes,
   isDynamic: false,
 });
 const paid = (count: number) => Object.fromEntries(
