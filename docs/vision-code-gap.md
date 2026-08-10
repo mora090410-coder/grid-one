@@ -22,7 +22,7 @@ This is not a full rewrite. It is a **foundation replacement beneath a preserved
 | Current-quarter scoring scenarios | `components/ScenarioPanel.tsx` | Preserve the core differentiator; personalize it and correct touch/keyboard behavior. |
 | Winner digit orientation | `utils/winnerLogic.ts`, `tests/winnerLogic.test.ts` | Preserve the tested top-column/side-row mapping. |
 | Manual per-quarter scoring | `hooks/useLiveScoring.ts`, `components/AdminPanel.tsx` | Preserve the model; move the canonical snapshot server-side and make manual override explicit. |
-| OCR/photo import | `services/geminiService.ts`, create/upload flows | Preserve as a secondary recovery path; move its key server-side. |
+| OCR/photo import | `services/boardImportService.ts`, `functions/api/boards/scan.ts`, create/upload flows | Done: the key moved server-side. Remains a secondary recovery path behind in-app entry. |
 | Entry metadata intent | `contest_entries`, `EntryMeta`, organizer paid-status UI | Preserve the organizer need; replace the cell-only model with participant/assignment/contact records. |
 | Stripe-hosted payment | Checkout and signed webhook functions | Preserve Stripe Checkout; replace ownership, idempotency, and allowance logic. |
 
