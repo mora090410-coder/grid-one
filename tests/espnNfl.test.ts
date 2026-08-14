@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  espnSummaryUrl,
   fetchScheduledGameById,
   fetchScheduledGames,
   normalizeEspnEvent,
@@ -15,6 +14,13 @@ import {
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+const cdnScheduleResponse = (events: unknown[]) => jsonResponse({
+  content: {
+    schedule: { 20260814: { games: events } },
+    calendar: [],
+  },
+});
 
 describe('ESPN NFL normalization', () => {
   it('normalizes a scheduled event and canonical team aliases', () => {
@@ -100,6 +106,73 @@ describe('ESPN NFL normalization', () => {
 });
 
 describe('ESPN NFL schedule fetches', () => {
+  it('loads the schedule through the ESPN CDN envelope used by Cloudflare', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (!url.startsWith('https://cdn.espn.com/core/nfl/schedule?')) {
+        return jsonResponse({ error: 'Access Denied' }, 403);
+      }
+      return jsonResponse({
+        content: {
+          schedule: {
+            20260910: { games: [scheduledEspnEvent] },
+          },
+          calendar: [],
+        },
+      });
+    });
+
+    const games = await fetchScheduledGames({
+      scope: 'upcoming',
+      limit: 1,
+      now: new Date('2026-08-14T12:00:00Z'),
+    }, fetchMock);
+
+    expect(games.map((game) => game.id)).toEqual(['401000003']);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      'https://cdn.espn.com/core/nfl/schedule?xhr=1&year=2026',
+    );
+  });
+
+  it('loads the next schedule week when the current week has no upcoming games', async () => {
+    const completed = structuredClone(regulationEspnSummary.header);
+    completed.competitions[0].date = '2026-08-13T23:00:00Z';
+    const nextWeek = structuredClone(scheduledEspnEvent);
+    nextWeek.date = '2026-08-20T23:00:00Z';
+    nextWeek.competitions[0].date = nextWeek.date;
+    nextWeek.week = { number: 3 };
+
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes('seasontype=1&week=3')) {
+        return jsonResponse({
+          content: { schedule: { 20260820: { games: [nextWeek] } }, calendar: [] },
+        });
+      }
+      return jsonResponse({
+        content: {
+          schedule: { 20260813: { games: [completed] } },
+          calendar: [{
+            value: '1',
+            entries: [
+              { value: '2', startDate: '2026-08-13T07:00:00Z', endDate: '2026-08-20T06:59:00Z' },
+              { value: '3', startDate: '2026-08-20T07:00:00Z', endDate: '2026-08-27T06:59:00Z' },
+            ],
+          }],
+        },
+      });
+    });
+
+    const games = await fetchScheduledGames({
+      scope: 'upcoming',
+      limit: 1,
+      now: new Date('2026-08-14T12:00:00Z'),
+    }, fetchMock);
+
+    expect(games.map((game) => game.id)).toEqual(['401000003']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('returns upcoming games oldest first and excludes started games', async () => {
     const later = structuredClone(scheduledEspnEvent);
     later.id = '401000004';
@@ -107,7 +180,7 @@ describe('ESPN NFL schedule fetches', () => {
     later.competitions[0].id = later.id;
     later.competitions[0].date = later.date;
     const completed = structuredClone(regulationEspnSummary.header);
-    const fetchMock = vi.fn(async () => jsonResponse({ events: [later, completed, scheduledEspnEvent] }));
+    const fetchMock = vi.fn(async () => cdnScheduleResponse([later, completed, scheduledEspnEvent]));
 
     const games = await fetchScheduledGames({
       scope: 'upcoming',
@@ -116,7 +189,9 @@ describe('ESPN NFL schedule fetches', () => {
     }, fetchMock);
 
     expect(games.map((game) => game.id)).toEqual(['401000003', '401000004']);
-    expect(String((fetchMock.mock.calls as any[][])[0][0])).toContain('dates=20260728-20270325');
+    expect(String((fetchMock.mock.calls as any[][])[0][0])).toBe(
+      'https://cdn.espn.com/core/nfl/schedule?xhr=1&year=2026',
+    );
   });
 
   it('returns only the requested number of most recent completed games', async () => {
@@ -127,7 +202,7 @@ describe('ESPN NFL schedule fetches', () => {
       event.competitions[0].date = `2026-01-${String(10 + index).padStart(2, '0')}T20:00:00Z`;
       return event;
     });
-    const fetchMock = vi.fn(async () => jsonResponse({ events: completedEvents.reverse() }));
+    const fetchMock = vi.fn(async () => cdnScheduleResponse(completedEvents.reverse()));
     const games = await fetchScheduledGames({
       scope: 'completed',
       limit: 5,
@@ -156,9 +231,9 @@ describe('ESPN NFL schedule fetches', () => {
       abbreviation: 'NFC',
       displayName: 'NFC',
     };
-    const fetchMock = vi.fn(async () => jsonResponse({
-      events: [{ broken: true }, proBowl, regulationEspnSummary.header],
-    }));
+    const fetchMock = vi.fn(async () => cdnScheduleResponse([
+      { broken: true }, proBowl, regulationEspnSummary.header,
+    ]));
 
     const games = await fetchScheduledGames({
       scope: 'completed',
@@ -169,13 +244,18 @@ describe('ESPN NFL schedule fetches', () => {
     expect(games.map((game) => game.id)).toEqual(['401000001']);
   });
 
-  it('resolves an exact event ID through the ESPN summary URL', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ header: scheduledEspnEvent }));
+  it('resolves an exact event ID through the Cloudflare-compatible ESPN game package', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (String(input) !== 'https://cdn.espn.com/core/nfl/game?xhr=1&gameId=401000003') {
+        return jsonResponse({ error: 'Access Denied' }, 403);
+      }
+      return jsonResponse({ gamepackageJSON: { header: scheduledEspnEvent } });
+    });
     await expect(fetchScheduledGameById('401000003', fetchMock)).resolves.toMatchObject({
       id: '401000003',
       homeTeam: { abbr: 'WAS' },
     });
-    expect(fetchMock).toHaveBeenCalledWith(espnSummaryUrl('401000003'), expect.objectContaining({
+    expect(fetchMock).toHaveBeenCalledWith('https://cdn.espn.com/core/nfl/game?xhr=1&gameId=401000003', expect.objectContaining({
       headers: { Accept: 'application/json' },
       // Every ESPN request now carries an 8s timeout signal.
       signal: expect.any(AbortSignal),
@@ -188,17 +268,19 @@ describe('ESPN NFL schedule fetches', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     await expect(fetchScheduledGameById('401999999', fetchMock)).resolves.toBeNull();
 
-    const mismatchFetch = vi.fn(async () => jsonResponse({ header: scheduledEspnEvent }));
+    const mismatchFetch = vi.fn(async () => jsonResponse({
+      gamepackageJSON: { header: scheduledEspnEvent },
+    }));
     await expect(fetchScheduledGameById('401999998', mismatchFetch)).rejects.toThrow(/different event/i);
 
-    const malformedFetch = vi.fn(async () => jsonResponse({ header: {} }));
+    const malformedFetch = vi.fn(async () => jsonResponse({ gamepackageJSON: { header: {} } }));
     await expect(fetchScheduledGameById('401999997', malformedFetch)).rejects.toThrow(/competition/i);
   });
 
   it('treats an all-malformed non-empty schedule as a provider failure', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({
-      events: [{ broken: true }, { also: 'broken' }],
-    }));
+    const fetchMock = vi.fn(async () => cdnScheduleResponse([
+      { broken: true }, { also: 'broken' },
+    ]));
     await expect(fetchScheduledGames({
       scope: 'upcoming',
       now: new Date('2026-07-28T12:00:00Z'),

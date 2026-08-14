@@ -76,7 +76,10 @@ describe('exact-event automatic scoring', () => {
     top_team_abbr: 'WAS',
   };
   const response = (body: unknown) =>
-    new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    new Response(JSON.stringify({ gamepackageJSON: body }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
 
   it('maps the exact linked event into the board axis orientation', async () => {
     const result = await fetchExactEventScore(contest, vi.fn(async () => response(regulationEspnSummary)));

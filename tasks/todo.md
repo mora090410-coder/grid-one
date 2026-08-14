@@ -744,3 +744,21 @@ Local implementation review, July 28, 2026:
 - Production manual-to-auto testing exposed a Final-state transition bug: clearing the manual snapshot left the hook's internal Final guard set, so Auto was enabled but could not perform the one provider refresh needed to reclaim authority. A missing snapshot now resets that guard; the regression test verifies a final manual score transitions back to the canonical ESPN snapshot.
 - A second fresh-shell test proved the chunk failure was deployment-wide rather than organizer-specific: an already-open shell later requested a removed hashed Create chunk. All core product routes now ship with the application entry so a loaded session can move among landing, authentication, dashboard, creation, board, paid, legal, and not-found workflows without requesting a deployment-specific route chunk. Editorial article routes remain on-demand.
 - Final production verification after custom-domain propagation: authenticated Create → Dashboard → Organizer navigation stayed in one shell; the completed-game board returned to ESPN authority at Final 29–13 with event `401772988`; the legacy `Test 1` draft linked to the canonical CAR-at-ARI event and persisted the corrected 7:00 PM kickoff across reload; a one-square `QA Workflow` assignment persisted after the explicit revision-conflict Retry path. Paid publish, a real Stripe charge, and recipient email delivery were intentionally not executed.
+
+## Production NFL schedule outage — August 14, 2026
+
+- [x] Reproduce the create-board schedule failure at the production API boundary.
+- [x] Capture the deployed Function error and compare it with the live upstream response.
+- [x] Prove a Cloudflare-compatible ESPN transport for schedule, scoreboard, and exact-event reads.
+- [x] Add failing regression coverage for the CDN response envelopes and multi-week schedule discovery.
+- [x] Move the centralized ESPN adapter to the working CDN transport without changing canonical event identity.
+- [x] Run focused tests, the complete test/build/typecheck suite, and diff checks.
+- [ ] Deploy the corrected production revision and verify API plus phone-width create-board behavior.
+
+### Production NFL schedule outage review
+
+- Production deployment `24e11898-5049-432d-9707-7033833bf98d` at source `742cd0a` reproduces `GET /api/nfl/games?scope=upcoming` as HTTP 502.
+- Cloudflare Function logs identify the upstream failure as `ESPN schedule request failed with HTTP 403`; the same live ESPN schedule succeeds outside Cloudflare and contains the 2026 slate.
+- An isolated Cloudflare Pages preview confirmed that request-header changes do not bypass the denial, while `cdn.espn.com` returns HTTP 200 for the NFL schedule, live scoreboard, and exact-game package with canonical ESPN IDs intact.
+- Regression coverage proves schedule, live-scoreboard, exact-game, malformed-data, identity, and week-boundary behavior. `npm test -- --run` passes 363 tests across 59 files with one intentional live Stripe sandbox skip; the production build and `git diff --check` pass.
+- WebKit creation coverage passes 4/4, including keyboard selection at phone width. Preview deployment `7882bc11` returns HTTP 200 with 50 current selectable games from the real Cloudflare runtime; production promotion remains pending.

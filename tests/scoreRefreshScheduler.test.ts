@@ -25,11 +25,27 @@ const jsonResponse = (body: unknown) => new Response(JSON.stringify(body), {
   headers: { 'Content-Type': 'application/json' },
 });
 
+const cdnScoreboardResponse = (events: unknown[]) => jsonResponse({
+  content: { sbData: { events } },
+});
+
 describe('fetchLiveScoreboard', () => {
+  it('loads the live slate through the ESPN CDN scoreboard envelope', async () => {
+    const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+      if (String(input) !== 'https://cdn.espn.com/core/nfl/scoreboard?xhr=1') {
+        return new Response('Access Denied', { status: 403 });
+      }
+      return jsonResponse({ content: { sbData: { events: [scoreboardEvent] } } });
+    });
+
+    const result = await fetchLiveScoreboard(fetchImpl as any);
+
+    expect(result.games.get('401000001')?.snapshot.homeTeam.score).toBe(27);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it('fetches the scoreboard once and normalizes every parseable event', async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({
-      events: [scoreboardEvent, { junk: true }],
-    }));
+    const fetchImpl = vi.fn(async () => cdnScoreboardResponse([scoreboardEvent, { junk: true }]));
 
     const result = await fetchLiveScoreboard(fetchImpl as any);
 
@@ -59,7 +75,7 @@ describe('providerScoreFromEspnSnapshot identity guard', () => {
   };
 
   it('accepts a matching event and maps away->side, home->top', async () => {
-    const { games } = await fetchLiveScoreboard(async () => jsonResponse({ events: [scoreboardEvent] }));
+    const { games } = await fetchLiveScoreboard(async () => cdnScoreboardResponse([scoreboardEvent]));
     const entry = games.get('401000001')!;
     const provider = providerScoreFromEspnSnapshot(contest, entry.snapshot, entry.rawEvent);
     expect(provider.score.leftScore).toBe(24);
@@ -68,7 +84,7 @@ describe('providerScoreFromEspnSnapshot identity guard', () => {
   });
 
   it('rejects a payload for a different board', async () => {
-    const { games } = await fetchLiveScoreboard(async () => jsonResponse({ events: [scoreboardEvent] }));
+    const { games } = await fetchLiveScoreboard(async () => cdnScoreboardResponse([scoreboardEvent]));
     const entry = games.get('401000001')!;
     expect(() => providerScoreFromEspnSnapshot(
       { ...contest, side_team_abbr: 'PHI' },
@@ -223,7 +239,7 @@ describe.sequential('cron score refresh endpoint', () => {
       ],
     });
     mocks.clients.push(admin);
-    const fetchSpy = vi.fn(async () => jsonResponse({ events: [scoreboardEvent] }));
+    const fetchSpy = vi.fn(async () => cdnScoreboardResponse([scoreboardEvent]));
     vi.stubGlobal('fetch', fetchSpy);
     // jsdom's crypto lacks randomUUID, which the lease token generation uses.
     vi.stubGlobal('crypto', { randomUUID: () => '00000000-0000-4000-8000-000000000000' });

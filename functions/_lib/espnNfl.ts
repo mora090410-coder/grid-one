@@ -66,10 +66,18 @@ const ESPN_RETRY_OPTIONS = {
   shouldRetry: isRetryableEspnError,
 };
 
-const ESPN_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
-export const ESPN_SCOREBOARD_URL = `${ESPN_BASE_URL}/scoreboard`;
+const ESPN_CDN_BASE_URL = 'https://cdn.espn.com/core/nfl';
+export const ESPN_SCOREBOARD_URL = `${ESPN_CDN_BASE_URL}/scoreboard?xhr=1`;
 export const espnSummaryUrl = (eventId: string) =>
-  `${ESPN_BASE_URL}/summary?event=${encodeURIComponent(eventId)}`;
+  `${ESPN_CDN_BASE_URL}/game?xhr=1&gameId=${encodeURIComponent(eventId)}`;
+export const espnScheduleUrl = (year: number, seasonType?: number, week?: number) => {
+  const url = new URL(`${ESPN_CDN_BASE_URL}/schedule`);
+  url.searchParams.set('xhr', '1');
+  url.searchParams.set('year', String(year));
+  if (seasonType != null) url.searchParams.set('seasontype', String(seasonType));
+  if (week != null) url.searchParams.set('week', String(week));
+  return url.toString();
+};
 
 const TEAM_ABBREVIATION_ALIASES: Record<string, string> = {
   JAC: 'JAX',
@@ -257,7 +265,8 @@ export const fetchEspnSummary = async (
   return withRetry(async () => {
     const response = await fetchImpl(espnSummaryUrl(normalizedId), espnRequestInit());
     if (response.status === 400 || response.status === 404) return null;
-    return parseJsonResponse(response, 'ESPN event lookup');
+    const payload = await parseJsonResponse(response, 'ESPN event lookup');
+    return payload?.gamepackageJSON;
   }, ESPN_RETRY_OPTIONS);
 };
 
@@ -279,11 +288,12 @@ export const fetchLiveScoreboard = async (
     const response = await fetchImpl(ESPN_SCOREBOARD_URL, espnRequestInit());
     return parseJsonResponse(response, 'ESPN scoreboard request');
   }, ESPN_RETRY_OPTIONS);
-  if (!Array.isArray(payload?.events)) {
+  const scoreboard = payload?.content?.sbData;
+  if (!Array.isArray(scoreboard?.events)) {
     throw new Error('ESPN scoreboard response did not contain events.');
   }
   const games = new Map<string, { snapshot: EspnScoreSnapshot; rawEvent: unknown }>();
-  for (const event of payload.events) {
+  for (const event of scoreboard.events) {
     try {
       const snapshot = normalizeEspnScoreboardEvent(event);
       games.set(snapshot.eventId, { snapshot, rawEvent: event });
@@ -291,7 +301,7 @@ export const fetchLiveScoreboard = async (
       // Pro Bowl and auxiliary events are not scoreable NFL matchups.
     }
   }
-  return { raw: payload, games };
+  return { raw: scoreboard, games };
 };
 
 export const fetchScheduledGameById = async (
@@ -307,14 +317,42 @@ export const fetchScheduledGameById = async (
   return game;
 };
 
-const dateKey = (date: Date) =>
-  `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, '0')}${String(date.getUTCDate()).padStart(2, '0')}`;
-
 export interface FetchScheduledGamesOptions {
   scope: 'upcoming' | 'completed';
   limit?: number;
   now?: Date;
 }
+
+type EspnCalendarWeek = {
+  seasonType: number;
+  week: number;
+  startAt: number;
+  endAt: number;
+};
+
+const scheduleEvents = (payload: any): unknown[] => {
+  const schedule = payload?.content?.schedule;
+  if (!isRecord(schedule)) throw new Error('ESPN schedule response did not contain games.');
+  return Object.values(schedule).flatMap((day: any) =>
+    Array.isArray(day?.games) ? day.games : []);
+};
+
+const scheduleCalendar = (payload: any): EspnCalendarWeek[] => {
+  const calendar = payload?.content?.calendar;
+  if (!Array.isArray(calendar)) return [];
+  return calendar.flatMap((season: any) => {
+    const seasonType = Number(season?.value);
+    if (!Number.isInteger(seasonType) || !Array.isArray(season?.entries)) return [];
+    return season.entries.flatMap((entry: any) => {
+      const week = Number(entry?.value);
+      const startAt = Date.parse(entry?.startDate);
+      const endAt = Date.parse(entry?.endDate);
+      return Number.isInteger(week) && Number.isFinite(startAt) && Number.isFinite(endAt)
+        ? [{ seasonType, week, startAt, endAt }]
+        : [];
+    });
+  });
+};
 
 export const fetchScheduledGames = async (
   options: FetchScheduledGamesOptions,
@@ -330,40 +368,50 @@ export const fetchScheduledGames = async (
   const now = options.now ? new Date(options.now) : new Date();
   if (Number.isNaN(now.getTime())) throw new Error('A valid current time is required.');
 
-  const rangeStart = new Date(now);
-  const rangeEnd = new Date(now);
-  if (options.scope === 'upcoming') rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 240);
-  else rangeStart.setUTCDate(rangeStart.getUTCDate() - 240);
-
-  const url = new URL(ESPN_SCOREBOARD_URL);
-  url.searchParams.set('dates', `${dateKey(rangeStart)}-${dateKey(rangeEnd)}`);
-  url.searchParams.set('limit', '1000');
-  const payload = await withRetry(async () => {
+  const seasonYear = now.getUTCMonth() < 2 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+  const fetchSchedule = (url: string) => withRetry(async () => {
     const response = await fetchImpl(url, espnRequestInit());
     return parseJsonResponse(response, 'ESPN schedule request');
   }, ESPN_RETRY_OPTIONS);
-  if (!Array.isArray(payload?.events)) throw new Error('ESPN schedule response did not contain events.');
-
-  const games = payload.events.flatMap((event: unknown) => {
+  const payload = await fetchSchedule(espnScheduleUrl(seasonYear));
+  const events = scheduleEvents(payload);
+  const games = new Map<string, ScheduledGame>();
+  const addEvents = (rawEvents: unknown[]) => rawEvents.forEach((event) => {
     try {
-      return [normalizeEspnEvent(event)];
+      const game = normalizeEspnEvent(event);
+      games.set(game.id, game);
     } catch {
       // The ESPN NFL feed can include the Pro Bowl or malformed auxiliary
       // events. Neither is a selectable 32-team NFL matchup.
-      return [];
     }
   });
-  if (payload.events.length > 0 && games.length === 0) {
-    throw new Error('ESPN schedule response did not contain any valid NFL games.');
-  }
+  addEvents(events);
   const nowTime = now.getTime();
-  return games
+  const selectGames = () => [...games.values()]
     .filter((game: ScheduledGame) => options.scope === 'upcoming'
       ? game.state === 'pre' && new Date(game.kickoffAt).getTime() >= nowTime
       : game.state === 'post' && new Date(game.kickoffAt).getTime() <= nowTime)
     .sort((left: ScheduledGame, right: ScheduledGame) => {
       const difference = new Date(left.kickoffAt).getTime() - new Date(right.kickoffAt).getTime();
       return options.scope === 'completed' ? -difference : difference;
-    })
-    .slice(0, limit);
+    });
+
+  const weeks = scheduleCalendar(payload)
+    .filter((week) => options.scope === 'upcoming' ? week.endAt >= nowTime : week.startAt <= nowTime)
+    .filter((week) => nowTime < week.startAt || nowTime > week.endAt)
+    .sort((left, right) => options.scope === 'upcoming'
+      ? left.startAt - right.startAt
+      : right.endAt - left.endAt);
+  for (const week of weeks) {
+    if (selectGames().length >= limit) break;
+    const weekPayload = await fetchSchedule(espnScheduleUrl(seasonYear, week.seasonType, week.week));
+    const weekEvents = scheduleEvents(weekPayload);
+    events.push(...weekEvents);
+    addEvents(weekEvents);
+  }
+
+  if (events.length > 0 && games.size === 0) {
+    throw new Error('ESPN schedule response did not contain any valid NFL games.');
+  }
+  return selectGames().slice(0, limit);
 };
