@@ -753,7 +753,7 @@ Local implementation review, July 28, 2026:
 - [x] Add failing regression coverage for the CDN response envelopes and multi-week schedule discovery.
 - [x] Move the centralized ESPN adapter to the working CDN transport without changing canonical event identity.
 - [x] Run focused tests, the complete test/build/typecheck suite, and diff checks.
-- [ ] Deploy the corrected production revision and verify API plus phone-width create-board behavior.
+- [x] Deploy the corrected production revision and verify API plus phone-width create-board behavior.
 
 ### Production NFL schedule outage review
 
@@ -761,4 +761,5 @@ Local implementation review, July 28, 2026:
 - Cloudflare Function logs identify the upstream failure as `ESPN schedule request failed with HTTP 403`; the same live ESPN schedule succeeds outside Cloudflare and contains the 2026 slate.
 - An isolated Cloudflare Pages preview confirmed that request-header changes do not bypass the denial, while `cdn.espn.com` returns HTTP 200 for the NFL schedule, live scoreboard, and exact-game package with canonical ESPN IDs intact.
 - Regression coverage proves schedule, live-scoreboard, exact-game, malformed-data, identity, and week-boundary behavior. `npm test -- --run` passes 363 tests across 59 files with one intentional live Stripe sandbox skip; the production build and `git diff --check` pass.
-- WebKit creation coverage passes 4/4, including keyboard selection at phone width. Preview deployment `7882bc11` returns HTTP 200 with 50 current selectable games from the real Cloudflare runtime; production promotion remains pending.
+- WebKit creation coverage passes 4/4, including keyboard selection at phone width. Preview deployment `7882bc11` returned HTTP 200 with 50 current selectable games from the real Cloudflare runtime.
+- Commit `7346e6f` was fast-forwarded to `main`; Cloudflare production deployment `1f58da34-17c2-46ee-ac7e-39565e9123b7` is active. The canonical `/api/nfl/games?scope=upcoming` endpoint returns HTTP 200 with 50 games, and the site root returns HTTP 200.
