@@ -1,5 +1,7 @@
 # GridOne Greenfield Product Specification
 
+> **Historical planning document.** Its `$4.99 / 20-board` commercial model is retired. For current product and pricing truth, use root `PRODUCT.md`, root `README.md`, and `docs/wayfinder-gridone-production-quality.md`. Preserve the old statements below only as decision history.
+
 **Status:** Draft for product confirmation
 **Launch target:** Friday, July 31, 2026 public soft launch
 **Launch market:** NFL football squares for youth-sports and community fundraisers

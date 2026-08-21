@@ -1,16 +1,102 @@
 ---
+version: alpha
 name: GridOne
-description: Game-Day Horizon — a football-squares board moves through named phases from setup to Final.
+description: Game-Day Horizon — a precise phase-driven system for trustworthy football-squares setup and game-day viewing.
 colors:
-  night: "#0E0F12"
-  chyron: "#16181D"
-  broadcast-white: "#EFF0F1"
-  newsprint: "#DEE0E1"
-  cardinal: "#8F1D2C"
-  cardinal-deep: "#6E1622"
-  gold: "#FFC72C"
-  gold-deep: "#E0A600"
+  primary: "#8F1D2C"
+  primary-deep: "#6E1622"
+  accent: "#FFC72C"
+  accent-deep: "#E0A600"
+  neutral: "#EFF0F1"
+  neutral-quiet: "#DEE0E1"
+  ink: "#0E0F12"
+  surface-dark: "#16181D"
   live: "#22C55E"
+typography:
+  display:
+    fontFamily: Archivo
+    fontSize: 3rem
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-0.01em"
+  heading:
+    fontFamily: Archivo
+    fontSize: 2rem
+    fontWeight: 800
+    lineHeight: 1.05
+    letterSpacing: "-0.01em"
+  body:
+    fontFamily: Archivo
+    fontSize: 1.0625rem
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 0em
+  label:
+    fontFamily: Archivo
+    fontSize: 0.8125rem
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: 0.08em
+  data:
+    fontFamily: Chivo Mono
+    fontSize: 1rem
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: 0em
+rounded:
+  control: 8px
+  surface: 12px
+  grid: 0px
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 32px
+  2xl: 48px
+components:
+  button-primary:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    padding: 14px
+  button-primary-hover:
+    backgroundColor: "{colors.accent-deep}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+  button-cardinal:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.neutral}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    padding: 14px
+  button-cardinal-hover:
+    backgroundColor: "{colors.primary-deep}"
+    textColor: "{colors.neutral}"
+    rounded: "{rounded.control}"
+  surface-quiet:
+    backgroundColor: "{colors.neutral-quiet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.surface}"
+    padding: 16px
+  instrument-dark:
+    backgroundColor: "{colors.surface-dark}"
+    textColor: "{colors.neutral}"
+    rounded: "{rounded.surface}"
+    padding: 16px
+  status-live:
+    backgroundColor: "{colors.live}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.grid}"
+    padding: 8px
+  input:
+    backgroundColor: "{colors.neutral}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    padding: 14px
 ---
 
 # GridOne Design System

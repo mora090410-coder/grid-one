@@ -32,15 +32,33 @@ A parent, supporter, friend, or community member who receives a shared link. The
 
 ## Core journey
 
-1. **Fill:** Create a native 10×10 board and assign purchaser/display names. Optionally record private seller attribution and payment status.
-2. **Reconcile:** Resolve unassigned, unpaid, duplicate, or unclear entries.
-3. **Draw:** Securely randomize one fixed set of 0–9 digits for the top and side axes after sales are complete.
-4. **Preview:** Inspect the exact read-only viewer experience.
-5. **Go Live:** Unlock and publish a short share link and QR code.
-6. **Game Day:** Show a canonical automatic-beta score with explicit freshness and manual override.
-7. **Resolve:** Store Q1, Q2, Q3, and Final winners once and email verified opted-in purchasers.
+1. **Create Draft:** Name the board and link the scheduled NFL game; native blank-board creation is primary.
+2. **Fill:** Assign purchaser/display names and optionally track private seller and payment metadata.
+3. **Reconcile:** Review open squares, private payment follow-up, duplicate labels, and public rules. This is advisory; off-platform payment status never blocks progression.
+4. **Draw:** Securely randomize and commit one fixed set of 0–9 digits. Draft redraws are allowed before publication.
+5. **Preview:** Inspect the exact private viewer experience and public/private boundary.
+6. **Go Live:** Publish the immutable viewer record and short link. Publication—not the first draft draw—is the public trust boundary.
+7. **Game Day:** Show canonical automatic-beta scoring with explicit freshness and manual recovery.
+8. **Final Record:** Durably resolve Q1, Q2, Q3, and Final winners and deliver verified notifications exactly once.
 
-Photo/PDF OCR remains a secondary recovery path. Creating the board inside GridOne is primary.
+Boards require at least one assigned square before publication. Remaining open squares require explicit acknowledgement. An open-square milestone resolves as `Open square — see board rules` with no winner email and no automatic rollover. Published sold-square labels may change only through a viewer-visible audited correction with before/after value, timestamp, and reason.
+
+Use `docs/organizer-journey-contract.md` for exact phase criteria, persistence/recovery, correction boundaries, architecture seams, and verification.
+
+## Viewer hierarchy
+
+Phone viewers first see board identity, score/current result, authority/freshness, and **Find My Squares**. Selecting a durable participant identity changes the structure to show:
+
+1. **Your Squares:** count plus every matching coordinate/digit pair and `View on board`.
+2. **Your current result:** whether the selected viewer wins now.
+3. **What makes this viewer win next:** matching standard scenarios first; all outcomes behind disclosure.
+4. **Winner email:** compact verified opt-in after identity and status are understood.
+5. **Exact grid:** pan/zoom board with sticky top/side axes, orientation, selected-cell centering, and accessible detail.
+6. **Completed winners and details:** ordered after the grid during live play and promoted into the Final record when the game ends.
+
+Before selection, the product never uses “me” language. Payouts/rules cannot displace Find My Squares. Pregame shows no inert scenario list; stale/offline scenarios identify last-known data locally; Final suppresses next-score scenarios entirely.
+
+Use `docs/phone-viewer-hierarchy.md` for state order, progressive disclosure, board interaction, durable participant selection, and acceptance checks.
 
 ## Product-specific mechanism
 
@@ -133,12 +151,18 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 
 ## Success
 
-GridOne succeeds when an organizer can replace Excel and paper, a phone viewer can understand their live position without contacting the organizer, winner email happens exactly once, automatic-score failure remains honest and recoverable, and private organizer/contact/payment data is inaccessible to viewers and non-owners.
+GridOne’s north-star outcome is **Successful Game-Day Board Runs through Final**. A qualifying board is published and publicly available, has committed axis digits, receives authoritative automatic or manual scoring, durably resolves Q1/Q2/Q3/Final, and finishes without an unresolved integrity, publication, or score-authority failure.
+
+Supporting evidence must show that an organizer can replace Excel and paper, a phone viewer can understand their live position without contacting the organizer, winner email happens exactly once, automatic-score failure remains honest and recoverable, and private organizer/contact/payment data is inaccessible to viewers and non-owners.
+
+Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, guardrails, privacy constraints, and the baseline-first target-setting policy.
 
 ## Brand commitments
 
 - Name: **GridOne**
 - Preserve the existing cardinal, gold, cool-neutral, ink, and live-green palette.
+- Root `DESIGN.md` is the formal GridOne overlay; `docs/universal-interface-foundation.md`, `docs/DESIGN_TOKENS.md`, and `docs/design-system-governance.md` define foundation, CSS mapping, and enforcement.
+- `docs/accessibility-contract.md` targets WCAG 2.2 AA across complete organizer/viewer processes and defines board-grid keyboard, dialog, touch, zoom, motion, state, automation, and assistive-technology gates.
 - Live green means only that a game is actively in progress.
 - Gold means a result has been settled or a high-stakes action is being committed.
 - The product is pre-launch. Never invent customers, testimonials, revenue, usage, or fundraising totals.

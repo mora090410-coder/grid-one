@@ -1,5 +1,7 @@
 # GridOne Vision-to-Code Gap Map
 
+> **Historical gap analysis.** Its `$4.99 / 20-board` commercial references are retired. For current product and pricing truth, use root `PRODUCT.md`, root `README.md`, and `docs/wayfinder-gridone-production-quality.md`. Preserve the findings below as historical evidence, not current instructions.
+
 **Compared against:** `docs/greenfield-product-spec.md`
 **Code state:** `main` at `bc5b7a6` plus the preserved uncommitted On Air migration
 

@@ -1,5 +1,7 @@
 # GridOne Launch-Readiness Review — Execution Plan
 
+> **Historical audit plan.** Its `$4.99 / 20-board` commercial references are retired. For current product and pricing truth, use root `PRODUCT.md`, root `README.md`, and `docs/wayfinder-gridone-production-quality.md`.
+
 **Status:** APPROVED PLAN — NOT YET EXECUTED. No review, refactor, or fix work begins until explicitly initiated.
 **Date:** 2026-07-28
 **Mode:** Findings-only audit. No code changes, no migration runs, no Supabase/Stripe dashboard access, no deploys at any phase.
