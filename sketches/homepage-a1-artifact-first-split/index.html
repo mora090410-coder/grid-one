@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridOne A1 — Artifact-first split</title>
+<link rel="stylesheet" href="../theme.css">
+<style>
+body{background:var(--neutral);color:var(--ink)}
+.site{min-height:100vh;background:var(--neutral)}
+.header{border-bottom:1px solid rgba(14,15,18,.28);background:var(--neutral)}
+.header-inner{max-width:1180px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wordmark{font-weight:900;letter-spacing:-.02em}.micro{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900}.top-actions{display:flex;gap:8px;flex-wrap:wrap}.top-actions a,.top-actions button{min-height:44px;border:1px solid rgba(14,15,18,.45);border-radius:var(--r-control);padding:11px 14px;color:var(--ink);background:var(--quiet);text-decoration:none;font-weight:800}.hero{max-width:1180px;margin:0 auto;padding:14px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:18px;align-items:stretch}.copy{display:grid;align-content:start;gap:10px}.phase-line{height:8px;background:var(--primary);margin:0 0 4px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900}.copy h1{font-size:clamp(34px,6vw,64px);line-height:.92;letter-spacing:-.04em;max-width:10ch}.definition{font-size:clamp(17px,2vw,22px);line-height:1.18;max-width:34ch}.outcome{font-size:16px;max-width:48ch}.money{border-left:6px solid var(--primary);padding:8px 10px;background:#fff;font-weight:800}.cta-row{display:flex;gap:10px;flex-wrap:wrap}.cta-row button,.cta-row a{min-height:48px;border-radius:var(--r-control);padding:13px 16px;text-decoration:none;font-weight:900}.primary{background:var(--primary);color:var(--neutral);border:1px solid var(--primary);text-transform:uppercase;letter-spacing:.05em}.secondary{background:var(--accent);color:var(--ink);border:1px solid var(--accent)}.price-note{font-family:"Chivo Mono",ui-monospace,monospace;font-size:14px}.feedback{min-height:22px;font-weight:800;color:var(--primary)}
+.artifact{border:1px solid rgba(14,15,18,.5);background:#fff;display:grid;grid-template-rows:auto 1fr;min-width:0}.artifact-head{display:flex;justify-content:space-between;gap:10px;align-items:start;padding:10px 12px;border-bottom:1px solid rgba(14,15,18,.35);background:var(--dark);color:var(--neutral)}.artifact-head h2{font-size:18px}.artifact-note{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:var(--accent)}.proof-switch{display:flex;gap:6px;flex-wrap:wrap}.proof-switch button{font-size:13px;min-height:44px;padding:9px 11px}.proof-switch button[aria-pressed=true]{background:var(--accent);color:var(--ink);border-color:var(--accent)}.proof-body{padding:10px;display:grid;gap:10px}.task-proof{display:grid;gap:8px}.task-header{border:1px solid rgba(14,15,18,.4);padding:9px;background:var(--quiet)}.task-header strong{display:block;font-size:17px}.status-row{display:flex;gap:8px;flex-wrap:wrap;font-family:"Chivo Mono",ui-monospace,monospace;font-size:13px}.mini-board{overflow:auto;border:1px solid rgba(14,15,18,.5)}table{border-collapse:collapse;width:100%;min-width:420px;table-layout:fixed}th,td{border:1px solid rgba(14,15,18,.45);height:32px;text-align:center;font-size:12px}th{background:var(--dark);color:var(--neutral);font-family:"Chivo Mono",ui-monospace,monospace}.winner{background:var(--accent);color:var(--ink);font-weight:900}.open{background:var(--quiet)}.viewer-proof{display:grid;gap:9px}.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:9px;background:var(--dark);color:var(--neutral)}.score b{font-family:"Chivo Mono",ui-monospace,monospace;font-size:26px}.live{background:var(--live);color:var(--ink);font-size:12px;font-weight:900;padding:4px 6px}.summary{border-left:6px solid var(--accent);background:var(--quiet);padding:9px}.coords{display:grid;gap:5px}.coord{font-family:"Chivo Mono",ui-monospace,monospace;background:#fff;border:1px solid rgba(14,15,18,.35);padding:6px}.below{max-width:1180px;margin:0 auto;padding:28px 14px 60px;display:grid;gap:34px}.band{border-top:8px solid var(--primary);padding-top:12px}.workflow-list,.trust-list,.pricing-list{display:grid;gap:10px;padding:0;margin:12px 0 0;list-style:none}.workflow-list li,.trust-list li,.pricing-list li{border-left:6px solid var(--primary);padding:8px 10px;background:#fff}.pricing-list b{font-family:"Chivo Mono",ui-monospace,monospace}.story{background:var(--dark);color:var(--neutral);padding:14px;border-radius:var(--r-surface)}.story summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:900}.final-cta{background:#fff;border:1px solid rgba(14,15,18,.4);padding:14px;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+@media(max-width:760px){.header-inner{padding:8px 10px}.top-actions{display:none}.hero{padding:10px;grid-template-columns:1fr;gap:10px}.copy{gap:7px}.copy h1{font-size:36px;max-width:11ch}.definition{font-size:17px}.outcome{font-size:14px}.money{font-size:14px;padding:6px 8px}.cta-row{gap:8px}.cta-row button,.cta-row a{flex:1 1 150px;text-align:center;padding:11px 10px}.artifact-head{padding:8px 9px}.artifact-head h2{font-size:16px}.proof-body{padding:8px}.score b{font-size:22px}th,td{height:28px;font-size:11px}.below{padding:22px 10px 48px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to product proof</a>
+<div class="site">
+<header class="header"><div class="header-inner"><div><span class="wordmark">GridOne</span> <span class="micro">Prototype A1 · synthetic proof</span></div><div class="top-actions"><a href="#workflow">Workflow</a><a href="#pricing">Pricing</a></div></div></header>
+<main id="main">
+<section class="hero" aria-labelledby="a1-title">
+<div class="copy">
+<div class="phase-line" aria-hidden="true"></div>
+<p class="eyebrow">Football-squares fundraiser boards</p>
+<h1 id="a1-title">Build it once. Share one link.</h1>
+<p class="definition">GridOne replaces the paper football-squares board for team and booster-club fundraisers.</p>
+<p class="outcome">Build the board, share the viewer link, and let GridOne track game-day score, current winners, and next-score outcomes.</p>
+<div class="cta-row"><button class="primary" data-cta="create" type="button">Create your free board</button><a class="secondary" href="#live-board" data-cta-link="live">See a live board</a></div>
+<p class="price-note">First published board free.</p>
+<p class="money">GridOne tracks the board. It does not collect square money or pay winners.</p>
+<p id="ctaFeedback" class="feedback" aria-live="polite"></p>
+</div>
+<section id="live-board" class="artifact" aria-labelledby="artifact-title">
+<div class="artifact-head"><div><p class="artifact-note">Accepted artifacts · clearly synthetic data</p><h2 id="artifact-title">Crown Point Eagles fundraiser</h2></div><div class="proof-switch" aria-label="Switch proof artifact"><button type="button" data-proof="organizer" aria-pressed="true">Organizer</button><button type="button" data-proof="viewer" aria-pressed="false">Viewer</button></div></div>
+<div class="proof-body">
+<div class="task-proof" data-panel="organizer">
+<div class="task-header"><strong>B2 task header: Fill</strong><span class="status-row"><span>Saved 10:42 AM</span><span>37 assigned / 63 OPEN</span></span><p>Current task owns the page; progress stays behind disclosure.</p></div>
+<div class="mini-board" aria-label="Synthetic organizer board artifact"><table><thead><tr><th>Side / Top</th><th>7</th><th>2</th><th>0</th><th>9</th><th>4</th></tr></thead><tbody><tr><th>4</th><td>OPEN</td><td>M. Torres</td><td>C. Nguyen</td><td>R. Patel</td><td>OPEN</td></tr><tr><th>9</th><td>J. Brooks</td><td>A. Williams</td><td>OPEN</td><td>K. Stone</td><td>D. Rivera</td></tr><tr><th>6</th><td>S. Long</td><td>OPEN</td><td>N. Ellis</td><td>P. Carter</td><td class="open">OPEN</td></tr></tbody></table></div>
+</div>
+<div class="viewer-proof" data-panel="viewer" hidden>
+<div class="score"><div><span class="eyebrow">PHI</span><br><b>17</b></div><span class="live">LIVE</span><div><span class="eyebrow">KC</span><br><b>13</b></div></div>
+<p class="status-row">Q3 · 04:22 · Updated 43 seconds ago · updates about every minute</p>
+<div class="summary"><strong>C1 personal summary: Riley J.</strong><p>Your squares: A9 top 5 / side 4, E4 top 0 / side 2, H8 top 8 / side 1.</p><p>Next standard score that makes Riley J. win: PHI +7 → 24–13.</p></div>
+<div class="coords"><span class="coord">View on board: A9</span><span class="coord">Current winner: Maria C.</span></div>
+</div>
+</div>
+</section>
+</section>
+<section id="workflow" class="below">
+<div class="band"><p class="eyebrow">Fundraiser workflow</p><h2>Fill → Reconcile → Draw → Preview → Go Live</h2><ul class="workflow-list"><li><strong>Fill:</strong> assign sold squares and keep private seller/payment notes.</li><li><strong>Reconcile:</strong> check OPEN squares, duplicate labels, and advisory follow-up.</li><li><strong>Draw:</strong> preview and commit axis digits before publication.</li><li><strong>Preview:</strong> inspect the exact viewer link before sharing.</li><li><strong>Go Live:</strong> publish one board link for game-day score and winner tracking.</li></ul></div>
+<div class="band"><p class="eyebrow">Viewer proof</p><h2>Supporters find their squares before they inspect the grid.</h2><p>C1 personal-summary structure answers where the viewer is, who wins now, and what standard next score would make that viewer win this quarter.</p></div>
+<div class="band"><p class="eyebrow">Trust and recovery</p><h2>The board stays useful when game-day data is imperfect.</h2><ul class="trust-list"><li>Score authority and freshness stay visible.</li><li>Manual recovery can preserve a trustworthy board when automatic score data fails.</li><li>Public viewer data excludes private seller, contact, and off-platform payment metadata.</li><li>Winner resolution is recorded without implying GridOne handles money.</li></ul></div>
+<div id="pricing" class="band"><p class="eyebrow">Canonical 2026 pricing</p><h2>Start free, pay only when published-board volume needs it.</h2><ul class="pricing-list"><li><b>Free:</b> unlimited draft boards and 1 published board per account per season.</li><li><b>Game Day — $9.99 once:</b> up to 5 published boards in the 2026 season.</li><li><b>Organization — $79 per season:</b> up to 50 published boards, organization name, organization dashboard, and one organization receipt.</li></ul></div>
+<details class="story"><summary>Optional brand-story summary</summary><p>Game day moves through Fill, Reconcile, Draw, Preview, Go Live, Live, and Final. The story is optional; it never blocks product access or native scrolling.</p></details>
+<div class="final-cta"><div><p class="eyebrow">Ready path</p><h2>Create the board before the paper list gets worse.</h2><p>First published board free. Square money stays off-platform.</p></div><button class="primary" data-cta="final" type="button">Create your free board</button></div>
+</section>
+</main>
+</div>
+<script>
+(function(){
+const feedback=document.getElementById('ctaFeedback');
+function setText(node,text){node.textContent=text;}
+document.querySelectorAll('[data-proof]').forEach(function(btn){btn.addEventListener('click',function(){const target=btn.getAttribute('data-proof');document.querySelectorAll('[data-proof]').forEach(function(b){b.setAttribute('aria-pressed',String(b===btn));});document.querySelectorAll('[data-panel]').forEach(function(panel){panel.hidden=panel.getAttribute('data-panel')!==target;});setText(feedback,target==='viewer'?'Viewer proof selected: C1 personal-summary artifact.':'Organizer proof selected: B2 task-header artifact.');});});
+document.querySelectorAll('[data-cta]').forEach(function(btn){btn.addEventListener('click',function(){setText(feedback,'Local prototype feedback: “Create your free board” acknowledged. No account, API, checkout, or write occurred.');});});
+document.querySelectorAll('[data-cta-link]').forEach(function(link){link.addEventListener('click',function(){setText(feedback,'Local prototype feedback: live-board proof target opened.');});});
+})();
+</script>
+</body>
+</html>

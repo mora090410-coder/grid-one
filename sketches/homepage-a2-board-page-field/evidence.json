@@ -1,0 +1,116 @@
+{
+  "variant": "homepage-a2-board-page-field",
+  "generatedAt": "2026-08-20",
+  "viewports": {
+    "phone": {
+      "viewport": {
+        "width": 390,
+        "height": 664
+      },
+      "documentScrollWidth": 390,
+      "requiredPositions": {
+        "Football-squares fundraiser boards": {
+          "x": 33,
+          "y": 85.1875,
+          "width": 324,
+          "height": 17.390625
+        },
+        "Create your free board": {
+          "x": 33,
+          "y": 313.15625,
+          "width": 158,
+          "height": 64.59375
+        },
+        "See a live board": {
+          "x": 199,
+          "y": 321.453125,
+          "width": 158,
+          "height": 48
+        },
+        "First published board free.": {
+          "x": 33,
+          "y": 384.75,
+          "width": 324,
+          "height": 20.296875
+        }
+      },
+      "boundary": {
+        "x": 33,
+        "y": 412.046875,
+        "width": 324,
+        "height": 52.59375
+      },
+      "proof": {
+        "x": 32,
+        "y": 520.640625,
+        "width": 203.453125,
+        "height": 34.78125
+      },
+      "interactions": {
+        "viewerVisible": 1,
+        "organizerVisible": 1,
+        "storyOpen": true,
+        "ctaFeedback": "Local prototype feedback: create-board action acknowledged. No account, payment, API call, or write occurred."
+      }
+    },
+    "desktop": {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "documentScrollWidth": 1280,
+      "requiredPositions": {
+        "Football-squares fundraiser boards": {
+          "x": 95,
+          "y": 131.1875,
+          "width": 523,
+          "height": 17.390625
+        },
+        "Create your free board": {
+          "x": 95,
+          "y": 390.140625,
+          "width": 242.984375,
+          "height": 48.296875
+        },
+        "See a live board": {
+          "x": 347.984375,
+          "y": 388.703125,
+          "width": 158.09375,
+          "height": 51.1875
+        },
+        "First published board free.": {
+          "x": 95,
+          "y": 448.890625,
+          "width": 523,
+          "height": 20.296875
+        }
+      },
+      "boundary": {
+        "x": 95,
+        "y": 478.1875,
+        "width": 523,
+        "height": 39.1875
+      },
+      "proof": {
+        "x": 652,
+        "y": 129.1875,
+        "width": 309.109375,
+        "height": 17.390625
+      },
+      "interactions": {
+        "viewerVisible": 1,
+        "organizerVisible": 1,
+        "storyOpen": true,
+        "ctaFeedback": "Local prototype feedback: create-board action acknowledged. No account, payment, API call, or write occurred."
+      }
+    }
+  },
+  "reducedMotion": {
+    "scrollBehavior": "auto"
+  },
+  "noJavaScript": {
+    "titleVisible": true,
+    "createActions": 2,
+    "boundaryVisible": true
+  }
+}

@@ -63,6 +63,7 @@ The handoff artifact will be an implementation-ready product/UX specification pl
 - **Instrumentation and rollout** — prefer server-owned outcome facts plus minimal first-party client events, prohibit personal board/contact data in analytics, and ship independently reversible `viewer_v2`, `organizer_v2`, and `homepage_v2` cohorts. Rollback preserves routes and domain state. See `instrumentation-rollout-feedback.md`.
 - **Phone prototype winner** — C1 Personal Summary Stack scored 37/40 and is accepted. C2 Board Peek scored 30/40 and is discarded because it duplicates the public artifact and can misorient users. Borrow only center-selected navigation to the single exact grid. See `prototype-phone-viewer-decision.md`.
 - **Organizer prototype winner** — B2 Task Header + Contextual Progress scored 39/40 and is accepted. B1 Permanent Phase Rail scored 33/40 and is discarded because it compresses the dominant artifact and taxes phone/desktop space. Real phase history belongs in disclosure, not a second permanent nav. See `prototype-organizer-decision.md`.
+- **Homepage prototype winner** — A1 Artifact-First Split scored 38/40 and is accepted. A2 Board-as-Page Field scored 31/40 and is discarded because the grid becomes decorative, dense, and too close to sports/betting visual language. See `prototype-homepage-decision.md`.
 
 ## Current rendered findings
 
@@ -91,8 +92,7 @@ No unresolved planning decision is currently unblocked. The next work is evidenc
 
 ## Blocked decisions
 
-- **Final visual overlay** — blocked by winning prototype evidence.
-- **Feature migration order** — blocked by prototype outcomes and technical dependency mapping.
+- **Feature migration order** — blocked only by the final technical dependency map and implementation-plan review.
 - **Portfolio case-study structure** — blocked by shipped product evidence and measured outcomes.
 
 ## Not yet specified
@@ -120,4 +120,4 @@ Planning is complete only when every blocking decision above is resolved, repres
 
 ## Recommended next action
 
-**Execute Prototype Track A: Product-first homepage.** Build A1 Artifact-first Split and A2 Board-as-Page Field using the accepted C1 viewer and B2 organizer artifacts. Verify immediate product comprehension, first-viewport actions, phone/desktop behavior, no-motion resilience, and anti-slop constraints before selecting the final homepage composition.
+**Write the production implementation plan.** Translate the accepted C1 viewer, B2 organizer, and A1 homepage compositions into exact feature slices, files, tests, feature flags, migration constraints, rendered QA, rollout, and rollback. No production UI implementation begins until that plan is reviewed.
