@@ -62,6 +62,7 @@ The handoff artifact will be an implementation-ready product/UX specification pl
 - **Accessibility contract** — target WCAG 2.2 AA across complete processes, with 44×44 product controls, governed dialogs, reflow/zoom/motion/state requirements, and combined automated/manual assistive-technology evidence. The 10×10 boards use one-tab-stop roving-focus data-grid navigation instead of 100 page tab stops. See `accessibility-contract.md`.
 - **Instrumentation and rollout** — prefer server-owned outcome facts plus minimal first-party client events, prohibit personal board/contact data in analytics, and ship independently reversible `viewer_v2`, `organizer_v2`, and `homepage_v2` cohorts. Rollback preserves routes and domain state. See `instrumentation-rollout-feedback.md`.
 - **Phone prototype winner** — C1 Personal Summary Stack scored 37/40 and is accepted. C2 Board Peek scored 30/40 and is discarded because it duplicates the public artifact and can misorient users. Borrow only center-selected navigation to the single exact grid. See `prototype-phone-viewer-decision.md`.
+- **Organizer prototype winner** — B2 Task Header + Contextual Progress scored 39/40 and is accepted. B1 Permanent Phase Rail scored 33/40 and is discarded because it compresses the dominant artifact and taxes phone/desktop space. Real phase history belongs in disclosure, not a second permanent nav. See `prototype-organizer-decision.md`.
 
 ## Current rendered findings
 
@@ -119,4 +120,4 @@ Planning is complete only when every blocking decision above is resolved, repres
 
 ## Recommended next action
 
-**Execute Prototype Track B: Organizer workspace.** Build B1 Phase Rail + Artifact Workspace and B2 Task Header + Contextual Progress Disclosure as disposable interactive variants, then repeat the rendered evidence, accessibility checks, scoring, and keep/discard decision. Production components remain untouched during the track.
+**Execute Prototype Track A: Product-first homepage.** Build A1 Artifact-first Split and A2 Board-as-Page Field using the accepted C1 viewer and B2 organizer artifacts. Verify immediate product comprehension, first-viewport actions, phone/desktop behavior, no-motion resilience, and anti-slop constraints before selecting the final homepage composition.

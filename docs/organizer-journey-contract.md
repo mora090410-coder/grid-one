@@ -83,7 +83,9 @@ Do not use `pool`, `contest`, or `publish` as synonyms for draft save/create in 
 - Draft or assignment save failure
 - Unresolved revision conflict
 
-**Advisory issues:** open squares, unpaid/unknown status, duplicate labels, missing seller attribution, incomplete payout/rules descriptions.
+**Advisory issues:** open squares, unpaid/unknown status, missing seller attribution, incomplete payout/rules descriptions.
+
+**Identity readiness issue:** duplicate or ambiguous display labels must be resolved into distinguishable durable participant identities before Draw. They are not grouped with private payment/seller advisories because ambiguity can break Find My Squares.
 
 **Primary action:** `Review board`
 
@@ -93,7 +95,7 @@ Do not force 100 assigned squares. Fundraisers may legitimately publish with ope
 
 **Organizer job:** inspect readiness and make an informed choice before drawing numbers.
 
-**Nature:** required visible checkpoint, **advisory rather than a hard business gate**.
+**Nature:** required visible checkpoint. Off-platform payment and seller follow-up are advisory rather than hard business gates; data-integrity, save/conflict, scheduled-game, and participant-identity requirements remain hard blockers.
 
 **Dominant artifact:** grouped readiness checklist, not the full editor.
 
@@ -115,18 +117,21 @@ Do not force 100 assigned squares. Fundraisers may legitimately publish with ope
 - Scheduled game and kickoff present
 - Latest required writes saved
 - Any open squares explicitly acknowledged
+- Every viewer-selectable participant identity is unambiguous; duplicate display text is allowed only when durable identities can be explicitly distinguished in Find My Squares
 
 **Not required:**
 
 - All assigned squares marked paid
 - Every seller label present
-- Every display label unique
+- Private payment and seller follow-up complete
 - All 100 squares assigned
 
 **Primary action:**
 
 - `Continue to draw` when no advisory items remain
 - `Continue anyway` when advisory items remain, with the unresolved list visible
+
+Neither action is available while a hard blocker remains.
 
 GridOne does not decide whether off-platform money has been collected and does not block the organizer for forgetting to mark a private payment status.
 
@@ -160,7 +165,7 @@ GridOne does not decide whether off-platform money has been collected and does n
 
 **Immutability boundary:** axes become permanently immutable when Go Live succeeds—not at the first draft draw.
 
-**Primary actions:** `Draw numbers`, then `Commit draw`
+**Primary actions:** `Preview draw`, then `Commit draw`
 
 **Pre-publication replacement language:** `Replace draft draw`. Never imply a replacement was public when it was not.
 
