@@ -1,7 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BoardData } from '../../types';
-import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { distinctAssignedNames, matchPlayerNames } from '../../utils/playerNameMatching';
+import { ActionButton } from '../primitives/ActionButton';
+import { Dialog } from '../primitives/Dialog';
+import { Field } from '../primitives/Field';
 
 interface FindSquaresModalProps {
     board: BoardData;
@@ -11,9 +13,7 @@ interface FindSquaresModalProps {
 }
 
 const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlayer, onSelectPlayer, onClose }) => {
-    const dialogRef = useRef<HTMLDivElement>(null);
     const [query, setQuery] = useState('');
-    useDialogFocus(dialogRef, onClose);
 
     const assignedNames = useMemo(() => distinctAssignedNames(board.squares), [board.squares]);
     const result = useMemo(() => matchPlayerNames(query, assignedNames), [assignedNames, query]);
@@ -31,34 +31,33 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
     };
 
     return (
-    <div className="oa-root fixed inset-0 z-[90] flex items-end md:items-center justify-center">
-        <button type="button" className="absolute inset-0 bg-ink/80 cursor-default" onClick={onClose} aria-label="Close Find my squares" />
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="find-squares-title" className="relative w-full max-w-md mx-4 mb-0 md:mb-0 bg-broadcast-white ring-[3px] ring-ink">
+    <Dialog titleId="find-squares-title" onClose={onClose} backdropLabel="Close Find my squares" panelClassName="max-w-md mx-4 mb-0 md:mb-0">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 id="find-squares-title" className="oa-headline !text-lg text-ink">Find my squares</h3>
-                    <button onClick={onClose} className="min-w-11 min-h-11 p-2 text-ink/60 hover:bg-newsprint transition-colors" aria-label="Close">
+                    <ActionButton variant="plain" onClick={onClose} className="p-2 text-ink/60 hover:bg-newsprint transition-colors" aria-label="Close">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                    </button>
+                    </ActionButton>
                 </div>
 
                 <form onSubmit={submit} className="space-y-3">
-                    <label htmlFor="viewer-player-search" className="oa-slab block text-ink/70">Name used on board</label>
-                    <div className="flex gap-2">
-                        <input
+                    <div className="flex gap-2 items-end">
+                        <Field
                             id="viewer-player-search"
+                            label="Name used on board"
                             type="search"
                             autoComplete="off"
                             value={query}
                             onChange={(event) => setQuery(event.target.value)}
                             placeholder="Type your name"
-                            className="oa-data min-h-11 min-w-0 flex-1 bg-broadcast-white px-3 text-ink ring-1 ring-inset ring-ink focus:outline-none focus:ring-[3px] focus:ring-cardinal"
+                            containerClassName="min-w-0 flex-1"
+                            className="oa-data bg-broadcast-white"
                         />
-                        <button type="submit" disabled={!result.autoSelect} className="oa-btn oa-btn-primary min-h-11 px-4 disabled:cursor-not-allowed disabled:opacity-40">
+                        <ActionButton type="submit" disabled={!result.autoSelect} className="px-4">
                             Find
-                        </button>
+                        </ActionButton>
                     </div>
                 </form>
 
@@ -70,9 +69,9 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
                             <p className="oa-slab text-ink">{hasQuery ? 'No close match. Browse every name' : 'Browse every name'}</p>
                             <div className="mt-2 max-h-56 overflow-y-auto ring-1 ring-inset ring-ink" data-testid="browse-name-list">
                                 {assignedNames.map((name) => (
-                                    <button key={name} type="button" onClick={() => selectPlayer(name)} className="oa-data block min-h-11 w-full border-b border-newsprint px-3 py-2 text-left text-ink last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
+                                    <ActionButton key={name} variant="plain" onClick={() => selectPlayer(name)} className="oa-data block w-full border-b border-newsprint px-3 py-2 text-left last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
                                         {name}
-                                    </button>
+                                    </ActionButton>
                                 ))}
                             </div>
                         </>
@@ -83,9 +82,9 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
                             </p>
                             <div className="mt-2 ring-1 ring-inset ring-ink" data-testid="name-suggestions">
                                 {result.candidates.map((name) => (
-                                    <button key={name} type="button" onClick={() => selectPlayer(name)} className="oa-data block min-h-11 w-full border-b border-newsprint px-3 py-2 text-left text-ink last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
+                                    <ActionButton key={name} variant="plain" onClick={() => selectPlayer(name)} className="oa-data block w-full border-b border-newsprint px-3 py-2 text-left last:border-b-0 hover:bg-newsprint focus:bg-newsprint">
                                         {name}
-                                    </button>
+                                    </ActionButton>
                                 ))}
                             </div>
                         </>
@@ -93,16 +92,16 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
                 </div>
 
                 {selectedPlayer && (
-                    <button
+                    <ActionButton
+                        variant="plain"
                         onClick={() => { onSelectPlayer(''); onClose(); }}
                         className="oa-slab w-full min-h-11 mt-4 py-2 text-ink/50 hover:text-ink transition-colors"
                     >
                         Clear selection
-                    </button>
+                    </ActionButton>
                 )}
             </div>
-        </div>
-    </div>
+    </Dialog>
     );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Field } from './primitives/Field';
 
 interface NotificationOptInProps {
   shareCode?: string | null;
@@ -40,9 +41,11 @@ const NotificationOptIn: React.FC<NotificationOptInProps> = ({ shareCode, partic
       </div>
       {status !== 'sent' && (
         <div className="gdh-notify-controls">
-          <label className="sr-only" htmlFor="viewer-notification-email">Email address</label>
-          <input
+          <Field
             id="viewer-notification-email"
+            label="Email address"
+            labelClassName="sr-only"
+            containerClassName="contents"
             type="email"
             autoComplete="email"
             required

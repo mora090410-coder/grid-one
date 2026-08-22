@@ -120,3 +120,25 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Prototype-pollution hardening:** final review found inherited `Object.prototype` flag/cohort/allowlist reads. A failing regression reproduced the crash/enablement path; all known-key reads now require own properties. Focused suite passes **8/8**.
 - **Full gates:** `npm run test:unit` passed **52 files / 330 tests**; route-off Chromium smoke passed **7/7**; `npm run build` passed; `npm run design:lint` returned 0 errors and 0 warnings.
 - **Rollback:** remove `utils/featureFlags.ts`, `tests/featureFlags.test.ts`, `playwright-tests/feature-flags-off.spec.ts`, and this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 4 governed primitives
+
+- **Status:** Complete and verified.
+- **Files touched:**
+  - `components/primitives/ActionButton.tsx`
+  - `components/primitives/Field.tsx`
+  - `components/primitives/Dialog.tsx`
+  - `components/board/FindSquaresModal.tsx`
+  - `components/board/ShareModal.tsx`
+  - `components/NotificationOptIn.tsx`
+  - `tests/primitives.test.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Primitives admitted:** `ActionButton`, `Field`, and `Dialog` only.
+- **Primitives omitted:** `StatusLabel.tsx` and `Disclosure.tsx`; no current slice substitution had two low-risk concrete consumers without crossing into future C1/B2/A1 feature-surface work.
+- **Consumer proof:** `ActionButton` replaces FindSquaresModal submit/close/list/clear actions and ShareModal copy/close actions. `Field` replaces both FindSquaresModal player search and NotificationOptIn viewer email input. `Dialog` replaces FindSquaresModal and ShareModal modal shells.
+- **Behavior intended to remain identical:** viewer find-my-squares matching, selection, close/Escape behavior, ShareModal QR/link/copy statuses, and read-only share copy remain unchanged; only primitive shells/actions/field rendering were substituted.
+- **TDD evidence:** `tests/primitives.test.tsx` was written first and initially produced TypeScript missing-module diagnostics for the three primitive imports. Primitive implementations followed. Existing `tests/findSquaresModal.test.tsx` already characterizes FindSquaresModal matching behavior before substitution.
+- **Static audit evidence available in this runtime:** file search found zero raw hex/RGB/HSL, default framework gray/white color classes, gradient/blur/glow, arbitrary shadow/radius patterns in `components/primitives`. File search confirms only three primitive files exist; `StatusLabel.tsx` and `Disclosure.tsx` do not exist.
+- **Review hardening:** review caught a fake consumer ledger, missing Field IDs, caller-overridable busy semantics, ShareModal z-index and mobile-centering loss, ring-to-border drift, and unsafe forwarded-ref casting. Added failing tests first; migrated the second real Field consumer; generated stable IDs; protected busy semantics; preserved consumer layers, placement, and ring treatment; and replaced the ref cast with a safe callback ref.
+- **Verification:** focused primitives + FindSquaresModal tests passed **13/13**; full unit suite passed **53 files / 338 tests**; production build passed; design audit stayed at the exact 75-finding baseline so new primitives added zero findings; Chromium phase-5 plus accessibility contracts passed **13 active / 7 owned skips**.
+- **Rollback:** remove the three primitive files and `tests/primitives.test.tsx`, revert `FindSquaresModal.tsx`, `ShareModal.tsx`, and `NotificationOptIn.tsx`, and remove this log entry. No domain state is affected.
