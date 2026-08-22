@@ -142,3 +142,23 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** review caught a fake consumer ledger, missing Field IDs, caller-overridable busy semantics, ShareModal z-index and mobile-centering loss, ring-to-border drift, and unsafe forwarded-ref casting. Added failing tests first; migrated the second real Field consumer; generated stable IDs; protected busy semantics; preserved consumer layers, placement, and ring treatment; and replaced the ref cast with a safe callback ref.
 - **Verification:** focused primitives + FindSquaresModal tests passed **13/13**; full unit suite passed **53 files / 338 tests**; production build passed; design audit stayed at the exact 75-finding baseline so new primitives added zero findings; Chromium phase-5 plus accessibility contracts passed **13 active / 7 owned skips**.
 - **Rollback:** remove the three primitive files and `tests/primitives.test.tsx`, revert `FindSquaresModal.tsx`, `ShareModal.tsx`, and `NotificationOptIn.tsx`, and remove this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 5 C1 viewer domain decomposition
+
+- **Status:** Complete and verified; `viewer_v2` remains off.
+- **Files touched:**
+  - `features/viewer/score/viewerScoreModel.ts`
+  - `features/viewer/identity/viewerIdentityModel.ts`
+  - `features/viewer/scenarios/scenarioModel.ts`
+  - `features/viewer/milestones/milestoneViewModel.ts`
+  - `tests/viewerScoreModel.test.ts`
+  - `tests/viewerIdentityModel.test.ts`
+  - `tests/scenarioModel.test.ts`
+  - `tests/milestoneViewModel.test.ts`
+  - `components/GameDayHorizon.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** `viewer_v2` remains off and no new shell, package, schema, API, env, external-system, git, BoardView, or FindSquaresModal behavior changed. `GameDayHorizon.tsx` preserves hierarchy/copy while consuming extracted score/scenario/milestone computations; the one intentional domain correction is suppressing future-score scenarios after Final, as required by the viewer contract.
+- **TDD evidence:** model tests were written before the model files. The first executable state would be RED because all four imports targeted missing files. GREEN implementation now covers score authority labels and minute polling text; durable identity/ambiguity/invalid restore semantics; scenario +2/+3/+6/+7/+8 arithmetic for either team with stale/offline/no-score/final statuses; and OPEN/corrected milestone preservation.
+- **Review hardening:** first review found the scenario model extracted but unused while `GameDayHorizon` retained duplicate inline arithmetic. The active viewer now consumes `buildScenarioModel`; duplicate scenario construction was removed, and Final/no-score suppression is active.
+- **Verification:** four model suites passed **9/9**; legacy viewer regression suites passed **30/30**; full unit suite passed **57 files / 347 tests**; production build passed; Chromium accessibility contracts passed **12 active / 7 owned skips**; design audit remained at the exact 75-finding baseline.
+- **Rollback:** remove the four `features/viewer/**` model files and four matching tests, revert `components/GameDayHorizon.tsx`, and remove this log entry. No domain state is affected.

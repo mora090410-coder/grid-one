@@ -7,12 +7,13 @@ import {
   WinnerHighlights,
   WinnerResolution,
 } from '../types';
-import { getAxisForQuarter } from '../utils/winnerLogic';
+import { buildResolvedMilestoneRows } from '../features/viewer/milestones/milestoneViewModel';
+import { buildScenarioModel, playersForDigits } from '../features/viewer/scenarios/scenarioModel';
+import { buildViewerScoreModel } from '../features/viewer/score/viewerScoreModel';
 import BoardGrid from './BoardGrid';
 import NotificationOptIn from './NotificationOptIn';
 
 type Highlight = { left: number; top: number } | null;
-type WinnerQuarter = 'Q1' | 'Q2' | 'Q3' | 'Final';
 
 interface GameDayHorizonProps {
   game: GameState;
@@ -33,66 +34,6 @@ interface GameDayHorizonProps {
   servicesEnabled?: boolean;
   organizerPreview?: boolean;
 }
-
-const scoringEvents = [
-  { label: 'Safety', points: 2 },
-  { label: 'Field goal', points: 3 },
-  { label: 'Touchdown', points: 6 },
-  { label: 'TD + kick', points: 7 },
-  { label: 'TD + two', points: 8 },
-] as const;
-
-const quarterForLive = (live: LiveGameData | null): WinnerQuarter => {
-  if (!live || live.period <= 1) return 'Q1';
-  if (live.period === 2) return 'Q2';
-  if (live.period === 3) return 'Q3';
-  return 'Final';
-};
-
-const playersForDigits = (
-  board: BoardData,
-  topDigit: number,
-  leftDigit: number,
-  quarter: WinnerQuarter,
-) => {
-  const topAxis = getAxisForQuarter(board, 'top', quarter);
-  const leftAxis = getAxisForQuarter(board, 'left', quarter);
-  const col = topAxis.indexOf(topDigit);
-  const row = leftAxis.indexOf(leftDigit);
-  return col < 0 || row < 0 ? [] : (board.squares[row * 10 + col] || []);
-};
-
-const periodLabel = (live: LiveGameData | null) => {
-  if (!live) return 'Score unavailable';
-  if (live.state === 'post') return 'Final';
-  if (live.state === 'pre') return 'Pregame';
-  if (live.period > 4 || live.isOvertime) return `OT · ${live.clock || 'In progress'}`;
-  return `Q${Math.max(live.period, 1)} · ${live.clock || 'In progress'}`;
-};
-
-const authorityLabel = (live: LiveGameData | null, liveStatus: string, isSynced: boolean) => {
-  if (!live && liveStatus.startsWith('MANUAL')) {
-    return { label: 'Manual · awaiting entry', detail: 'The organizer has scoring authority', tone: 'manual' };
-  }
-  if (live?.isManual) return { label: 'Manual score', detail: 'Entered by the organizer', tone: 'manual' };
-  if (!live) return { label: 'Score unavailable', detail: liveStatus || 'Try again shortly', tone: 'stale' };
-  const source = live.sourceName || 'Automatic beta score';
-  if (live.state === 'post') return { label: 'Final', detail: source, tone: 'final' };
-  if (live.freshness === 'refreshing') return { label: 'Refreshing', detail: `${source} · last known score shown`, tone: 'stale' };
-  if (live.freshness === 'offline') return { label: 'Offline · last known', detail: source, tone: 'stale' };
-  if (live.freshness === 'rejected') return { label: 'Source rejected', detail: 'Organizer review needed', tone: 'stale' };
-  if (live.freshness === 'stale') return { label: 'Stale · last known', detail: source, tone: 'stale' };
-  if (live.state === 'in' && isSynced) return { label: 'Live', detail: source, tone: 'live' };
-  if (live.state === 'pre') return { label: 'Pregame', detail: source, tone: 'pregame' };
-  return { label: 'Last known score', detail: source, tone: 'stale' };
-};
-
-const formatFreshness = (live: LiveGameData | null) => {
-  if (!live?.retrievedAt) return null;
-  const timestamp = new Date(live.retrievedAt);
-  if (Number.isNaN(timestamp.getTime())) return null;
-  return `Checked ${timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-};
 
 const shortName = (names: string[], emptyLabel = 'Unassigned') => {
   if (!names.length) return emptyLabel;
@@ -121,7 +62,11 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
 }) => {
   const [zoom, setZoom] = useState(1);
   const emailResult = new URLSearchParams(window.location.search).get('email');
-  const currentQuarter = quarterForLive(live);
+  const scenarioModel = useMemo(
+    () => buildScenarioModel({ board, game, live }),
+    [board, game.leftAbbr, game.topAbbr, live],
+  );
+  const currentQuarter = scenarioModel.currentQuarter;
   const currentTopDigit = live ? live.topScore % 10 : null;
   const currentLeftDigit = live ? live.leftScore % 10 : null;
   const currentWinners = useMemo(
@@ -139,8 +84,9 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   const selectedParticipant = board.participants?.find(
     (participant) => participant.displayName === selectedPlayer,
   );
-  const authority = authorityLabel(live, liveStatus, isSynced);
-  const freshness = formatFreshness(live);
+  const scoreModel = buildViewerScoreModel({ live, liveStatus, isSynced });
+  const authority = scoreModel.authority;
+  const freshness = scoreModel.freshness;
   const isLive = authority.tone === 'live';
   const isFinal = authority.tone === 'final';
   const horizonClass = isFinal ? 'gdh-final' : isLive ? 'gdh-live' : 'gdh-pregame';
@@ -158,37 +104,11 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
   const payoutNotes = game.payoutDescriptions?.notes?.trim();
   const hasPayoutDescriptions = payoutRows.length > 0 || Boolean(payoutNotes);
 
-  const scenarios = useMemo(() => {
-    if (!live) return [];
-    return [
-      ...scoringEvents.map((event) => {
-        const left = (live.leftScore + event.points) % 10;
-        const top = live.topScore % 10;
-        const names = playersForDigits(board, top, left, currentQuarter);
-        return { ...event, team: game.leftAbbr, left, top, names };
-      }),
-      ...scoringEvents.map((event) => {
-        const left = live.leftScore % 10;
-        const top = (live.topScore + event.points) % 10;
-        const names = playersForDigits(board, top, left, currentQuarter);
-        return { ...event, team: game.topAbbr, left, top, names };
-      }),
-    ];
-  }, [board, currentQuarter, game.leftAbbr, game.topAbbr, live]);
-  const resolvedWinners = useMemo(() => winnerHistory.map((resolution) => ({
-    label: resolution.milestone === 'Q2'
-      ? 'Halftime'
-      : resolution.milestone === 'FINAL'
-        ? 'Final'
-        : resolution.milestone,
-    digits: `${resolution.topDigit} / ${resolution.sideDigit}`,
-    name: resolution.participantName || 'Unassigned',
-    openSquare: Boolean(resolution.openSquare),
-    resolvedAt: resolution.resolvedAt,
-    corrected: Boolean(resolution.corrected),
-    correctionReason: resolution.correctionReason,
-    resolutionVersion: resolution.resolutionVersion || 1,
-  })), [winnerHistory]);
+  const scenarios = scenarioModel.scenarios;
+  const resolvedWinners = useMemo(
+    () => buildResolvedMilestoneRows(winnerHistory),
+    [winnerHistory],
+  );
 
   return (
     <main className={`gdh-stage ${horizonClass}`} aria-label={`${game.title || 'GridOne board'} game day`}>
@@ -217,7 +137,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
           </div>
 
           <div className="gdh-current">
-            <span id="game-state-title">{periodLabel(live)}</span>
+            <span id="game-state-title">{scoreModel.periodLabel}</span>
             <strong>{live ? shortName(currentWinners, showOpenSquares ? 'Open square' : 'Unassigned') : 'Waiting for score'}</strong>
             <small>Current {currentQuarter === 'Q2' ? 'halftime' : currentQuarter} result</small>
           </div>
@@ -237,7 +157,7 @@ const GameDayHorizon: React.FC<GameDayHorizonProps> = ({
             <span>{authority.detail}</span>
           )}
           {freshness && <span>{freshness}{live?.freshness === 'stale' ? ' · stale' : ''}</span>}
-          <span>Score updates about every minute</span>
+          <span>{scoreModel.pollingText || 'Score updates about every minute'}</span>
           {live?.detail && <span>{live.detail}</span>}
           {live?.warning && <span>{live.warning}</span>}
         </div>
