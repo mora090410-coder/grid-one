@@ -19,6 +19,14 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    {
+      name: 'phone-chromium',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'phone-webkit',
+      use: { ...devices['iPhone 13'] },
+    },
   ],
   webServer: {
     command: `npm run dev -- --host 127.0.0.1 --port ${port}`,
