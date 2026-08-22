@@ -162,3 +162,26 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** first review found the scenario model extracted but unused while `GameDayHorizon` retained duplicate inline arithmetic. The active viewer now consumes `buildScenarioModel`; duplicate scenario construction was removed, and Final/no-score suppression is active.
 - **Verification:** four model suites passed **9/9**; legacy viewer regression suites passed **30/30**; full unit suite passed **57 files / 347 tests**; production build passed; Chromium accessibility contracts passed **12 active / 7 owned skips**; design audit remained at the exact 75-finding baseline.
 - **Rollback:** remove the four `features/viewer/**` model files and four matching tests, revert `components/GameDayHorizon.tsx`, and remove this log entry. No domain state is affected.
+
+## 2026-08-22 — Slice 6 C1 viewer shell behind viewer_v2
+
+- **Status:** Complete and verified behind default-off `viewer_v2`; rollback to `GameDayHorizon` is preserved.
+- **Files touched:**
+  - `features/viewer/shell/ViewerShell.tsx`
+  - `features/viewer/score/ScoreInstrument.tsx`
+  - `features/viewer/identity/FindSquaresEntry.tsx`
+  - `features/viewer/personal/YourSquaresSummary.tsx`
+  - `features/viewer/scenarios/ScenarioDisclosure.tsx`
+  - `features/viewer/notifications/WinnerEmailDisclosure.tsx`
+  - `features/viewer/details/BoardDetailsDisclosure.tsx`
+  - `tests/viewerShell.test.tsx`
+  - `playwright-tests/viewer-v2.spec.ts`
+  - `components/BoardView.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** `viewer_v2` defaults off through `utils/featureFlags.ts`; `BoardView` resolves it from environment config and only permits query overrides for read-only viewer/demo routes. Production mutation routes pass `routeIntent: 'production_mutation'`. `GameDayHorizon` remains the fallback.
+- **Flag safety:** no production-exported resolver override exists. Tests enable the shell only through the permitted read-only viewer/demo query path; mutation routes use `production_mutation` and ignore all query overrides.
+- **C1 shell coverage:** phone-first score/title/matchup/current result/authority/freshness/polling/Find my squares; personalized name/count/coordinate rows and View on board controls before winner email; pregame scenario suppression; live unselected scenarios collapsed into disclosure; selected matching outcomes first; arithmetic disclaimer; stale/offline last-known timestamp; Final record with no scenarios; winner email only when published services and durable participant identity are present.
+- **Review hardening:** duplicate display names now fail closed for durable participant email binding; personalized scenarios use real team abbreviations; randomized-axis focus coordinates are regression-tested; OPEN matching trims whitespace; the production-exported test resolver seam was removed; and mutation-query denial is reverified against the committed flag resolver.
+- **RED evidence:** `tests/viewerShell.test.tsx` was written before implementation; the write-time TypeScript diagnostic reported missing `../features/viewer/shell/ViewerShell`.
+- **GREEN evidence:** focused viewer shell + flag tests passed **15/15**; full unit suite passed **58 files / 354 tests**; production build passed; Chromium viewer-v2 plus route-off Playwright passed **8/8**; design audit remained at the exact 75-finding baseline. Three ambiguous Testing Library selectors were corrected without changing product code after each rendered state proved the intended duplicate text.
+- **Rollback:** remove the seven new viewer shell component files, remove the two new tests, revert `components/BoardView.tsx`, and remove this log entry. No package, schema, API, server, environment file, deployment, or git state is affected.

@@ -13,6 +13,7 @@ import { SAMPLE_BOARD } from '../constants';
 
 import AdminPanel from './AdminPanel';
 import GameDayHorizon from './GameDayHorizon';
+import ViewerShell from '../features/viewer/shell/ViewerShell';
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
@@ -23,12 +24,21 @@ import ShareModal from './board/ShareModal';
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
 import { distinctAssignedNames } from '../utils/playerNameMatching';
+import { resolveFeatureFlags } from '../utils/featureFlags';
 
 // Custom Hooks
 import { usePoolData, INITIAL_GAME } from '../hooks/usePoolData';
 import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { useBoardActions } from '../hooks/useBoardActions';
+
+const envFlagConfig = () => ({
+    flags: {
+        viewer_v2: import.meta.env.VITE_GRIDONE_VIEWER_V2,
+        organizer_v2: import.meta.env.VITE_GRIDONE_ORGANIZER_V2,
+        homepage_v2: import.meta.env.VITE_GRIDONE_HOMEPAGE_V2,
+    },
+});
 
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const { shareCode: routeShareCode, boardId: routeBoardId } = useParams<{ shareCode?: string; boardId?: string }>();
@@ -103,6 +113,15 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     // 4. Derived State
     const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
+    const isReadOnlyViewerRoute = Boolean(demoMode || (routeShareCode && !forceAdmin));
+    const featureFlags = resolveFeatureFlags({
+        config: envFlagConfig(),
+        accountId: auth.user?.id || null,
+        boardId: activePoolId || urlPoolId || null,
+        query: window.location.search,
+        routeIntent: isReadOnlyViewerRoute ? 'read_only_preview' : 'production_mutation',
+    });
+    const viewerV2Enabled = featureFlags.flags.viewer_v2;
 
     // 5. Effects
     useEffect(() => {
@@ -229,27 +248,47 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     <h1>This board is not published yet.</h1>
                     <p>The organizer can still preview it. Viewers will see the board here after it is unlocked and published.</p>
                 </section>
-            ) : (
-                <GameDayHorizon
-                    game={game}
-                    board={board}
-                    live={liveData}
-                    liveStatus={liveStatus}
-                    isSynced={isSynced}
-                    highlights={highlights}
-                    winnerHistory={liveWinnerHistory}
-                    pendingMilestones={livePendingMilestones}
-                    selectedPlayer={selectedPlayer}
-                    onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
-                    onFindSquares={() => setShowFindSquaresModal(true)}
-                    highlightedCoords={highlightedCoords}
-                    onScenarioFocus={setHighlightedCoords}
-                    locked={isLocked}
-                    shareCode={routeShareCode || shareCode}
-                    servicesEnabled={boardServicesEnabled}
-                    organizerPreview={previewMode && isOwner}
-                />
-            )}
+            ) : viewerV2Enabled ? (
+                    <ViewerShell
+                        game={game}
+                        board={board}
+                        live={liveData}
+                        liveStatus={liveStatus}
+                        isSynced={isSynced}
+                        highlights={highlights}
+                        winnerHistory={liveWinnerHistory}
+                        pendingMilestones={livePendingMilestones}
+                        selectedPlayer={selectedPlayer}
+                        onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
+                        onFindSquares={() => setShowFindSquaresModal(true)}
+                        highlightedCoords={highlightedCoords}
+                        onScenarioFocus={setHighlightedCoords}
+                        locked={isLocked}
+                        shareCode={routeShareCode || shareCode}
+                        servicesEnabled={boardServicesEnabled}
+                        organizerPreview={previewMode && isOwner}
+                    />
+                ) : (
+                    <GameDayHorizon
+                        game={game}
+                        board={board}
+                        live={liveData}
+                        liveStatus={liveStatus}
+                        isSynced={isSynced}
+                        highlights={highlights}
+                        winnerHistory={liveWinnerHistory}
+                        pendingMilestones={livePendingMilestones}
+                        selectedPlayer={selectedPlayer}
+                        onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
+                        onFindSquares={() => setShowFindSquaresModal(true)}
+                        highlightedCoords={highlightedCoords}
+                        onScenarioFocus={setHighlightedCoords}
+                        locked={isLocked}
+                        shareCode={routeShareCode || shareCode}
+                        servicesEnabled={boardServicesEnabled}
+                        organizerPreview={previewMode && isOwner}
+                    />
+                )}
         </div>
     );
 
