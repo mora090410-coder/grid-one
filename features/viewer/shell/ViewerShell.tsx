@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../types';
-import BoardGrid from '../../../components/BoardGrid';
+import ViewerBoardGrid from '../board/ViewerBoardGrid';
 import ScoreInstrument from '../score/ScoreInstrument';
 import FindSquaresEntry from '../identity/FindSquaresEntry';
 import YourSquaresSummary from '../personal/YourSquaresSummary';
@@ -110,19 +110,21 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
             </div>
             <button type="button" className="oa-slab min-h-11 border border-broadcast-white/30 px-3 text-broadcast-white" style={{ minHeight: 44 }} onClick={onFindSquares}>Find</button>
           </div>
-          <div className="overflow-auto border border-broadcast-white/20 bg-broadcast-white p-2 text-ink" tabIndex={0} aria-label="Scrollable football squares board">
+          <div className="overflow-auto border border-broadcast-white/20 bg-broadcast-white p-2 text-ink" aria-label="Scrollable football squares board">
             {isEmpty && !organizerPreview ? (
               <div className="p-6 text-center text-ink">This board has no assignments yet.</div>
             ) : (
-              <BoardGrid
+              <ViewerBoardGrid
                 board={board}
+                game={game}
                 highlights={highlights}
+                winnerHistory={winnerHistory}
+                pendingMilestones={pendingMilestones}
                 live={live}
                 selectedPlayer={selectedPlayer}
                 highlightedCoords={boardFocus}
-                leftTeamName={game.leftName || game.leftAbbr}
-                topTeamName={game.topName || game.topAbbr}
                 showOpenSquares={board.allowOpenSquares === true}
+                onFindSquares={onFindSquares}
               />
             )}
           </div>

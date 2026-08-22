@@ -185,3 +185,23 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **RED evidence:** `tests/viewerShell.test.tsx` was written before implementation; the write-time TypeScript diagnostic reported missing `../features/viewer/shell/ViewerShell`.
 - **GREEN evidence:** focused viewer shell + flag tests passed **15/15**; full unit suite passed **58 files / 354 tests**; production build passed; Chromium viewer-v2 plus route-off Playwright passed **8/8**; design audit remained at the exact 75-finding baseline. Three ambiguous Testing Library selectors were corrected without changing product code after each rendered state proved the intended duplicate text.
 - **Rollback:** remove the seven new viewer shell component files, remove the two new tests, revert `components/BoardView.tsx`, and remove this log entry. No package, schema, API, server, environment file, deployment, or git state is affected.
+
+## 2026-08-22 — Slice 7 exact viewer grid behind viewer_v2
+
+- **Status:** Complete and verified behind the existing `viewer_v2` shell.
+- **Files touched:**
+  - `features/viewer/board/boardGridModel.ts`
+  - `features/viewer/board/ViewerBoardGrid.tsx`
+  - `features/viewer/shell/ViewerShell.tsx`
+  - `tests/boardGridModel.test.ts`
+  - `tests/viewerBoardGrid.test.tsx`
+  - `playwright-tests/viewer-v2.spec.ts`
+  - `playwright-tests/accessibility-contract.spec.ts`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** `components/BoardGrid.tsx` was not modified. Its dynamic quarter selector/auto-quarter behavior is untouched. The new viewer board is feature-local under `features/viewer/board` and is only consumed by the existing `viewer_v2` shell.
+- **Contract implemented:** exact 10x10 viewer grid using Slice 5 `getAxisForQuarter`; randomized axes remain source-of-truth from the board; top axis is labeled/sticky as Top team and side axis as Side team; one-tab-stop roving `role=grid` cells support Arrow keys, Home, End, Ctrl+Home, and Ctrl+End; controls Zoom out, Center current result, Zoom in, Fit board, Find, and Center selected plus a live Current zoom status all carry explicit 44px minimum geometry; cell names include assignment/OPEN, coordinate row/column, top digit, side digit, current result, milestone/pending/resolved/corrected semantics; selected/current/resolved/OPEN/correction states are exposed through distinct ARIA/data attributes and visual token classes.
+- **TDD evidence:** tests were written before implementation. RED evidence available in this sandbox: initial write produced missing-module diagnostics for `../features/viewer/board/ViewerBoardGrid`; `boardGridModel` import targeted a then-missing file. GREEN implementation was then added and wired into `ViewerShell`.
+- **Playwright contract:** `viewer-v2.spec.ts` now exercises the exact grid path; `accessibility-contract.spec.ts` removed the Slice 7 board-keyboard `fixme` and activates the one-tab-stop/cell-semantics test on `/b/ABCDEFGH?viewer_v2=true`.
+- **Review hardening:** focus navigation derives from the actually focused gridcell rather than potentially stale React state; ARIA counts/indexes now match the rendered header/data structure; zoom changes layout dimensions inside the scroll viewport; current-result and selected-player centering are separate actions; sticky axis columns have deterministic widths/offsets; selected/current/resolved/OPEN/corrected visuals remain distinct in combined states; internal correction reasons are not exposed in public cell names. Unit and Playwright harnesses dispatch keys from the focused cell and scope controls to the complete board instrument.
+- **Verification:** focused model/grid suites passed **8/8**; full unit suite passed **60 files / 362 tests**; Chromium viewer-v2 plus accessibility contracts passed **15 active / 6 owned skips** with the board keyboard contract active; production build passed; design audit remained at the exact 75-finding baseline.
+- **Rollback:** remove the two new viewer board files and two new tests, revert `ViewerShell.tsx`, `playwright-tests/viewer-v2.spec.ts`, `playwright-tests/accessibility-contract.spec.ts`, and this log entry. No package, schema, API, environment, deploy, git, or production data state is affected.

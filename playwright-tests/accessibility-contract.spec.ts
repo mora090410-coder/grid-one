@@ -184,7 +184,7 @@ const expectNoPageOverflowExceptBoardViewport = async (page: Page) => {
       .filter((element) => {
         const style = getComputedStyle(element);
         if (style.display === 'none' || style.visibility === 'hidden') return false;
-        if (element.closest('.gridone-board-frame, .gdh-board-viewport')) return false;
+        if (element.closest('.gridone-board-frame, .gridone-viewer-board-viewport, .gdh-board-viewport')) return false;
         return element.scrollWidth > element.clientWidth + 1 || element.getBoundingClientRect().right > documentWidth + 1;
       })
       .map((element) => ({
@@ -384,20 +384,24 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   });
 
   test('viewer board uses one keyboard target and exposes cell coordinates/status names', async ({ page }) => {
-    test.fixme(true, 'Owner: Slice 7 exact-grid accessibility. Expected: one-tab-stop roving data grid with arrow/Home/End navigation and cell names containing assignment/open state, coordinate, top/side digits, and winner/correction state. Remove after fixed-axis viewer grid ships.');
     await installPublishedBoard(page);
-    await page.goto('/b/ABCDEFGH');
-    const namedCell = page.getByRole('cell', { name: /^Ann, Washington Commanders 0, Dallas Cowboys 0/ });
+    await page.goto('/b/ABCDEFGH?viewer_v2=true');
+    const grid = page.getByRole('grid', { name: /football squares board/i });
+    const namedCell = grid.getByRole('gridcell', { name: /Ann.*coordinate row 1 column 1.*top digit 0.*side digit 0/i });
     await expect(namedCell).toBeVisible();
 
-    const tabStops = await page.getByRole('cell').evaluateAll((cells) =>
+    const tabStops = await grid.getByRole('gridcell').evaluateAll((cells) =>
       cells.filter((cell) => cell.getAttribute('tabindex') === '0').length
     );
     expect(tabStops).toBe(1);
 
     await namedCell.focus();
     await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('cell', { name: /^Open square, Washington Commanders 1, Dallas Cowboys 0/ })).toBeFocused();
+    await expect(grid.getByRole('gridcell', { name: /OPEN.*coordinate row 1 column 2.*top digit 1.*side digit 0/i })).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(grid.getByRole('gridcell', { name: /coordinate row 1 column 10/i })).toBeFocused();
+    await page.keyboard.press('Control+Home');
+    await expect(namedCell).toBeFocused();
   });
 
   test('320 and 390 phone widths avoid page overflow outside the intentional board viewport', async ({ page }) => {
