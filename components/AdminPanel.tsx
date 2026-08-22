@@ -20,6 +20,17 @@ import { createCheckoutSession } from '../services/stripe';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../utils/boardImage';
 import { useDialogFocus } from '../hooks/useDialogFocus';
 import { OrganizerDestination } from '../utils/organizerFlow';
+import { ManualScoringPanel } from '../features/organizer/game-day/ManualScoringPanel';
+import {
+  EMPTY_MANUAL_SCORES,
+  manualPeriodForState,
+  seedManualScoreFromSnapshot,
+  type ManualGameState,
+  type ManualQuarterKey,
+  type ManualScoreSide,
+} from '../features/organizer/game-day/manualScoringModel';
+
+export { manualPeriodForState, seedManualScoreFromSnapshot } from '../features/organizer/game-day/manualScoringModel';
 
 export const secureShuffleDigits = () => {
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -32,43 +43,6 @@ export const secureShuffleDigits = () => {
     [digits[index], digits[target]] = [digits[target], digits[index]];
   }
   return digits;
-};
-
-type ManualQuarterScores = NonNullable<GameState['manualQuarterScores']>;
-
-const EMPTY_MANUAL_SCORES: ManualQuarterScores = {
-  Q1: { left: 0, top: 0 },
-  Q2: { left: 0, top: 0 },
-  Q3: { left: 0, top: 0 },
-  Q4: { left: 0, top: 0 },
-  OT: { left: 0, top: 0 },
-};
-
-export const manualPeriodForState = (
-  state: NonNullable<GameState['manualGameState']>,
-  period: number | undefined,
-  quarterScores: ManualQuarterScores | undefined,
-) => {
-  if (state === 'pre') return 0;
-  if (state === 'post') {
-    const hasOvertimeScore = Boolean(
-      quarterScores && (quarterScores.OT.left > 0 || quarterScores.OT.top > 0),
-    );
-    return hasOvertimeScore || period === 5 ? 5 : 4;
-  }
-  return Math.min(5, Math.max(1, period ?? 1));
-};
-
-export const seedManualScoreFromSnapshot = (
-  snapshot: LiveGameData | null | undefined,
-) => {
-  const state = snapshot?.state ?? 'in';
-  const quarterScores = snapshot?.quarterScores ?? EMPTY_MANUAL_SCORES;
-  return {
-    manualGameState: state,
-    manualPeriod: manualPeriodForState(state, snapshot?.period, quarterScores),
-    manualQuarterScores: quarterScores,
-  };
 };
 
 export const publishedOpenSquaresAreAssignable = ({
@@ -512,7 +486,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     }
   };
 
-  const updateManualQuarter = (q: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', side: 'left' | 'top', val: number) => {
+  const updateManualQuarter = (q: ManualQuarterKey, side: ManualScoreSide, val: number) => {
     setLocalGame(prev => {
       const base = prev.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
       return { ...prev, manualQuarterScores: { ...base, [q]: { ...base[q], [side]: Math.max(0, val) } } };
@@ -554,7 +528,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
     }
   };
 
-  const updateManualGameState = (state: NonNullable<GameState['manualGameState']>) => {
+  const updateManualGameState = (state: ManualGameState) => {
     setLocalGame((current) => ({
       ...current,
       manualGameState: state,
@@ -1505,138 +1479,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ game, board, activePoolId, live
 
                   {/* Live Scoring */}
                   <div id="live-scoring" tabIndex={-1} className="scroll-mt-28 border-t border-newsprint pt-6 mb-8 outline-none">
-                    {!isActivated ? (
-                      <div className="border border-gold bg-gold/20 p-5 text-ink">
-                        <p className="oa-slab mb-2 text-cardinal">Ready when the board goes live</p>
-                        <h5 className="oa-headline !text-2xl">Every published board gets the full game-day experience.</h5>
-                        <p className="oa-body mt-3 text-sm text-ink/70">
-                          Keep building and previewing for free. After you publish, scores, scenarios, winner emails, the QR code, and the viewer link all work together.
-                        </p>
-                      </div>
-                    ) : (
-                    <>
-                    <div className="flex items-center justify-between mb-4">
-                      <h5 className="text-xs font-bold text-ink/50 uppercase tracking-widest">Live Scoring</h5>
-                      <div className="flex rounded-control bg-newsprint p-1 border border-newsprint">
-                        <button
-                          onClick={enableAutomaticScoring}
-                          className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${!localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
-                        >
-                          Auto
-                        </button>
-                        <button
-                          onClick={enableManualScoring}
-                          disabled={scoreSaveStatus === 'saving'}
-                          className={`min-h-11 px-3 py-2 rounded-control text-[11px] font-bold transition-all ${localGame.useManualScores ? 'bg-broadcast-white text-ink' : 'text-ink/50 hover:text-ink'}`}
-                        >
-                          Manual
-                        </button>
-                      </div>
-                    </div>
-
-                    {!localGame.useManualScores ? (
-                      <p className="text-xs text-ink/50 leading-relaxed">
-                        Automatic score checks are a beta convenience and always show their source and freshness. Switch to Manual whenever you want the organizer to be authoritative.
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label htmlFor="manual-game-status" className="oa-slab text-ink/60">Game Status</label>
-                            <div className="relative">
-                              <select
-                                id="manual-game-status"
-                                value={localGame.manualGameState ?? 'in'}
-                                onChange={(e) => updateManualGameState(
-                                  e.target.value as NonNullable<GameState['manualGameState']>,
-                                )}
-                                className="w-full oa-input appearance-none text-ink"
-                              >
-                                <option value="pre">Scheduled</option>
-                                <option value="in">In progress</option>
-                                <option value="post">Final</option>
-                              </select>
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label htmlFor="manual-current-period" className="oa-slab text-ink/60">Current Period</label>
-                            <div className="relative">
-                              <select
-                                id="manual-current-period"
-                                value={manualPeriodForState(
-                                  localGame.manualGameState ?? 'in',
-                                  localGame.manualPeriod,
-                                  localGame.manualQuarterScores,
-                                )}
-                                onChange={(e) => updateField('manualPeriod', parseInt(e.target.value))}
-                                disabled={(localGame.manualGameState ?? 'in') !== 'in'}
-                                className="w-full oa-input appearance-none text-ink"
-                              >
-                                {(localGame.manualGameState ?? 'in') === 'pre' && (
-                                  <option value={0}>Not started</option>
-                                )}
-                                <option value={1}>Q1</option>
-                                <option value={2}>Q2</option>
-                                <option value={3}>Q3</option>
-                                <option value={4}>Q4</option>
-                                <option value={5}>Overtime</option>
-                              </select>
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-ink/50">▼</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
-                            <span></span>
-                            <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{localGame.leftAbbr}</span>
-                            <span className="text-[10px] font-bold text-ink/50 uppercase tracking-widest text-center">{localGame.topAbbr}</span>
-                          </div>
-                          {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).map((q) => (
-                            <div key={q} className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center">
-                              <span className="text-xs font-bold text-ink/60">{q}</span>
-                              <input
-                                type="number"
-                                min={0}
-                                value={localGame.manualQuarterScores?.[q]?.left ?? 0}
-                                onChange={(e) => updateManualQuarter(q, 'left', parseInt(e.target.value) || 0)}
-                                className="w-full oa-input text-center"
-                              />
-                              <input
-                                type="number"
-                                min={0}
-                                value={localGame.manualQuarterScores?.[q]?.top ?? 0}
-                                onChange={(e) => updateManualQuarter(q, 'top', parseInt(e.target.value) || 0)}
-                                className="w-full oa-input text-center"
-                              />
-                            </div>
-                          ))}
-                          <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-newsprint">
-                            <span className="text-xs font-bold text-gold">Total</span>
-                            <span className="text-sm font-bold text-ink text-center">
-                              {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.left ?? 0), 0)}
-                            </span>
-                            <span className="text-sm font-bold text-ink text-center">
-                              {(['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).reduce((sum, q) => sum + (localGame.manualQuarterScores?.[q]?.top ?? 0), 0)}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-ink/50 leading-relaxed">
-                          Enter each quarter's points (not running totals). Publishing a settled period confirms its result and queues verified winner notifications.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={saveManualScore}
-                          disabled={scoreSaveStatus === 'saving'}
-                          className="oa-btn oa-btn-primary w-full"
-                        >
-                          {scoreSaveStatus === 'saving' ? 'Publishing score…' : 'Publish manual score'}
-                        </button>
-                      </div>
-                    )}
-                    </>
-                    )}
+                    <ManualScoringPanel
+                      isActivated={isActivated}
+                      game={localGame}
+                      scoreSaveStatus={scoreSaveStatus}
+                      onEnableAutomaticScoring={enableAutomaticScoring}
+                      onEnableManualScoring={enableManualScoring}
+                      onUpdateManualGameState={updateManualGameState}
+                      onUpdateManualPeriod={(period) => updateField('manualPeriod', period)}
+                      onUpdateManualQuarter={updateManualQuarter}
+                      onSaveManualScore={saveManualScore}
+                    />
                     {notificationDeliveryIssues.length > 0 && (
                       <section className="mt-6 border border-cardinal/40 bg-cardinal-subtle p-4" role="alert">
                         <p className="oa-slab text-cardinal">Notification action needed</p>

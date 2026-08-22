@@ -205,3 +205,18 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Review hardening:** focus navigation derives from the actually focused gridcell rather than potentially stale React state; ARIA counts/indexes now match the rendered header/data structure; zoom changes layout dimensions inside the scroll viewport; current-result and selected-player centering are separate actions; sticky axis columns have deterministic widths/offsets; selected/current/resolved/OPEN/corrected visuals remain distinct in combined states; internal correction reasons are not exposed in public cell names. Unit and Playwright harnesses dispatch keys from the focused cell and scope controls to the complete board instrument.
 - **Verification:** focused model/grid suites passed **8/8**; full unit suite passed **60 files / 362 tests**; Chromium viewer-v2 plus accessibility contracts passed **15 active / 6 owned skips** with the board keyboard contract active; production build passed; design audit remained at the exact 75-finding baseline.
 - **Rollback:** remove the two new viewer board files and two new tests, revert `ViewerShell.tsx`, `playwright-tests/viewer-v2.spec.ts`, `playwright-tests/accessibility-contract.spec.ts`, and this log entry. No package, schema, API, environment, deploy, git, or production data state is affected.
+
+## 2026-08-22 — Slice 8 manual scoring extraction
+
+- **Status:** Complete and verified under the requested extraction seam.
+- **Files touched:**
+  - `features/organizer/game-day/manualScoringModel.ts`
+  - `features/organizer/game-day/ManualScoringPanel.tsx`
+  - `tests/manualScoringPanel.test.tsx`
+  - `components/AdminPanel.tsx`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior boundary:** existing `functions/api/pools/[id]/score/manual.ts` was not modified. No package, schema, API payload, flag, environment, external system, deploy, or git state was changed. `AdminPanel.tsx` now delegates only the existing live-scoring/manual-scoring UI rendering to the feature-local panel while retaining its existing state handlers, action messages, fetch payloads, revision/autosave boundaries, and callback ownership.
+- **Contract preserved/extracted:** manual authority toggle, latest snapshot seeding, period/state derivation, non-negative quarter-score input, manual score publish action, organizer-entered score copy, deliberate return to automatic scoring, and stale automatic overwrite protections remain on the pre-existing server/model path. The panel preserves existing copy, button labels, disabled/loading behavior, CSS token classes, and handler callback shape.
+- **RED evidence:** `tests/manualScoringPanel.test.tsx` was written before implementation; write-time TypeScript diagnostic reported missing `../features/organizer/game-day/ManualScoringPanel`.
+- **GREEN evidence:** focused manual scoring model/UI/panel suites passed **16/16**; full unit suite passed **61 files / 365 tests**; production build passed; design audit remained at the exact 75-finding baseline.
+- **Rollback:** remove the two new feature files and `tests/manualScoringPanel.test.tsx`, restore the live-scoring JSX and local manual-scoring helpers in `components/AdminPanel.tsx`, and remove this log entry. No domain state is affected.
