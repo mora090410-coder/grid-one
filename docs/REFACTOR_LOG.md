@@ -103,3 +103,20 @@ Remove `tests/designAudit.test.ts`, `scripts/design-audit.mjs`, the two package 
 - **Audit result:** advisories reduced from 14 total (including 11 high and 1 critical) to one low `@babel/core` dev-only advisory. `npm audit --omit=dev --json` reports **0 production advisories**. No compatible patched Babel 7 exists; Babel 8 would require a separate major toolchain migration.
 - **Verification:** `npm run design:lint` passed; `npm run test:unit` passed **51 files / 322 tests** under Vitest 4.1.11; `npm run build` passed under Vite 6.4.3; Chromium accessibility contract passed **12 active / 7 owned skips**.
 - **Rollback:** revert the package and lockfile commit. No domain state is affected.
+
+## 2026-08-22 — Slice 3 reversible feature flags
+
+- **Status:** Complete and verified. The pure resolver and route-off smoke are not yet connected to production consumers; every flag therefore remains off by default.
+- **Files touched:**
+  - `utils/featureFlags.ts`
+  - `tests/featureFlags.test.ts`
+  - `playwright-tests/feature-flags-off.spec.ts`
+  - `docs/REFACTOR_LOG.md`
+- **Behavior intended to remain identical:** no production consumers, routes, components, package files, schema, environment/config files, server functions, external systems, git staging, commits, pushes, deployments, or production flags were modified.
+- **Contract added:** exactly `viewer_v2`, `organizer_v2`, and `homepage_v2`; absent/malformed config defaults off; only explicit boolean values and `true`/`false` strings parse; account/board allowlists are capped at 100 entries with 128-character identifiers; support/telemetry variants are stable `flag:on|off` labels and exclude account/board identifiers; query parameters may only enable flags for `read_only_preview` and cannot enable production mutation paths.
+- **Route-off smoke added:** `playwright-tests/feature-flags-off.spec.ts` covers `/`, `/demo`, `/b/:shareCode`, `/boards/:boardId`, `/create`, and `/dashboard` with all v2 flags off, asserting legacy text and no v2 feature/variant markers. It also asserts query parameters do not enable the unauthenticated `/create` mutation path.
+- **RED/GREEN evidence:** focused unit tests passed **7/7**. The first Chromium route smoke exposed two fixture assumptions (split homepage heading text and an unstubbed public-board API); after correcting those fixtures, route smoke passed **7/7**.
+- **Review hardening:** review identified malformed nested config fallback, inherited/exotic object acceptance, mutation-route query downgrades, and duplicate query ambiguity. Added failing assertions first; resolver now rejects malformed/exotic config, ignores all mutation-route query overrides, and ignores ambiguous duplicate preview parameters. Focused suite remains **7/7** with expanded assertions.
+- **Prototype-pollution hardening:** final review found inherited `Object.prototype` flag/cohort/allowlist reads. A failing regression reproduced the crash/enablement path; all known-key reads now require own properties. Focused suite passes **8/8**.
+- **Full gates:** `npm run test:unit` passed **52 files / 330 tests**; route-off Chromium smoke passed **7/7**; `npm run build` passed; `npm run design:lint` returned 0 errors and 0 warnings.
+- **Rollback:** remove `utils/featureFlags.ts`, `tests/featureFlags.test.ts`, `playwright-tests/feature-flags-off.spec.ts`, and this log entry. No domain state is affected.
