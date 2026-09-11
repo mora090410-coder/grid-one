@@ -56,7 +56,7 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
     <div className="space-y-6 font-ui text-fg">
       <div className="space-y-2">
         <p className="text-2xl font-medium">{model.totals.paid} of {model.totals.assigned} assigned squares paid</p>
-        <p className="text-base text-fg-2">Private to you. These notes track payment status; GridOne never collects square money, holds funds or pays winners.</p>
+        <p className="text-base text-fg-2">Private to you. These notes track payment status. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
       </div>
       <CapsuleInput label="Search people, names or square number" type="search" value={query} disabled={saving} onChange={event => { setQuery(event.target.value); clearSelection(); }} />
       <div role="group" aria-label="Filter payment status" className="flex flex-wrap gap-2">

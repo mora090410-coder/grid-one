@@ -61,7 +61,7 @@ export default function PayoutRulesCard({ descriptions, status, disabled = false
           onChange={(e) => onChange('notes', e.target.value)}
         />
       </div>
-      <p className="font-ui text-[13px] text-fg-3">GridOne never handles the money. Describe prizes in words.</p>
+      <p className="font-ui text-[13px] text-fg-3">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners. Describe prizes in words.</p>
       <div className="flex items-center gap-3">
         <CapsuleButton
           variant="primary"

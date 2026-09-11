@@ -240,7 +240,7 @@ test('published viewer renders the board and persists its canonical square selec
   await expect(page.getByRole('heading', { name: 'Payouts' })).toBeVisible();
   await expect(page.getByText('Winner gets bragging rights')).toBeVisible();
   await expect(page.getByText('A homemade pie')).toBeVisible();
-  await expect(page.getByText('GridOne tracks the board. It does not collect square money or pay winners.')).toBeVisible();
+  await expect(page.getByText('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.')).toBeVisible();
   await page.getByRole('button', { name: /Find my squares/i }).click();
   await page.getByLabel('Name used on board').fill('ann');
   await page.getByLabel('Name used on board').press('Enter');

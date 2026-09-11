@@ -6,7 +6,7 @@ import { primaryLink, quietLink } from './cta';
 const faq = [
   { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in.' },
   { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Squares and payouts stay between you and your group.` },
-  { q: 'When do I pay?', a: 'Building, editing, and previewing are free on every plan. Your first published board is free. Sharing a board before the game uses the same allowance as publishing it; finalizing that board never counts twice. Upgrade when you need another board.' },
+  { q: 'When do I pay?', a: 'Building, editing, and previewing are free on every plan, and your first published board each season is free. Sharing your board’s link with players counts as publishing it — but a board only counts once, no matter how often you share or update it. Upgrade when you need more boards.' },
   { q: 'Who can edit the board?', a: 'The organizer controls the board and can give a family a private link to update its assigned names before finalization. Public viewer links cannot edit. Published names change only through a visible, dated correction.' },
 ];
 

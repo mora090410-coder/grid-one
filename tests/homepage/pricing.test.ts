@@ -10,13 +10,13 @@ describe('pricing', () => {
     expect(PRICING[2].detail).toContain('$79 per season for up to 50 published boards');
     expect(PRICING[2].detail).toContain('organization naming, shared dashboard, and one organization receipt');
     expect(PRICING_SENTENCE).toBe('Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.');
-    expect(MONEY_BOUNDARY).toBe('GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.');
+    expect(MONEY_BOUNDARY).toBe('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.');
   });
 });
 
 describe('demo data', () => {
   it('is labeled as a demo and the named winner really holds the current digits', () => {
-    expect(DEMO_LABEL).toBe('Demo board — sample names and scores');
+    expect(DEMO_LABEL).toBe('Sample board — not a live game');
     const leftDigit = demoLive.leftScore % 10;
     const topDigit = demoLive.topScore % 10;
     const row = demoBoard.leftAxis.indexOf(leftDigit);

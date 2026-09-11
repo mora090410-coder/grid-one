@@ -7,6 +7,18 @@ import Homepage from '../../src/features/homepage/Homepage';
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
 describe('Homepage', () => {
+  it('lists exactly six distinct sources of organizer chaos', () => {
+    renderPage();
+    const list = screen.getByRole('list', { name: 'The chaos' });
+    expect(within(list).getAllByRole('listitem').map(item => item.textContent)).toEqual([
+      'Blurry board photos',
+      'Group chats full of "who won?"',
+      'Numbers get mixed up',
+      'Two people claiming the same square',
+      'Paying for a full party when half the squares are empty',
+      'Nobody knows where to look on game day',
+    ]);
+  });
   it('puts identity, promise, one primary action, and the money boundary in the first viewport', () => {
     renderPage();
     const hero = screen.getByTestId('homepage-first-viewport');
@@ -17,8 +29,8 @@ describe('Homepage', () => {
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
     expect(within(hero).getByText('First published board free')).toBeInTheDocument();
     expect(within(hero).getByText('Viewers don’t need an account')).toBeInTheDocument();
-    expect(within(hero).getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/)).toBeInTheDocument();
-    expect(within(hero).getByText('Demo board — sample names and scores')).toBeInTheDocument();
+    expect(within(hero).getByText('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.')).toBeInTheDocument();
+    expect(within(hero).getByText('Sample board — not a live game')).toBeInTheDocument();
   });
 
   it('separates preparation from game day in static excerpts of the same board', () => {
@@ -59,9 +71,31 @@ describe('Homepage', () => {
     expect(screen.getByRole('heading', { name: 'Ready to build the board?' })).toBeInTheDocument();
   });
 
+  it('explains publication allowance in the rendered payment answer', () => {
+    renderPage();
+    const answer = screen.getByText('When do I pay?').closest('details')!;
+    fireEvent.click(within(answer).getByText('When do I pay?'));
+    expect(within(answer).getByText('Building, editing, and previewing are free on every plan, and your first published board each season is free. Sharing your board’s link with players counts as publishing it — but a board only counts once, no matter how often you share or update it. Upgrade when you need more boards.')).toBeVisible();
+  });
+
+  it('explains automatic matching with an explicit Final and overtime qualification', () => {
+    renderPage();
+    const explanation = screen.getByRole('region', { name: 'Scores update themselves.' });
+    expect(within(explanation).getByText('At the end of each quarter, the last digits of the score point to the winning square — GridOne marks it for you.')).toBeInTheDocument();
+    expect(within(explanation).getByText(/GridOne records Q1, halftime, Q3, and Final. Final uses the score at the end of the game, including overtime./)).toBeInTheDocument();
+  });
+
+  it('describes reviewed photo import without a speed or paid-plan promise', () => {
+    renderPage();
+    expect(screen.getByText('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to import, then review every square before publishing.')).toBeInTheDocument();
+    expect(screen.queryByText(/digitizes it in seconds/i)).not.toBeInTheDocument();
+  });
+
   it('closes with a footer index of guides and legal links', () => {
     renderPage();
     const footer = screen.getByRole('contentinfo');
+    expect(within(footer).getByText('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.')).toBeInTheDocument();
     expect(within(footer).getByRole('link', { name: /Run Your Pool alternative/i })).toHaveAttribute('href', '/articles/run-your-pool-alternative');
     expect(within(footer).getByRole('link', { name: 'All guides' })).toHaveAttribute('href', '/articles');
     expect(within(footer).getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy');
@@ -77,7 +111,8 @@ describe('Homepage', () => {
 
   it('never uses banned marketing or system vocabulary', () => {
     const { container } = renderPage();
-    expect(container.textContent).not.toMatch(/\b(seamless|effortless|unlock|supercharge|elevate|powerful|robust|beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
+    const copy = container.textContent!.replace('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)', '');
+    expect(copy).not.toMatch(/\b(seamless|effortless|unlock|supercharge|elevate|powerful|robust|beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
   });
 
   it('exposes main and contentinfo landmarks and a visible FAQ affordance', () => {

@@ -77,7 +77,7 @@ describe('viewer payout descriptions', () => {
     expect(payouts).toHaveTextContent('<strong>Trophy</strong>');
     expect(payouts?.querySelector('strong strong')).toBeNull();
     expect(payouts).toHaveTextContent('Organizer rules apply.');
-    expect(payouts).toHaveTextContent('GridOne tracks the board. It does not collect square money or pay winners.');
+    expect(payouts).toHaveTextContent('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.');
   });
 
   it('links an open-square resolution at Final to the board rules', () => {

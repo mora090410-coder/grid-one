@@ -16,7 +16,7 @@ const configurationErrorPage = () => new Response(`<!doctype html>
       <p style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8F1D2C">GridOne</p>
       <h1 style="font-size:30px;line-height:1.1">Email verification is temporarily unavailable</h1>
       <p>Please try this verification link again later.</p>
-      <p style="color:#16181D;font-size:13px">GridOne tracks the board. It does not collect square money or pay winners.</p>
+      <p style="color:#16181D;font-size:13px">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
     </main>
   </body>
 </html>`, {

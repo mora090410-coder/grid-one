@@ -37,7 +37,7 @@ const NotificationOptIn: React.FC<NotificationOptInProps> = ({ shareCode, partic
     <form className="flex flex-col gap-3" onSubmit={submit}>
       <div className="flex flex-col gap-1">
         <p className="font-ui text-[15px] font-medium text-fg">Quarter-winner email for {displayName}</p>
-        <p className="font-ui text-[14px] text-fg-2">One verified email for Q1, halftime, Q3, and Final wins. GridOne does not handle payouts.</p>
+        <p className="font-ui text-[14px] text-fg-2">One verified email for Q1, halftime, Q3, and Final wins. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
       </div>
       {status !== 'sent' && (
         <CapsuleInput

@@ -10,9 +10,15 @@ const homepageCorpus = () => [
 ].map(source).join('\n');
 
 const exactPricing = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';
-const exactBoundary = 'GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.';
+const exactBoundary = 'GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.';
 
 describe('public conversion path', () => {
+  it('keeps fallback and demo money disclosures on the exact boundary', () => {
+    for (const path of ['index.html', 'App.tsx', 'src/features/viewer/details/BoardDetailsDisclosure.tsx']) {
+      expect(source(path), path).toContain(exactBoundary);
+    }
+    expect(source('components/BoardView.tsx')).toContain('Sample board — not a live game');
+  });
   it('answers landing-page objections and closes with a second conversion point', () => {
     const homepage = homepageCorpus();
     for (const copy of [

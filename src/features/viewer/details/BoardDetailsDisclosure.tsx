@@ -110,7 +110,7 @@ export const PayoutsAndRules: React.FC<{ game: GameState; winnerHistory?: Winner
         </div>
       )}
       <p className="font-ui text-[13px] text-fg-3">
-        GridOne tracks the board. It does not collect square money or pay winners.
+        GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.
       </p>
     </Glass>
   );

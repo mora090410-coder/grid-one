@@ -17,4 +17,4 @@ export const PRICING: readonly Tier[] = [
 
 export const PRICING_SENTENCE = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';
 
-export const MONEY_BOUNDARY = 'GridOne tracks the board. It does not collect square money, hold funds, adjudicate off-platform payment, or pay winners.';
+export const MONEY_BOUNDARY = 'GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.';

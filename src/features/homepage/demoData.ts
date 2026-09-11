@@ -71,7 +71,7 @@ export const demoBoard: BoardData = {
   }),
 };
 
-export const DEMO_LABEL = 'Demo board — sample names and scores';
+export const DEMO_LABEL = 'Sample board — not a live game';
 
 export const demoWinnerNow = 'Taylor M.';
 

@@ -8,7 +8,7 @@ const firstViewport = async (page: import('@playwright/test').Page, height: numb
     ['create', hero.getByRole('link', { name: 'Create your free board' })],
     ['demo', hero.getByRole('link', { name: 'Explore a sample board' })],
     ['free', hero.getByText('First published board free')],
-    ['boundary', hero.getByText(/does not collect square money, hold funds, adjudicate off-platform payment, or pay winners/i)],
+    ['boundary', hero.getByText(/does not collect square money, hold funds, settle payments, or pay winners/i)],
   ];
   for (const [label, locator] of required) {
     const box = await locator.boundingBox();
@@ -119,6 +119,7 @@ test('reduced motion shows every section finished, without scrolling', async ({ 
 test('demo handoff leads to a personal board preview', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Explore a sample board' }).first().click();
+  await expect(page.getByText('Sample board — not a live game', { exact: true })).toBeVisible();
   await expect(page.getByText('This is a sample board. Ready to run yours?')).toBeVisible();
   await page.getByRole('button', { name: 'Create your own board' }).click();
   await expect(page).toHaveURL(/\/create/);

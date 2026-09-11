@@ -26,7 +26,7 @@ describe('PayoutRulesCard', () => {
     });
     const notes = screen.getByLabelText('Board rules') as HTMLTextAreaElement;
     expect(notes).toHaveAttribute('maxLength', '280');
-    expect(screen.getByText('GridOne never handles the money. Describe prizes in words.')).toBeInTheDocument();
+    expect(screen.getByText('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners. Describe prizes in words.')).toBeInTheDocument();
   });
 
   it('calls onChange with the field key and onSave with no args when saving', () => {

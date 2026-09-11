@@ -20,7 +20,7 @@ const Terms: React.FC = () => {
       <section>
         <h2>1. What GridOne Is</h2>
         <p>
-          <strong>Important:</strong> GridOne is not a gambling or betting platform. We do not collect square money, process wagers, or pay participants. We are a visualization and organizational tool.
+          <strong>Important:</strong> GridOne is not a gambling or betting platform. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners. We do not process wagers. We are a visualization and organizational tool.
         </p>
       </section>
 

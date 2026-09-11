@@ -145,7 +145,7 @@ describe('production-facing copy', () => {
     expect(corpus).toContain('1 published board per account per season');
     expect(corpus).toContain('$9.99 once for up to 5 published boards in the 2026 season');
     expect(corpus).toContain('$79 per season for up to 50 published boards');
-    expect(corpus).toContain('does not collect square money, hold funds, adjudicate off-platform payment, or pay winners');
+    expect(corpus).toContain('does not collect square money, hold funds, settle payments, or pay winners');
     expect(corpus).toContain('OPEN');
     expect(corpus).toContain('source and freshness');
   });

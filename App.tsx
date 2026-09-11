@@ -34,7 +34,7 @@ const HomepageProductFallback = () => (
     <p className="text-gold">GridOne</p>
     <h1 className="mt-3 text-4xl font-black">Football-squares fundraiser boards</h1>
     <p className="mt-4">Build the board, share one link, and let GridOne track game day.</p>
-    <p className="mt-4">First published board free. GridOne does not collect square money, hold funds, or pay winners.</p>
+    <p className="mt-4">First published board free. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
   </main>
 );
 

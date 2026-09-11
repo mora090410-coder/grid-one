@@ -162,7 +162,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
         from: env.EMAIL_FROM,
         to: [email],
         subject: `Verify winner emails for ${contest.board_title}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#0E0F12"><h1 style="font-size:28px">Verify winner emails</h1><p>${escapeHtml(claim.participant_name)}, confirm this address to receive one email if this board name wins Q1, halftime, Q3, or Final.</p><p><a href="${verifyUrl}" style="display:inline-block;background:#FFC72C;color:#0E0F12;padding:14px 20px;text-decoration:none;font-weight:700">Verify email</a></p><p style="color:#5f6368">GridOne tracks the board. It does not collect square money or pay winners.</p></div>`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#0E0F12"><h1 style="font-size:28px">Verify winner emails</h1><p>${escapeHtml(claim.participant_name)}, confirm this address to receive one email if this board name wins Q1, halftime, Q3, or Final.</p><p><a href="${verifyUrl}" style="display:inline-block;background:#FFC72C;color:#0E0F12;padding:14px 20px;text-decoration:none;font-weight:700">Verify email</a></p><p style="color:#5f6368">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p></div>`,
       }),
     });
     providerStatus = emailResponse.status;
