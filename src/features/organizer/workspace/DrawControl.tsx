@@ -63,7 +63,7 @@ export default function DrawControl({
     return (
       <Glass className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
-          <CapsuleButton variant="primary" onClick={onCommit} disabled={disabled}>Use these numbers</CapsuleButton>
+          <CapsuleButton variant="primary" onClick={onCommit} disabled={disabled}>Use numbers and continue</CapsuleButton>
           <CapsuleButton variant="quiet" onClick={onAgain} disabled={disabled}>Draw again</CapsuleButton>
           <CapsuleButton variant="ghost" onClick={onCancelPreview} disabled={disabled}>Cancel</CapsuleButton>
         </div>

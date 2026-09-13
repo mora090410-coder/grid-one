@@ -23,7 +23,7 @@ function paymentsFixture() {
     winner_history: [], pending_milestones: [], notification_delivery_issues: [], payoutDescriptions: {},
   };
   return {
-    entries, writes, failNextSave: () => { failSave = true; },
+    entries, writes, row, failNextSave: () => { failSave = true; },
     install: async (page: Page) => {
       await installOrganizerSession(page);
       await installOrganizerSupport(page);
@@ -65,7 +65,7 @@ test('payments groups allocation owners, finds renamed buyers, and persists only
   await expect(dialog.getByRole('button', { name: 'Paid · 2 squares', exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Unpaid · 1 squares', exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Not asked yet · 1 squares', exact: true })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Show squares for Mora family', exact: true })).toContainText('1 paid · 1 unpaid · 1 not asked yet');
+  await expect(dialog.getByText('3 squares · 1 paid · 1 unpaid · 1 not asked yet', { exact: true })).toBeVisible();
   await dialog.getByRole('searchbox').fill('Alice Renamed');
   await expect(dialog.getByText('Mora family', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Jones family', { exact: true })).toHaveCount(0);
@@ -86,12 +86,36 @@ test('payments groups allocation owners, finds renamed buyers, and persists only
   await expect(reopened.getByRole('listitem').filter({ has: page.getByRole('checkbox', { name: 'Select square 2', exact: true }) }).getByText('Paid', { exact: true })).toBeVisible();
 });
 
+test('marks remaining family squares paid in one click and persists without changing names or private metadata', async ({ page }) => {
+  const fixture = paymentsFixture();
+  const originalBoard = structuredClone(fixture.row.board);
+  const originalEntries = structuredClone([...fixture.entries.values()]);
+  await fixture.install(page);
+  await page.goto(`/boards/${boardId}`);
+  const dialog = await openPayments(page);
+  await expect(dialog.getByRole('checkbox')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Mark remaining 2 paid for Mora family', exact: true }).click();
+  await expect(dialog.getByRole('status')).toHaveText('Saved 2 squares as paid for Mora family.');
+  expect(fixture.writes).toHaveLength(1);
+  expect(fixture.writes[0].map(entry => entry.cell_index)).toEqual([1, 2]);
+  for (const write of fixture.writes[0]) expect(Object.keys(write).sort()).toEqual(['cell_index', 'contest_id', 'paid_status']);
+  for (const entry of originalEntries) expect(fixture.entries.get(entry.cell_index)).toEqual({ ...entry, paid_status: 'paid' });
+  expect(fixture.row.board).toEqual(originalBoard);
+  await page.reload();
+  const reopened = await openPayments(page);
+  await expect(reopened.getByText('3 squares · 3 paid · 0 unpaid · 0 not asked yet', { exact: true })).toBeVisible();
+  await expect(reopened.getByRole('button', { name: /Mark remaining/ })).toHaveCount(0);
+  await reopened.getByRole('button', { name: 'Show squares for Mora family', exact: true }).click();
+  for (const name of ['Alice Renamed', 'Bob', 'Cara']) await expect(reopened.getByText(name, { exact: true })).toBeVisible();
+});
+
 test('group selection respects a renamed-buyer search and leaves other squares unchanged', async ({ page }) => {
   const fixture = paymentsFixture();
   await fixture.install(page);
   await page.goto(`/boards/${boardId}`);
   const dialog = await openPayments(page);
   await dialog.getByRole('searchbox').fill('Alice Renamed');
+  await dialog.getByRole('button', { name: 'Show squares for Mora family', exact: true }).click();
   await dialog.getByRole('button', { name: 'Select 1 shown squares for Mora family', exact: true }).click();
   await expect(dialog.getByRole('checkbox', { name: 'Select square 1', exact: true })).toBeChecked();
   await dialog.getByRole('button', { name: 'Mark 1 selected unpaid', exact: true }).click();
@@ -173,6 +197,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations.filter(issue => issue.impact === 'serious' || issue.impact === 'critical')).toEqual([]);
+    await expect(dialog.getByRole('button', { name: 'Mark remaining 2 paid for Mora family', exact: true })).toBeInViewport();
+    await expect(dialog.getByText('Jones family', { exact: true })).toBeInViewport();
+    await expect(dialog.getByRole('checkbox')).toHaveCount(0);
     await testInfo.attach('payments', { body: await page.screenshot({ path: testInfo.outputPath(`payments-${viewport.width}.png`) }), contentType: 'image/png' });
     await dialog.getByRole('button', { name: 'Show squares for Mora family', exact: true }).click();
     await dialog.getByRole('checkbox', { name: 'Select square 2', exact: true }).check();
@@ -287,6 +314,7 @@ test('320px enlarged text keeps the trigger and payment controls reachable', asy
   const dialog = page.getByRole('dialog', { name: 'Payments', exact: true });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('searchbox').fill('Bob');
+  await dialog.getByRole('button', { name: 'Show squares for Mora family', exact: true }).click();
   await dialog.getByRole('button', { name: 'Select 1 shown squares for Mora family', exact: true }).click();
   await dialog.getByRole('button', { name: 'Mark 1 selected paid', exact: true }).click();
   await expect(dialog.getByRole('status')).toHaveText('Saved 1 square as paid.');

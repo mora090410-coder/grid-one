@@ -7,6 +7,7 @@ interface SheetProps {
   title: string;
   children: React.ReactNode;
   height?: 'auto' | 'full';
+  width?: 'default' | 'wide';
   /**
    * Stacking layer. `raised` puts the sheet above a `base` sheet that is already open,
    * regardless of DOM order — the viewer's Share sheet is mounted before the organizer
@@ -15,10 +16,12 @@ interface SheetProps {
   layer?: 'base' | 'raised';
   /** Opaque surface and sticky header for long, scrolling forms. */
   solidSurface?: boolean;
+  /** Fixed actions outside the scrolling content. */
+  footer?: React.ReactNode;
 }
 
 /** Bottom sheet dialog. Springs up from the bottom edge; Escape or backdrop closes it. */
-export function Sheet({ open, onClose, title, children, height = 'auto', layer = 'base', solidSurface = false }: SheetProps) {
+export function Sheet({ open, onClose, title, children, height = 'auto', width = 'default', layer = 'base', solidSurface = false, footer }: SheetProps) {
   const panelRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -94,14 +97,15 @@ export function Sheet({ open, onClose, title, children, height = 'auto', layer =
         aria-labelledby={titleId}
         tabIndex={-1}
         style={solidSurface ? { backgroundColor: 'var(--g-ground)' } : undefined}
-        className={`relative w-full max-w-[640px] ${heightClass} overflow-y-auto rounded-b-none animate-[sheet-rise_var(--g-dur-spring)_var(--g-ease-state)] outline-none`}
+        className={`relative w-full ${width === 'wide' ? 'max-w-6xl' : 'max-w-[640px]'} ${heightClass} ${footer ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'} rounded-b-none animate-[sheet-rise_var(--g-dur-spring)_var(--g-ease-state)] outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={`sticky top-0 z-10 flex items-center justify-between px-6 pt-2 pb-2 ${solidSurface ? 'bg-ground' : 'bg-transparent'}`}>
+        <div className={`sticky top-0 z-10 shrink-0 flex items-center justify-between px-6 pt-2 pb-2 ${solidSurface ? 'bg-ground' : 'bg-transparent'}`}>
           <h2 id={titleId} className="font-ui text-[17px] font-medium text-fg">{title}</h2>
           <button type="button" onClick={onClose} className="font-ui text-[17px] text-fg-2 hover:text-fg rounded-capsule px-4 h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Close</button>
         </div>
-        <div ref={contentRef} className="px-6 pb-8">{children}</div>
+        <div ref={contentRef} className={`px-6 ${footer ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4' : 'pb-8'}`}>{children}</div>
+        {footer && <div className="shrink-0 border-t border-hairline bg-ground px-6 py-3">{footer}</div>}
       </Glass>
     </div>
   );

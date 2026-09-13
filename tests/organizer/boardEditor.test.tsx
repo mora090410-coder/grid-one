@@ -110,10 +110,12 @@ it('prevents saving a buyer longer than the server limit', () => {
   expect(onSave).not.toHaveBeenCalled();
 });
 
-it('saves explicit availability independently of the name and payment', () => {
+it.each(['unspecified', 'available', 'unavailable'] as const)('preserves %s availability while editing name and payment without an availability dropdown', (availability) => {
   const onSave = vi.fn();
-  render(<SquareSheet open index={12} name="Anthony" allocationLabel="Anthony" availability="unspecified" isPublished={false} hasNextOpen={false} onSave={onSave} onClose={vi.fn()}/>);
-  fireEvent.change(screen.getByLabelText('Availability on the shared board'), { target: { value: 'available' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(onSave).toHaveBeenCalledWith(12, 'Anthony', expect.objectContaining({paid_status:'unknown'}), false, 'Anthony', 'available');
+  render(<SquareSheet open index={12} name="Anthony" allocationLabel="Anthony" availability={availability} isPublished={false} hasNextOpen onSave={onSave} onClose={vi.fn()}/>);
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole('textbox', { name: 'Name on the board' }), { target: { value: 'Tony' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Paid' }));
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name on the board' }), { key: 'Enter' });
+  expect(onSave).toHaveBeenCalledWith(12, 'Tony', expect.objectContaining({paid_status:'paid'}), true, 'Anthony', availability);
 });

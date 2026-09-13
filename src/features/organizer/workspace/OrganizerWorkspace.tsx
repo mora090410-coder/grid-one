@@ -41,6 +41,7 @@ import WorkspaceHeader from './WorkspaceHeader';
 import BoardEditor from './BoardEditor';
 import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
 import SquareSheet from './SquareSheet';
+import AvailabilityControl from './AvailabilityControl';
 import FamilyAccessCard from './FamilyAccessCard';
 import ParticipationCard from './ParticipationCard';
 import OrganizerIsland from './OrganizerIsland';
@@ -221,6 +222,7 @@ export default function OrganizerWorkspace({
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [highlightOpen, setHighlightOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
+  const [availabilityMode, setAvailabilityMode] = useState(false);
   const [selection, setSelection] = useState<Selection>(() => new Set<number>());
   const [rangeBusy, setRangeBusy] = useState(false);
   const [privateWritesPending, setPrivateWritesPending] = useState(0);
@@ -368,7 +370,7 @@ export default function OrganizerWorkspace({
     setDrawRequested(false);
   };
 
-  const commitDraw = () => {
+  const commitDraw = async () => {
     if (!drawPreview) return;
     const { top, left } = drawPreview;
     setBoard((current) => ({
@@ -382,6 +384,7 @@ export default function OrganizerWorkspace({
     }));
     setDrawPreview(null);
     setDrawRequested(false);
+    await openPreview();
   };
 
   // A replacement draw runs the same gate, so a board that still has open
@@ -425,6 +428,8 @@ export default function OrganizerWorkspace({
   // Leaving select mode drops the selection: a stale set of squares would be
   // applied to the wrong board state next time the mode is entered.
   const toggleSelectMode = () => {
+    setRangeFocusSignal(current => current + 1);
+    setAvailabilityMode(false);
     setSelectMode((current) => {
       if (current) setSelection(new Set<number>());
       return !current;
@@ -889,9 +894,10 @@ export default function OrganizerWorkspace({
       setPaymentBusy(false);
     }
   };
-  const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) setPaymentsOpen(false); }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {
+  const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) { setPaymentsOpen(false); setOrganizerTask('board'); } }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {
     setPaymentsOpen(false);
     setOrganizerTask('board');
+    setAvailabilityMode(false);
     setSelectMode(false);
     setSelection(new Set());
     setLocatedSquare({ index });
@@ -924,8 +930,8 @@ export default function OrganizerWorkspace({
     : assignedCount === 0
       ? { label: 'Fill the board', onClick: scrollToBoard }
       : axesCommitted
-        ? { label: 'Preview', onClick: () => void openPreview() }
-        : { label: 'Draw numbers', onClick: requestDraw, disabled: !canEnterDraw };
+        ? { label: isShared ? 'Review game numbers' : 'Preview and publish', onClick: () => void openPreview() }
+        : { label: 'Prepare to publish', onClick: requestDraw, disabled: !canEnterDraw };
 
   const secondary = axesCommitted && !published && !isPublished
     ? [{ label: 'Replace draft draw', onClick: replaceDraw, disabled: conflicted }]
@@ -1165,11 +1171,11 @@ export default function OrganizerWorkspace({
           <Eyebrow>{axesCommitted ? (isShared ? 'Shared board · Review game numbers' : 'Numbers drawn · Review your board') : isShared ? 'Selling · Shared board' : 'Set up your board'}</Eyebrow>
           <p className="font-ui text-[15px] text-fg-2">{paymentModel.totals.assigned} assigned · {100 - paymentModel.totals.assigned} unassigned. {axesCommitted ? 'Review the board before finalizing game numbers.' : 'Allocate squares, then draw game numbers when ready.'}</p>
           <div className="flex flex-wrap gap-2">
+            {!drawRequested && !drawPreview && <CapsuleButton onClick={primary.onClick} disabled={'disabled' in primary ? primary.disabled : false}>{primary.label}</CapsuleButton>}
             {isShared && shareUrl ? <>
-              <CapsuleButton onClick={() => void copyViewerLink()}>Copy link</CapsuleButton>
+              <CapsuleButton variant="quiet" onClick={() => void copyViewerLink()}>Copy link</CapsuleButton>
               <a className="inline-flex min-h-11 items-center rounded-capsule px-5 font-ui text-action focus-visible:ring-2 focus-visible:ring-action" href={shareUrl} target="_blank" rel="noreferrer">Open shared board</a>
-            </> : onShareBoard && <CapsuleButton disabled={sharePending || saveState.status !== 'clean'} onClick={() => setShareOpen(true)}>Share board</CapsuleButton>}
-            <CapsuleButton variant="quiet" onClick={primary.onClick} disabled={'disabled' in primary ? primary.disabled : false}>{primary.label}</CapsuleButton>
+            </> : onShareBoard && <CapsuleButton variant="quiet" disabled={sharePending || saveState.status !== 'clean'} onClick={() => setShareOpen(true)}>Share while selling</CapsuleButton>}
           </div>
           {onShareBoard && !isShared && saveState.status !== 'clean' && <p className="font-ui text-[14px] text-fg-2">Sharing is available after your latest changes save. Use Retry or Reload latest board above if needed.</p>}
         </Glass>
@@ -1191,13 +1197,15 @@ export default function OrganizerWorkspace({
                 onAcknowledgeWithoutDraw={acknowledgeOpenSquaresOnly}
                 onKeepAssigning={() => { cancelDraw(); scrollToBoard(); }}
                 onDraw={startPreview}
-                onCommit={commitDraw}
+                onCommit={() => void commitDraw()}
                 onAgain={startPreview}
                 onReplace={replaceDraw}
                 onCancelPreview={cancelDraw}
               />
             )}
             <BoardEditor
+              availabilityMode={availabilityMode}
+              onOfferAvailability={() => { setAvailabilityMode(true); setSelectMode(true); setSelection(new Set()); setOrganizerTask('board'); setRangeFocusSignal(current => current + 1); }}
               board={board}
               game={game}
               entryMeta={entryMeta}
@@ -1215,7 +1223,13 @@ export default function OrganizerWorkspace({
           </section>
           <aside className="flex flex-col gap-6">
             <div className="lg:sticky lg:top-6">
-            {selectMode && selection.size > 0 && (
+            {availabilityMode && <div id="availability-editor" tabIndex={-1}><AvailabilityControl selectedCount={selection.size} disabled={conflicted || familyBusy} onClose={toggleSelectMode} onChange={status => {
+              if (conflicted || selection.size === 0) return;
+              setBoard(current => ({ ...current, availability: Array.from({ length: 100 }, (_, index) => selection.has(index) ? status : current.availability?.[index] ?? 'unspecified') }));
+              setNote(`${selection.size} ${selection.size === 1 ? 'square' : 'squares'} ${status === 'available' ? 'offered as available' : status === 'unavailable' ? 'marked unavailable' : 'with availability label removed'}.`);
+              setSelection(new Set());
+            }} /></div>}
+            {selectMode && !availabilityMode && selection.size > 0 && (
               <RangeAssignBar
                 count={selection.size}
                 namedCount={selectedNamedCount}

@@ -28,7 +28,6 @@ const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded
 
 /** Bottom sheet for editing a display name and payment while retaining responsibility to one square. */
 export default function SquareSheet({ open, index, name, allocationLabel, availability, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
-  const [availabilityValue, setAvailabilityValue] = useState<SquareAvailability>(availability ?? 'unspecified');
   const [nameValue, setNameValue] = useState(name);
   const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
   const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -36,7 +35,6 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
   useEffect(() => {
     if (!open) return;
     setNameValue(name);
-    setAvailabilityValue(availability ?? 'unspecified');
     setPaidStatus(meta?.paid_status ?? 'unknown');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, index]);
@@ -56,8 +54,8 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
 
   const save = (advance: boolean) => {
     if (index === null || nameValue.trim().length > 80) return;
-    if (!isPublished && (availability !== undefined || availabilityValue !== 'unspecified')) {
-      onSave(index, nameValue, buildMeta(), advance, allocationLabel || nameValue.trim() || null, availabilityValue);
+    if (availability !== undefined) {
+      onSave(index, nameValue, buildMeta(), advance, allocationLabel || (isPublished ? null : nameValue.trim() || null), availability);
       return;
     }
     if (allocationLabel !== undefined) onSave(index, nameValue, buildMeta(), advance, allocationLabel || (isPublished ? null : nameValue.trim() || null));
@@ -98,12 +96,6 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
             <p>Changing the name on the board keeps this responsibility unchanged.</p>
           </div>
         )}
-        {!isPublished && <label className="flex flex-col gap-2 font-ui text-[14px] text-fg-2">Availability on the shared board
-          <select aria-label="Availability on the shared board" value={availabilityValue} onChange={event => setAvailabilityValue(event.target.value as SquareAvailability)} className="min-h-11 rounded-control border border-hairline bg-ground px-3 text-fg">
-            <option value="unspecified">Ask organizer</option><option value="available">Available</option><option value="unavailable">Unavailable</option>
-          </select>
-          <span>A name or private payment note does not determine availability.</span>
-        </label>}
         <div className="flex flex-col gap-2">
           <span className="font-ui text-[14px] text-fg-2">Payment</span>
           <div role="radiogroup" aria-label="Payment" className="flex flex-wrap gap-2">

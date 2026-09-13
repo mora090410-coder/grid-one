@@ -195,7 +195,7 @@ test.describe('organizer workspace contract', () => {
 
     await expect(page.getByRole('region', { name: 'Organizer status' })).toBeVisible();
     // The next step is available without expanding organizer status.
-    await expect(page.getByRole('button', { name: 'Draw numbers' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Prepare to publish' })).toBeVisible();
 
     const overflow = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;

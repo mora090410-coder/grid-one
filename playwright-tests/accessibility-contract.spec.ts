@@ -445,13 +445,13 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     // Advisories never masquerade as blockers, and the draw stays reachable.
     await expect(blockers).not.toContainText('OPEN squares remain');
     await expect(blockers).not.toContainText('still need follow-up');
-    await expect(page.getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Prepare to publish' })).toBeEnabled();
   });
 
   test('organizer Draw open-square confirmation has accessible warning semantics and safe focus path', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerUndrawnBoard });
     await page.goto(`/boards/${ownerId}`);
-    await page.getByRole('button', { name: 'Draw numbers' }).click();
+    await page.getByRole('button', { name: 'Prepare to publish' }).click();
 
     const confirmation = page.getByRole('group', { name: /99 squares are open\. Draw anyway\?/i });
     await expect(confirmation).toBeVisible();
@@ -472,7 +472,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('organizer publish confirmation summarizes the board and opens on a safe cancel', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerReadyBoard });
     await page.goto(`/boards/${ownerId}`);
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
 
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
@@ -506,7 +506,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('the share sheet paints above the private preview and Escape closes only the share sheet', async ({ page }) => {
     await installOrganizerBoard(page, { board: organizerReadyBoard, activated: true });
     await page.goto(`/boards/${ownerId}`);
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
 
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
@@ -587,7 +587,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByRole('region', { name: 'Before you can publish' }))
       .toContainText('This board changed in another session. Reload the latest version.');
 
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
     const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
     await expect(preview).toBeVisible();
     await expect(preview.getByRole('button', { name: 'Review and publish' })).toBeDisabled();
@@ -787,3 +787,54 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     })).not.toBe('none|none');
   });
 });
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 }]) {
+  test(`publish continuation stays visible without scrolling at ${viewport.width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installOrganizerBoard(page, { board: { ...organizerReadyBoard, leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null) } });
+    await page.goto(`/boards/${ownerId}`);
+    await page.getByRole('button', { name: 'Prepare to publish', exact: true }).click();
+    await page.getByRole('button', { name: 'Use numbers and continue', exact: true }).click();
+    const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
+    await expect(preview).toBeVisible();
+    const next = preview.getByRole('button', { name: 'Review and publish', exact: true });
+    await expect(next).toBeInViewport({ ratio: 1 });
+    await expectTouchTarget(next);
+    const previewBoard = preview.getByRole('region', { name: 'Board', exact: true });
+    await expect.poll(async () => (await previewBoard.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(300);
+    await expect.poll(() => preview.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await testInfo.attach('preview-visible-next-action', { body: await page.screenshot({ path: testInfo.outputPath(`preview-${viewport.width}.png`) }), contentType: 'image/png' });
+    await next.focus();
+    await page.keyboard.press('Enter');
+    const confirmation = page.getByRole('dialog', { name: 'Publish viewer link' });
+    await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+  });
+
+  test(`availability stays separate from name entry and supports keyboard selection at ${viewport.width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installOrganizerBoard(page, { board: organizerUndrawnBoard });
+    await page.goto(`/boards/${ownerId}`);
+    await page.getByRole('button', { name: 'Square 2, unassigned', exact: true }).click();
+    const nameSheet = page.getByRole('dialog', { name: 'Square 2', exact: true });
+    await expect(nameSheet.getByRole('textbox', { name: 'Name on the board' })).toBeFocused();
+    await expect(nameSheet.getByRole('combobox')).toHaveCount(0);
+    await testInfo.attach('simple-name-entry', { body: await page.screenshot({ path: testInfo.outputPath(`name-entry-${viewport.width}.png`) }), contentType: 'image/png' });
+    await nameSheet.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Offer squares as available', exact: true }).click();
+    const board = page.getByRole('region', { name: 'Board', exact: true });
+    await expect(board.getByRole('button', { name: 'Done selecting', exact: true })).toBeFocused();
+    await page.getByRole('button', { name: 'Square 2, unassigned', exact: true }).focus();
+    await page.keyboard.press('Space');
+    await board.getByRole('button', { name: 'Review 1 selected square', exact: true }).click();
+    const controls = page.getByRole('group', { name: 'Offer squares as available', exact: true });
+    await expect(controls.getByRole('button', { name: 'Offer 1 selected square as available', exact: true })).toBeVisible();
+    await testInfo.attach('separate-availability', { body: await page.screenshot({ path: testInfo.outputPath(`availability-${viewport.width}.png`) }), contentType: 'image/png' });
+    await controls.getByRole('button', { name: 'Offer 1 selected square as available', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: '1 square offered as available.' })).toBeVisible();
+    await expect(board.getByRole('button', { name: 'Done selecting', exact: true })).toBeFocused();
+    await board.getByRole('button', { name: 'Done selecting', exact: true }).click();
+    await expect(board.getByRole('button', { name: 'Select squares', exact: true })).toBeFocused();
+  });
+}

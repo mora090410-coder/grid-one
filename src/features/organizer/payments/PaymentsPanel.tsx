@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Sheet } from '../../../design/primitives/Sheet';
 import { CapsuleButton, CapsuleInput } from '../../../design/primitives/Capsule';
-import { buildPaymentModel, filterPaymentGroups, type PaymentFilter, type PaymentStatus } from './paymentModel';
+import { buildPaymentModel, filterPaymentGroups, type PaymentFilter, type PaymentStatus, groupPaymentAction } from './paymentModel';
 
 export interface PaymentsPanelProps {
   open: boolean;
@@ -27,11 +27,12 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
   const failedIndices = useRef<number[]>([]);
   const [failedStatus, setFailedStatus] = useState<PaymentStatus | null>(null);
   const [notice, setNotice] = useState('');
+  const [failedGroup, setFailedGroup] = useState<ReturnType<typeof groupPaymentAction> | null>(null);
   const prefix = useId();
   useEffect(() => {
     if (open) {
       setQuery(initialQuery); setFilter(initialFilter); setSelection([]);
-      setExpanded(new Set()); setFailedStatus(null); setNotice('');
+      setExpanded(new Set()); setFailedGroup(null); setFailedStatus(null); setNotice('');
     }
   }, [open, initialQuery, initialFilter]);
   const groups = filterPaymentGroups(model, query, filter);
@@ -39,24 +40,25 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
   const selected = selection.filter(index => visibleIndices.has(index));
   const retryScopeMatches = failedIndices.current.length === selected.length && failedIndices.current.every(index => selected.includes(index));
   const locked = saving || busy || disabled;
-  function clearSelection() { setSelection([]); setFailedStatus(null); setNotice(''); }
-  async function save(status: PaymentStatus) {
-    if (locked || savingRef.current || !selected.length) return;
+  function clearSelection() { setFailedGroup(null); setSelection([]); setFailedStatus(null); setNotice(''); }
+  async function save(status: PaymentStatus, groupAction?: ReturnType<typeof groupPaymentAction>) {
+    const indices = groupAction ? groupAction.indices : [...selected];
+    if (locked || savingRef.current || !indices.length) return;
     savingRef.current = true;
-    const indices = [...selected];
-    setSaving(true); setFailedStatus(null); setNotice('Saving payment notes…');
+    setSaving(true); setFailedGroup(null); setFailedStatus(null); setNotice('Saving payment notes…');
     try {
       await onSave(indices, status);
-      setSelection([]); setNotice(`Saved ${indices.length} square${indices.length === 1 ? '' : 's'} as ${labels[status].toLowerCase()}.`);
+      setSelection([]); setNotice(`Saved ${indices.length} square${indices.length === 1 ? '' : 's'} as ${labels[status].toLowerCase()}${groupAction ? ` for ${groupAction.label}` : ''}.`);
     } catch {
-      failedIndices.current = indices; setFailedStatus(status); setNotice('');
+      if (groupAction) setFailedGroup(groupAction);
+      else { failedIndices.current = indices; setFailedStatus(status); } setNotice('');
     } finally { savingRef.current = false; setSaving(false); }
   }
   return <Sheet open={open} onClose={onClose} title="Payments" height="full" solidSurface>
-    <div className="space-y-6 font-ui text-fg">
+    <div className="space-y-4 font-ui text-fg">
       <div className="space-y-2">
         <p className="text-2xl font-medium">{model.totals.paid} of {model.totals.assigned} assigned squares paid</p>
-        <p className="text-base text-fg-2">Private to you. These notes track payment status. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
+        <p className="text-base text-fg-2">Private to you. Square payments happen outside GridOne.</p>
       </div>
       <CapsuleInput label="Search people, names or square number" type="search" value={query} disabled={saving} onChange={event => { setQuery(event.target.value); clearSelection(); }} />
       <div role="group" aria-label="Filter payment status" className="flex flex-wrap gap-2">
@@ -64,29 +66,38 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
           {status === 'all' ? 'All' : labels[status]} · {status === 'all' ? model.totals.assigned : model.totals[status]} squares
         </CapsuleButton>)}
       </div>
-      {!selected.length && <p className="text-base text-fg">Select squares below to update payment status.</p>}
+      {!selected.length && <p className="text-base text-fg">Mark a person’s squares paid in one step. Show squares to make individual changes.</p>}
       {!groups.length && <p className="py-6 text-lg">{model.totals.assigned ? 'No matching squares.' : 'No assigned squares yet. Assign a person or family on the board to start tracking.'}</p>}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {groups.map((group, groupIndex) => {
           const isExpanded = expanded.has(group.id);
+          const wholeGroup = model.groups.find(candidate => candidate.id === group.id)!;
+          const action = groupPaymentAction(wholeGroup);
+          const total = wholeGroup.squares.length;
           const groupSelected = group.squares.every(square => selected.includes(square.index));
           const contentId = `${prefix}-group-${groupIndex}`;
-          return <section key={group.id} className="border-b border-hairline pb-4">
-            <button type="button" disabled={saving} className="w-full min-h-11 rounded-control py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" aria-expanded={isExpanded} aria-controls={contentId} aria-label={`${isExpanded ? 'Hide' : 'Show'} squares for ${group.label}`} onClick={() => {
-              setExpanded(current => { const next = new Set(current); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
-              setSelection(current => current.filter(index => !group.squares.some(square => square.index === index)));
-              setFailedStatus(null);
-            }}>
-              <span className="block break-words text-xl font-medium">{group.label}</span>
-              <span className="mt-2 block text-base text-fg-2">{group.squares.length} shown of {group.paid + group.unpaid + group.unknown} squares · {group.paid} paid · {group.unpaid} unpaid · {group.unknown} not asked yet</span>
-              <span className="mt-2 block text-sm underline underline-offset-4">{isExpanded ? 'Hide squares' : 'Show squares'}</span>
-            </button>
-            <CapsuleButton variant="quiet" disabled={locked} className="mb-3" aria-label={`${groupSelected ? 'Clear' : 'Select'} ${group.squares.length} shown squares for ${group.label}`} onClick={() => {
+          return <section key={group.id} className="border-b border-hairline pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="break-words text-lg font-medium">{group.label}</p>
+                <p className="text-sm text-fg-2">{total} {total === 1 ? 'square' : 'squares'} · {group.paid} paid · {group.unpaid} unpaid · {group.unknown} not asked yet</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {action.indices.length > 0 ? <CapsuleButton variant="primary" className="h-auto min-h-11 py-2" disabled={locked} aria-label={`${action.buttonLabel} for ${group.label}`} onClick={() => { setSelection([]); void save('paid', action); }}>{action.buttonLabel}</CapsuleButton> : <p className="text-sm text-fg-2">All squares paid</p>}
+                <button type="button" disabled={saving} className="min-h-11 rounded-control px-2 text-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" aria-expanded={isExpanded} aria-controls={contentId} aria-label={`${isExpanded ? 'Hide' : 'Show'} squares for ${group.label}`} onClick={() => {
+                  setExpanded(current => { const next = new Set(current); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
+                  setSelection(current => current.filter(index => !group.squares.some(square => square.index === index)));
+                  setFailedStatus(null);
+                }}>{isExpanded ? 'Hide squares' : 'Show squares'}</button>
+              </div>
+            </div>
+            {action.indices.length > 0 && group.squares.length < total && <p className="mt-2 text-sm text-fg-2">Applies to all of {group.label}’s squares, including those outside this search or filter.</p>}
+            {isExpanded && <CapsuleButton variant="ghost" disabled={locked} className="mt-2 mb-3" aria-label={`${groupSelected ? 'Clear' : 'Select'} ${group.squares.length} shown squares for ${group.label}`} onClick={() => {
               setExpanded(current => new Set(current).add(group.id));
               const indices = group.squares.map(square => square.index);
               setSelection(current => groupSelected ? current.filter(index => !indices.includes(index)) : [...new Set([...current, ...indices])]);
               setFailedStatus(null); setNotice('');
-            }}>{groupSelected ? 'Clear' : 'Select'} {group.squares.length} shown {group.squares.length === 1 ? 'square' : 'squares'}</CapsuleButton>
+            }}>{groupSelected ? 'Clear' : 'Select'} {group.squares.length} shown {group.squares.length === 1 ? 'square' : 'squares'}</CapsuleButton>}
             {isExpanded && <ul id={contentId} className="divide-y divide-hairline">
               {group.squares.map(square => <li key={square.index} className="scroll-mb-64 py-4">
                 <label className="flex min-h-11 items-start gap-3 rounded-control py-2">
@@ -99,6 +110,7 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
           </section>;
         })}
       </div>
+      <p className="text-base text-fg-2">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
       <div className="sticky bottom-0 z-10 space-y-3 border-t border-hairline bg-ground py-4" role="group" aria-label="Update selected payment notes" aria-busy={saving}>
         {selected.length > 0 && <p className="text-base font-medium">{selected.length} {selected.length === 1 ? 'square' : 'squares'} selected</p>}
         {selected.length > 0 && <div className="flex flex-wrap gap-2">
@@ -109,6 +121,12 @@ export function PaymentsPanel({ open, onClose, model, initialQuery = '', initial
         {failedStatus && <div role="alert" className="space-y-2 text-base">
           <p>{retryScopeMatches ? 'Payment notes did not save. Your selection is preserved.' : 'The shown squares changed. Review and select squares again before saving.'}</p>
           {retryScopeMatches && <CapsuleButton disabled={locked || !selected.length} onClick={() => void save(failedStatus)}>Retry marking {selected.length} selected {labels[failedStatus].toLowerCase()}</CapsuleButton>}
+        </div>}
+        {failedGroup && <div role="alert" className="space-y-2 text-base">
+          <p>Payment notes for {failedGroup.label} did not save.</p>
+          {model.groups.some(group => group.id === failedGroup.id && groupPaymentAction(group).signature === failedGroup.signature)
+            ? <CapsuleButton disabled={locked} onClick={() => void save('paid', failedGroup)}>Retry marking {failedGroup.indices.length} paid for {failedGroup.label}</CapsuleButton>
+            : <p>This person’s squares changed. Review their payment notes before saving again.</p>}
         </div>}
         {disabled && <p className="text-base text-fg-2">Payment changes are temporarily unavailable.</p>}
       </div>

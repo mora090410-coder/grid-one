@@ -24,6 +24,8 @@ export interface BoardEditorProps {
    * back to the select-mode toggle so a failed apply does not strand focus.
    */
   focusToggleSignal?: number;
+  availabilityMode?: boolean;
+  onOfferAvailability?: () => void;
 }
 
 const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
@@ -43,6 +45,8 @@ export default function BoardEditor({
   onToggleSelectMode,
   onSelectSquare,
   focusToggleSignal = 0,
+  availabilityMode = false,
+  onOfferAvailability,
 }: BoardEditorProps) {
   // The corner a shift-click or a drag measures its block from.
   const anchorRef = useRef<number | null>(null);
@@ -211,8 +215,11 @@ export default function BoardEditor({
         >
           {selectMode ? 'Done selecting' : 'Select squares'}
         </CapsuleButton>
-        {selectMode && selection.size > 0 && <CapsuleButton variant="quiet" onClick={() => document.getElementById('allocation-editor')?.querySelector('input')?.focus()}>Name {selection.size} selected squares</CapsuleButton>}
+        {!selectMode && !isPublished && onOfferAvailability && <CapsuleButton variant="ghost" onClick={onOfferAvailability}>Offer squares as available</CapsuleButton>}
+        {selectMode && availabilityMode && selection.size > 0 && <CapsuleButton variant="quiet" onClick={() => document.getElementById('availability-editor')?.focus()}>Review {selection.size} selected {selection.size === 1 ? 'square' : 'squares'}</CapsuleButton>}
+        {selectMode && !availabilityMode && selection.size > 0 && <CapsuleButton variant="quiet" onClick={() => document.getElementById('allocation-editor')?.querySelector('input')?.focus()}>Name {selection.size} selected squares</CapsuleButton>}
       </div>
+      {availabilityMode && <p className="font-ui text-base text-fg-2">Select the squares you want to offer, then choose their availability.</p>}
       <div data-testid="contained-board-overflow" className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-card border border-hairline" style={{ contain: 'inline-size' }}>
         <div className="min-w-[640px]">
           <Glass padding="md">

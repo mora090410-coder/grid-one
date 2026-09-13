@@ -139,9 +139,9 @@ describe('DrawControl', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows preview state buttons: Use these numbers, Draw again, Cancel', () => {
+  it('shows preview state buttons: Use numbers and continue, Draw again, Cancel', () => {
     render(<DrawControl {...base} acknowledged preview />);
-    fireEvent.click(screen.getByRole('button', { name: 'Use these numbers' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use numbers and continue' }));
     expect(base.onCommit).toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Draw again' }));
     expect(base.onAgain).toHaveBeenCalled();

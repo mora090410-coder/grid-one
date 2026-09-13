@@ -336,7 +336,7 @@ test('draft organizer preview opens the private viewer without sharing the board
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageDown);
 
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
 
   const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
   await expect(preview).toBeVisible();
@@ -437,8 +437,8 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
   await page.getByLabel('Board name').fill('Latest title');
   await page.getByLabel('Board name').press('Enter');
 
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  await page.getByRole('button', { name: 'Review and publish' }).click();
+  await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Private preview — sharing is off' }).getByRole('button', { name: 'Review and publish', exact: true }).click();
   const publishDialog = page.getByRole('dialog', { name: 'Publish viewer link' });
   await expect(publishDialog).toBeVisible();
   await publishDialog.getByRole('button', { name: 'Publish viewer link' }).click();

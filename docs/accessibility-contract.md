@@ -224,3 +224,9 @@ The moderated baseline includes inclusive-use scenarios where practical: keyboar
 ## Per-slice definition of done
 
 A UI slice is not complete until semantics and accessible names are correct; keyboard, touch, and pointer paths work; focus and dialogs recover correctly; phone, zoom, long-content, loading, error, stale/offline, and success states are checked as applicable; the automated gates pass; the rendered result is inspected; any new exception is documented with an owner and a removal condition; and the complete journey still works.
+
+## Organizer workflow clarification — September 13
+
+- Availability is outside the square name-entry dialog. Entering/exiting its board selection mode restores focus to the persistent selection toggle; Review selected squares moves focus to its controls. Existing availability is preserved during name/payment edits.
+- Person-level payment actions name the count and person in their accessible labels. Collapsed rows preserve all three status counts; filtered full-person actions disclose their scope. Expand square details for exceptions. Receipt/failure live regions remain.
+- The private preview uses a bounded scroll area with its forward action fixed outside it. At 390px and desktop sizes, Review and publish is fully within the viewport without scrolling, remains inside the dialog focus loop, and opens the final confirmation with Cancel focused.

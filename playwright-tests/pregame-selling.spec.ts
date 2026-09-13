@@ -85,8 +85,8 @@ for (const width of [390, 1440]) {
     await allocation.getByRole('button', { name: 'Apply to 3', exact: true }).click();
     await expect.poll(() => fixture.row.board.allocationLabels[22]).toBe('Mora family');
     await expect.poll(() => fixture.privateEntries.get(22)?.paid_status).toBe('paid');
-    await expect(page.getByRole('button', { name: 'Share board', exact: true })).toBeEnabled();
-    await page.getByRole('button', { name: 'Share board', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Share while selling', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'Share while selling', exact: true }).click();
     await page.getByRole('button', { name: 'Enable shared board', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Open shared board', exact: true })).toBeVisible();
 
@@ -144,10 +144,9 @@ for (const width of [390, 1440]) {
     await viewer.getByRole('button', { name: 'Highlight blank squares', exact: true }).click();
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Draw numbers', exact: true }).click();
+    await page.getByRole('button', { name: 'Prepare to publish', exact: true }).click();
     await page.getByRole('button', { name: 'Draw with 97 OPEN', exact: true }).click();
-    await page.getByRole('button', { name: 'Use these numbers', exact: true }).click();
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Use numbers and continue', exact: true }).click();
     await page.getByRole('button', { name: 'Review and lock numbers', exact: true }).click();
     await page.getByRole('button', { name: 'Lock game numbers', exact: true }).click();
     await expect.poll(() => fixture.row.published_at).not.toBeNull();

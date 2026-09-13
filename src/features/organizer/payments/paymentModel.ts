@@ -42,3 +42,15 @@ export function filterPaymentGroups(model: ReturnType<typeof buildPaymentModel>,
       String(square.index + 1) === needle.replace(/^#/, ''))),
   })).filter(group => group.squares.length);
 }
+
+/** Person actions deliberately cover the complete responsibility group, not filtered rows. */
+export function groupPaymentAction(group: PaymentGroup) {
+  const indices = group.squares.filter(square => square.status !== 'paid').map(square => square.index);
+  return {
+    id: group.id,
+    label: group.label,
+    indices,
+    buttonLabel: `Mark ${indices.length === group.squares.length ? 'all' : 'remaining'} ${indices.length} paid`,
+    signature: JSON.stringify(group.squares.map(square => [square.index, square.status, square.names])),
+  };
+}
