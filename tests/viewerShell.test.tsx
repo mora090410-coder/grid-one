@@ -134,7 +134,11 @@ describe('ViewerShell', () => {
     const randomized = { ...board, topAxis: [9,8,7,6,5,4,3,2,1,0], leftAxis: [9,8,7,6,5,4,3,2,1,0] };
     const onScenarioFocus = vi.fn();
     renderShell({ board: randomized, selectedPlayer: 'Carrie Moss', onScenarioFocus });
+    const target = screen.getByRole('gridcell', { name: /Carrie Moss, coordinate row 2 column 5/ });
+    target.scrollIntoView = vi.fn(); // jsdom has no layout/scroll implementation.
     fireEvent.click(screen.getByRole('button', { name: /View on board top 5 side 8/ }));
+    expect(target).toHaveFocus();
+    expect(target.scrollIntoView).toHaveBeenCalled();
     expect(onScenarioFocus).toHaveBeenCalledWith({ top: 5, left: 8 });
   });
 

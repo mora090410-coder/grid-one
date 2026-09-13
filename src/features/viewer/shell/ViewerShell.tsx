@@ -49,6 +49,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
     return () => observer.disconnect();
   }, []);
   const [boardFocus, setBoardFocus] = useState(highlightedCoords);
+  const [viewSquareRequest, setViewSquareRequest] = useState<{ row: number; col: number } | null>(null);
   const selectedParticipant = useMemo(() => {
     const matches = board.participants?.filter((participant) => participant.displayName === selectedPlayer) || [];
     return matches.length === 1 ? matches[0] : undefined;
@@ -65,6 +66,13 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const setFocus = (coords: { left: number; top: number } | null) => {
     setBoardFocus(coords);
     onScenarioFocus(coords);
+  };
+  const viewSquare = (coords: { left: number; top: number } | null) => {
+    setFocus(coords);
+    if (!coords) return;
+    const row = board.leftAxis.indexOf(coords.left);
+    const col = board.topAxis.indexOf(coords.top);
+    if (row >= 0 && col >= 0) setViewSquareRequest({ row, col });
   };
 
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
@@ -83,7 +91,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           </div>
           <FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} />
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
-          <YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={setFocus} />
+          <YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} />
           {pendingMilestones.length > 0 && servicesEnabled && (
             <Glass as="section" padding="md" className="flex flex-col gap-2" aria-labelledby="pending-results-title">
               <h2 id="pending-results-title" className="font-ui text-[15px] font-medium text-fg">Pending confirmation</h2>
@@ -112,7 +120,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <ViewerBoardGrid board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={boardFocus} showOpenSquares={board.allowOpenSquares === true} />
+            <ViewerBoardGrid board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={boardFocus} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} />
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>

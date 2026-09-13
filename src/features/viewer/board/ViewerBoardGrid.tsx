@@ -12,6 +12,7 @@ interface ViewerBoardGridProps {
   pendingMilestones: PendingMilestone[];
   selectedPlayer: string;
   highlightedCoords?: { left: number; top: number } | null;
+  viewSquareRequest?: { row: number; col: number } | null;
   showOpenSquares?: boolean;
 }
 
@@ -40,6 +41,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   pendingMilestones,
   selectedPlayer,
   highlightedCoords = null,
+  viewSquareRequest = null,
   showOpenSquares = false,
 }) => {
   const model = React.useMemo(() => buildBoardGridModel({
@@ -69,7 +71,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
 
   React.useEffect(() => setFocus(initialFocus), [initialFocus]);
 
-  const focusCell = (row: number, col: number, center = false) => {
+  const focusCell = React.useCallback((row: number, col: number, center = false) => {
     const next = { row: clamp(row, 0, 9), col: clamp(col, 0, 9) };
     setFocus(next);
     const cell = cellRefs.current[next.row]?.[next.col];
@@ -84,7 +86,16 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
         viewport.scrollTop = top;
       }
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    if (!viewSquareRequest) return;
+    const { row, col } = viewSquareRequest;
+    focusCell(row, col, true);
+    // Explicit navigation must reveal the board in the page as well as its
+    // internal scroll viewport. Immediate scrolling also respects reduced motion.
+    cellRefs.current[row]?.[col]?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+  }, [viewSquareRequest, focusCell]);
 
   const centerState = (state: 'selected' | 'current') => {
     const cell = model.cells.flat().find((candidate) => candidate.states.includes(state));

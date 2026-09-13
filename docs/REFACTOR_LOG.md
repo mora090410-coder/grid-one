@@ -670,3 +670,13 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Exact release tree:35 focused tests passed initially; full unit run837/838 passed with the one failure an old60second response expectation, corrected to180. Focused hook/cache/scheduler rerun verifies180second polling with no early request, server override support and hidden-tab pause. TypeScript, build and design lint passed (zero errors/five existing warnings). Full current-checkout Chromium verification covers matching disclosure on phone/desktop; release results recorded below.
 
 - Final cadence verification: isolated hook/cache/scheduler22/22 passed after correcting the old response expectation and removing a fake-timer wait that advanced past the boundary. Full Chromium114 passed initially; two navigation-interrupted cases passed on unchanged serial rerun. No test assertion weakened. Cadence-only indexed diff inspected; paid-provider code and unrelated work excluded.
+
+
+## 2026-09-13 — View on board navigation
+
+- Reproduced the reported no-op in phone and desktop browser tests: YourSquaresSummary only set highlight coordinates through ViewerShell; the grid never received a navigation request.
+- View on board now sends a fresh explicit row/column request, maps shuffled axis digits to the actual square, focuses that cell and scrolls both the board viewport and page to reveal it. Repeated taps on the same square work. Passive name selection and score updates do not initiate navigation. Scrolling is immediate for reduced-motion compatibility.
+- Browser RED: both390px and1440px target-focus assertions failed before implementation. GREEN: both passed in Chromium and WebKit, including repeated keyboard activation, fully visible bottom-right square and shuffled axes. Phone/desktop screenshots inspected. TypeScript, production build and design lint passed (zero errors/five existing warnings). Full unit837/838 initially; the existing View on board test needed a jsdom scrollIntoView stub, then all12 tests in that file passed in the exact release tree.
+- Design hook's font-size findings are unchanged production typography outside this navigation-only diff; classified as pre-existing out-of-scope findings, with no ignore configuration added. Unapproved provider work and other checkout changes are excluded from this release.
+
+- Full isolated Chromium run108 passed initially; all9 failed cases passed on unchanged serial rerun. Total117 cases verified. Failures were timing/navigation under concurrent build/unit/browser load; assertions and production code were not altered to clear them.
