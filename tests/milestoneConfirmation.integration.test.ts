@@ -191,11 +191,11 @@ const bootstrapSupabasePrimitives = async () => {
 const applyMigrations = async () => {
   const migrationDirectory = resolve(process.cwd(), 'supabase/migrations');
   const migrationFiles = readdirSync(migrationDirectory)
-    .filter(file => /^\d{3}_.+\.sql$/.test(file) && Number(file.slice(0, 3)) <= 17)
+    .filter(file => /^\d{3}_.+\.sql$/.test(file))
     .sort();
 
   expect(migrationFiles.map(file => Number(file.slice(0, 3)))).toEqual(
-    expectedMigrationNumbers(17),
+    expectedMigrationNumbers(28),
   );
 
   for (const migrationFile of migrationFiles) {
@@ -330,6 +330,10 @@ const makeSnapshot = async ({
   retrievedAt,
   q1Side,
   q1Top,
+  q2Side = 0,
+  q2Top = 0,
+  detail = '',
+  clock = '',
   period = 2,
   gameState = 'in',
   sourceMode = 'automatic',
@@ -337,6 +341,10 @@ const makeSnapshot = async ({
   retrievedAt: string;
   q1Side: number;
   q1Top: number;
+  q2Side?: number;
+  q2Top?: number;
+  detail?: string;
+  clock?: string;
   period?: number;
   gameState?: 'pre' | 'in' | 'post';
   sourceMode?: 'automatic' | 'manual';
@@ -345,7 +353,7 @@ const makeSnapshot = async ({
   const snapshotId = `50000000-0000-4000-8000-${String(snapshotSequence).padStart(12, '0')}`;
   const quarterScores = JSON.stringify({
     Q1: { left: q1Side, top: q1Top },
-    Q2: { left: 0, top: 0 },
+    Q2: { left: q2Side, top: q2Top },
     Q3: { left: 0, top: 0 },
     Q4: { left: 0, top: 0 },
     OT: { left: 0, top: 0 },
@@ -382,8 +390,8 @@ const makeSnapshot = async ({
       '${sourceMode === 'manual' ? 'organizer' : 'provider'}',
       '${gameState}',
       ${period},
-      ${q1Side},
-      ${q1Top},
+      ${q1Side + q2Side},
+      ${q1Top + q2Top},
       '${quarterScores}'::jsonb,
       'accepted',
       '${retrievedAt}'::timestamptz,
@@ -393,6 +401,8 @@ const makeSnapshot = async ({
       ${sourceMode === 'automatic' ? snapshotSequence : 'NULL'},
       ${sourceMode === 'automatic' ? `'${retrievedAt}'::timestamptz` : 'NULL'}
     );
+
+    UPDATE public.score_snapshots SET detail = '${detail}', clock = '${clock}' WHERE id = '${snapshotId}'::uuid;
 
     INSERT INTO public.contest_score_state (
       contest_id,
@@ -484,6 +494,38 @@ describe.sequential('milestone confirmation and correction in disposable Postgre
       containerStarted = false;
     }
   }, 60_000);
+
+  it('starts Q2 at explicit halftime and confirms cumulative scoring after a distinct stable 45-second read', async () => {
+    const input = { q1Side: 7, q1Top: 3, q2Side: 10, q2Top: 10, detail: 'Halftime', clock: '0:00' };
+    const first = await makeSnapshot({ ...input, retrievedAt: '2026-09-13T18:00:00Z' });
+    const initial = await observe(first);
+    expect(initial.pending_milestones).toEqual(expect.arrayContaining([expect.objectContaining({ milestone: 'Q2', sideScore: 17, topScore: 13 })]));
+    expect(initial.newly_confirmed_resolution_ids).toEqual([]);
+    expect((await observe(first)).winner_history.find(item => item.milestone === 'Q2')).toBeUndefined();
+    const early = await makeSnapshot({ ...input, retrievedAt: '2026-09-13T18:00:44Z' });
+    expect((await observe(early)).winner_history.find(item => item.milestone === 'Q2')).toBeUndefined();
+    const stable = await makeSnapshot({ ...input, retrievedAt: '2026-09-13T18:00:45Z' });
+    expect((await observe(stable)).winner_history).toEqual(expect.arrayContaining([expect.objectContaining({ milestone: 'Q2', sideScore: 17, topScore: 13 })]));
+  });
+
+  it('does not start Q2 from a zero clock without explicit halftime', async () => {
+    const snapshot = await makeSnapshot({ retrievedAt: '2026-09-13T18:00:00Z', q1Side: 7, q1Top: 3, q2Side: 10, q2Top: 10, clock: '0:00', detail: '2nd Quarter' });
+    const result = await observe(snapshot);
+    expect(result.pending_milestones.find(item => item.milestone === 'Q2')).toBeUndefined();
+    expect(result.winner_history.find(item => item.milestone === 'Q2')).toBeUndefined();
+  });
+
+  it('resets halftime confirmation when the cumulative score changes', async () => {
+    const input = { q1Side: 7, q1Top: 3, q2Side: 10, q2Top: 10, detail: 'Halftime', clock: '0:00' };
+    await observe(await makeSnapshot({ ...input, retrievedAt: '2026-09-13T18:00:00Z' }));
+    const changed = await observe(await makeSnapshot({ ...input, q2Top: 11, retrievedAt: '2026-09-13T18:00:30Z' }));
+    expect(changed.pending_milestones).toEqual(expect.arrayContaining([expect.objectContaining({ milestone: 'Q2', sideScore: 17, topScore: 14 })]));
+    expect(changed.winner_history.find(item => item.milestone === 'Q2')).toBeUndefined();
+    const early = await observe(await makeSnapshot({ ...input, q2Top: 11, retrievedAt: '2026-09-13T18:00:50Z' }));
+    expect(early.winner_history.find(item => item.milestone === 'Q2')).toBeUndefined();
+    const stable = await observe(await makeSnapshot({ ...input, q2Top: 11, retrievedAt: '2026-09-13T18:01:15Z' }));
+    expect(stable.winner_history).toEqual(expect.arrayContaining([expect.objectContaining({ milestone: 'Q2', sideScore: 17, topScore: 14 })]));
+  });
 
   it('resets a changed candidate and confirms only a distinct stable read 45 seconds later', async () => {
     const first = await makeSnapshot({
