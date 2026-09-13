@@ -9,17 +9,17 @@ describe('launch polling decision', () => {
     const product = source('PRODUCT.md');
     const design = source('DESIGN.md');
 
-    expect(product).toContain('Viewer score updates about every minute');
+    expect(product).toContain('Viewer score updates about every three minutes');
     expect(product).not.toContain('- Realtime viewer updates');
-    expect(design).toContain('viewer updates arrive about every minute');
+    expect(design).toContain('viewer updates arrive about every three minutes');
   });
 
   it('discloses the polling cadence on the viewer score surface', () => {
     const scoreModel = source('src/features/viewer/score/viewerScoreModel.ts');
     const comparison = source('pages/RunYourPoolAlternative.tsx');
 
-    expect(scoreModel).toContain('Score updates about every minute');
-    expect(comparison).toContain('Updates about every minute with source and freshness shown');
+    expect(scoreModel).toContain('Score updates about every three minutes');
+    expect(comparison).toContain('Updates about every three minutes with source and freshness shown');
     expect(comparison).not.toContain('Updates instantly on every device');
     expect(comparison).not.toContain('The Real-Time Scenario Engine');
   });

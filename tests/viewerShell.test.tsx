@@ -64,7 +64,7 @@ describe('ViewerShell', () => {
     expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
-    expect(status).toHaveTextContent(/Score updates about every minute/);
+    expect(status).toHaveTextContent(/Score updates about every three minutes/);
     expect(within(firstViewport).getByRole('button', { name: 'Find my squares' })).toBeVisible();
     expect(firstViewport).not.toHaveTextContent(/payout|makes me win/i);
     expect(screen.getByRole('main', { name: 'GridOne Bowl viewer' })).toBeInTheDocument();

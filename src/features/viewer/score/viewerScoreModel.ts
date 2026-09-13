@@ -13,7 +13,7 @@ export interface ViewerScoreModel {
   phaseDetail: string | null;
   authority: ViewerScoreAuthority;
   freshness: string | null;
-  pollingText: 'Score updates about every minute';
+  pollingText: 'Score updates about every three minutes';
 }
 
 export const viewerPeriodLabel = (live: LiveGameData | null): string => {
@@ -74,5 +74,5 @@ export const buildViewerScoreModel = ({
   phaseDetail: viewerPhaseDetail(live),
   authority: viewerAuthorityLabel(live, liveStatus, isSynced),
   freshness: formatViewerFreshness(live),
-  pollingText: 'Score updates about every minute',
+  pollingText: 'Score updates about every three minutes',
 });

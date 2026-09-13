@@ -59,7 +59,7 @@ export function useLiveScoring(
     const isFinalRef = useRef(false);
     // Server-driven cadence: the score endpoint reports nextPollSeconds from
     // the SCORE_POLL_SECONDS env var, so the rate is tunable without a deploy.
-    const [pollIntervalMs, setPollIntervalMs] = useState(60_000);
+    const [pollIntervalMs, setPollIntervalMs] = useState(180_000);
     const clearPoll = useCallback(() => {
         if (!pollRef.current) return;
         clearInterval(pollRef.current);

@@ -122,7 +122,7 @@ describe.sequential('public share-code score caching', () => {
     expect(response.headers.get('Cache-Control')).toBe('public, s-maxage=30, stale-while-revalidate=60');
     expect(response.headers.get('ETag')).toMatch(/^W\//);
     const body = await response.json();
-    expect(body.nextPollSeconds).toBe(60);
+    expect(body.nextPollSeconds).toBe(180);
     expect(body.refreshAttempted).toBe(false);
     expect(body.score.freshness).toBe('fresh');
     expect(fetchSpy).not.toHaveBeenCalled();

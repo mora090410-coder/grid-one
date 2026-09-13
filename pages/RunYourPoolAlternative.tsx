@@ -68,7 +68,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                     <h3>GridOne for football squares</h3>
                     <ul className="[&>li]:list-none">
                         <li>✓ <strong>Free to build</strong> your board before you publish</li>
-                        <li>✓ <strong>Score checks:</strong> Updates about every minute with source and freshness shown</li>
+                        <li>✓ <strong>Score checks:</strong> Updates about every three minutes with source and freshness shown</li>
                         <li>✓ <strong>Next-score view:</strong> See which squares match common scoring plays</li>
                         <li>✓ <strong>Mobile board:</strong> Readable on phones</li>
                         <li>✓ <strong>No viewer login:</strong> People open the shared link directly</li>

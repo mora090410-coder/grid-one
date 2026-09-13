@@ -219,11 +219,13 @@ describe('legacy manual live scoring', () => {
     await act(async () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(2);
     await act(async () => {
-      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
+      await vi.advanceTimersByTimeAsync(179_999);
     });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(2);
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(1);
     });
     await act(async () => {
       await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(3));
@@ -269,7 +271,7 @@ describe('legacy manual live scoring', () => {
       await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
     });
 
-    // The old 60s cadence must NOT fire once the server said 90s.
+    // No poll should fire before the server-specified 90s interval.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
     });

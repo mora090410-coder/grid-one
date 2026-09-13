@@ -163,7 +163,7 @@ describe('score freshness', () => {
 
   it('keeps live and final freshness independent of kickoff', () => {
     expect(scoreStaleAfter('in', retrieved, '2026-09-13T17:00:00.000Z'))
-      .toBe('2026-09-13T17:01:30.000Z');
+      .toBe('2026-09-13T17:03:30.000Z');
     expect(scoreStaleAfter('post', retrieved, '2026-09-13T17:00:00.000Z'))
       .toBe('2027-09-13T16:59:30.000Z');
   });

@@ -34,7 +34,7 @@ describe('viewer score model', () => {
     expect(buildViewerScoreModel({ live: live({ freshness: 'offline' }), liveStatus: '', isSynced: true }).authority.label).toBe('Offline · last known');
     expect(buildViewerScoreModel({ live: live({ freshness: 'rejected' }), liveStatus: '', isSynced: true }).authority.label).toBe('Source rejected');
     expect(buildViewerScoreModel({ live: live({ state: 'post' }), liveStatus: '', isSynced: true }).authority.label).toBe('Final');
-    expect(buildViewerScoreModel({ live: live(), liveStatus: '', isSynced: true }).pollingText).toBe('Score updates about every minute');
+    expect(buildViewerScoreModel({ live: live(), liveStatus: '', isSynced: true }).pollingText).toBe('Score updates about every three minutes');
   });
 
   it('formats period labels and checked-at freshness without inventing realtime language', () => {

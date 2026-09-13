@@ -130,7 +130,7 @@ Use live regions sparingly.
 
 **Do not announce:** every background poll; an unchanged freshness timestamp; every autosave cycle; decorative animation.
 
-Asserted: the viewer score region is `role="status"` and names its authority (`Offline · last known`, `Stale · last known`, `Refreshing`, `Manual score · Entered by the organizer`, `Final`) alongside the standing disclosure `Score updates about every minute`. The organizer save state announces `Save failed` as a `status`, and the revision conflict `This board changed in another session.` as an `alert` carrying `Reload latest board`.
+Asserted: the viewer score region is `role="status"` and names its authority (`Offline · last known`, `Stale · last known`, `Refreshing`, `Manual score · Entered by the organizer`, `Final`) alongside the standing disclosure `Score updates about every three minutes`. The organizer save state announces `Save failed` as a `status`, and the revision conflict `This board changed in another session.` as an `alert` carrying `Reload latest board`.
 
 ## Blockers versus advisories
 

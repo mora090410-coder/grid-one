@@ -661,3 +661,12 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Additional checks: nine focused unit tests and TypeScript passed.
 
 - Anthony approved applying the prepared migration. Applied to production project illqymckwqiawdwxhwcy successfully; read-back verified explicit Halftime Q2 eligibility. Before application, the Bears board had already confirmed Q2 Anthony W at 31–24 after Q3 began (19:03:56 UTC). This live game therefore does not prove the new halftime transition; the 11 passing database tests provide that evidence. No score or winner manually changed.
+
+
+## 2026-09-13 — Three-minute automatic scoring cadence
+
+- Anthony requested one score pull every three minutes. Set production SCORE_POLL_SECONDS and server/browser defaults to180seconds. The existing minute scheduler heartbeat retains its atomic slot gate, so provider polling happens once per180seconds. Live freshness is240seconds to avoid routinely marking scores stale between expected polls. Viewer and current product/design copy now disclose three-minute updates.
+- Isolated the cadence release from the locally prepared, unapproved paid-provider integration and other protected checkout work using an exact HEAD-based release tree and selective index blobs. No new provider, subscription, credential or database migration.
+- Exact release tree:35 focused tests passed initially; full unit run837/838 passed with the one failure an old60second response expectation, corrected to180. Focused hook/cache/scheduler rerun verifies180second polling with no early request, server override support and hidden-tab pause. TypeScript, build and design lint passed (zero errors/five existing warnings). Full current-checkout Chromium verification covers matching disclosure on phone/desktop; release results recorded below.
+
+- Final cadence verification: isolated hook/cache/scheduler22/22 passed after correcting the old response expectation and removing a fake-timer wait that advanced past the boundary. Full Chromium114 passed initially; two navigation-interrupted cases passed on unchanged serial rerun. No test assertion weakened. Cadence-only indexed diff inspected; paid-provider code and unrelated work excluded.

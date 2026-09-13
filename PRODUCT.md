@@ -73,7 +73,7 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 ## Scoring authority
 
 - ESPN is the automatic provider. It is reached only from the server, in `functions/_lib/espnNfl.ts`.
-- A one-minute cron Worker calls `POST /api/scores/refresh`, which fetches the live scoreboard **once for the entire slate** and promotes a canonical snapshot per board. Viewers read the projection through `GET /api/pools/:id/score`; they never amplify onto the provider.
+- A one-minute cron Worker calls `POST /api/scores/refresh`, which fetches the live scoreboard **once every three minutes for the entire slate** and promotes a canonical snapshot per board. Viewers read the projection through `GET /api/pools/:id/score`; they never amplify onto the provider.
 - Responses are validated for matchup, state, score, quarter detail, and freshness before persistence.
 - The interface always names whether the score is automatic, manual, refreshing, stale, rejected, offline, or Final.
 - Manual override becomes canonical until the organizer deliberately returns to automatic mode.
@@ -141,7 +141,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 - Read-only short link and QR code
 - Phone viewer: Find my squares, current result, scenario engine, exact grid, Final record
 - Server-cached automatic ESPN scoring plus manual override
-- Viewer score updates about every minute through visibility-aware polling
+- Viewer score updates about every three minutes through visibility-aware polling
 - Verified email opt-in, winner delivery, and delivery retry
 - Explicit error, stale, and offline states; RLS-backed schema; the accessibility contract
 

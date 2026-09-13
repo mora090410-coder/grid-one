@@ -280,7 +280,7 @@ describe.sequential('cron score refresh endpoint', () => {
     const response = await refreshScores({ request: cronRequest(), env: cronEnv, params: {} });
 
     const body = await response.json();
-    expect(body).toMatchObject({ active: 2, refreshed: 2, failed: 0 });
+    expect(body).toMatchObject({ active: 2, refreshed: 2, failed: 0, pollSeconds: 180 });
     // One upstream scoreboard call regardless of how many boards are live.
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const leaseCalls = admin.rpcCalls.filter(call => call.name === 'gridone_acquire_score_refresh_lease_v2');

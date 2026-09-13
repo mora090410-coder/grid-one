@@ -14,9 +14,9 @@ describe('ViewerIsland', () => {
     const toggle = screen.getByRole('button', { name: /Score/ });
     expect(toggle).toHaveTextContent('KC 21');
     expect(toggle).toHaveTextContent('PHI 14');
-    expect(screen.queryByText(/Score updates about every minute/)).toBeNull();
+    expect(screen.queryByText(/Score updates about every three minutes/)).toBeNull();
     fireEvent.click(toggle);
-    expect(screen.getByText(/Score updates about every minute/)).toBeInTheDocument();
+    expect(screen.getByText(/Score updates about every three minutes/)).toBeInTheDocument();
     expect(screen.getByText(/ESPN/)).toBeInTheDocument();
   });
 

@@ -33,7 +33,7 @@ const isIntegerScore = (value: unknown) => Number.isInteger(value) && Number(val
 
 export const scorePollSeconds = (env: any): number => {
   const raw = Number(env?.SCORE_POLL_SECONDS);
-  if (!Number.isInteger(raw)) return 60;
+  if (!Number.isInteger(raw)) return 180;
   return Math.min(300, Math.max(30, raw));
 };
 
@@ -77,7 +77,7 @@ export const scoreStaleAfter = (
   retrievedAt: Date,
   kickoffAt?: string | null,
 ) => {
-  const staleSeconds = scoreState === 'in' ? 120 : scoreState === 'post' ? 31_536_000 : 900;
+  const staleSeconds = scoreState === 'in' ? 240 : scoreState === 'post' ? 31_536_000 : 900;
   const defaultStaleAt = retrievedAt.getTime() + staleSeconds * 1000;
   if (scoreState !== 'pre' || !kickoffAt) return new Date(defaultStaleAt).toISOString();
   const kickoffTime = new Date(kickoffAt).getTime();

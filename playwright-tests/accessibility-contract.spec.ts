@@ -620,7 +620,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(page.getByRole('main', { name: /Published Week 1 viewer/i })).toBeVisible();
     await expect(firstViewport.getByRole('heading', { name: 'Published Week 1' })).toBeVisible();
     await expect(firstViewport.getByRole('status').filter({ hasText: 'Offline · last known' })).toBeVisible();
-    await expect(firstViewport.getByText('Score updates about every minute')).toBeVisible();
+    await expect(firstViewport.getByText('Score updates about every three minutes')).toBeVisible();
     await expect(firstViewport.getByRole('button', { name: 'Find my squares' })).toBeVisible();
     await expect(firstViewport.getByText(/Using the last-known score checked .+ until scoring reconnects\./i)).toBeVisible();
 
@@ -681,7 +681,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
       });
       await page.goto('/b/ABCDEFGH');
       await expect(page.getByRole('status').filter({ hasText: label })).toBeVisible();
-      await expect(page.getByText('Score updates about every minute')).toBeVisible();
+      await expect(page.getByText('Score updates about every three minutes')).toBeVisible();
       await expect(page.getByText(`${label} warning`)).toBeVisible();
       await page.unrouteAll({ behavior: 'ignoreErrors' });
     }

@@ -19,7 +19,7 @@ describe('ScoreInstrument', () => {
     expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
-    expect(status).toHaveTextContent(/Score updates about every minute/);
+    expect(status).toHaveTextContent(/Score updates about every three minutes/);
     expect(status).toHaveTextContent(/Checked/);
     expect(screen.getAllByText('Q3 · 8:12')).toHaveLength(1);
     expect(screen.queryByText('3rd quarter')).toBeNull();

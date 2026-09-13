@@ -138,7 +138,7 @@ Organizer: a dark, horizontally centered capsule sits in a reserved sticky top s
 
 Payment counts always describe squares. Paid, Unpaid and Not asked yet remain separate; payment follow-up never blocks publishing. The organizer's cream workspace, square editing, and allocation flows retain their established controls.
 
-Score freshness is information, not decoration: viewer updates arrive about every minute, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
+Score freshness is information, not decoration: viewer updates arrive about every three minutes, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
 
 ## Anti-slop rules
 

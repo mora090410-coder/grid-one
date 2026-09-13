@@ -61,8 +61,8 @@ describe('Reveal', () => {
   it('renders children visible with no data-reveal attribute under reduced motion', () => {
     setReducedMotion(true);
     stubObserver();
-    render(<Reveal><p>Score updates about every minute</p></Reveal>);
-    const node = screen.getByText('Score updates about every minute').parentElement!;
+    render(<Reveal><p>Score updates about every three minutes</p></Reveal>);
+    const node = screen.getByText('Score updates about every three minutes').parentElement!;
     expect(node.hasAttribute('data-reveal')).toBe(false);
     expect(node.style.opacity).toBe('');
     expect(node.style.transform).toBe('');

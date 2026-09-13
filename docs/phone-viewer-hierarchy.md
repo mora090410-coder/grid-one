@@ -61,7 +61,7 @@ When `live.state === 'post'`, the `Final record` block is promoted into the firs
 
 ## Score authority and freshness
 
-`score/viewerScoreModel.ts` is the only place these labels are decided. `ScoreInstrument` renders them in a `role="status"` `aria-live="polite"` region, always alongside the polling disclosure **`Score updates about every minute`**.
+`score/viewerScoreModel.ts` is the only place these labels are decided. `ScoreInstrument` renders them in a `role="status"` `aria-live="polite"` region, always alongside the polling disclosure **`Score updates about every three minutes`**.
 
 | Condition | Label | Detail |
 |---|---|---|
