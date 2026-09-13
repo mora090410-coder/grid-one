@@ -33,13 +33,15 @@ const publicBoard = {
   squares: names,
   isDynamic: false,
 };
+// Keep the open-square fixture eligible for a fill on every test date.
+const futureKickoff = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const matchup = {
   sideTeamName: 'Chicago Bears',
   sideTeamAbbr: 'CHI',
   topTeamName: 'Green Bay Packers',
   topTeamAbbr: 'GB',
   gameExternalId: '401772999',
-  gameStartsAt: '2026-09-13T17:00:00.000Z',
+  gameStartsAt: futureKickoff,
 };
 
 let containerStarted = false;
@@ -164,7 +166,7 @@ const seedPublishedBoard = async () => {
       side_team_name, side_team_abbr, top_team_name, top_team_abbr
     ) VALUES (
       '${CONTEST_ID}'::uuid, '${OWNER_ID}'::uuid, '${SHARE_CODE}', 'Booster board', 2026,
-      '401772999', '2026-09-13T17:00:00Z'::timestamptz,
+      '401772999', '${futureKickoff}'::timestamptz,
       'Chicago Bears', 'CHI', 'Green Bay Packers', 'GB'
     );
 
@@ -210,7 +212,7 @@ const seedPublishedBoard = async () => {
       board_data
     ) VALUES (
       '${OPEN_CONTEST_ID}'::uuid, '${OWNER_ID}'::uuid, '${OPEN_SHARE_CODE}', 'Open board', 2026,
-      '401772998', '2026-09-13T17:00:00Z'::timestamptz,
+      '401772998', '${futureKickoff}'::timestamptz,
       'Chicago Bears', 'CHI', 'Green Bay Packers', 'GB',
       ${sqlText(JSON.stringify({ ...publicBoard, squares: openNames, allowOpenSquares: true }))}::jsonb
     );

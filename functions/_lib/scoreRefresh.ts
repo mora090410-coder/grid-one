@@ -148,7 +148,7 @@ export const fetchExactEventScore = async (
   if (!/^\d+$/.test(eventId)) {
     throw new Error('Automatic scoring requires a linked scheduled NFL game. Use manual scoring for this legacy board.');
   }
-  const raw = await fetchEspnSummary(eventId, fetchImpl);
+  const raw = await fetchEspnSummary(eventId, fetchImpl, { live: true });
   if (!raw) throw new Error('The linked NFL game was not found.');
   return providerScoreFromEspnSnapshot(contest, normalizeEspnScoreSummary(raw), raw);
 };

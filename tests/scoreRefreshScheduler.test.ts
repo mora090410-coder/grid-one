@@ -32,7 +32,8 @@ const cdnScoreboardResponse = (events: unknown[]) => jsonResponse({
 describe('fetchLiveScoreboard', () => {
   it('loads the live slate through the ESPN CDN scoreboard envelope', async () => {
     const fetchImpl = vi.fn(async (input: string | URL | Request) => {
-      if (String(input) !== 'https://cdn.espn.com/core/nfl/scoreboard?xhr=1') {
+      const url = new URL(String(input));
+      if (url.origin !== 'https://cdn.espn.com' || url.pathname !== '/core/nfl/scoreboard' || url.searchParams.get('xhr') !== '1') {
         return new Response('Access Denied', { status: 403 });
       }
       return jsonResponse({ content: { sbData: { events: [scoreboardEvent] } } });
@@ -42,6 +43,35 @@ describe('fetchLiveScoreboard', () => {
 
     expect(result.games.get('401000001')?.snapshot.homeTeam.score).toBe(27);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('avoids an older stable CDN payload using a shared 30-second live request bucket', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_001);
+    try {
+      const newer = structuredClone(scoreboardEvent);
+      const home = newer.competitions[0].competitors.find(team => team.homeAway === 'home')!;
+      home.score = '30';
+      home.linescores![3].displayValue = '10';
+      const urls: URL[] = [];
+      const fetchImpl = vi.fn(async (input: string | URL | Request) => {
+        const url = new URL(String(input));
+        urls.push(url);
+        return cdnScoreboardResponse([url.searchParams.has('gridone_live') ? newer : scoreboardEvent]);
+      });
+      const result = await fetchLiveScoreboard(fetchImpl);
+      expect(result.games.get('401000001')?.snapshot.homeTeam.score).toBe(30);
+      expect(urls[0].origin).toBe('https://cdn.espn.com');
+      expect(urls[0].searchParams.get('gridone_live')).toBe('60000000');
+      now.mockReturnValue(1_800_000_029_999);
+      await fetchLiveScoreboard(fetchImpl);
+      expect(urls[1].toString()).toBe(urls[0].toString());
+      now.mockReturnValue(1_800_000_030_000);
+      await fetchLiveScoreboard(fetchImpl);
+      expect(urls[2].searchParams.get('gridone_live')).toBe('60000001');
+      expect(fetchImpl).toHaveBeenCalledTimes(3);
+    } finally {
+      now.mockRestore();
+    }
   });
 
   it('fetches the scoreboard once and normalizes every parseable event', async () => {

@@ -153,12 +153,15 @@ const writeText = vi.fn(async () => undefined);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // These fixtures exercise pre-kickoff editing, independent of the wall clock.
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-13T16:00:00Z'));
   global.fetch = vi.fn();
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('OrganizerWorkspace island', () => {

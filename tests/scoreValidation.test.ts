@@ -81,6 +81,26 @@ describe('exact-event automatic scoring', () => {
       headers: { 'Content-Type': 'application/json' },
     });
 
+  it('refreshes the live game package cache without changing the linked event', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_789_322_400_000);
+    try {
+      const fresh = structuredClone(regulationEspnSummary);
+      fresh.header.competitions[0].status = { ...fresh.header.competitions[0].status, displayClock: '12:40' };
+      const fetchMock = vi.fn(async (input: string | URL | Request) => {
+        const url = new URL(String(input));
+        return response(url.searchParams.get('gridone_live') === String(Math.floor(Date.now() / 30_000))
+          ? fresh : regulationEspnSummary);
+      });
+      const result = await fetchExactEventScore(contest, fetchMock);
+      expect(result.score.clock).toBe('12:40');
+      const url = new URL(String(fetchMock.mock.calls[0][0]));
+      expect(url.origin).toBe('https://cdn.espn.com');
+      expect(url.searchParams.get('gameId')).toBe(contest.game_external_id);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it('maps the exact linked event into the board axis orientation', async () => {
     const result = await fetchExactEventScore(contest, vi.fn(async () => response(regulationEspnSummary)));
     expect(result.score).toMatchObject({

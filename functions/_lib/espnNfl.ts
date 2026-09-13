@@ -68,6 +68,15 @@ const ESPN_RETRY_OPTIONS = {
 
 const ESPN_CDN_BASE_URL = 'https://cdn.espn.com/core/nfl';
 export const ESPN_SCOREBOARD_URL = `${ESPN_CDN_BASE_URL}/scoreboard?xhr=1`;
+// ESPN's Cloudflare-compatible CDN caches stable live URLs for several minutes.
+// Share one URL per 30-second window so live reads escape an old cache entry
+// without creating a separate upstream cache entry for every board or viewer.
+const liveEspnUrl = (url: string) => {
+  const requestUrl = new URL(url);
+  requestUrl.searchParams.set('gridone_live', String(Math.floor(Date.now() / 30_000)));
+  return requestUrl.toString();
+};
+
 export const espnSummaryUrl = (eventId: string) =>
   `${ESPN_CDN_BASE_URL}/game?xhr=1&gameId=${encodeURIComponent(eventId)}`;
 export const espnScheduleUrl = (year: number, seasonType?: number, week?: number) => {
@@ -259,11 +268,13 @@ const parseJsonResponse = async (response: Response, context: string): Promise<a
 export const fetchEspnSummary = async (
   eventId: string,
   fetchImpl: FetchLike = fetch,
+  options: { live?: boolean } = {},
 ): Promise<any | null> => {
   const normalizedId = String(eventId || '').trim();
   if (!/^\d+$/.test(normalizedId)) return null;
+  const url = options.live ? liveEspnUrl(espnSummaryUrl(normalizedId)) : espnSummaryUrl(normalizedId);
   return withRetry(async () => {
-    const response = await fetchImpl(espnSummaryUrl(normalizedId), espnRequestInit());
+    const response = await fetchImpl(url, espnRequestInit());
     if (response.status === 400 || response.status === 404) return null;
     const payload = await parseJsonResponse(response, 'ESPN event lookup');
     return payload?.gamepackageJSON;
@@ -284,8 +295,9 @@ export interface LiveScoreboardResult {
 export const fetchLiveScoreboard = async (
   fetchImpl: FetchLike = fetch,
 ): Promise<LiveScoreboardResult> => {
+  const url = liveEspnUrl(ESPN_SCOREBOARD_URL);
   const payload = await withRetry(async () => {
-    const response = await fetchImpl(ESPN_SCOREBOARD_URL, espnRequestInit());
+    const response = await fetchImpl(url, espnRequestInit());
     return parseJsonResponse(response, 'ESPN scoreboard request');
   }, ESPN_RETRY_OPTIONS);
   const scoreboard = payload?.content?.sbData;

@@ -35,13 +35,15 @@ const publicBoard = {
   squares: validNames,
   isDynamic: false,
 };
+// Open-square fill fixtures must stay before kickoff regardless of the wall-clock date.
+const futureKickoff = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 const matchup = {
   sideTeamName: 'Chicago Bears',
   sideTeamAbbr: 'CHI',
   topTeamName: 'Green Bay Packers',
   topTeamAbbr: 'GB',
   gameExternalId: '401772510',
-  gameStartsAt: '2026-09-13T17:00:00.000Z',
+  gameStartsAt: futureKickoff,
 };
 
 let containerStarted = false;
@@ -245,7 +247,7 @@ const seedPrePricingFixtures = async () => {
       'Legacy board ${index + 1}',
       2026,
       'legacy-game-${index + 1}',
-      '2026-09-13T17:00:00Z'::timestamptz
+      '${futureKickoff}'::timestamptz
     )`,
   ).join(',\n');
   const ownerContestValues = BOARD_IDS.map(
@@ -256,7 +258,7 @@ const seedPrePricingFixtures = async () => {
       'Pricing board ${index + 1}',
       2026,
       'owner-game-${index + 1}',
-      '2026-09-13T17:00:00Z'::timestamptz,
+      '${futureKickoff}'::timestamptz,
       'Chicago Bears',
       'CHI',
       'Green Bay Packers',
