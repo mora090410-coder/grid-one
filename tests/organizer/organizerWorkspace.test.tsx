@@ -187,6 +187,7 @@ describe('OrganizerWorkspace island', () => {
     const island = within(screen.getByRole('region', { name: 'Organizer status' }));
     expect(island.getByRole('button', { name: 'Organizer status' })).toHaveTextContent('3 of 100 assigned');
     expandIsland();
+    fireEvent.click(island.getByRole('button', { name: 'Payments' }));
     expect(island.getByText('2 paid')).toBeInTheDocument();
     expect(island.getByText('1 not asked yet')).toBeInTheDocument();
   });

@@ -143,6 +143,13 @@ test.describe('viewer shell', () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
     await page.evaluate(() => window.scrollTo(0, 0));
+    // Authorized notch contract: never retire an open/focused return target.
+    await expect(islandToggle).toBeVisible();
+    await expect(islandToggle).toHaveAttribute('aria-expanded', 'true');
+    await scoreRegion.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(islandToggle).toBeFocused();
+    await expect(islandToggle).toHaveAttribute('aria-expanded', 'false');
+    await firstViewport.getByRole('button', { name: 'Find my squares' }).focus();
     await expect(islandToggle).toHaveCount(0);
   });
 });

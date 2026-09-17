@@ -14,21 +14,24 @@ describe('ViewerIsland', () => {
     const toggle = screen.getByRole('button', { name: /Score/ });
     expect(toggle).toHaveTextContent('KC 21');
     expect(toggle).toHaveTextContent('PHI 14');
-    expect(screen.queryByText(/Score updates about every three minutes/)).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Game details' })).toBeNull();
     fireEvent.click(toggle);
     expect(screen.getByText(/Score updates about every three minutes/)).toBeInTheDocument();
-    expect(screen.getByText(/ESPN/)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Game details' })).toHaveTextContent('ESPN');
   });
 
-  it('adds a ring and the wins-now line once a name is selected', () => {
+  it('shows the selected square count and current match in the personal module, without a probability ring', () => {
     render(<ViewerIsland game={game} board={board} live={live} liveStatus="LIVE" isSynced selectedPlayer="Carrie Moss" yourSquares={3} winsNow />);
-    expect(screen.getByRole('img', { name: '3 squares for Carrie Moss' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Score/ }));
-    expect(screen.getByText('Currently matching: Carrie Moss')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Your squares' })).toHaveTextContent('3 squares');
+    fireEvent.click(screen.getByRole('button', { name: 'Your squares' }));
+    expect(screen.getByText('Selected name: Carrie Moss')).toBeInTheDocument();
+    expect(screen.getByText('Currently matching: one of your squares.')).toBeInTheDocument();
   });
 
-  it('renders nothing without a score', () => {
-    const { container } = render(<ViewerIsland game={game} board={board} live={null} liveStatus="PREGAME" isSynced={false} selectedPlayer="" yourSquares={0} winsNow={false} />);
-    expect(container.firstChild).toBeNull();
+  it('honestly labels an unavailable score rather than inventing zeroes', () => {
+    render(<ViewerIsland game={game} board={board} live={null} liveStatus="PREGAME" isSynced={false} selectedPlayer="" yourSquares={0} winsNow={false} />);
+    expect(screen.getByRole('button', { name: 'Score' })).toHaveTextContent('Waiting for score');
+    expect(screen.getByRole('button', { name: 'Score' })).toHaveTextContent('Score unavailable');
   });
 });

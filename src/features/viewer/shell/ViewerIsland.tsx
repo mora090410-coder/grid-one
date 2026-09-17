@@ -1,7 +1,8 @@
 import React from 'react';
-import type { BoardData, GameState, LiveGameData } from '../../../../types';
-import { Island } from '../../../design/primitives';
+import type { BoardData, GameState, LiveGameData, WinnerResolution, PendingMilestone } from '../../../../types';
+import { ContextNotch, type NotchModule } from '../../../design/primitives/ContextNotch';
 import { buildViewerScoreModel } from '../score/viewerScoreModel';
+import { viewerNotchResults } from './viewerNotchModel';
 
 export interface ViewerIslandProps {
   game: GameState;
@@ -12,44 +13,35 @@ export interface ViewerIslandProps {
   selectedPlayer: string;
   yourSquares: number;
   winsNow: boolean;
+  requested?: boolean;
+  winnerHistory?: WinnerResolution[];
+  pendingMilestones?: PendingMilestone[];
+  onFindSquares?: () => void;
+  onViewSquares?: () => void;
+  onViewScore?: () => void;
+  onViewResults?: () => void;
+  onNextScores?: () => void;
 }
 
-/** Pinned score capsule. Mirrors the score instrument so the score stays in view while the board scrolls. */
-const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, live, liveStatus, isSynced, selectedPlayer, yourSquares, winsNow }) => {
-  if (!live) return null;
+/** Public-only adapter. No payment/contact data or fetching enters this surface. */
+const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, live, liveStatus, isSynced, selectedPlayer, yourSquares, winsNow, requested, winnerHistory = [], pendingMilestones = [], onFindSquares, onViewSquares, onViewScore, onViewResults, onNextScores }) => {
   const score = buildViewerScoreModel({ live, liveStatus, isSynced });
-  const stale = live.freshness === 'stale' || live.freshness === 'offline' || live.freshness === 'refreshing';
+  const stale = score.authority.tone === 'stale';
   const leftLabel = game.leftAbbr || 'AWAY';
   const topLabel = game.topAbbr || 'HOME';
-
-  return (
-    <Island
-      label="Score"
-      placement="top"
-      collapsed={(
-        <span className="flex items-center gap-3 whitespace-nowrap font-mono tabular-nums text-[14px] text-broadcast-white">
-          <span>{leftLabel} {live.leftScore}</span>
-          <span className="text-broadcast-white/40">·</span>
-          <span>{topLabel} {live.topScore}</span>
-          <span className="text-broadcast-white/40">·</span>
-          <span className={live.state === 'in' ? 'text-tone-live' : 'text-broadcast-white/70'}>{score.periodLabel}</span>
-          {selectedPlayer ? (
-            <span role="img" aria-label={`${yourSquares} squares for ${selectedPlayer}`} className={`ml-1 inline-flex h-7 min-w-7 items-center justify-center rounded-capsule px-2 font-mono tabular-nums text-[13px] ${winsNow ? 'bg-gold/20 text-gold' : 'bg-broadcast-white/10 text-broadcast-white'}`}>{yourSquares}</span>
-          ) : null}
-        </span>
-      )}
-      expanded={(
-        <div className="flex flex-col gap-2 min-w-[260px] font-ui text-[14px] text-broadcast-white/80">
-          {winsNow && selectedPlayer ? <p className="font-medium text-gold">Currently matching: {selectedPlayer}</p> : null}
-          <p><span className="font-medium text-broadcast-white">{score.authority.label}</span> · {score.authority.detail}</p>
-          <p className="font-mono text-[12px] text-broadcast-white/60">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
-          {live.sourceName && !score.authority.detail.includes(live.sourceName) ? (
-            <p className="font-mono text-[12px] text-broadcast-white/60">Source · {live.sourceName}</p>
-          ) : null}
-        </div>
-      )}
-    />
-  );
+  const authority = live?.isManual || liveStatus.startsWith('MANUAL') ? score.authority.label : `Automatic · ${score.authority.label}`;
+  const modules: NotchModule[] = [
+    { id: 'game', label: 'Game', detail: <><p>{authority} · {score.authority.detail}</p><p>{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'}</p><p>{score.pollingText}</p>{live?.sourceName && <p>Source · {live.sourceName}</p>}</>, actions: onViewScore ? [{ label: 'View score', onClick: onViewScore }] : [] },
+    { id: 'squares', label: selectedPlayer ? 'Your squares' : 'Find squares', reading: selectedPlayer ? `${yourSquares} squares` : undefined,
+      detail: selectedPlayer ? <><p>Selected name: {selectedPlayer}</p><p>{stale ? 'Last known · ' : ''}Currently matching: {winsNow ? 'one of your squares' : 'none of your squares'}.</p></> : <p>Choose the name used on this board.</p>,
+      actions: [
+        ...(selectedPlayer && onViewSquares ? [{ label: 'View your squares', onClick: onViewSquares }] : []),
+        ...(onFindSquares ? [{ label: selectedPlayer ? 'Choose another name' : 'Find my squares', onClick: onFindSquares }] : []),
+        ...(live?.state === 'in' && onNextScores ? [{ label: 'See next scores', onClick: onNextScores }] : []),
+      ] },
+    { id: 'results', label: 'Results', reading: `${winnerHistory.length} published`, detail: <ul>{viewerNotchResults(winnerHistory, pendingMilestones).map(row => <li key={row.label}>{row.label} · {row.status}</li>)}</ul>, actions: onViewResults ? [{ label: 'View results', onClick: onViewResults }] : [] },
+  ];
+  return <ContextNotch label="Score" placement="fixed" requested={requested} modules={modules} summary={<><span>{live ? `${leftLabel} ${live.leftScore} · ${topLabel} ${live.topScore} · ${score.periodLabel}` : 'Waiting for score'}</span><span>{authority} · {score.freshness || 'Checked time unavailable'}</span></>} />;
 };
 
 export default ViewerIsland;

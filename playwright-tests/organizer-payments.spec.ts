@@ -286,7 +286,9 @@ test('iPad touch hold remains expanded on release and movement cancels hold', as
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await toggle.click();
   await expect(page.getByRole('region', { name: 'Board details', exact: true })).toBeVisible();
-  await page.locator('.organizer-island').evaluate(async element => { await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished)); });
+  // Responsive spring retargeting may cancel a prior animation; wait for the
+  // actual surface to settle rather than treating a valid retarget as failure.
+  await expect.poll(() => page.locator('.organizer-island').evaluate(element => element.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length)).toBe(0);
   const expanded = await page.locator('.organizer-island').boundingBox();
   expect(expanded!.x).toBeGreaterThanOrEqual(0);
   expect(expanded!.x + expanded!.width).toBeLessThanOrEqual(820);
@@ -309,8 +311,9 @@ test('320px enlarged text keeps the trigger and payment controls reachable', asy
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
   await toggle.click();
-  const details = page.getByRole('region', { name: 'Board details', exact: true });
-  await details.getByRole('button', { name: 'Payments', exact: true }).click();
+  const notch = page.getByRole('region', { name: 'Organizer status', exact: true });
+  await notch.getByRole('button', { name: 'Payments', exact: true }).click();
+  await notch.getByRole('button', { name: 'Open payments', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Payments', exact: true });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('searchbox').fill('Bob');

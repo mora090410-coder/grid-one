@@ -23,6 +23,13 @@
   --g-radius-card: 20px;
   --g-radius-capsule: 999px;
   --g-radius-cell: 4px;
+  /* Shared top-attached board companion. Spring response/damping live in notchMotion.ts. */
+  --g-notch-width: 28rem;
+  --g-notch-compact-width: 22rem;
+  --g-notch-shoulder: 12px;
+  --g-notch-medallion: 56px;
+  --g-notch-detail-width: 21rem;
+  --g-notch-connector-height: 10px;
 
   /* Type */
   --g-font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;

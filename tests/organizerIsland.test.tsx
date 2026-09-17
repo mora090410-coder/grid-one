@@ -34,8 +34,9 @@ describe('organizer island disclosure', () => {
     expect(screen.queryByRole('button', { name: 'Draw numbers' })).not.toBeInTheDocument();
     fireEvent.click(trigger);
     expect(within(screen.getByRole('region', { name: 'Board details' })).getByText('72 of 100 assigned')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Board details' })).toHaveTextContent('Saved');
+    fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
     expect(screen.getByText('12 not asked yet')).toBeVisible();
-    expect(screen.getByText('Saved')).toBeVisible();
     screen.getByRole('button', { name: 'Draw numbers' }).focus();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(trigger).toHaveFocus();
@@ -49,6 +50,7 @@ describe('organizer island disclosure', () => {
     render(<OrganizerIsland {...base} onPayments={callback} />);
     fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
     fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open payments' }));
     expect(callback).toHaveBeenCalledOnce();
   });
   it('dismisses outside without stealing focus from another control', () => {

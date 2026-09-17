@@ -171,3 +171,17 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 - The island renders dark on the cream base; it is a broadcast object.
 - Pills are the default for actions, tags, and inputs. The former pill prohibition is withdrawn.
+
+## Authorized replacement notch — September 16
+
+The organizer and finalized-viewer islands now share ContextNotch, replacing (not supplementing) their former disclosure surfaces. This section supersedes the island-specific hover, capsule and motion descriptions above; unchanged surfaces retain their baseline.
+
+One dark surface attaches to the top of the web shell with inverse shoulders. It reveals a three-cell rail and one attached selected detail, without scaling text. Viewer modules are Game / Find squares (Your squares after identity) / Results; organizer preparation is Board / Payments / Share, and publication changes this to Game / Results / Share. Only assigned-square fraction has a ring. Main score, identity, personal summary, exact board, payment workspace and confirmation flows remain canonical.
+
+Fine-pointer hover previews; clicking a preview pins. Tap/Enter/Space opens; Keep open, Unpin, Close and Escape are explicit. Existing cancellable organizer touch hold remains optional. Hidden contents are inert. Action invocation closes synchronously and focuses the persistent toggle before the existing callback. The viewer retains this target through dialog interactions, and hides when the main score returns and focus safely leaves. It yields while the main Find entry passes beneath the attachment.
+
+Motion uses sampled damped spring unit-step responses: unfold .42/.78, contents .36/.82, detail glide/resize .5/.86, reading .9/.9 (response/damping). Contents trail by 45ms capped at 180ms. Detail crossfade is 160ms ease-in-out; retraction is 200ms ease-in with no exit delay. Reduced motion is instant, not a shortened spring. This is an explicit web translation, not native SwiftUI glass or hardware integration; attribution is in THIRD_PARTY_NOTICES.md. Geometry tokens retain the --g-* namespace. Execution and browser evidence live under .hermes/notch-implementation/.
+
+### Notch refinement 1
+
+The shell is explicitly near-black `--g-ink` with concave shoulders and a discreet rim. Module controls are circular medallions with original simple SVG symbols and readable labels beneath, not bordered rectangular tabs. Only Board assignment uses a measured progress ring. One attached detail card uses a visible connector aligned to the selected cell's measured center; wide layouts bound and move the card, narrow layouts use the available width. Both remain the same DOM objects during selection. Contents keep their destination layout while the shell unfolds; unchanged observer measurements do not restart motion. Interrupted geometry is sampled before cancellation, and a reduced-motion preference change cancels every active notch animation, including independent reading rings. Refinement evidence uses the `pass-refine1` files under `.hermes/notch-implementation/`; visual acceptance still belongs to review, not this specification alone.

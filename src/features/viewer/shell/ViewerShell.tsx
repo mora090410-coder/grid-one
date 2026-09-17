@@ -38,15 +38,28 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode, servicesEnabled = true, organizerPreview = false, organizerHref, onShare,
 }) => {
   const scoreRef = useRef<HTMLDivElement>(null);
+  const findRef = useRef<HTMLDivElement>(null);
+  const personalRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const scenariosRef = useRef<HTMLDivElement>(null);
+  const visit = (target: React.RefObject<HTMLDivElement | null>) => {
+    target.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    target.current?.focus({ preventScroll: true });
+  };
   const [scoreAboveViewport, setScoreAboveViewport] = useState(false);
   useEffect(() => {
     const target = scoreRef.current;
     if (!target || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(([entry]) => {
-      setScoreAboveViewport(!entry.isIntersecting && entry.boundingClientRect.bottom <= 0);
-    });
+    const update = (scoreBottom = target.getBoundingClientRect().bottom) => {
+      const find = findRef.current?.getBoundingClientRect();
+      const overlapsFind = find && find.top < 130 && find.bottom > 0;
+      setScoreAboveViewport(scoreBottom <= 0 && !overlapsFind);
+    };
+    const observer = new IntersectionObserver(([entry]) => update(entry.isIntersecting ? 1 : entry.boundingClientRect.bottom));
     observer.observe(target);
-    return () => observer.disconnect();
+    const onScroll = () => update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { observer.disconnect(); window.removeEventListener('scroll', onScroll); };
   }, []);
   const [boardFocus, setBoardFocus] = useState(highlightedCoords);
   const [viewSquareRequest, setViewSquareRequest] = useState<{ row: number; col: number } | null>(null);
@@ -79,19 +92,24 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
 
   return (
     <Base kind="dark">
-      {scoreAboveViewport && <ViewerIsland game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow} />}
+      {!organizerPreview && <ViewerIsland key={shareCode || game.title} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
+        winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
+        onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
       <MainTag
         className={`mx-auto grid w-full max-w-6xl gap-10 px-4 pt-6 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
         aria-label={`${game.title || 'GridOne board'} viewer`}
       >
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
-          <div ref={scoreRef}>
+          <div ref={scoreRef} tabIndex={-1}>
           <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           </div>
-          <FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} />
+          <div ref={findRef}><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
+          <div ref={resultsRef} tabIndex={-1} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
-          <YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} />
+          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No resolved winner records have been published yet.</p>}
+          </div>
+          {selectedPlayer && <div ref={personalRef} tabIndex={-1}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {pendingMilestones.length > 0 && servicesEnabled && (
             <Glass as="section" padding="md" className="flex flex-col gap-2" aria-labelledby="pending-results-title">
               <h2 id="pending-results-title" className="font-ui text-[15px] font-medium text-fg">Pending confirmation</h2>
@@ -102,7 +120,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </Glass>
           )}
-          <ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} />
+          {!isFinal && <div ref={scenariosRef} tabIndex={-1}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
           <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
         </div>
 

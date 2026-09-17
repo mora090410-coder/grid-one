@@ -903,6 +903,11 @@ export default function OrganizerWorkspace({
     setLocatedSquare({ index });
   }} />;
   const liveScoreModel = liveData ? buildViewerScoreModel({ live: liveData, liveStatus: '', isSynced: true }) : null;
+  const visitNotchDestination = (id: string) => {
+    const target = document.getElementById(id);
+    target?.scrollIntoView({ block: 'center' });
+    target?.focus({ preventScroll: true });
+  };
   const islandExtras = {
     unpaid: unpaidCount, unknown: unknownCount,
     saveStatus: paymentBusy || privateWritesPending > 0 ? 'saving' : paymentIssue ? 'save_failed' : saveState.status,
@@ -911,6 +916,11 @@ export default function OrganizerWorkspace({
     liveSummary: liveData && liveScoreModel ? `${game.leftAbbr} ${liveData.leftScore} · ${game.topAbbr} ${liveData.topScore} · ${liveScoreModel.periodLabel}` : undefined,
     liveTrust: liveScoreModel ? `${liveScoreModel.authority.label} · ${liveScoreModel.authority.detail}${liveScoreModel.freshness ? ` · ${liveScoreModel.freshness}` : ''}` : undefined,
     isFinal: finalRecord,
+    onGame: () => visitNotchDestination('organizer-score'),
+    onResults: () => visitNotchDestination(finalRecord ? 'organizer-results' : 'organizer-corrections'),
+    shareAction: isPublished || isShared
+      ? { label: 'View sharing options', onClick: () => visitNotchDestination('organizer-share') }
+      : onShareBoard ? { label: 'Share while selling', onClick: () => setShareOpen(true), disabled: sharePending || saveState.status !== 'clean' } : undefined,
     onPayments: openPayments,
     onFindPerson: openPayments,
     onShowUnassigned: openCount > 0 && !isPublished ? () => { setOrganizerTask('board'); setHighlightOpen(true); scrollToBoard(); } : undefined,
@@ -1064,6 +1074,7 @@ export default function OrganizerWorkspace({
     return (
       <Base kind="cream">
         <OrganizerIsland
+          key={activePoolId}
           {...islandExtras}
           filled={paymentModel.totals.assigned}
           paid={paidCount}
@@ -1081,7 +1092,7 @@ export default function OrganizerWorkspace({
           <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
             <section id="workspace-board" aria-label="Board" style={{ scrollMarginTop: 100 }} className="flex min-w-0 max-w-full flex-col gap-6">
               {finalRecord && <div id="organizer-results" tabIndex={-1}><FinalRecordCard winnerHistory={correctionHistory} onCreateAnotherBoard={runAnotherBoard} /></div>}
-              <SharePanel shareUrl={shareUrl} onOpenViewer={() => onOpenViewer?.()} />
+              <div id="organizer-share" tabIndex={-1}><SharePanel shareUrl={shareUrl} onOpenViewer={() => onOpenViewer?.()} /></div>
               <div id="organizer-score" tabIndex={-1}><ScoreAuthorityCard
                 game={game}
                 liveData={liveData}
@@ -1129,13 +1140,13 @@ export default function OrganizerWorkspace({
                 onChange={updatePayoutDescription}
                 onSavePayoutDescriptions={() => void savePayoutDescriptions()}
               />
-              <CorrectionsCard
+              <div id="organizer-corrections" tabIndex={-1}><CorrectionsCard
                 winnerHistory={correctionHistory}
                 draft={correctionDraft}
                 pending={scoreSaveStatus === 'saving'}
                 onDraftChange={setCorrectionDraft}
                 onPublishCorrection={() => void publishCorrection()}
-              />
+              /></div>
               <div id="organizer-delivery" tabIndex={-1}><DeliveryIssuesCard issues={notificationDeliveryIssues} /></div>
               <BoardToolsCard
                 isPublished
@@ -1156,6 +1167,7 @@ export default function OrganizerWorkspace({
     <Base kind="cream">
       {familyBusy && <p role="status" className="px-5 py-3 text-sm text-fg-2">Updating family access. Board editing will resume when this finishes.</p>}
       <OrganizerIsland
+          key={activePoolId}
           {...islandExtras}
         filled={paymentModel.totals.assigned}
         paid={paidCount}
@@ -1167,7 +1179,7 @@ export default function OrganizerWorkspace({
       />
       <main inert={familyBusy || paymentBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-2 pb-24">
         {header}
-        <Glass className="mt-4 flex flex-col gap-3" padding="md">
+        <Glass id="organizer-share" tabIndex={-1} className="mt-4 flex flex-col gap-3" padding="md">
           <Eyebrow>{axesCommitted ? (isShared ? 'Shared board · Review game numbers' : 'Numbers drawn · Review your board') : isShared ? 'Selling · Shared board' : 'Set up your board'}</Eyebrow>
           <p className="font-ui text-[15px] text-fg-2">{paymentModel.totals.assigned} assigned · {100 - paymentModel.totals.assigned} unassigned. {axesCommitted ? 'Review the board before finalizing game numbers.' : 'Allocate squares, then draw game numbers when ready.'}</p>
           <div className="flex flex-wrap gap-2">
