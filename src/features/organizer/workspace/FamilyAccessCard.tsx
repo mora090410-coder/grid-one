@@ -46,17 +46,19 @@ export default function FamilyAccessCard({ boardId, labels, clean, flush, onRelo
       if (!response.ok) throw new Error(response.status === 409 ? 'This board changed. Reload the latest board before trying again.' : result.message || result.error || 'Family access could not be updated.');
       if (action === 'invite' && typeof result.url === 'string') { setLink(result.url); setExpiresAt(typeof result.expiresAt === 'string' && Number.isFinite(Date.parse(result.expiresAt)) ? result.expiresAt : ''); }
       await onReload();
-      setMessage(action === 'invite' ? 'Private link ready. Only send it to this family.' : action === 'revoke' ? 'This family’s edit links are revoked.' : 'Responsibility updated. Names on the board are unchanged.');
+      setMessage(action === 'invite' ? `Link ready for ${label}. Copy it below and send it directly to them by text or email.` : action === 'revoke' ? 'This family’s edit links are revoked.' : 'Responsibility updated. Names on the board are unchanged.');
       if (action === 'reassign') { setAcknowledged(false); setNumbers(''); setNewLabel(''); }
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Family access could not be updated. Reload the board before trying again.'); }
     finally { pending.current = false; setBusy(false); onBusy(false); requestAnimationFrame(() => { if (trigger?.isConnected) trigger.focus(); }); }
   };
-  return <Glass padding="lg"><details><summary className="min-h-11 cursor-pointer font-ui text-lg text-fg">Family access (optional)</summary>
+  return <Glass padding="lg"><details><summary className="min-h-11 cursor-pointer font-ui text-lg text-fg">Send families their squares</summary>
     <div className="mt-4 flex flex-col gap-4">
-      <p className="text-sm text-fg-2">Let a family update names on its assigned squares. Its responsibility stays the same. Anyone with its private link can make those edits; keep it separate from the public board link.</p>
+      <p className="text-sm text-fg-2">Choose a family, then send them their private link by text or email. It opens their assigned squares so they can update names and availability. Where guest sharing is enabled, they can also get a separate link for friends to choose squares without an account.</p>
+      <p className="text-sm text-fg-2">Send this private link only to the responsible family. Anyone with it can manage their squares; it is not the link to post publicly.</p>
       {!clean && <p role="status" className="text-sm text-fg-2">Save your latest changes before managing family access.</p>}
       <label className="text-sm text-fg-2">Responsible family<select aria-label="Responsible family" value={label} disabled={busy} onChange={event => { setLabel(event.target.value); setLink(''); }} className="mt-2 min-h-11 w-full rounded-control border border-hairline bg-ground px-3 text-fg"><option value="">Choose a family</option>{families.map(value => <option key={value}>{value}</option>)}</select></label>
       {!families.length && <p className="text-sm text-fg-2">Assign a responsible family before creating an edit link.</p>}
+      {cells.length > 0 && <p className="text-sm text-fg-2">{label} · {cells.length} assigned {cells.length === 1 ? 'square' : 'squares'}: {cells.map(cell => cell + 1).join(', ')}</p>}
       <div className="flex flex-wrap gap-2"><CapsuleButton disabled={!clean || busy || !cells.length} onClick={() => void mutate('invite')}>Create private family link</CapsuleButton><CapsuleButton variant="quiet" disabled={!clean || busy || !cells.length} onClick={() => void mutate('revoke')}>Revoke family links</CapsuleButton></div>
       {link && <>{expiresAt && <p className="text-sm text-fg-2">This private link expires <time dateTime={expiresAt}>{new Date(expiresAt).toLocaleString()}</time>. Creating another link replaces this one.</p>}<CapsuleInput label="Private family link" readOnly value={link}/><CapsuleButton variant="quiet" onClick={() => { if (!navigator.clipboard) { setMessage('Select and copy the private link above.'); return; } void navigator.clipboard.writeText(link).then(() => setMessage('Private link copied.')).catch(() => setMessage('Select and copy the private link above.')); }}>Copy private link</CapsuleButton></>}
       <details><summary className="min-h-11 cursor-pointer text-sm font-semibold text-fg">Change responsibility</summary><div className="mt-3 flex flex-col gap-3">

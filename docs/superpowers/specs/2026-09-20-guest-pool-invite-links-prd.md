@@ -57,7 +57,7 @@ Private family editing links retain their private wording and placement. They mu
 
 ## 5. Guest experience
 
-1. Open the invite and see board identity, the explicitly public seller name, and the entire board. Seller-scoped eligible squares are highlighted; other squares remain readable but unselectable.
+1. Open the invite and see board identity, the explicitly public seller name, and only that participant's scoped square collection. Preserve original square numbers even when scattered; do not render other participants' squares or names. This replaces the original full-board guest presentation following Anthony's September 21 walkthrough clarification. Ordinary public board links still show the full board.
 2. Select up to the allowed number of squares. A selection becomes held only after server acknowledgement; pending feedback must not falsely promise a reservation.
 3. See a server-based 90-second hold countdown. Holds are anonymous to public viewers. Recommended organizer label before confirmation: **Guest selecting**.
 4. Enter a display name, trimmed to 2–30 characters, and confirm. These limits apply to this new guest flow; existing names are not truncated or rewritten.

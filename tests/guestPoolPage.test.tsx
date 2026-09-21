@@ -38,27 +38,76 @@ describe('GuestPoolPage', () => {
     };
     show(transport);
     expect(await screen.findByRole('heading', { name: "Choose from Anthony's available squares" })).toBeInTheDocument();
-    const square = screen.getByRole('gridcell', { name: /Square 1, available/i });
+    const square = screen.getByRole('button', { name: /Square 1, available/i });
     square.focus();
     fireEvent.keyDown(square, { key: 'ArrowRight' });
-    expect(screen.getByRole('gridcell', { name: /Square 2, available/i })).toHaveFocus();
+    expect(screen.getByRole('button', { name: /Square 2, available/i })).toHaveFocus();
     fireEvent.click(square);
     expect(square).toHaveAttribute('aria-busy', 'true');
-    expect(square).toHaveAttribute('aria-selected', 'false');
+    expect(square).toHaveAttribute('aria-pressed', 'false');
     resolveHold(snapshot({ holds: [{ index: 0, expiresAt: '2026-09-20T18:01:30.000Z', mine: true }], heldCells: [0] }));
-    await waitFor(() => expect(square).toHaveAttribute('aria-selected', 'true'));
-    expect(screen.getByText(/Held for you/)).toBeInTheDocument();
+    await waitFor(() => expect(square).toHaveAttribute('aria-pressed', 'true'));
+    expect(screen.getByRole('timer', { name: /Held for you/ })).toBeInTheDocument();
     const continueButton = screen.getByRole('button', { name: 'Continue with Square 1' });
     fireEvent.click(continueButton);
     expect(screen.getByLabelText('Name on your squares')).toHaveFocus();
   });
 
-  it('shows public names on occupied squares and explains the clipped phone board', async () => {
+  it('shows public names on occupied offered squares without rendering outside cells', async () => {
     const squares = snapshot().squares.map(cell => [...cell]);
     squares[2] = ['Maria'];
-    show({ snapshot: vi.fn().mockResolvedValue(snapshot({ squares, claimedCells: [2] })), manage: vi.fn() });
-    expect(await screen.findByText('Swipe horizontally to see all 10 columns.')).toBeInTheDocument();
-    expect(screen.getByRole('gridcell', { name: /Square 3, claimed, Maria/i })).toHaveTextContent('Maria');
+    squares[3] = ['Outside Name'];
+    show({ snapshot: vi.fn().mockResolvedValue(snapshot({ squares, claimedCells: [2, 3], invite: { ...snapshot().invite!, cells: [0, 1, 2] } })), manage: vi.fn() });
+    expect(await screen.findByRole('heading', { name: 'Offered squares' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Square 3, claimed, Maria/i })).toHaveTextContent('Maria');
+    expect(screen.queryByText('Outside Name')).not.toBeInTheDocument();
+  });
+
+  it('renders scattered permanent numbers as one compact keyboard collection', async () => {
+    const availability = Array.from({ length: 100 }, () => 'unspecified');
+    for (const index of [0, 11, 22]) availability[index] = 'available';
+    show({
+      snapshot: vi.fn().mockResolvedValue(snapshot({
+        availability,
+        invite: { ...snapshot().invite!, cells: [22, 0, 11] },
+      })),
+      manage: vi.fn(),
+    });
+    const list = await screen.findByRole('list', { name: "Anthony's offered squares" });
+    expect(list).toContainElement(screen.getByRole('button', { name: /Square 1, available/i }));
+    expect(list).toContainElement(screen.getByRole('button', { name: /Square 12, available/i }));
+    expect(list).toContainElement(screen.getByRole('button', { name: /Square 23, available/i }));
+    expect(screen.queryByRole('button', { name: /Square 2,/i })).not.toBeInTheDocument();
+
+    const first = screen.getByRole('button', { name: /Square 1, available/i });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(screen.getByRole('button', { name: /Square 12, available/i })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
+    expect(screen.getByRole('button', { name: /Square 23, available/i })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: 'Home' });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(first, { key: 'End' });
+    expect(screen.getByRole('button', { name: /Square 23, available/i })).toHaveFocus();
+    expect(list.querySelectorAll('button[tabindex="0"]')).toHaveLength(1);
+  });
+
+  it('handles twenty offered squares and an empty guest pass without exposing the full board', async () => {
+    const twenty = Array.from({ length: 20 }, (_, index) => index * 2);
+    const availability = Array.from({ length: 100 }, (_, index) => twenty.includes(index) ? 'available' : 'unspecified');
+    const transport: GuestTransport = {
+      snapshot: vi.fn().mockResolvedValueOnce(snapshot({ availability, invite: { ...snapshot().invite!, cells: twenty } })),
+      manage: vi.fn(),
+    };
+    const first = show(transport);
+    const list = await screen.findByRole('list', { name: "Anthony's offered squares" });
+    expect(list.querySelectorAll('li')).toHaveLength(20);
+    expect(screen.queryByRole('button', { name: /Square 100,/i })).not.toBeInTheDocument();
+    first.unmount();
+
+    show({ snapshot: vi.fn().mockResolvedValue(snapshot({ invite: { ...snapshot().invite!, cells: [] } })), manage: vi.fn() });
+    expect(await screen.findByText('This guest pass has no squares available to show.')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: /offered squares/i })).not.toBeInTheDocument();
   });
 
   it('does not let a delayed background read erase a newer acknowledged hold', async () => {
@@ -78,14 +127,14 @@ describe('GuestPoolPage', () => {
       manage: vi.fn(),
     };
     show(transport);
-    const square = await screen.findByRole('gridcell', { name: /Square 1, available/i });
+    const square = await screen.findByRole('button', { name: /Square 1, available/i });
     fireEvent.focus(window);
     await waitFor(() => expect(transport.snapshot).toHaveBeenCalledTimes(2));
     fireEvent.click(square);
-    await waitFor(() => expect(square).toHaveAttribute('aria-selected', 'true'));
+    await waitFor(() => expect(square).toHaveAttribute('aria-pressed', 'true'));
     await act(async () => { resolveRead(snapshot({ revision: 4, serverTime: '2026-09-20T18:00:01.000Z' })); });
-    expect(square).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('gridcell', { name: /Square 1, held for you/i })).toBeInTheDocument();
+    expect(square).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Square 1, held for you/i })).toBeInTheDocument();
   });
 
   it('keeps the entered name when a hold expires and explains how to select again', async () => {
@@ -110,7 +159,7 @@ describe('GuestPoolPage', () => {
     });
     const transport: GuestTransport = { snapshot: vi.fn().mockResolvedValue(held), manage: vi.fn() };
     show(transport);
-    await screen.findByRole('gridcell', { name: /Square 1, held for you/i });
+    await screen.findByRole('button', { name: /Square 1, held for you/i });
     expect(transport.snapshot).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(5_100);
     await waitFor(() => expect(transport.snapshot).toHaveBeenCalledTimes(2));
@@ -125,7 +174,7 @@ describe('GuestPoolPage', () => {
     });
     const transport: GuestTransport = { snapshot: vi.fn().mockResolvedValue(held), manage: vi.fn() };
     show(transport);
-    await screen.findByRole('gridcell', { name: /Square 2, temporarily held/i });
+    await screen.findByRole('button', { name: /Square 2, temporarily held/i });
     await vi.advanceTimersByTimeAsync(4_100);
     await waitFor(() => expect(transport.snapshot).toHaveBeenCalledTimes(2));
     vi.useRealTimers();
@@ -138,19 +187,19 @@ describe('GuestPoolPage', () => {
     };
     vi.mocked(transport.snapshot).mockResolvedValueOnce(snapshot()).mockRejectedValue(Object.assign(new Error('Access denied'), { code: 'INVITE_INACTIVE', status: 403 }));
     show(transport);
-    fireEvent.click(await screen.findByRole('gridcell', { name: /Square 1, available/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Square 1, available/i }));
     expect(await screen.findByText('This invite link is no longer active.')).toBeInTheDocument();
-    expect(screen.queryByRole('gridcell', { name: /Square 1, available/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Square 1, available/i })).not.toBeInTheDocument();
   });
 
   it('preserves the acknowledged hold and explains the limit instead of silently replacing it', async () => {
     const held = snapshot({ holds: [{ index: 0, expiresAt: '2026-09-20T18:01:30.000Z', mine: true }], heldCells: [0] });
     const transport: GuestTransport = { snapshot: vi.fn().mockResolvedValue(held), manage: vi.fn() };
     show(transport);
-    await screen.findByRole('gridcell', { name: /Square 1, held for you/i });
-    fireEvent.click(screen.getByRole('gridcell', { name: /Square 2, available/i }));
+    await screen.findByRole('button', { name: /Square 1, held for you/i });
+    fireEvent.click(screen.getByRole('button', { name: /Square 2, available/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent('up to 1 square');
-    expect(screen.getByRole('gridcell', { name: /Square 1, held for you/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: /Square 1, held for you/i })).toHaveAttribute('aria-pressed', 'true');
     expect(transport.snapshot).toHaveBeenCalledTimes(1);
   });
 
@@ -181,7 +230,7 @@ describe('GuestPoolPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open my claim' }));
     expect(await screen.findByRole('heading', { name: 'Your squares are claimed' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Change squares' }));
-    fireEvent.click(screen.getByRole('gridcell', { name: /Square 2, available/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Square 2, available/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Save square change' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Someone just grabbed');
     expect(screen.getByText(/Current claim: Square 1/)).toBeInTheDocument();
@@ -238,10 +287,10 @@ describe('GuestPoolPage', () => {
       manage: vi.fn(),
     };
     show(transport);
-    await screen.findByRole('gridcell', { name: /Square 1, available/i });
+    await screen.findByRole('button', { name: /Square 1, available/i });
     fireEvent.focus(window);
     expect(await screen.findByText('This invite link is no longer active.')).toBeInTheDocument();
-    expect(screen.queryByRole('gridcell', { name: /Square 1, available/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Square 1, available/i })).not.toBeInTheDocument();
   });
 
   it.each([

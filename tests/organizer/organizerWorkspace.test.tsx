@@ -1139,7 +1139,7 @@ it('keeps family changes disabled after board autosave until the private-note wr
   fireEvent.click(screen.getByRole('button', {name:/^Square 1,/}));
   fireEvent.click(screen.getByRole('radio', {name:'Paid'}));
   fireEvent.click(screen.getByRole('button', {name:'Save'}));
-  fireEvent.click(screen.getByText('Family access (optional)'));
+  fireEvent.click(screen.getByText('Send families their squares'));
   fireEvent.change(screen.getByLabelText('Responsible family'), {target:{value:'Anthony'}});
   await waitFor(() => expect(onPublish).toHaveBeenCalled(), {timeout:2000});
   await act(async () => {});

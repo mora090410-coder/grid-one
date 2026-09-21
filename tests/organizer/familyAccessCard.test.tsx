@@ -7,13 +7,15 @@ describe('family access', () => {
  it('issues a scoped link only for explicit allocations after flushing', async () => {
   const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ url: 'https://gridone.app/family/private-token', expiresAt: '2026-09-20T12:00:00Z' })));
   const p = props(); render(<FamilyAccessCard {...p}/>);
-  fireEvent.click(screen.getByText('Family access (optional)'));
+  fireEvent.click(screen.getByText('Send families their squares'));
   fireEvent.change(screen.getByLabelText('Responsible family'), { target: { value: 'Anthony' } });
   fireEvent.click(screen.getByRole('button', { name: 'Create private family link' }));
   await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
   expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({ action: 'invite', revision: 4, label: 'Anthony', cells: [0, 1] });
   expect(await screen.findByLabelText('Private family link')).toHaveValue('https://gridone.app/family/private-token');
   expect(screen.getByText(/This private link expires/)).toBeVisible();
+  expect(screen.getByText(/Link ready for Anthony.*send it directly to them by text or email/)).toBeVisible();
+  expect(screen.getByText(/Anthony · 2 assigned squares: 1, 2/)).toBeVisible();
   expect(p.onReload).toHaveBeenCalledOnce(); fetch.mockRestore();
  });
  it('does not permit mutations while unsaved or infer a family from holder names', () => {

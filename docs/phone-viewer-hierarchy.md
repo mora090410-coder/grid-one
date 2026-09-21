@@ -176,3 +176,5 @@ The main score must be above the viewport before the notch is requested, and the
 ## Guest occupancy overlay (local implementation; default off)
 
 For explicitly enabled boards, the selling viewer overlays anonymous guest holds and committed display names using a narrow public occupancy snapshot. Realtime events invalidate that snapshot and 15-second visible polling provides fallback with a reconnecting label. No claim capability or seller payment instructions enter the ordinary public viewer. Boards outside the allowlist retain their existing 30-second refresh behavior. Self-service claiming lives at the distinct guest invitation route; a normal public board link grants no write permission.
+
+The guest invitation route displays only the participant's offered squares in a responsive collection, with two columns on narrow phones. Original square numbers remain intact, including scattered assignments. No horizontal scrolling or full-board scan is needed to choose from a participant's ten or twenty squares. Claimed offered cells still show their public display names. This scoped claim view does not replace the ordinary public viewer's full-board hierarchy.

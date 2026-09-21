@@ -58,7 +58,7 @@ for (const width of [390, 1440]) {
     await page.getByLabel('What this board supports', { exact: true }).fill('Help Lincoln Baseball get to summer tournaments.');
     await page.getByLabel('Amount per square (optional)', { exact: true }).fill('$20');
     await page.getByLabel('How to join', { exact: true }).fill('Contact the family who shared this board with your square numbers.');
-    await page.getByText('Family access (optional)', { exact: true }).click();
+    await page.getByText('Send families their squares', { exact: true }).click();
     await page.getByRole('combobox', { name: 'Responsible family', exact: true }).selectOption('Anthony');
     await expect.poll(() => row.board.participation.instructions).toBe('Contact the family who shared this board with your square numbers.');
     await page.getByRole('button', { name: 'Create private family link', exact: true }).click();

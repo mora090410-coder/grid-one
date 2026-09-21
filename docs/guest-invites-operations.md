@@ -36,4 +36,10 @@ Do not drop the guest tables or triggers as a rollback shortcut: that can discar
 
 ## Evidence
 
+### Participant sharing handoff
+
+The participant sharing endpoint requires additive migration `030_family_guest_links.sql`; applying that migration to production is a separate release action. The existing exact-board allowlist still applies. A family link alone cannot enable guest claiming on an unlisted board. Deploy the migration before the new endpoint/UI in the approved environment. The migration introduces a service-only RPC and grants no browser database access.
+
+Verify organizer private-link handoff → family public-link creation/copy → anonymous buyer selection from only that family's squares → organizer convergence. Include scattered assignments, unavailable squares, existing guest claims, disabled/expired invite reuse, and unsaved family edits. Creating the public link must never change availability. Native sharing merely opens the user's share sheet; no messages are sent by GridOne. API reads allow 120 requests per minute and creates 30 per minute, independently per IP and private capability using keyed hashes.
+
 Local execution details and exact gate results are appended to `docs/REFACTOR_LOG.md`. The implementation plan records task completion. Scratch command logs and agent review reports live in `.work/guest-invites/` in the isolated worktree; they are not production assets or a substitute for release-environment verification.

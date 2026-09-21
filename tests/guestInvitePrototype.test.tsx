@@ -13,9 +13,9 @@ it('runs the owner-to-guest prototype without network requests', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Create guest link' }));
   expect((screen.getByLabelText('Guest link') as HTMLInputElement).value).toContain('/dev/guest-invites?guest=1&seller=Anthony');
   expect(await screen.findByRole('heading', { name: "Choose from Anthony's available squares" })).toBeInTheDocument();
-  const square = screen.getByRole('gridcell', { name: /Square 1, available/i });
+  const square = screen.getByRole('button', { name: /Square 1, available/i });
   fireEvent.click(square);
-  await waitFor(() => expect(square).toHaveAttribute('aria-selected', 'true'));
+  await waitFor(() => expect(square).toHaveAttribute('aria-pressed', 'true'));
   fireEvent.change(screen.getByLabelText('Name on your squares'), { target: { value: 'Maria' } });
   fireEvent.click(screen.getByRole('button', { name: 'Claim 1 square' }));
   expect(await screen.findByText('Maria · Square 1')).toBeInTheDocument();

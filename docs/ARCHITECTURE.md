@@ -133,6 +133,8 @@ functions/api/stripe/webhook.ts
 
 Migration `027_family_access.sql` is additive and must be installed before releasing these controls. Rollback revokes active family links while retaining all edited names and history; do not drop the data or break existing public share links.
 
+`POST /api/family/guest-link` accepts only `read` or `create` with the private family bearer capability. The server resolves board identity, enforces the guest rollout gate and keyed per-IP/per-capability rate limits, then calls the service-only `gridone_family_guest_link` RPC from migration `030_family_guest_links.sql`. Under the board lock, the RPC rechecks the current capability and derives exact assignment scope. Existing matching public invites retain organizer settings; disabled, expired or mismatched scopes cannot be bypassed. The response projects saved availability counts and a signed public URL only for active links. No names, availability or payment metadata are changed. The family UI keeps draft editing separate from link reads and refreshes its complete saved record after an explicit successful create while editing is disabled; it never advances a revision while retaining older saved names.
+
 
 ## Organizer Payments and adaptive island
 

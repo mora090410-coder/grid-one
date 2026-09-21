@@ -6,14 +6,15 @@ const inviteId = '33333333-3333-4333-8333-333333333333';
 const guestPath = `/p/${boardId}?invite=browser-test-invite`;
 const payment = { label: 'Arrange payment with Anthony', detail: 'Contact Anthony using the details you already have.', url: 'https://example.com/anthony' };
 const code = 'amber-river-maple-star';
-const makeBoard = () => ({ leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), squares: Array.from({ length:100 }, (_, i) => i < 10 ? ['Anthony'] : []), allocationLabels: Array.from({length:100}, (_, i) => i < 10 ? 'Anthony' : null), availability: Array.from({length:100}, (_, i): string => i < 10 ? 'available' : 'unspecified'), isDynamic: false, allowOpenSquares: true });
+const defaultInviteCells = Array.from({ length: 10 }, (_, index) => index);
+const makeBoard = (inviteCells = defaultInviteCells) => ({ leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), squares: Array.from({ length:100 }, (_, i) => inviteCells.includes(i) ? ['Anthony'] : []), allocationLabels: Array.from({length:100}, (_, i) => inviteCells.includes(i) ? 'Anthony' : null), availability: Array.from({length:100}, (_, i): string => inviteCells.includes(i) ? 'available' : 'unspecified'), isDynamic: false, allowOpenSquares: true });
 
-async function fixture(page: Page, emptyInvites = false) {
+async function fixture(page: Page, emptyInvites = false, inviteCells = defaultInviteCells) {
   let created = !emptyInvites;
-  const board = makeBoard();
+  const board = makeBoard(inviteCells);
   let held: number[] = []; let heldUntil = ''; let receipt: any = null; let revision = 1; let disabled = false;
   const requests: any[] = [];
-  const invite = () => ({ id:inviteId,label:'Anthony',cells:Array.from({length:10},(_,i)=>i),maxSquares:1,version:1,expiresAt:null,disabledAt:disabled?'2026-09-20T00:00:00Z':null,payment,url:guestPath,counts:{available:10-held.length-(receipt?.cells.length||0),held:held.length,claimed:receipt?.cells.length||0} });
+  const invite = () => ({ id:inviteId,label:'Anthony',cells:inviteCells,maxSquares:1,version:1,expiresAt:null,disabledAt:disabled?'2026-09-20T00:00:00Z':null,payment,url:guestPath,counts:{available:inviteCells.length-held.length-(receipt?.cells.length||0),held:held.length,claimed:receipt?.cells.length||0} });
   const snapshot = () => ({ boardId,title:'Parkside guest board',shareCode:'SHARE123',revision,serverTime:new Date().toISOString(),stage:'selling',squares:board.squares,allocationLabels:board.allocationLabels,availability:board.availability,holds:held.map(index=>({index,expiresAt:heldUntil,mine:true})),heldCells:held,claimedCells:receipt?.cells||[],invite:invite(),...(receipt?{mine:{...receipt,claimCode:undefined}}:{}) });
   const ownerList = () => ({revision,invites:created?[invite()]:[],claims:receipt?[{...receipt,claimCode:undefined,payment:null}]:[],holds:held.map(index=>({index,expiresAt:heldUntil,inviteId}))});
   const installGuest = async (target: Page) => target.route(`**/api/pools/${boardId}/guest`, async route => {
@@ -46,7 +47,7 @@ test('guest claims without an account, sees external instructions, then swaps wi
   await page.goto(guestPath);
   await expect(page.getByRole('heading',{name:/Choose from Anthony/})).toBeVisible();
   await expect(page.getByText(payment.detail)).toHaveCount(0);
-  await page.getByRole('gridcell',{name:/^Square 1, available/}).click();
+  await page.getByRole('button',{name:/^Square 1, available/}).click();
   await page.getByLabel('Name on your squares').fill('Maria');
   await page.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Your squares are claimed'})).toBeVisible();
@@ -55,7 +56,7 @@ test('guest claims without an account, sees external instructions, then swaps wi
   await expect(page.getByRole('link',{name:payment.label})).toHaveAttribute('href',payment.url);
   await page.screenshot({path:info.outputPath('guest-receipt.png'),fullPage:true});
   await page.getByRole('button',{name:'Change squares'}).click();
-  await page.getByRole('gridcell',{name:/^Square 2, available/}).click();
+  await page.getByRole('button',{name:/^Square 2, available/}).click();
   await page.getByRole('button',{name:'Save square change'}).click();
   await expect(page.getByText('Maria · Square 2',{exact:true})).toBeVisible();
   expect(f.requests.filter(request=>request.action==='hold')).toHaveLength(1);
@@ -66,12 +67,12 @@ test('guest claims without an account, sees external instructions, then swaps wi
   await expect(page.getByText(code,{exact:true})).toBeVisible();
 });
 
-test('phone selection stays within the page and has accessible grid and claim controls',async({page},info)=>{
+test('phone selection stays within the page and has an accessible compact collection and claim controls',async({page},info)=>{
   await page.setViewportSize({width:390,height:844});
   await fixture(page); await page.goto(guestPath);
-  await expect(page.getByRole('grid')).toBeVisible();
-  const first=page.getByRole('gridcell',{name:/^Square 1, available/}); await first.focus();
-  await page.keyboard.press('ArrowRight'); await expect(page.getByRole('gridcell',{name:/^Square 2, available/})).toBeFocused();
+  await expect(page.getByRole('list',{name:/offered squares/i})).toBeVisible();
+  const first=page.getByRole('button',{name:/^Square 1, available/}); await first.focus();
+  await page.keyboard.press('ArrowRight'); await expect(page.getByRole('button',{name:/^Square 2, available/})).toBeFocused();
   await page.keyboard.press('Space');
   await page.getByRole('button',{name:'Continue with Square 2',exact:true}).click();
   await expect(page.getByLabel('Name on your squares')).toBeFocused();
@@ -83,9 +84,24 @@ test('phone selection stays within the page and has accessible grid and claim co
   await page.screenshot({path:info.outputPath('guest-phone.png'),fullPage:true});
 });
 
+test('scattered offers keep permanent numbers and never reveal outside cells',async({page})=>{
+  const f=await fixture(page,false,[0,11,22]);
+  f.board.squares[1]=['Outside Name'];
+  await page.goto(guestPath);
+  const list=page.getByRole('list',{name:"Anthony's offered squares"});
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByRole('button',{name:/^Square 1, available/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/^Square 12, available/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/^Square 23, available/})).toBeVisible();
+  await expect(page.getByText('Outside Name',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:/^Square 1, available/}).focus();
+  await page.keyboard.press('End');
+  await expect(page.getByRole('button',{name:/^Square 23, available/})).toBeFocused();
+});
+
 test('disabled link mid-selection is explained and preserves the entered name',async({page})=>{
   const f=await fixture(page);await page.goto(guestPath);
-  await page.getByRole('gridcell',{name:/^Square 1, available/}).click();
+  await page.getByRole('button',{name:/^Square 1, available/}).click();
   await page.getByLabel('Name on your squares').fill('Sam');f.disable();
   await page.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('no longer active');
@@ -104,11 +120,11 @@ test('organizer creates a seller link and sees a fresh anonymous guest claim lan
   await page.getByRole('button',{name:'Create guest link',exact:true}).click();
   await expect(page.getByRole('article',{name:'Guest link for Anthony'})).toBeVisible();
   await expect(page.getByLabel('Guest link URL')).toHaveValue(guestPath);
-  await expect(page.getByText('Family access (optional)',{exact:true})).toBeVisible();
+  await expect(page.getByText('Send families their squares',{exact:true})).toBeVisible();
   const guestContext=await browser.newContext();const guestPage=await guestContext.newPage();
   await f.installGuest(guestPage);
   await guestPage.goto(new URL(guestPath,page.url()).href);
-  await guestPage.getByRole('gridcell',{name:/^Square 1, available/}).click();
+  await guestPage.getByRole('button',{name:/^Square 1, available/}).click();
   await guestPage.getByLabel('Name on your squares').fill('Jamie');
   await guestPage.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(guestPage.getByRole('heading',{name:'Your squares are claimed'})).toBeVisible();
@@ -123,7 +139,7 @@ test('disconnected prototype completes a simulated claim without app API or serv
   page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))apiRequests.push(url.pathname);if(!['127.0.0.1','localhost','fonts.googleapis.com','fonts.gstatic.com'].includes(url.hostname))remoteRequests.push(request.url());});
   await page.goto('/dev/guest-invites');
   await page.getByRole('button',{name:'Create guest link',exact:true}).click();
-  await page.getByRole('gridcell',{name:/^Square 1, available/}).click();
+  await page.getByRole('button',{name:/^Square 1, available/}).click();
   await page.getByLabel('Name on your squares').fill('Jamie');
   await page.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Your squares are claimed'})).toBeVisible();
@@ -144,14 +160,14 @@ test('another guest converges through polling while disconnected without gaining
     return route.fulfill({json:{...state,mine:undefined,heldCells:[],holds:state.holds.map(hold=>({...hold,mine:false}))}});
   });
   await other.goto(`http://127.0.0.1:${process.env.PLAYWRIGHT_PORT||5199}${guestPath}`);
-  await expect(other.getByRole('gridcell',{name:/^Square 1, available/})).toBeVisible();
+  await expect(other.getByRole('button',{name:/^Square 1, available/})).toBeVisible();
   await page.goto(guestPath);
-  await page.getByRole('gridcell',{name:/^Square 1, available/}).click();
+  await page.getByRole('button',{name:/^Square 1, available/}).click();
   await page.getByLabel('Name on your squares').fill('Taylor');
   await page.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Your squares are claimed'})).toBeVisible();
   await other.clock.runFor(15_100);
-  await expect(other.getByRole('gridcell',{name:/^Square 1,.*Taylor/})).toHaveAttribute('aria-disabled','true');
+  await expect(other.getByRole('button',{name:/^Square 1,.*Taylor/})).toHaveAttribute('aria-disabled','true');
   await expect(other.getByRole('status')).toContainText('Reconnecting');
   await expect(other.getByText(code,{exact:true})).toHaveCount(0);
   await expect(other.getByText(payment.detail)).toHaveCount(0);
