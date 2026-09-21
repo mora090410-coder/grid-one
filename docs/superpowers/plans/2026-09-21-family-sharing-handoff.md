@@ -37,4 +37,4 @@
 - Full Chromium: 134/136 passed; two existing animation/confirmation timing failures both passed on the unchanged frozen source in an exact focused rerun. No assertions or production behavior were changed to satisfy them.
 - Phone WebKit family and guest journeys: 10/10 passed. Family 390/1440 renders and buyer phone collection inspected; axe and overflow checks passed.
 - Independent endpoint/SQL review approved; orchestrator reviewed scope, inactive-state handling and stale-draft preservation.
-- No new commit, push, production migration or deployment for this follow-up.
+- At completion of local verification, no new commit, push, production migration or deployment had been performed. Anthony subsequently approved “Commit push and deploy”; see the release entry in `docs/REFACTOR_LOG.md`.
