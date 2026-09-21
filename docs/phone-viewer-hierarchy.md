@@ -171,3 +171,8 @@ The main score displays quarter/time once, with Currently matching distinct from
 ViewerIsland now adapts the shared ContextNotch: Game / Find squares (Your squares after identity) / Results. Compact score includes authority and checked time; stale/manual status does not wait behind disclosure. Find opens the existing identity dialog; personal navigation reaches the existing summary and its individual View on board controls. Results derives only from published history/pending milestones and navigates the existing results destination, retaining OPEN/corrected/not-yet-confirmed distinctions. Final exposes no next-score shortcut. No provider requests or polling are added.
 
 The main score must be above the viewport before the notch is requested, and the main Find entry is protected while passing under its top attachment. During interaction or a child dialog its stable toggle stays mounted and visible; once the main score returns and interaction/focus has safely left it retires. Organizer previews omit this second companion because the workspace already owns one. SalesBoardViewer remains unchanged.
+
+
+## Guest occupancy overlay (local implementation; default off)
+
+For explicitly enabled boards, the selling viewer overlays anonymous guest holds and committed display names using a narrow public occupancy snapshot. Realtime events invalidate that snapshot and 15-second visible polling provides fallback with a reconnecting label. No claim capability or seller payment instructions enter the ordinary public viewer. Boards outside the allowlist retain their existing 30-second refresh behavior. Self-service claiming lives at the distinct guest invitation route; a normal public board link grants no write permission.

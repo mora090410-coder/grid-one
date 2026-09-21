@@ -5,10 +5,10 @@
  * FIRST VIEWPORT: Split Stage places live/personal context above the exact board on one horizon; the primary action is Find my squares.
  * FORM: Game-Day Horizon, Composition C Split Stage, chosen staging from stagecraft cyclorama; seed 356916de.
  */
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { WinnerHighlights } from '../types';
+import { BoardData, WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
@@ -32,6 +32,9 @@ import { useLiveScoring } from '../hooks/useLiveScoring';
 import { useAuth } from '../hooks/useAuth';
 import { useBoardActions } from '../hooks/useBoardActions';
 import { useContestEntries } from '../hooks/useContestEntries';
+import { useGuestSync } from '../src/features/guest/useGuestSync';
+import type { GuestSnapshot } from '../src/features/guest/guestInviteTypes';
+import { subscribeGuestInvalidations } from '../src/features/guest/guestInviteService';
 
 type BillingSummary = { tier: string; used: number; allowance: number };
 
@@ -87,6 +90,9 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // 2. UI State
     const [showShareModal, setShowShareModal] = useState(false);
     const [showFindSquaresModal, setShowFindSquaresModal] = useState(false);
+    const [guestFeatureAvailable, setGuestFeatureAvailable] = useState<boolean | null>(null);
+    const [guestSnapshot, setGuestSnapshot] = useState<GuestSnapshot | null>(null);
+    const guestSnapshotRef = useRef<GuestSnapshot | null>(null);
 
     const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
     useEffect(() => { try { localStorage.removeItem('gridone_preview_mode'); } catch {} setIsPreviewMode(false); }, []);
@@ -126,16 +132,84 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         return () => { cancelled = true; };
     }, [routeShareCode, auth.user?.id]);
 
-    // Poll only the public sales record. Owner edits never get replaced by a timer.
+    const publicSalesGuestBoardId = routeShareCode && isShared && !isPublished && !isCommissionerMode
+        && activePoolId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activePoolId)
+        ? activePoolId : '';
+    const refreshGuestOccupancy = useCallback(async () => {
+        if (!publicSalesGuestBoardId) return;
+        const response = await fetch(`/api/pools/${encodeURIComponent(publicSalesGuestBoardId)}/guest-state`, { cache: 'no-store' });
+        if (response.status === 404) {
+            setGuestFeatureAvailable(false);
+            guestSnapshotRef.current = null;
+            setGuestSnapshot(null);
+            return;
+        }
+        if (!response.ok) throw new Error('Guest availability could not be refreshed.');
+        const result = await response.json() as GuestSnapshot;
+        if (result.boardId !== publicSalesGuestBoardId || !Number.isSafeInteger(result.revision)
+            || !Array.isArray(result.squares) || result.squares.length !== 100
+            || !Array.isArray(result.allocationLabels) || result.allocationLabels.length !== 100
+            || !Array.isArray(result.availability) || result.availability.length !== 100
+            || !result.availability.every(value => ['available', 'unavailable', 'unspecified'].includes(value))
+            || !Array.isArray(result.holds) || !Array.isArray(result.claimedCells)) {
+            throw new Error('Guest availability was incomplete.');
+        }
+        const current = guestSnapshotRef.current;
+        if (!current || result.revision > current.revision
+            || (result.revision === current.revision && Date.parse(result.serverTime) >= Date.parse(current.serverTime))) {
+            guestSnapshotRef.current = result;
+            setGuestSnapshot(result);
+        }
+        setGuestFeatureAvailable(true);
+        if (result.stage === 'finalized' && routeShareCode) {
+            await loadPoolData(routeShareCode, { background: true });
+        }
+    }, [loadPoolData, publicSalesGuestBoardId, routeShareCode]);
+    const guestSync = useGuestSync({
+        boardId: publicSalesGuestBoardId,
+        enabled: Boolean(publicSalesGuestBoardId && guestFeatureAvailable === true),
+        refresh: refreshGuestOccupancy,
+        subscribe: subscribeGuestInvalidations,
+    });
+
     useEffect(() => {
-        if (!routeShareCode || !isShared || isPublished || isCommissionerMode) return;
+        setGuestFeatureAvailable(null);
+        guestSnapshotRef.current = null;
+        setGuestSnapshot(null);
+        if (publicSalesGuestBoardId) void refreshGuestOccupancy().catch(() => setGuestFeatureAvailable(false));
+    }, [publicSalesGuestBoardId, refreshGuestOccupancy]);
+
+    // Poll only the public sales record. Owner edits never get replaced by a timer.
+    // Once guest occupancy is active, useGuestSync owns the 15-second fallback.
+    useEffect(() => {
+        if (!routeShareCode || !isShared || isPublished || isCommissionerMode || guestFeatureAvailable === true) return;
         const refresh = () => {
             if (document.visibilityState === 'visible') void loadPoolData(routeShareCode, { background: true });
         };
         const timer = window.setInterval(refresh, 30_000);
         window.addEventListener('focus', refresh);
         return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
-    }, [routeShareCode, isShared, isPublished, isCommissionerMode, loadPoolData]);
+    }, [routeShareCode, isShared, isPublished, isCommissionerMode, loadPoolData, guestFeatureAvailable]);
+
+    const currentGuestSnapshot = guestSnapshot && (typeof revision !== 'number' || guestSnapshot.revision >= revision)
+        ? guestSnapshot : null;
+    useEffect(() => {
+        if (!currentGuestSnapshot?.holds.length) return;
+        const serverTime = Date.parse(currentGuestSnapshot.serverTime);
+        const receivedAt = Date.now();
+        const deadline = Math.min(...currentGuestSnapshot.holds.map(hold => Date.parse(hold.expiresAt)).filter(Number.isFinite));
+        if (!Number.isFinite(deadline)) return;
+        const serverNow = Number.isFinite(serverTime) ? serverTime : receivedAt;
+        if (deadline <= serverNow) return;
+        const timer = window.setTimeout(guestSync.invalidate, Math.max(0, deadline - serverNow) + 50);
+        return () => window.clearTimeout(timer);
+    }, [currentGuestSnapshot, guestSync.invalidate]);
+    const publicSalesBoard = currentGuestSnapshot ? {
+        ...board,
+        squares: currentGuestSnapshot.squares,
+        allocationLabels: currentGuestSnapshot.allocationLabels,
+        availability: currentGuestSnapshot.availability as BoardData['availability'],
+    } : board;
 
     // 5. Effects
     useEffect(() => {
@@ -280,10 +354,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const renderMainContent = (previewMode = false) => (
         <div className="flex-1 min-h-0">
             {isShared && !isPublished && !previewMode ? (
-                <SalesBoardViewer game={game} board={board} updatedAt={updatedAt}
-                    onRefresh={() => urlPoolId && void loadPoolData(urlPoolId, { background: true })}
+                <SalesBoardViewer game={game} board={publicSalesBoard} updatedAt={currentGuestSnapshot?.serverTime ?? updatedAt}
+                    onRefresh={() => guestFeatureAvailable === true ? guestSync.invalidate() : urlPoolId ? void loadPoolData(urlPoolId, { background: true }) : undefined}
                     refreshing={refreshing} error={refreshError ? `Showing the last saved board. ${refreshError}` : null}
-                    organizerHref={ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined} />
+                    organizerHref={ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined}
+                    guestOccupancy={guestFeatureAvailable === true && currentGuestSnapshot ? { holds: currentGuestSnapshot.holds, claimedCells: currentGuestSnapshot.claimedCells } : null}
+                    guestConnection={guestFeatureAvailable === true ? guestSync.connection : undefined} />
             ) : isLocked && !previewMode ? (
                 <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="status">
                     <Eyebrow>Viewer link unavailable</Eyebrow>

@@ -181,3 +181,14 @@ A private family link is a bearer capability, distinct from the public board lin
 An organizer's deliberate pre-finalization reassignment preserves holder names, archives previous private entries, resets payment status to unknown and clears old seller attribution. It requires an explicit payment-note review acknowledgement and invalidates all affected family links. Existing generic payment notes are never reinterpreted as proof of payment.
 
 Use this setup again copies only title and prize descriptions. It creates no board until the organizer selects a new scheduled game and saves. Names, responsibility, availability, payments, axes, identifiers, credentials, scores and subscriptions never carry over.
+
+
+## Guest claim links (local implementation; rollout disabled)
+
+The organizer can issue a separate public guest claim link for reviewed, explicitly available square IDs on an already shared board. A named seller distributes the link without gaining an organizer account or editing permissions. A link may cover noncontiguous blocks. Private family editing links and ordinary public viewer links retain their existing authority.
+
+Guests choose squares, receive a 90-second server hold, and enter a public display name without an account. The default maximum is one square per anonymous credential and invite; this cannot guarantee one real person across devices. A private four-word code opens that guest's receipt and permits an atomic square swap or release while the invite is active and the board remains unfinalized. Draft number draws do not end claiming; final publication does. Active holds prevent publication until they finish or the organizer explicitly cancels them. Existing guest claims must be explicitly released before reassignment.
+
+The receipt may display organizer-entered seller payment instructions and a validated external HTTPS link. These details are deliberately shared with claimants and never copied from private payment/contact metadata. Opening instructions does not initiate or verify a payment or change paid status. GridOne does not process square money. Ordinary public snapshots and broadcasts omit these details and all claim credentials.
+
+This implementation is disabled unless server configuration explicitly allows a board. No production migration, configuration, or deployment has been performed as part of this local work. See `docs/guest-invites-operations.md` for the release boundary.

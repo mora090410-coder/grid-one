@@ -26,7 +26,7 @@ describe('SalesBoardViewer', () => {
     expect(screen.queryByRole('link', { name: 'Manage board' })).not.toBeInTheDocument();
     expect(screen.queryByText('Find my squares')).not.toBeInTheDocument();
     expect(screen.queryByText(/winner email/i)).not.toBeInTheDocument();
-    expect(screen.getByText('✓ Has a name · No checkmark means blank')).toBeInTheDocument();
+    expect(screen.getByText('✓ Has a name · ◷ Guest selecting · No mark means blank')).toBeInTheDocument();
   });
 
   it('filters family details without removing any board squares and highlights unsold independently', () => {
@@ -103,5 +103,17 @@ describe('SalesBoardViewer', () => {
     expect(screen.getByRole('button', { name: 'Refreshing…' })).toBeDisabled();
     expect(screen.getByText(/Last updated/)).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Could not refresh');
+  });
+
+  it('labels guest holds and claims from the narrow public occupancy snapshot', () => {
+    render(<SalesBoardViewer game={INITIAL_GAME} board={{ ...fixture(), availability: Array(100).fill('available') }} guestOccupancy={{ holds: [{ index: 0, expiresAt: '2026-09-20T12:01:30Z' }], claimedCells: [1] }} guestConnection="live" />);
+    expect(screen.getByRole('gridcell', { name: /Square 1.*temporarily held/i })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: /Square 2.*claimed through a guest link/i })).toBeInTheDocument();
+    expect(screen.getByText('Guest availability live')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show available squares' }));
+    const details = screen.getByRole('region', { name: 'Square details' });
+    expect(within(details).queryByText('Square 1')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('gridcell')[0]);
+    expect(screen.getByRole('status', { name: 'Selected square' })).toHaveTextContent('Guest selecting · temporarily held');
   });
 });

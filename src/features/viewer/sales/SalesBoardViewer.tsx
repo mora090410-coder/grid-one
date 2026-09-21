@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import type { BoardData, GameState } from '../../../../types';
 import { salesCells, matchesSalesCell } from './salesBoardModel';
 import { Base, CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
+import type { GuestConnection, GuestHold } from '../../guest/guestInviteTypes';
 
 export interface SalesBoardViewerProps {
   game: GameState;
@@ -11,10 +12,12 @@ export interface SalesBoardViewerProps {
   refreshing?: boolean;
   error?: string | null;
   organizerHref?: string;
+  guestOccupancy?: { holds: GuestHold[]; claimedCells: number[] } | null;
+  guestConnection?: GuestConnection;
 }
 
 /** A public selling record. Cell numbers identify positions; they are not game digits. */
-export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, refreshing = false, error, organizerHref }: SalesBoardViewerProps) {
+export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, refreshing = false, error, organizerHref, guestOccupancy, guestConnection }: SalesBoardViewerProps) {
   const [joining, setJoining] = useState(false);
   const [availableOnly, setAvailableOnly] = useState(false);
   const [query, setQuery] = useState('');
@@ -27,7 +30,11 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
   const visibleFamily = families.includes(family) ? family : '';
   const search = query.trim();
   const filtered = Boolean(visibleFamily || blankOnly || availableOnly || search);
-  const matches = (cell: typeof cells[number]) => matchesSalesCell(cell, { family: visibleFamily, blankOnly, availableOnly, query: search });
+  const held = new Set(guestOccupancy?.holds.map(hold => hold.index) ?? []);
+  const claimed = new Set(guestOccupancy?.claimedCells ?? []);
+  const guestState = (index: number) => held.has(index) ? 'temporarily held' : claimed.has(index) ? 'claimed through a guest link' : null;
+  const matches = (cell: typeof cells[number]) => (!availableOnly || !held.has(cell.index))
+    && matchesSalesCell(cell, { family: visibleFamily, blankOnly, availableOnly, query: search });
   const details = cells.filter(matches);
   const named = cells.filter(cell => !cell.blank).length;
   const selected = cells[focused];
@@ -77,6 +84,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2"><span className="whitespace-nowrap font-display text-[40px] leading-none text-fg">{named}<span className="text-fg-3"> / 100</span></span><span className="font-ui text-sm text-fg-2">Squares with names</span><span className="font-ui text-sm text-fg-2">{100 - named} blank squares</span></div>
           <div className="flex flex-wrap items-center gap-3">
             <p role="status" className="font-mono text-xs text-fg-2">{updatedLabel}</p>
+            {guestConnection && <p role="status" className="font-mono text-xs text-fg-2">{guestConnection === 'live' ? 'Guest availability live' : guestConnection === 'offline' ? 'Guest availability offline' : 'Guest availability reconnecting…'}</p>}
             {onRefresh && <CapsuleButton variant="quiet" onClick={onRefresh} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Refresh board'}</CapsuleButton>}
           </div>
         </Glass>
@@ -104,7 +112,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
 
         <div className="flex min-w-0 flex-col gap-6">
         <section aria-label="Square details" className="order-1 flex flex-col gap-3 md:order-2">
-          <p role="status" aria-label="Selected square" className="min-h-11 rounded-control bg-panel p-3 font-ui text-sm text-fg">Square {selected.number} · {selected.buyer} · {selected.family || 'No family assigned'}</p>
+          <p role="status" aria-label="Selected square" className="min-h-11 rounded-control bg-panel p-3 font-ui text-sm text-fg">Square {selected.number} · {selected.buyer} · {selected.family || 'No family assigned'}{held.has(selected.index) ? ' · Guest selecting · temporarily held' : ''}</p>
           <details open={filtered || undefined}>
             <summary className="flex min-h-11 cursor-pointer items-center rounded-control font-ui text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Square details · {details.length} {details.length === 1 ? 'square' : 'squares'} <span aria-hidden="true" className="ml-2">↓</span></summary>
             <p className="pb-3 font-ui text-sm text-fg-2">Full names and responsibility for every matching square.</p>
@@ -112,32 +120,34 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
               <span className="font-mono text-xs text-fg-3">Square {cell.number}</span>
               <span className="break-words font-ui text-base text-fg">{cell.buyer}</span>
               <span className="break-words font-ui text-sm text-fg-2">{cell.family ? `Responsible: ${cell.family}` : 'No family assigned'}</span>
-              {cell.availability !== 'unspecified' && <span className="font-ui text-sm text-fg-2">{cell.availability === 'available' ? 'Available · confirm with organizer' : 'Not available'}</span>}
+              {cell.availability !== 'unspecified' && <span className="font-ui text-sm text-fg-2">{held.has(cell.index) ? 'Guest selecting · temporarily held' : cell.availability === 'available' ? 'Available · confirm with organizer' : 'Not available'}</span>}
             </li>)}</ul>}
           </details>
         </section>
 
         <section aria-label="Board" className="order-2 flex min-w-0 flex-col gap-3 md:order-1">
           <div className="flex flex-col gap-1"><h2 className="font-display text-[28px] text-fg">The board</h2><p id="sales-board-help" className="font-ui text-sm text-fg-2">1–100 identifies each square. Tap a square for full details. Use arrow keys to move through the board.</p></div>
-          <p className="font-ui text-sm text-fg-2 md:hidden">✓ Has a name · No checkmark means blank</p>
+          <p className="font-ui text-sm text-fg-2 md:hidden">✓ Has a name · ◷ Guest selecting · No mark means blank</p>
           <div className="w-full rounded-control border border-hairline">
             <div role="grid" aria-label="Selling squares board, 100 squares" aria-describedby="sales-board-help" aria-rowcount={10} aria-colcount={10} className="w-full">
               {Array.from({ length: 10 }, (_, row) => <div role="row" key={row} className="grid grid-cols-10">
-                {cells.slice(row * 10, row * 10 + 10).map(cell => <div
+              {cells.slice(row * 10, row * 10 + 10).map(cell => <div
                   key={cell.index}
                   role="gridcell"
-                  aria-label={`Square ${cell.number}, ${cell.buyer}, ${cell.family || 'No family assigned'}`}
+                  aria-label={`Square ${cell.number}, ${cell.buyer}, ${cell.family || 'No family assigned'}${guestState(cell.index) ? `, ${guestState(cell.index)}` : ''}`}
                   tabIndex={focused === cell.index ? 0 : -1}
                   ref={element => { refs.current[cell.index] = element; }}
                   onFocus={() => setFocused(cell.index)}
                   onClick={() => { setFocused(cell.index); refs.current[cell.index]?.focus(); }}
                   onKeyDown={event => moveFocus(event, cell.index)}
-                  className={`relative flex aspect-square min-w-0 cursor-pointer flex-col items-center justify-center gap-1 border-b border-r border-hairline p-0.5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gold md:aspect-auto md:min-h-28 md:items-stretch md:justify-start md:p-2 ${matches(cell) && filtered ? 'bg-panel-hover ring-1 ring-inset ring-gold' : 'bg-panel'} ${!matches(cell) ? 'text-fg-3' : 'text-fg'}`}
+                  className={`relative flex aspect-square min-w-0 cursor-pointer flex-col items-center justify-center gap-1 border-b border-r border-hairline p-0.5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gold md:aspect-auto md:min-h-28 md:items-stretch md:justify-start md:p-2 ${held.has(cell.index) ? 'bg-panel-hover ring-1 ring-inset ring-gold' : claimed.has(cell.index) ? 'bg-panel-hover' : matches(cell) && filtered ? 'bg-panel-hover ring-1 ring-inset ring-gold' : 'bg-panel'} ${!matches(cell) ? 'text-fg-3' : 'text-fg'}`}
                 >
                   <span className="font-mono text-xs md:text-fg-3">{cell.number}</span>
                   {!cell.blank && <span aria-hidden="true" className="absolute right-0.5 top-0 font-ui text-[9px] md:hidden">✓</span>}
+                  {held.has(cell.index) && <span aria-hidden="true" className="absolute bottom-0.5 right-0.5 font-ui text-[9px] md:hidden">◷</span>}
                   <span className="hidden truncate font-ui text-sm md:block">{cell.buyer}</span>
                   <span className="hidden truncate font-ui text-[11px] text-fg-2 md:block">{cell.family || 'Unassigned'}</span>
+                  {guestState(cell.index) && <span className="hidden truncate font-ui text-[11px] text-fg-2 md:block">{guestState(cell.index) === 'temporarily held' ? 'Guest selecting' : 'Guest claimed'}</span>}
                 </div>)}
               </div>)}
             </div>

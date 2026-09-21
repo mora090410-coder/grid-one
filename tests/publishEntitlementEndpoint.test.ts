@@ -118,6 +118,12 @@ beforeEach(() => {
 });
 
 describe.sequential('publish entitlement boundary', () => {
+  it('keeps finalization recoverable while guest holds are active', async () => {
+    mocks.clients.push(authClient(), adminClient({ rpcError: { message: 'guest_holds_active' } }));
+    const response = await publishBoard({ request: request(), env, params: { id: 'board-1' } });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ code: 'ACTIVE_GUEST_HOLDS', error: 'Guests are choosing squares. Wait for their holds to finish, or cancel holds in Guest claim links before locking numbers.' });
+  });
   it('rejects an unverified email before reading or writing board data', async () => {
     mocks.clients.push(authClient({ verified: false }));
 

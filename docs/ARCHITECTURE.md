@@ -139,3 +139,14 @@ Migration `027_family_access.sql` is additive and must be installed before relea
 `src/features/organizer/payments/paymentModel.ts` groups private statuses by responsible allocation and derives filtered square lists. `PaymentsPanel` owns search and explicit selection in the existing Sheet. `entryMetaService.savePaymentStatuses` sends only identity keys and `paid_status` in one owner-RLS upsert, then verifies the returned receipt. It neither writes public board state nor replaces seller/contact fields.
 
 The organizer uses a feature-local island with `organizerIslandModel` and token-based CSS, leaving the shared viewer island unchanged. `OrganizerWorkspace` coordinates payment writes, save/failure state, sheet and board focus, and existing lifecycle actions. No database migration or public payload field is added.
+
+
+## Guest invites (local implementation; default off)
+
+`/p/:poolId?invite=<signed token>` is a separate anonymous guest route. On load it retains the invitation capability in browser storage and removes the query from browser history. `/dev/guest-invites` is an injected, in-memory prototype excluded from production builds. `src/features/guest/` owns the UI, transport, credential storage and invalidation hook. The organizer's Guest claim links card is separate from private Family access.
+
+Cloudflare handlers expose `POST /api/pools/:id/guest`, owner-only `GET/POST /api/pools/:id/invites`, and public occupancy `GET /api/pools/:id/guest-state`. `functions/_lib/guestInvites.ts` validates an exact server-side board allowlist, signed invitation versions, verified owner identity, bounded request bodies, anonymous capabilities and generic payment URLs. Response projections are explicit; no credential or payment instruction appears in public state or broadcasts. Secrets remain server-side. Mutation and recovery requests have separate persistent rate limits.
+
+Migration `029_guest_invites.sql` adds private RLS tables for invitations, claim groups, holds, claims, and rate buckets. A service-only RPC serializes on the canonical contest row and enforces lifecycle, revision, scope, current availability, holds and credentials. A unique active-claim index prevents duplicate occupation. Relational triggers protect guest occupancy from existing owner/family writers and preserve the published correction contract. Invite regeneration rotates the public invitation version while retaining claim history and quota identity. Claim-code rotation revokes the previous code and browser session.
+
+Supabase database broadcasts on `pool:<board UUID>` carry only event/revision invalidation, never authoritative state. Clients refetch an authenticated or public projection, coalesce events and poll at 15 seconds while visible; disconnection is labelled. Correctness uses server deadlines and row locks, independent of socket timing. Hosted broadcast transport and target latency require separate pre-release verification.

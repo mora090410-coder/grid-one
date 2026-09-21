@@ -234,3 +234,10 @@ A UI slice is not complete until semantics and accessible names are correct; key
 ## Replacement notch — September 16
 
 ContextNotch replaces both production islands with ordinary module buttons (aria-pressed), one named detail region, and explicit Keep open/Unpin/Close. There are no nested buttons, tab-role shortcuts, or essential hover/hold gestures. Collapsed content is inert and aria-hidden immediately, including during its 200ms retraction. Escape returns focus to a persistent toggle; unpinned content dismisses on outside activation/focus. Pinned content does not trap focus. Actions close before invoking existing callbacks, preserving sheet return focus even if the main score re-enters view. Essential copy is at least 14px, buttons at least 44px, contents are viewport-bounded and scrollable, and forced colors preserve boundaries and selection. Reduced motion skips springs/staggers entirely. The notch-specific browser contract is playwright-tests/context-notch.spec.ts; this does not substitute for assistive-technology/manual release checks.
+
+
+## Guest claiming (local implementation; default off)
+
+The guest board uses one roving grid tab stop, arrow-key movement and native button activation. Gridcells expose selected state with `aria-selected`, and names describe square number, eligibility and occupancy independently of color. Holds are promised only after server acknowledgement. A server-based countdown is available without announcing every tick. Expiry preserves name input and allows a new selection; it cannot extend a reservation indefinitely.
+
+Claim and recovery controls have visible labels; pending controls prevent duplicate submission. Errors, disabled links and disconnected state are exposed semantically. The narrow page must not overflow horizontally; the full board may scroll within its labelled container while retaining usable cell targets. Receipt codes and external instructions remain readable and keyboard-accessible. Automated keyboard and axe evidence supplements, and does not replace, physical-device or assistive-technology evaluation.

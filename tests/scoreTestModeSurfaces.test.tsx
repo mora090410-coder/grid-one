@@ -35,10 +35,12 @@ describe('score-test mode surfaces', () => {
       'utf8',
     );
     const bannerIndex = boardView.indexOf('<SyntheticScoreTestBanner');
-    const viewerIndex = boardView.indexOf('!isCommissionerMode');
-    const organizerIndex = boardView.indexOf('isCommissionerMode &&');
+    const viewerIndex = boardView.indexOf('{(demoMode || !loadingPool) && !isCommissionerMode && (');
+    const organizerIndex = boardView.indexOf('{isCommissionerMode && (');
 
     expect(bannerIndex).toBeGreaterThan(-1);
+    expect(viewerIndex).toBeGreaterThan(-1);
+    expect(organizerIndex).toBeGreaterThan(-1);
     expect(bannerIndex).toBeLessThan(viewerIndex);
     expect(bannerIndex).toBeLessThan(organizerIndex);
     expect(boardView).toContain('game.scoreTestMode');

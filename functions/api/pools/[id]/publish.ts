@@ -96,6 +96,14 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   });
   if (publishError) {
     const message = publishError.message || 'The board could not be published.';
+    if (message.includes('guest_holds_active')) return Response.json({
+      code: 'ACTIVE_GUEST_HOLDS',
+      error: 'Guests are choosing squares. Wait for their holds to finish, or cancel holds in Guest claim links before locking numbers.',
+    }, { status: 409 });
+    if (message.includes('guest_square_conflict') || message.includes('guest_snapshot_conflict')) return Response.json({
+      code: 'REVISION_CONFLICT',
+      error: 'Guest claims changed this board. Reload the latest board before locking numbers.',
+    }, { status: 409 });
     const allowanceMatch = message.match(
       /PUBLISH_(ALLOWANCE_EXHAUSTED|ENTITLEMENT_INACTIVE):([^:]+):(\d+):(\d+)/i,
     );

@@ -1,4 +1,5 @@
 import FamilyWorkspace from './src/features/family/FamilyWorkspace';
+import GuestPoolPage from './src/features/guest/GuestPoolPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -28,6 +29,10 @@ const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSch
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
 const Homepage = React.lazy(() => import('./src/features/homepage/Homepage'));
+const GuestInvitePrototype = import.meta.env.DEV
+  ? React.lazy(() => import('./src/features/guest/GuestInvitePrototype'))
+  : null;
+const guestInvitePrototypePath = '/dev/guest-invites';
 
 const HomepageProductFallback = () => (
   <main className="min-h-[100dvh] bg-ink px-4 py-8 text-broadcast-white">
@@ -59,6 +64,8 @@ const App: React.FC = () => {
               <Route path="/" element={<Root />} />
               <Route path="/demo" element={<BoardView demoMode={true} />} />
               <Route path="/b/:shareCode" element={<BoardView />} />
+              <Route path="/p/:poolId" element={<GuestPoolPage />} />
+              {import.meta.env.DEV && GuestInvitePrototype && <Route path={guestInvitePrototypePath} element={<GuestInvitePrototype />} />}
               <Route
                 path="/boards/:boardId"
                 element={

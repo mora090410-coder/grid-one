@@ -165,6 +165,15 @@ afterEach(() => {
 });
 
 describe('OrganizerWorkspace island', () => {
+  it('offers guest claim links only after the board is explicitly shared', () => {
+    const { unmount } = renderWorkspace({ isShared: false, shareCode: null });
+    expect(screen.queryByText('Guest claim links (optional)')).not.toBeInTheDocument();
+    unmount();
+
+    renderWorkspace({ isShared: true, shareCode: 'shared-board' });
+    expect(screen.getByText('Guest claim links (optional)')).toBeInTheDocument();
+  });
+
   it('offers a persistent Payments action and keeps not-asked squares distinct from unpaid', () => {
     renderWorkspace({ board: boardWithAssignments(3), entryMeta: { 0: paidMeta(0), 1: { ...paidMeta(1), paid_status: 'unpaid' } } });
     fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
