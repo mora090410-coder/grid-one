@@ -18,7 +18,7 @@ export function PriceAndClose() {
       <section className="editorial-pricing editorial-section" aria-labelledby="pricing-heading">
         <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Free to start. Ready for your next board.</h2><p>{PRICING_SENTENCE}</p><p className="editorial-boundary">{MONEY_BOUNDARY}</p></Reveal>
         <Reveal as="section" aria-label="Plans" className="editorial-plans" delay={60}>
-          {PRICING.map(tier => <div className="editorial-plan" key={tier.id}><div><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
+          {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
         </Reveal>
       </section>
       <section className="editorial-faq editorial-section" aria-label="Common questions">

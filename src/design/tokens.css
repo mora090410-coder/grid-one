@@ -45,6 +45,22 @@
   /* Glass */
   --g-blur: 20px;
 
+  /* Marketing stage. Near-black cinematic ground for the public home page,
+     the create preview, and the demo board chrome. Neutrals only — no new hue.
+     This does not replace --g-ground; viewer and article pages stay lifted. */
+  --g-stage: #07080B;
+  --g-glass: rgba(255, 255, 255, 0.10);
+  --g-glass-fill: rgba(40, 42, 50, 0.94);
+  --g-glass-edge: rgba(255, 255, 255, 0.28);
+  --g-glass-sheen: rgba(255, 255, 255, 0.16);
+  --g-stage-light: rgba(255, 255, 255, 0.88);
+  --g-shadow-float:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 0 72px rgba(255, 255, 255, 0.05);
+  /* Gold as light around a primary action. Static; never a pulse. */
+  --g-cta-glow: color-mix(in srgb, var(--g-gold) 55%, transparent);
+
   /* Rim light. ONE hue — white — at three alphas, so the highlight is a
      specular edge and never a second color creeping into the palette. The
      fade stop is written as `rgba(255, 255, 255, 0)` and not `transparent`:
@@ -115,6 +131,86 @@
   --g-tone-gold: #6B5000;
   --g-tone-live: #0F5A2A;
   --g-tone-cardinal: var(--g-cardinal);
+}
+
+/* Floating marketing chrome. Translucent fill, no backdrop blur: square grids
+   that sit on these surfaces stay sharp. The stage light and the action glow
+   are paint, not animation. */
+.g-float {
+  background:
+    linear-gradient(180deg, var(--g-glass-sheen), transparent 14%),
+    var(--g-glass-fill);
+  border: 1px solid var(--g-glass-edge);
+  border-radius: var(--g-radius-card);
+  box-shadow: var(--g-shadow-float);
+}
+.g-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 6px 14px;
+  border-radius: var(--g-radius-capsule);
+  background: var(--g-glass-fill);
+  border: 1px solid var(--g-glass-edge);
+  box-shadow: inset 0 1px 0 var(--g-glass-sheen);
+  color: var(--g-text);
+}
+.g-chip {
+  background: var(--g-glass);
+  border-color: var(--g-glass-edge);
+  box-shadow: inset 0 1px 0 var(--g-glass-sheen);
+}
+.g-chip:hover,
+.g-chip:focus-visible {
+  background: var(--g-panel-hover);
+}
+.g-cta {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--g-gold) 50%, transparent),
+    0 8px 24px -6px var(--g-cta-glow),
+    0 0 32px var(--g-cta-glow);
+}
+.g-cta:hover,
+.g-cta:focus-visible,
+[data-base="dark"] button.bg-action:hover,
+[data-base="dark"] button.bg-action:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--g-gold),
+    0 12px 32px -6px var(--g-cta-glow),
+    0 0 40px var(--g-cta-glow);
+}
+[data-base="dark"] button.bg-action {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--g-gold) 50%, transparent),
+    0 8px 24px -6px var(--g-cta-glow),
+    0 0 32px var(--g-cta-glow);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .g-float,
+  .g-pill,
+  .g-chip {
+    background: var(--g-chyron);
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .g-float,
+  .g-pill,
+  .g-chip,
+  .g-cta {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+    box-shadow: none;
+  }
+  .g-cta {
+    background: Highlight;
+    color: HighlightText;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

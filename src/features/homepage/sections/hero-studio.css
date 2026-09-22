@@ -1,7 +1,8 @@
 /* Product excerpts stay static. The hero entrance is a one-shot opacity/translate
    on the copy and stage; it never scales the board or hides it. */
-.studio-hero { position: relative; overflow-wrap: anywhere; border-bottom: 1px solid var(--g-hairline); }
-.studio-hero-shell { max-width: 1440px; margin-inline: auto; padding: 28px 48px 64px; }
+.studio-hero { position: relative; isolation: isolate; overflow-x: clip; overflow-wrap: anywhere; background-color: var(--g-stage); border-bottom: 1px solid var(--g-hairline); }
+.studio-hero-light { position: absolute; z-index: 0; pointer-events: none; width: min(1180px, 86vw); aspect-ratio: 1; left: 34%; top: -38%; border-radius: 50%; background: radial-gradient(circle at center, var(--g-stage-light) 0%, transparent 62%); }
+.studio-hero-shell { position: relative; z-index: 1; max-width: 1440px; margin-inline: auto; padding: 28px 48px 64px; }
 .studio-hero-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 52px; align-items: start; margin-top: 64px; }
 .studio-hero-copy { min-width: 0; padding-block: 48px; }
 .hero-category { font: 1rem/1.5 var(--g-font-ui); color: var(--g-text-2); }
@@ -10,11 +11,10 @@
 .studio-hero-description { max-width: 410px; margin-top: 26px; font: 1.0625rem/1.6 var(--g-font-ui); color: var(--g-text-2); }
 .studio-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .studio-hero-actions a { height: auto; min-height: 44px; padding-block: 12px; text-align: center; }
-.studio-hero-actions a:last-child { background: transparent; box-shadow: none; border-color: transparent; padding-inline: 0; }
 .studio-hero-reassurance { margin-top: 24px; font: .875rem/1.7 var(--g-font-ui); color: var(--g-text); }
 .studio-hero-boundary { max-width: 395px; margin-top: 18px; font: .875rem/1.6 var(--g-font-ui); color: var(--g-text-3); }
 .studio-hero-stage { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 16px; min-width: 0; position: relative; }
-.hero-preparation { grid-area: 1 / 1 / 2 / 3; background: var(--g-ground); color: var(--g-text); border-radius: var(--g-radius-card); border: 1px solid var(--g-hairline); }
+.hero-preparation { grid-area: 1 / 1 / 2 / 3; color: var(--g-text); border-radius: var(--g-radius-card); }
 .hero-excerpt-label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--g-hairline); font: .875rem/1.5 var(--g-font-ui); }
 .hero-excerpt-label h2 { font: inherit; font-weight: 500; }
 .hero-excerpt-label > span { color: var(--g-text-2); }
@@ -26,12 +26,12 @@
 .hero-board-counts > :last-child { margin-left: auto; color: var(--g-text-2); }
 .hero-excerpt-note { font-size: .875rem; color: var(--g-text-2); margin-bottom: 10px; }
 .hero-square-excerpt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
-.hero-square-excerpt li { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 65px; padding: 8px 10px; background: var(--g-panel); border: 1px solid var(--g-hairline); border-radius: var(--g-radius-cell); font-size: .875rem; overflow-wrap: anywhere; }
+.hero-square-excerpt li { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 65px; padding: 8px 10px; background: var(--g-stage); border: 1px solid var(--g-hairline); border-radius: var(--g-radius-cell); font-size: .875rem; overflow-wrap: anywhere; }
 .hero-square-number { color: var(--g-text-2); font: .875rem/1 var(--g-font-mono); }
-.hero-square-excerpt .hero-square-open { background: transparent; border-style: dashed; color: var(--g-text-2); }
+.hero-square-excerpt .hero-square-open { background: var(--g-stage); border-style: dashed; color: var(--g-text-2); }
 .hero-preparation-state { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--g-hairline); font-size: .875rem; }
 .hero-preparation-state > :last-child { color: var(--g-text-2); }
-.hero-gameday { grid-area: 2 / 2 / 3 / 3; background: var(--g-chyron); color: var(--g-text); border: 1px solid var(--g-hairline); border-radius: var(--g-radius-card); }
+.hero-gameday { grid-area: 2 / 2 / 3 / 3; z-index: 1; color: var(--g-text); border-radius: var(--g-radius-card); }
 .hero-gameday .hero-excerpt-label { display: block; padding: 12px 18px; }
 .hero-gameday .hero-excerpt-label > span { display: none; }
 .hero-gameday-content { padding: 14px 18px; }
@@ -45,9 +45,9 @@
 .hero-current-match { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--g-hairline); padding-top: 12px; }
 .hero-current-match > div { display: flex; flex-direction: column; gap: 2px; }
 .hero-current-match > div > span { font-size: .875rem; color: var(--g-text-2); }
-.hero-current-match > div > strong { font-size: 1.125rem; font-weight: 500; color: var(--g-gold); }
+.hero-current-match > div > strong { font-size: 1.125rem; font-weight: 500; color: var(--g-text); }
 .hero-current-match p { font: .875rem/1.5 var(--g-font-mono); }
-.hero-current-match p strong { color: var(--g-gold); font-weight: 500; }
+.hero-current-match p strong { color: var(--g-text); font-weight: 500; }
 .hero-score-source { margin-top: 12px; font-size: .875rem; line-height: 1.5; color: var(--g-text-2); }
 .hero-story-connection { grid-area: 2 / 1 / 3 / 2; align-self: start; margin-top: 8px; padding: 18px 0 0 20px; border-left: 1px solid var(--g-hairline); font: .875rem/1.6 var(--g-font-ui); }
 .hero-story-connection span { color: var(--g-text-2); }
@@ -72,6 +72,7 @@
   .studio-hero-actions a { width: 100%; font-size: .9375rem; padding-block: 10px; }
   .studio-hero-reassurance { margin-top: 12px; font-size: .875rem; line-height: 1.5; }
   .studio-hero-boundary { margin-top: 10px; font-size: .875rem; line-height: 1.45; }
+  .studio-hero-light { width: 100%; left: 0; right: auto; top: 28%; bottom: auto; height: 62%; aspect-ratio: auto; background: radial-gradient(circle at 50% 18%, var(--g-stage-light) 0%, transparent 66%); }
   .studio-hero-stage { display: flex; flex-direction: column; gap: 0; margin-top: 22px; }
   .hero-gameday { order: 0; }
   .hero-preparation { order: 2; margin-top: 28px; }

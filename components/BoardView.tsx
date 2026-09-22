@@ -12,6 +12,7 @@ import { BoardData, WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
+import '../src/features/viewer/shell/demoStage.css';
 import SalesBoardViewer from '../src/features/viewer/sales/SalesBoardViewer';
 import OrganizerWorkspace from '../src/features/organizer/workspace/OrganizerWorkspace';
 import ErrorBoundary from './ErrorBoundary';
@@ -387,6 +388,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         organizerPreview={previewMode && isOwner}
                         organizerHref={!previewMode && ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined}
                         onShare={activePoolId && isActivated ? () => setShowShareModal(true) : undefined}
+                        stageChrome={demoMode && !previewMode}
                     />
                 )}
         </div>
@@ -410,7 +412,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }
 
     return (
-        <div className="min-h-[100dvh] w-full flex flex-col bg-ground text-fg" data-base="dark">
+        <div className={`min-h-[100dvh] w-full flex flex-col bg-ground text-fg${demoMode ? ' demo-stage' : ''}`} data-base="dark">
             {game.scoreTestMode && <SyntheticScoreTestBanner />}
 
             {loadingPool && urlPoolId && <FullScreenLoading />}
@@ -418,7 +420,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
-                    {demoMode && <p className="mx-4 mt-20 font-ui text-sm text-fg-2"><span>Sample board — not a live game</span><br />Sample game · February 9, 2025</p>}
+                    {demoMode && <p className="demo-status mx-4 mt-20 font-ui text-sm text-fg-2"><span className="g-pill">Sample board — not a live game</span><br />Sample game · February 9, 2025</p>}
                     {renderMainContent()}
                     {(demoMode || liveData?.state === 'post') && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
                         <p className="font-ui text-base text-fg-2">{demoMode ? 'This is a sample board. Ready to run yours?' : 'Bring your next game day together.'}</p>

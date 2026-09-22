@@ -8,7 +8,7 @@ const shownSquares = [0, 1, 61, 62];
 
 export function OrganizerSection() {
   return (
-    <section data-base="cream" className="editorial-organizer" aria-labelledby="organizer-heading">
+    <section className="editorial-organizer" aria-labelledby="organizer-heading">
       <div className="editorial-section">
         <Reveal as="header" className="editorial-intro">
           <p className="editorial-kicker">Before kickoff</p>
@@ -28,7 +28,7 @@ export function OrganizerSection() {
         </div>
         <div className="editorial-organizer-layout">
 
-          <section className="editorial-workspace" aria-label="Sample organizer workspace">
+          <section className="editorial-workspace g-float" aria-label="Sample organizer workspace">
             <header><p className="editorial-kicker">Sample organizer workspace</p><h3>{demoGame.title}</h3><p>Chiefs at Eagles</p></header>
             <div className="editorial-workspace-status"><span><strong>{ORGANIZER_FILLED}</strong> filled</span><span><strong>{100 - ORGANIZER_FILLED}</strong> open</span><span>Numbers not drawn</span></div>
             <div className="editorial-workspace-detail">

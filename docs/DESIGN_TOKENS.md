@@ -40,6 +40,23 @@
 
 The base is set by `<Base kind="dark" | "cream">` from `src/design/Base.tsx`.
 
+## Marketing stage (`:root`)
+
+Near-black cinematic chrome for the public home page, the create preview, and the demo board. These do not replace `--g-ground`. No new hue: the light is white, and the action glow is a `color-mix` of `--g-gold`. Glass fill is opaque enough that square cells are not blurred; `.g-float` does not set `backdrop-filter`.
+
+| Meaning | CSS variable | Used by | Value |
+|---|---|---|---|
+| Stage ground | `--g-stage` | `.marketing-stage`, `.demo-stage`, `.create-preview-stage` | `#07080B` |
+| Glass wash | `--g-glass` | `.g-chip` | white 10% |
+| Glass fill | `--g-glass-fill` | `.g-float`, `.g-pill` | lifted neutral 94% |
+| Glass edge | `--g-glass-edge` | floating chrome | white 28% |
+| Sheen | `--g-glass-sheen` | top highlight | white 16% |
+| Stage light | `--g-stage-light` | one static radial behind the artifact | white 88% |
+| Float shadow | `--g-shadow-float` | cards and frames | inset hairline, black shadow, soft white rim |
+| Action glow | `--g-cta-glow` | `.g-cta` only | gold 55% |
+
+`.g-cta`, `.g-float`, `.g-pill`, and `.g-chip` live in `src/design/tokens.css`. Reduced transparency swaps the translucent fills for `--g-chyron`. Reduced motion does not animate the light or the glow.
+
 ## Ambient tints (`:root`, base-independent)
 
 Large, soft ground light for one section. Derived with `color-mix` from the locked palette (`transparent` first, so a downlevelled build falls back to no tint rather than a full-strength blob), so no new hue enters the system. Consumed only by `SectionTone`.

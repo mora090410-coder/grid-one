@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { DEMO_LABEL, demoGame, demoLive, demoWinnerNow } from '../demoData';
 import { MONEY_BOUNDARY } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
-import { Enter } from '../../../design/primitives';
+import { Enter, Grain } from '../../../design/primitives';
 import { SiteHeader } from '../../site/SiteHeader';
 import { quietLink } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
@@ -17,7 +17,7 @@ const checkedTime = new Intl.DateTimeFormat('en-US', {
 
 function PreparationExcerpt() {
   return (
-    <section data-base="cream" className="hero-preparation" aria-label="Prepare your board">
+    <section className="hero-preparation g-float" aria-label="Prepare your board">
       <div className="hero-excerpt-label"><h2>Prepare your board</h2><span>Before kickoff</span></div>
       <div className="hero-preparation-content">
         <h3>{demoGame.title}</h3>
@@ -41,7 +41,7 @@ function PreparationExcerpt() {
 
 function GameDayExcerpt() {
   return (
-    <section data-base="dark" className="hero-gameday" aria-label="Your group on game day">
+    <section data-base="dark" className="hero-gameday g-float" aria-label="Your group on game day">
       <div className="hero-excerpt-label"><h2>Your group on game day</h2><span>After publishing</span></div>
       <div className="hero-gameday-content">
         <h3>{demoGame.title}</h3>
@@ -61,6 +61,8 @@ function GameDayExcerpt() {
 export function Hero() {
   return (
     <section data-sc-act="flow" data-testid="homepage-first-viewport" className="studio-hero">
+      <div className="studio-hero-light" aria-hidden="true" />
+      <Grain contained opacity={0.04} />
       <div className="studio-hero-shell">
         <SiteHeader />
         <div className="studio-hero-layout">
