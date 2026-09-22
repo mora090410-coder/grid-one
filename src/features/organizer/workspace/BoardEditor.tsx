@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Glass, CapsuleTag, CapsuleButton } from '../../../design/primitives';
+import { Glass, CapsuleTag, CapsuleButton, DigitFlow } from '../../../design/primitives';
 import type { BoardData, EntryMeta, GameState } from '../../../../types';
 import { assignable, rangeBetween, toggle, type Selection } from './selection';
 
@@ -29,7 +29,6 @@ export interface BoardEditorProps {
 }
 
 const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
-const PREVIEW_ANIM = 'animate-[digit-roll_var(--g-dur-spring)_var(--g-ease-state)]';
 
 /** Organizer board editor: 11x11 grid with square assignment and a draft draw preview. */
 export default function BoardEditor({
@@ -231,14 +230,14 @@ export default function BoardEditor({
             >
               <div className={AXIS_CELL} aria-hidden="true" />
               {topDigits.map((digit, colIndex) => (
-                <div key={`top-${colIndex}`} className={`${AXIS_CELL} ${drawPreview ? PREVIEW_ANIM : ''}`.trim()}>
-                  {digit === null || digit === undefined ? '·' : digit}
+                <div key={`top-${colIndex}`} className={AXIS_CELL}>
+                  <DigitFlow value={digit === null || digit === undefined ? '·' : digit} />
                 </div>
               ))}
               {Array.from({ length: 10 }, (_, rowIndex) => (
                 <React.Fragment key={`row-${rowIndex}`}>
-                  <div className={`${AXIS_CELL} ${drawPreview ? PREVIEW_ANIM : ''}`.trim()}>
-                    {leftDigits[rowIndex] === null || leftDigits[rowIndex] === undefined ? '·' : leftDigits[rowIndex]}
+                  <div className={AXIS_CELL}>
+                    <DigitFlow value={leftDigits[rowIndex] === null || leftDigits[rowIndex] === undefined ? '·' : leftDigits[rowIndex]} />
                   </div>
                   {Array.from({ length: 10 }, (_, colIndex) => {
                     const index = rowIndex * 10 + colIndex;

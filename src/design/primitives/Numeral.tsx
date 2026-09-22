@@ -1,4 +1,5 @@
 import React from 'react';
+import { DigitFlow } from './DigitFlow';
 
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 const SIZE: Record<Size, string> = {
@@ -31,7 +32,7 @@ export function Numeral({ value, secondary, size = 'md', className = '', label }
       role={label ? 'img' : undefined}
       className={`inline-flex items-baseline gap-0.5 font-mono tabular-nums leading-none text-fg ${SIZE[size]} ${className}`.trim()}
     >
-      <span aria-hidden={label ? 'true' : undefined}>{value}</span>
+      <span aria-hidden={label ? 'true' : undefined}><DigitFlow value={value} /></span>
       {secondary ? <span aria-hidden={label ? 'true' : undefined} className={`text-fg-3 ${SECONDARY[size]}`}>{secondary}</span> : null}
     </span>
   );

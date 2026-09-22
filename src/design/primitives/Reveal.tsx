@@ -1,13 +1,18 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { useReducedMotion } from './motion';
 
-export interface RevealProps {
+export interface RevealProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   /** Element to render. Defaults to `div`. */
   as?: React.ElementType;
   /** Stagger, in milliseconds. Becomes `transition-delay`. */
   delay?: number;
   className?: string;
+  /**
+   * Rise without dropping opacity. Use this when the region contains
+   * focusable controls, so Tab never lands on invisible content.
+   */
+  keepVisible?: boolean;
 }
 
 /**
@@ -42,7 +47,7 @@ export interface RevealProps {
  * not a scroll effect, it is a page-load animation. Only elements that start
  * below the fold animate, which is exactly where the effect is perceivable.
  */
-export function Reveal({ children, as: Tag = 'div', delay = 0, className = '' }: RevealProps) {
+export function Reveal({ children, as: Tag = 'div', delay = 0, className = '', keepVisible = false, style, ...rest }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
 
@@ -67,7 +72,7 @@ export function Reveal({ children, as: Tag = 'div', delay = 0, className = '' }:
       return;
     }
 
-    node.setAttribute('data-reveal', 'pending');
+    node.setAttribute('data-reveal', keepVisible ? 'shift' : 'pending');
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -82,14 +87,15 @@ export function Reveal({ children, as: Tag = 'div', delay = 0, className = '' }:
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [reduced]);
+  }, [keepVisible, reduced]);
 
   const Element = Tag as React.ElementType;
   return (
     <Element
+      {...rest}
       ref={ref as React.Ref<never>}
       className={className || undefined}
-      style={delay > 0 ? { transitionDelay: `${delay}ms` } : undefined}
+      style={delay > 0 ? { ...style, transitionDelay: `${delay}ms` } : style}
     >
       {children}
     </Element>

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { buildBoardGridModel, type ViewerBoardCellModel } from './boardGridModel';
-import { CapsuleButton } from '../../../design/primitives';
+import { CapsuleButton, scrollBehavior, useReducedMotion } from '../../../design/primitives';
 
 interface ViewerBoardGridProps {
   board: BoardData;
@@ -68,6 +68,22 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   const [zoom, setZoom] = React.useState(1);
   const cellRefs = React.useRef<Array<Array<HTMLTableCellElement | null>>>([]);
   const viewportRef = React.useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const emphasisIds = model.cells.flat().filter((cell) => cell.states.includes('current') || cell.states.includes('scenario')).map((cell) => cell.id).join('|');
+  const seenEmphasis = React.useRef<string | null>(null);
+  const [pulsing, setPulsing] = React.useState('');
+
+  React.useEffect(() => {
+    const previous = seenEmphasis.current;
+    seenEmphasis.current = emphasisIds;
+    if (previous === null || previous === emphasisIds || reducedMotion) {
+      if (reducedMotion) setPulsing('');
+      return;
+    }
+    const before = new Set(previous.split('|').filter(Boolean));
+    const added = emphasisIds.split('|').filter((id) => id && !before.has(id));
+    setPulsing(added.join('|'));
+  }, [emphasisIds, reducedMotion]);
 
   React.useEffect(() => setFocus(initialFocus), [initialFocus]);
 
@@ -80,13 +96,14 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
       const viewport = viewportRef.current;
       const left = cell.offsetLeft - ((viewport.clientWidth - cell.offsetWidth) / 2);
       const top = cell.offsetTop - ((viewport.clientHeight - cell.offsetHeight) / 2);
-      if (typeof viewport.scrollTo === 'function') viewport.scrollTo({ left, top, behavior: 'auto' });
+      const behavior = scrollBehavior(reducedMotion);
+      if (typeof viewport.scrollTo === 'function') viewport.scrollTo({ left, top, behavior });
       else {
         viewport.scrollLeft = left;
         viewport.scrollTop = top;
       }
     }
-  }, []);
+  }, [reducedMotion]);
 
   React.useEffect(() => {
     if (!viewSquareRequest) return;
@@ -94,8 +111,8 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     focusCell(row, col, true);
     // Explicit navigation must reveal the board in the page as well as its
     // internal scroll viewport. Immediate scrolling also respects reduced motion.
-    cellRefs.current[row]?.[col]?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
-  }, [viewSquareRequest, focusCell]);
+    cellRefs.current[row]?.[col]?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: scrollBehavior(reducedMotion) });
+  }, [viewSquareRequest, focusCell, reducedMotion]);
 
   const centerState = (state: 'selected' | 'current') => {
     const cell = model.cells.flat().find((candidate) => candidate.states.includes(state));
@@ -129,6 +146,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     focusCell(next.row, next.col);
   };
 
+  const pulsingIds = new Set(pulsing.split('|').filter(Boolean));
   const topLabel = game.topAbbr || model.topTeamName;
   const sideLabel = game.leftAbbr || model.sideTeamName;
   const orientationLabel = live && live.state !== 'pre'
@@ -201,6 +219,8 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     data-milestone={cell.states.includes('milestone') ? 'true' : 'false'}
                     data-row-index={cell.rowIndex}
                     data-col-index={cell.colIndex}
+                    data-match-emphasis={pulsingIds.has(cell.id) ? 'on' : undefined}
+                    data-match-tone={pulsingIds.has(cell.id) ? (cell.states.includes('current') ? 'ink' : 'gold') : undefined}
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
                     className={`group relative h-14 rounded-cell p-1 text-center align-middle font-ui text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}

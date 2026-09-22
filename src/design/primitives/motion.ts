@@ -27,3 +27,8 @@ export function useReducedMotion(): boolean {
 export function durations(reduced: boolean): { state: number; spring: number } {
   return reduced ? { state: DUR_REDUCED, spring: DUR_REDUCED } : { state: DUR_STATE, spring: DUR_SPRING };
 }
+
+/** Board pans stay instant when motion is reduced. `instant` overrides a page-level smooth scroll. */
+export function scrollBehavior(reduced: boolean): ScrollBehavior {
+  return reduced ? 'instant' : 'smooth';
+}

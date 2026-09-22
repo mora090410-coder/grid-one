@@ -132,6 +132,45 @@
   from { transform: translateY(-8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+/* One-shot hero entrance. Floor opacity stays high enough that the first
+   paint still counts and focusable controls never disappear. */
+@keyframes g-enter {
+  from { opacity: 0.45; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+[data-enter="run"] {
+  animation: g-enter var(--g-dur-spring) var(--g-ease-state) both;
+}
+.digit-flow {
+  display: inline-block;
+  animation: digit-roll var(--g-dur-spring) var(--g-ease-state);
+}
+.crossfade { display: grid; }
+.crossfade > span { grid-area: 1 / 1; }
+@keyframes crossfade-in {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: none; }
+}
+@keyframes crossfade-out {
+  from { opacity: 1; filter: none; }
+  to { opacity: 0; filter: blur(4px); }
+}
+.crossfade-in { animation: crossfade-in var(--g-dur-spring) var(--g-ease-state); }
+.crossfade-out { animation: crossfade-out var(--g-dur-spring) var(--g-ease-state); }
+@keyframes match-emphasis {
+  0% { box-shadow: inset 0 0 0 0 transparent; }
+  40% { box-shadow: inset 0 0 0 3px var(--match-ring, var(--g-ink)); }
+  100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+[data-match-emphasis="on"] {
+  animation: match-emphasis var(--g-dur-spring) var(--g-ease-state);
+}
+[data-match-emphasis="on"][data-match-tone="gold"] { --match-ring: var(--g-gold); }
+@media (prefers-reduced-motion: no-preference) {
+  .gridone-board-grid {
+    transition: zoom var(--g-dur-spring) var(--g-ease-state);
+  }
+}
 @keyframes sheet-fade {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -161,6 +200,12 @@
   opacity: 0;
   transform: translateY(20px);
 }
+/* Focusable regions rise without ever dropping opacity, so Tab cannot land
+   on invisible questions or actions. */
+[data-reveal="shift"] {
+  opacity: 1;
+  transform: translateY(12px);
+}
 [data-reveal="in"] {
   opacity: 1;
   transform: none;
@@ -175,10 +220,22 @@
     transition: none;
     transition-delay: 0ms !important;
   }
-  [data-reveal="pending"] {
+  [data-reveal="pending"],
+  [data-reveal="shift"] {
     opacity: 1;
     transform: none;
   }
+  [data-enter="run"],
+  .digit-flow,
+  .crossfade-in,
+  [data-match-emphasis="on"] {
+    animation: none;
+    translate: none;
+    filter: none;
+    opacity: 1;
+  }
+  .crossfade-out { display: none; }
+  .gridone-board-grid { transition: none; }
 
 }
 
@@ -191,10 +248,21 @@
   [data-reveal] {
     transition: none;
   }
-  [data-reveal="pending"] {
+  [data-reveal="pending"],
+  [data-reveal="shift"] {
     opacity: 1;
     transform: none;
   }
+  [data-enter="run"],
+  .digit-flow,
+  .crossfade-in,
+  [data-match-emphasis="on"] {
+    animation: none;
+    translate: none;
+    filter: none;
+    opacity: 1;
+  }
+  .crossfade-out { display: none; }
 
 }
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { buildScenarioModel } from '../../viewer/scenarios/scenarioModel';
 import { useScoreExplanation } from '../atmosphere/useScoreExplanation';
 import { demoBoard, demoGame, demoLive, demoWinnerNow, demoWinnerSquares } from '../demoData';
+import { Reveal } from '../../../design/primitives';
 import { quietLink } from './cta';
 
 const scenarios = buildScenarioModel({ board: demoBoard, game: demoGame, live: demoLive });
@@ -15,7 +16,7 @@ export function ScoreSection() {
   return (
     <section className="editorial-gameday" aria-labelledby="score-heading">
       <div className="editorial-section">
-        <header className="editorial-intro"><p className="editorial-kicker">Your group on game day</p><h2 id="score-heading">Scores update themselves.</h2><p>At the end of each quarter, the last digits of the score point to the winning square — GridOne marks it for you.</p><p>GridOne records Q1, halftime, Q3, and Final. Final uses the score at the end of the game, including overtime.</p></header>
+        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">Your group on game day</p><h2 id="score-heading">Scores update themselves.</h2><p>At the end of each quarter, the last digits of the score point to the winning square — GridOne marks it for you.</p><p>GridOne records Q1, halftime, Q3, and Final. Final uses the score at the end of the game, including overtime.</p></Reveal>
         <div ref={explanation} data-score-explanation className="editorial-score-explanation" role="region" aria-label="How the score matches a square">
           <section className="editorial-score-card" aria-label="Sample score">
             <h3>{demoGame.title}</h3><p className="editorial-small-label">Sample game · Q{demoLive.period} · {demoLive.clock}</p>
