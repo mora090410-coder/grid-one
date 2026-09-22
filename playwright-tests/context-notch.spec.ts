@@ -110,9 +110,15 @@ test('pin is nonmodal; explicit close and forced colors remain usable', async ({
   await installOrganizerBoard(page);
   await page.goto(`/boards/${boardId}`);
   const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
-  await toggle.hover();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await toggle.click();
+  const supportsHover = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches);
+  if (supportsHover) {
+    await toggle.hover();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await toggle.click();
+  } else {
+    await toggle.click();
+    await page.getByRole('button', { name: 'Keep open' }).click();
+  }
   await expect(page.getByRole('button', { name: 'Unpin' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Board name' }).focus();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');

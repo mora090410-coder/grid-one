@@ -130,11 +130,15 @@ test('published organizer Game Results Share navigate real pre-Final destination
   await expect(page.getByRole('main').getByRole('button', { name: 'Payments', exact: true })).toBeVisible();
   for (const destination of [
     { module: 'Game', action: 'View score authority', id: 'organizer-score' },
-    { module: 'Results', action: 'View results', id: 'organizer-corrections' },
+    { module: 'Results', action: 'Correct a published result', id: 'organizer-corrections' },
     { module: 'Share', action: 'View sharing options', id: 'organizer-share' },
   ]) {
     if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
     await notch.getByRole('button', { name: destination.module, exact: true }).click();
+    if (destination.module === 'Results') {
+      await expect(notch.getByRole('region', { name: 'Results details' })).toContainText('Q1 · Ava');
+      await expect(notch.getByRole('button', { name: 'View results', exact: true })).toHaveCount(0);
+    }
     await notch.getByRole('button', { name: destination.action, exact: true }).click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(page.locator(`#${destination.id}`)).toBeFocused();

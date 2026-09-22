@@ -4,7 +4,11 @@ import { describe, expect, it } from 'vitest';
 import ViewerIsland from '../../src/features/viewer/shell/ViewerIsland';
 import type { BoardData, GameState, LiveGameData } from '../../types';
 
-const board: BoardData = { topAxis: [0,1,2,3,4,5,6,7,8,9], leftAxis: [0,1,2,3,4,5,6,7,8,9], squares: Array.from({ length: 100 }, () => []) };
+const board: BoardData = {
+  topAxis: [0,1,2,3,4,5,6,7,8,9],
+  leftAxis: [0,1,2,3,4,5,6,7,8,9],
+  squares: Array.from({ length: 100 }, (_, index) => [0, 12, 99].includes(index) ? ['Carrie Moss'] : []),
+};
 const game: GameState = { title: 'GridOne Bowl', meta: '', leftAbbr: 'KC', leftName: 'Kansas City', topAbbr: 'PHI', topName: 'Philadelphia', dates: 'Sep 13', lockTitle: false, lockMeta: false };
 const live: LiveGameData = { leftScore: 21, topScore: 14, quarterScores: { Q1: { left: 7, top: 0 }, Q2: { left: 7, top: 7 }, Q3: { left: 7, top: 7 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } }, clock: '8:12', period: 3, state: 'in', detail: '3rd quarter', isOvertime: false, sourceName: 'ESPN', retrievedAt: '2026-09-13T20:15:00.000Z', staleAfter: '2026-09-13T20:16:00.000Z', freshness: 'fresh' };
 
@@ -16,6 +20,7 @@ describe('ViewerIsland', () => {
     expect(toggle).toHaveTextContent('PHI 14');
     expect(screen.queryByRole('region', { name: 'Game details' })).toBeNull();
     fireEvent.click(toggle);
+    expect(screen.getByRole('region', { name: 'Game details' })).toHaveTextContent('KC 21 · PHI 14 · Q3 · 8:12');
     expect(screen.getByText(/Score updates about every three minutes/)).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Game details' })).toHaveTextContent('ESPN');
   });
@@ -26,6 +31,7 @@ describe('ViewerIsland', () => {
     expect(screen.getByRole('button', { name: 'Your squares' })).toHaveTextContent('3 squares');
     fireEvent.click(screen.getByRole('button', { name: 'Your squares' }));
     expect(screen.getByText('Selected name: Carrie Moss')).toBeInTheDocument();
+    expect(screen.getByText('Squares 1, 13, 100')).toBeInTheDocument();
     expect(screen.getByText('Currently matching: one of your squares.')).toBeInTheDocument();
   });
 
@@ -33,5 +39,11 @@ describe('ViewerIsland', () => {
     render(<ViewerIsland game={game} board={board} live={null} liveStatus="PREGAME" isSynced={false} selectedPlayer="" yourSquares={0} winsNow={false} />);
     expect(screen.getByRole('button', { name: 'Score' })).toHaveTextContent('Waiting for score');
     expect(screen.getByRole('button', { name: 'Score' })).toHaveTextContent('Score unavailable');
+  });
+
+  it('uses the board as the canonical selected-square count', () => {
+    render(<ViewerIsland game={game} board={{ ...board, squares: Array.from({ length: 100 }, () => []) }} live={live} liveStatus="LIVE" isSynced selectedPlayer="Carrie Moss" yourSquares={7} winsNow={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Score' }));
+    expect(screen.getByRole('button', { name: 'Your squares' })).toHaveTextContent('0 squares');
   });
 });

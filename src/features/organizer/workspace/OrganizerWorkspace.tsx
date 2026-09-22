@@ -10,6 +10,7 @@ import type {
   NotificationDeliveryIssue,
   PayoutDescriptions,
   WinnerResolution,
+  PendingMilestone,
 } from '../../../../types';
 import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
 import { compressImage } from '../../../../utils/image';
@@ -69,6 +70,7 @@ export interface OrganizerWorkspaceProps {
   activePoolId: string | null;
   liveData: LiveGameData | null;
   winnerHistory: WinnerResolution[];
+  pendingMilestones?: PendingMilestone[];
   notificationDeliveryIssues: NotificationDeliveryIssue[];
   onApply: (game: GameState, board: BoardData) => void;
   onPublish: (currentData: { game: GameState; board: BoardData }) => Promise<string | void>;
@@ -183,6 +185,7 @@ export default function OrganizerWorkspace({
   activePoolId,
   liveData,
   winnerHistory,
+  pendingMilestones = [],
   notificationDeliveryIssues,
   revision,
   entryMeta,
@@ -921,8 +924,10 @@ export default function OrganizerWorkspace({
     liveSummary: liveData && liveScoreModel ? `${game.leftAbbr} ${liveData.leftScore} · ${game.topAbbr} ${liveData.topScore} · ${liveScoreModel.periodLabel}` : undefined,
     liveTrust: liveScoreModel ? `${liveScoreModel.authority.label} · ${liveScoreModel.authority.detail}${liveScoreModel.freshness ? ` · ${liveScoreModel.freshness}` : ''}` : undefined,
     isFinal: finalRecord,
+    winnerHistory: correctionHistory, pendingMilestones,
+    leftLabel: game.leftAbbr, topLabel: game.topAbbr,
     onGame: () => visitNotchDestination('organizer-score'),
-    onResults: () => visitNotchDestination(finalRecord ? 'organizer-results' : 'organizer-corrections'),
+    onResults: () => visitNotchDestination('organizer-corrections'),
     shareAction: isPublished || isShared
       ? { label: 'View sharing options', onClick: () => visitNotchDestination('organizer-share') }
       : onShareBoard ? { label: 'Share while selling', onClick: () => setShareOpen(true), disabled: sharePending || saveState.status !== 'clean' } : undefined,
@@ -1072,9 +1077,7 @@ export default function OrganizerWorkspace({
       ? { label: 'Review score', onClick: () => focusGameSection('organizer-score') }
       : notificationDeliveryIssues.length > 0
         ? { label: 'Review delivery issue', onClick: () => focusGameSection('organizer-delivery') }
-        : finalRecord
-          ? { label: 'View results', onClick: () => focusGameSection('organizer-results') }
-          : { label: 'Copy link', onClick: () => void copyViewerLink() };
+        : null;
 
     return (
       <Base kind="cream">
@@ -1086,7 +1089,7 @@ export default function OrganizerWorkspace({
           drawn
           phase={model.phase}
           primary={gameDayPrimary}
-          secondary={onOpenViewer ? [{ label: 'Open public board', onClick: () => onOpenViewer() }] : undefined}
+          shareActions={[{ label: 'Copy link', onClick: () => void copyViewerLink() }, ...(onOpenViewer ? [{ label: 'Open public board', onClick: () => onOpenViewer() }] : [])]}
         />
         <main inert={familyBusy || paymentBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-2 pb-24">
           {header}

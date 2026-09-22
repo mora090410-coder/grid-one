@@ -603,9 +603,10 @@ describe('OrganizerWorkspace published boards', () => {
     expect(screen.queryByLabelText('Paste names')).not.toBeInTheDocument();
   });
 
-  it('copies the viewer link from the island', async () => {
+  it('copies the viewer link from the island Share quick view', async () => {
     renderPublished();
     expandIsland();
+    fireEvent.click(screen.getByRole('button', { name: 'Share' }));
 
     await act(async () => {
       fireEvent.click(screen.getAllByRole('button', { name: 'Copy link' })[0]);

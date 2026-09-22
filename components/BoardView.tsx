@@ -451,6 +451,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     activePoolId={activePoolId || ''}
                     liveData={liveData}
                     winnerHistory={liveWinnerHistory}
+                    pendingMilestones={livePendingMilestones}
                     notificationDeliveryIssues={notificationDeliveryIssues}
                     revision={revision ?? 0}
                     entryMeta={entryMetaByIndex}

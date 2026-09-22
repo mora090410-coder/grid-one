@@ -107,3 +107,32 @@ it('adds actionable issue detail and gates preview readiness', () => {
   expect(buildOrganizerIslandSummary({ ...base, drawn: true, hasBlocker: true }).detail).toBe('Saved');
   expect(buildOrganizerIslandSummary({ ...base, drawn: true, saveStatus: 'saving' }).detail).toBe('Saving…');
 });
+
+it('shows results immediately and reserves sharing controls for Share', () => {
+  const copy = vi.fn();
+  render(<OrganizerIsland {...base} isPublished primary={null} shareActions={[{ label: 'Copy link', onClick: copy }]} winnerHistory={[]} onResults={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Results' }));
+  expect(screen.getByText('No published results yet.')).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'View results' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Correct a published result' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Copy link' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+  expect(copy).toHaveBeenCalledOnce();
+});
+
+it('separates published results from pending scores and offers explicit correction', () => {
+  const correct = vi.fn();
+  render(<OrganizerIsland {...base} isPublished primary={null} onResults={correct}
+    winnerHistory={[{ milestone: 'Q1', participantName: 'Old name', openSquare: true, corrected: true, topScore: 3, sideScore: 7, topDigit: 3, sideDigit: 7, resolvedAt: '' }]}
+    pendingMilestones={[{ milestone: 'Q2', topScore: 10, sideScore: 14, topDigit: 0, sideDigit: 4, stableSince: '', lastObservedAt: '', successfulReadCount: 1 }]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Results' }));
+  const results = screen.getByRole('region', { name: 'Results details' });
+  expect(results).toHaveTextContent('OPEN · corrected');
+  expect(results).toHaveTextContent('Pending confirmation');
+  expect(results).not.toHaveTextContent('Old name');
+  fireEvent.click(screen.getByRole('button', { name: 'Correct a published result' }));
+  expect(correct).toHaveBeenCalledOnce();
+});

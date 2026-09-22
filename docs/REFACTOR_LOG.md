@@ -736,3 +736,15 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - Anthony explicitly approved “Commit push and deploy” for the verified family-sharing follow-up. Original checkout work and scratch evidence remain excluded.
 - Applied reviewed migration030 to GridOneApp as `family_guest_links` before application rollout. New RPC uses a pinned search path and service-only execution; existing data, availability, names and rollout scope remain unchanged.
 - Release uses the verified source recorded above:930 unit tests,97 integration passes/one skip, build/typecheck/Functions/design gates, full Chromium134 plus the two unchanged focused passes, and10 phone-WebKit journeys. Exact deployment revision and rendered live workflow are checked after push.
+
+## 2026-09-21 — Notch inline quick views
+
+Approved scope: organizers and viewers read results directly in the existing notch. Shared Results presentation shows four milestones, canonical published/OPEN/corrected records, pending state, scores and labeled digits, with an explicit empty-history message. Organizer Share owns copy/open actions; correction navigation is labeled explicitly and requires an existing published result. Viewer Game includes score/period and Your squares includes original square numbers. No API, schema, scoring authority, payment or permission changes.
+
+Verification: organizer regression reproduced the missing inline results before implementation. Initial focused organizer suite: 77 passed. Full unit suite: 934 passed before final legacy-result coverage; subsequent focused verification and browser evidence recorded in `.work/notch-quickviews/` and `.work/notch-*.log`. Build passed; design lint passed with five existing orphan-token warnings. Changes are local, not deployed.
+
+Final review added legacy-record/pending-score isolation and all-four-milestone empty-state coverage. Final unit run: 131 files / 938 tests passed; final TypeScript/build passed. Manual phone inspection also exposed sticky board headers painting over notch controls; notch layering now sits above board headers and below modal sheets. Viewer phone and desktop screenshots inspected under `.work/notch-quickviews/`.
+
+Browser verification completed: `PLAYWRIGHT_PORT=5192 npx playwright test playwright-tests/context-notch.spec.ts playwright-tests/context-notch-refine1.spec.ts playwright-tests/context-notch-quickviews.spec.ts --project=chromium --project=phone-webkit` — 30/30 passed. The mock server uses the fixture Supabase project URL and a non-secret test key; an initial missing-env sign-in redirect was resolved without production/auth changes. Four 390px/1280px organizer/viewer screenshots were reviewed. Keyboard activation, focus, overflow and topmost footer hit testing passed. No commit, push or deployment performed for this slice.
+
+Release authorization received for commit, push to main and deployment. Full Chromium release gate: 140/140 passed (1.6m); prior targeted Chromium/phone WebKit 30/30, unit 938/938, TypeScript/build/design gates passed. Release uses the isolated worktree and preserves unrelated canonical-checkout changes.
