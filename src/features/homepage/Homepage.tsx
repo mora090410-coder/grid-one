@@ -1,6 +1,6 @@
 import React from 'react';
 import './studio.css';
-import { Base, Grain } from '../../design/primitives';
+import { Base } from '../../design/primitives';
 import { Footer } from './sections/Footer';
 import { Hero } from './sections/Hero';
 import { OrganizerSection } from './sections/OrganizerSection';
@@ -9,8 +9,7 @@ import { ScoreSection } from './sections/ScoreSection';
 
 export default function Homepage() {
   return (
-    <Base kind="dark" className="overflow-x-clip">
-      <Grain />
+    <Base kind="dark" className="marketing-stage overflow-x-clip">
       <main data-testid="homepage">
         <Hero />
         <OrganizerSection />

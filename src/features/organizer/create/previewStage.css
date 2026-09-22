@@ -1,0 +1,43 @@
+/* Create-page preview chrome. The 10×10 grid keeps its own opaque cells.
+   No backdrop-filter on this frame: open squares must not show a blur. */
+.create-preview-stage {
+  position: relative;
+  isolation: isolate;
+  padding: 22px;
+  border-radius: var(--g-radius-card);
+  background: var(--g-stage);
+  box-shadow: var(--g-shadow-float);
+}
+.create-preview-light {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: var(--g-radius-card);
+  background: radial-gradient(circle at 50% 18%, var(--g-stage-light), transparent 62%);
+}
+.create-preview-frame {
+  position: relative;
+  z-index: 1;
+  padding: 16px;
+  transition:
+    border-color var(--g-dur-spring) var(--g-ease-state),
+    box-shadow var(--g-dur-spring) var(--g-ease-state);
+}
+.create-preview-stage[data-selected="true"] .create-preview-frame {
+  border-color: var(--g-white);
+  box-shadow: var(--g-shadow-float), 0 0 28px var(--g-stage-light);
+}
+.create-preview-grid,
+.create-preview-grid > * {
+  filter: none;
+  backdrop-filter: none;
+}
+@media (min-width: 768px) {
+  .create-preview-frame { padding: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .create-preview-frame { transition: none; }
+}

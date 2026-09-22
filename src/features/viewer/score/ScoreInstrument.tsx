@@ -18,9 +18,11 @@ export interface ScoreInstrumentProps {
   isSynced: boolean;
   /** The real viewer is the page's one h1; a shell that previews the viewer (e.g. the homepage organizer preview) renders h2. */
   headingLevel?: 'h1' | 'h2';
+  /** Extra chrome on the score panel. Demo uses the marketing glass surface. */
+  surfaceClassName?: string;
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1' }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '' }) => {
   const score = buildViewerScoreModel({ live, liveStatus, isSynced });
   const Heading = headingLevel;
   const quarter = quarterForLive(live);
@@ -39,7 +41,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 
-      <Glass as="div" padding="lg" className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4" aria-label="Score">
+      <Glass as="div" padding="lg" className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${surfaceClassName}`.trim()} aria-label="Score">
         <div className="flex flex-col gap-2 min-w-0">
           <Eyebrow>{game.leftName || leftLabel}</Eyebrow>
           {live ? <Numeral value={live.leftScore} size="lg" label={`${game.leftName || leftLabel} ${live.leftScore}`} /> : <span role="img" aria-label={`${game.leftName || leftLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}

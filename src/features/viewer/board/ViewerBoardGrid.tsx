@@ -14,6 +14,8 @@ interface ViewerBoardGridProps {
   highlightedCoords?: { left: number; top: number } | null;
   viewSquareRequest?: { row: number; col: number } | null;
   showOpenSquares?: boolean;
+  /** Demo board chrome. Does not change cell geometry. */
+  chrome?: 'default' | 'stage';
 }
 
 const controlStyle = { minHeight: 44, minWidth: 44 };
@@ -43,6 +45,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   highlightedCoords = null,
   viewSquareRequest = null,
   showOpenSquares = false,
+  chrome = 'default',
 }) => {
   const model = React.useMemo(() => buildBoardGridModel({
     board,
@@ -165,7 +168,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
         <output className="font-mono tabular-nums inline-flex min-h-11 min-w-11 items-center justify-center px-3 rounded-capsule border border-hairline text-fg" aria-label="Current zoom">{Math.round(zoom * 100)}%</output>
       </div>
 
-      <div ref={viewportRef} className="gridone-viewer-board-viewport overflow-auto rounded-card border border-hairline bg-ground p-2">
+      <div ref={viewportRef} className={`gridone-viewer-board-viewport overflow-auto rounded-card border border-hairline bg-ground p-2${chrome === 'stage' ? ' board-stage-frame' : ''}`}>
         <table
           role="grid"
           aria-label={`Football squares board, Top team ${model.topTeamName}, Side team ${model.sideTeamName}`}

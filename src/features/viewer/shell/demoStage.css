@@ -1,0 +1,69 @@
+/* Demo board chrome. The spotlight is a sibling of the grid, never a filter
+   on a parent of the squares. Cell size, spacing, and zoom stay put. */
+.demo-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background-color: var(--g-stage);
+  --g-shadow: var(--g-shadow-float);
+}
+.demo-stage::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  width: min(1080px, 78vw);
+  aspect-ratio: 1;
+  right: -8%;
+  top: -6%;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, var(--g-stage-light), transparent 64%);
+}
+.demo-board-light {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  left: -3%;
+  right: -3%;
+  top: 28%;
+  height: 64%;
+  border-radius: var(--g-radius-capsule);
+  background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--g-stage-light) 40%, transparent), transparent 64%);
+}
+.demo-board-stage > :not(.demo-board-light) {
+  position: relative;
+  z-index: 1;
+}
+.board-stage-frame {
+  border-color: var(--g-glass-edge);
+  box-shadow: var(--g-shadow-float);
+}
+.board-stage-frame td,
+.board-stage-frame th {
+  filter: none;
+  backdrop-filter: none;
+}
+.board-stage-frame [data-sticky-axis] {
+  color: var(--g-white);
+}
+.board-stage-frame td[data-open="true"] {
+  background-color: var(--g-ground);
+}
+.board-stage-frame td[data-current="true"]:not([data-corrected="true"]) {
+  background-color: var(--g-white);
+  color: var(--g-ink);
+}
+.board-stage-frame td[data-current="true"]:not([data-corrected="true"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 14px var(--g-stage-light);
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-board-light,
+  .board-stage-frame td[data-current="true"]::after {
+    animation: none;
+  }
+}

@@ -10,6 +10,7 @@ import { Base, CapsuleButton, CrossfadeText, Eyebrow, Glass, CapsuleInput } from
 
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
 import { readCreateDraft, writeCreateDraft, clearCreateDraft } from '../src/features/organizer/create/createDraft';
+import '../src/features/organizer/create/previewStage.css';
 
 const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-[color,background-color,border-color,scale] hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
 
@@ -248,15 +249,18 @@ const CreateContest: React.FC = () => {
                 <p className="font-ui text-[14px] text-fg-2">Choose a scheduled NFL game to save your board. If your game is not listed yet, keep this preview and return when it is available.</p>
 
                 </div>
-                <section aria-label="Board preview" data-selected={game.gameExternalId ? 'true' : 'false'} className="flex min-w-0 flex-col gap-4 rounded-card border border-hairline bg-panel p-4 transition-[border-color] duration-[var(--g-dur-spring)] ease-[var(--g-ease-state)] data-[selected=true]:border-action md:p-6">
+                <section aria-label="Board preview" data-base="dark" data-selected={game.gameExternalId ? 'true' : 'false'} className="create-preview-stage">
+                    <div className="create-preview-light" aria-hidden="true" />
+                    <div className="create-preview-frame g-float flex min-w-0 flex-col gap-4">
                     <Eyebrow>Preview · Not shared</Eyebrow>
                     <h2 className="break-words font-display text-[32px] leading-tight text-fg">{game.title.trim() || 'Your board'}</h2>
-                    <p className="font-ui text-[14px] text-fg-2"><CrossfadeText value={game.gameExternalId ? `${game.leftAbbr} at ${game.topAbbr}` : 'Choose your game above'} /></p>
+                    <p className="g-pill font-ui text-[14px]"><CrossfadeText value={game.gameExternalId ? `${game.leftAbbr} at ${game.topAbbr}` : 'Choose your game above'} /></p>
                     <p className="font-ui text-[14px] text-fg-2">100 squares · Numbers drawn later</p>
-                    <div aria-hidden="true" className="grid grid-cols-10 gap-1">
+                    <div aria-hidden="true" className="create-preview-grid grid grid-cols-10 gap-1">
                         {board.squares.map((names, index) => <div key={index} className="flex aspect-square min-w-0 items-center justify-center overflow-hidden rounded-cell border border-hairline bg-ground font-mono text-[11px] text-fg-2" title={names.join(', ')}>{index + 1}</div>)}
                     </div>
                     <p className="font-ui text-[14px] text-fg-2">After saving, add names, share your board, then draw the numbers before the game. Square payments happen outside GridOne.</p>
+                    </div>
                 </section>
 
                 </div>

@@ -31,11 +31,13 @@ export interface ViewerShellProps {
   organizerPreview?: boolean;
   organizerHref?: string;
   onShare?: () => void;
+  /** Demo page chrome: stage light, glass score, framed board. */
+  stageChrome?: boolean;
 }
 
 const ViewerShell: React.FC<ViewerShellProps> = ({
   game, board, live, liveStatus, isSynced, highlights, winnerHistory, pendingMilestones, selectedPlayer,
-  onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode, servicesEnabled = true, organizerPreview = false, organizerHref, onShare,
+  onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode,   servicesEnabled = true, organizerPreview = false, organizerHref, onShare, stageChrome = false,
 }) => {
   const scoreRef = useRef<HTMLDivElement>(null);
   const findRef = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
 
   return (
-    <Base kind="dark">
+    <Base kind="dark" className={stageChrome ? 'demo-stage' : ''}>
       {!organizerPreview && <ViewerIsland key={shareCode || game.title} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
         winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
         onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
@@ -102,7 +104,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <div ref={scoreRef} tabIndex={-1}>
-          <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
+          <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
           </div>
           <div ref={findRef}><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} tabIndex={-1} aria-label="Published results">
@@ -124,8 +126,9 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
         </div>
 
-        <section className="flex min-w-0 flex-col gap-4" aria-labelledby="viewer-board-title" data-board-locked={locked}>
-          <div className="flex items-end justify-between gap-3">
+        <section className={`relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
+          {stageChrome && <div className="demo-board-light" aria-hidden="true" />}
+          <div className="relative z-[1] flex items-end justify-between gap-3">
             <div className="flex flex-col gap-1">
               <Eyebrow>Published board</Eyebrow>
               <h2 id="viewer-board-title" className="font-display text-[26px] leading-[1.1] text-fg">Board</h2>
@@ -138,7 +141,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <ViewerBoardGrid board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={boardFocus} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} />
+            <div className="relative z-[1]"><ViewerBoardGrid board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={boardFocus} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>

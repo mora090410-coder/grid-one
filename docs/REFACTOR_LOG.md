@@ -766,3 +766,24 @@ Polish only. No pricing, copy, board-rule, or schema changes. Motion ideas from 
 3. `npx tsc --noEmit` passed. `npm run build` passed. `npm run design:lint` passed with the five existing orphan-token warnings and zero errors.
 4. `npm run test:unit` passed: 132 files / 947 tests.
 5. `npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/smoke.spec.ts playwright-tests/studio-landing.spec.ts` passed 27/27 after installing the Chromium browser. `npm run test:integration` was not run: Docker is unavailable in this environment.
+
+## 2026-09-22 — Dark premium marketing stage
+
+Visual chrome only, after the motion pass was rejected as too plain. Home, the `/create` preview frame, and the `/demo` board chrome share one near-black stage with lifted glass cards and a static white spotlight. Brand yellow stays on primary actions. No pricing, copy, board-rule, auth, payment, or schema changes. Viewer and article ground stay `#14161D`. The cream organizer workspace stays cream. Reference images were mood only and were not added to the repo.
+
+- New `:root` tokens: `--g-stage`, `--g-glass`, `--g-glass-fill`, `--g-glass-edge`, `--g-glass-sheen`, `--g-stage-light`, `--g-shadow-float`, `--g-cta-glow`. Shared classes `.g-float`, `.g-pill`, `.g-chip`, `.g-cta`. Glass is a translucent fill plus a short top sheen. No `backdrop-filter`, so open squares stay sharp.
+- Homepage organizer chapter leaves the cream island and sits on the same stage. Hero, score, and price cards use `.g-float`. Status, price, and matching accents on these surfaces are white. Gold remains on `.g-cta` and on dark-base `button.bg-action` (the demo “Find my squares” control).
+- Create preview is a nested dark stage. The 10×10 keeps `grid-cols-10`, `aspect-square`, and opaque `bg-ground` cells.
+- Demo chrome is opt-in (`stageChrome` only when `demoMode && !previewMode`). Current non-corrected cells and axis digits are white. The spotlight is a sibling, never a filter on the grid.
+
+### Reduced motion and transparency
+
+`prefers-reduced-motion: reduce` still collapses the one-shot hero entrance, digit roll, crossfade, match-emphasis pulse, and spotlight breathe. The stage light, glass fill, and action glow are paint, not animation, so they stay. `prefers-reduced-transparency: reduce` replaces `.g-float`, `.g-pill`, and `.g-chip` with the solid chyron. Forced colors strip the shadows.
+
+### RED → GREEN
+
+1. RED: `tests/design/marketingStage.test.tsx` did not exist. The characterization was added with the chrome, then `npm run test:unit -- tests/design/marketingStage.test.tsx` passed 5/5. An earlier `.ts` filename failed esbuild on JSX and was replaced by the `.tsx` file.
+2. `npm run test:unit` passed: 133 files / 952 tests.
+3. `npx tsc --noEmit` passed. `npm run build` passed. `npm run design:lint` passed with the five existing orphan-token warnings and zero errors.
+4. `npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/smoke.spec.ts playwright-tests/studio-landing.spec.ts` passed 27/27. `npm run test:integration` was not run: Docker is unavailable in this environment.
+5. Before screenshots are a local checkout of `origin/main` at `5fbb7b5`. The live site returned a Cloudflare challenge from this environment, so it was not used as the before.

@@ -104,12 +104,12 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 ## Two bases, one palette
 
-- **Dark** (viewer, homepage, article pages): ground `#14161D`, one cardinal spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the glow, the brand mark, and destructive confirmations with explicit text.
+- **Dark** (viewer, homepage, article pages): ground `#14161D`, one spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the brand mark and destructive confirmations with explicit text. Marketing stages use the near-black `--g-stage` and a white stage light; see Marketing stage.
 - **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
 
-**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The approved editorial homepage uses a charcoal hero, an ivory organizer chapter, and a charcoal game-day chapter, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 22% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The public marketing homepage is one near-black stage with glass cards, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 22% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Type
 
@@ -160,6 +160,10 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 - Everything works with keyboard alone: island, sheet, capsule inputs, board navigation. Escape closes the topmost layer and returns focus.
 - Live score changes and phase changes are announced through a polite live region; nothing critical is conveyed by color, motion, or hover alone.
 - Reduced motion is honored everywhere (see Motion).
+
+## Marketing stage — September 22
+
+Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. Those surfaces use `--g-stage`, frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Gold appears on primary actions through `--g-cta-glow` and stays off status, prices, and matching squares on these surfaces. Matching emphasis there is white with a static outer glow. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
 
 ## Absolute bans
 
