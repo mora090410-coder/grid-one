@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CapsuleTag, Eyebrow, Glass } from '../src/design/primitives';
-import { primaryLink } from '../src/features/homepage/sections/cta';
+import { PrimaryCtaLink } from '../src/features/homepage/sections/PrimaryCtaLink';
 import { SitePage } from '../src/features/site';
 import { PageMetadata } from '../components/seo/PageMetadata';
 
@@ -130,7 +130,7 @@ export const ArticlesHub: React.FC = () => {
           <h2 className="font-display text-[28px] leading-[1.1] text-fg">Ready to run your board?</h2>
           <p className="font-ui text-[17px] leading-[1.6] text-fg-2">Build and preview for free. Your first published board is free.</p>
         </div>
-        <Link to="/create" className={primaryLink}>Create your free board</Link>
+        <PrimaryCtaLink to="/create">Create your free board</PrimaryCtaLink>
       </Glass>
     </SitePage>
   );

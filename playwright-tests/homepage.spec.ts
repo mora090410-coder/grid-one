@@ -1,8 +1,13 @@
 import { expect, test, type Locator } from '@playwright/test';
 
+const settleEntrance = (page: import('@playwright/test').Page) => page.evaluate(async () => {
+  await Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+});
+
 const firstViewport = async (page: import('@playwright/test').Page, height: number) => {
   const hero = page.getByTestId('homepage-first-viewport');
   await expect(hero).toBeVisible();
+  await settleEntrance(page);
   const required: Array<[string, Locator]> = [
     ['heading', hero.getByRole('heading', { level: 1 })],
     ['create', hero.getByRole('link', { name: 'Create your free board' })],
@@ -112,6 +117,7 @@ test('reduced motion shows every section finished, without scrolling', async ({ 
   // The contract is stronger than "not pending": under reduced motion Reveal
   // carries no data-reveal attribute at all, so it has no transition either.
   expect(await page.locator('[data-reveal]').count(), 'reveal attributes').toBe(0);
+  expect(await page.locator('[data-enter]').count(), 'entrance attributes').toBe(0);
 
   await context.close();
 });
@@ -156,6 +162,7 @@ test('phone hero puts game-day proof and its primary action in the first viewpor
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const hero = page.getByTestId('homepage-first-viewport');
+  await settleEntrance(page);
   const viewer = hero.getByRole('region', { name: 'Your group on game day', exact: true });
   const preparation = hero.getByRole('region', { name: 'Prepare your board', exact: true });
   await expect(viewer).toBeVisible();

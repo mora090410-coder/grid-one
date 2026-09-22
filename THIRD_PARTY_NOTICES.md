@@ -1,5 +1,9 @@
 # Third-party notices
 
+## Motion ideas consulted, not copied
+
+The homepage entrance, create-preview crossfade, primary-control hover, digit roll, and pricing-card hover adapt interaction ideas from 21st.dev components (Text Effect, Blur Fade, Interactive Hover Button, Number Flow, Spotlight Card). Those components are published under the MIT license and depend on framer-motion. GridOne did not copy their source. The behavior is reimplemented with the existing CSS motion tokens, `prefers-reduced-motion`, and GSAP score explanation. Button Magnetic, Dot Pattern, shaders, and particle effects were not used.
+
 ## Codenotch motion and attachment reference
 
 The shared GridOne ContextNotch uses a web translation of the motion response/damping constants and clipped edge-attachment interaction described in Codenotch's NotchMotion.swift, NotchRootView.swift, SideNotchShape.swift, and ProviderRing.swift.

@@ -126,7 +126,9 @@ Controls 12px. Cards, sheets, glass 20px. Buttons, tags, chips, island: capsule.
 
 State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot, for island, sheet, shared-element moves, and the draw. Reduced motion collapses both to a 120ms fade. Routes never hard-swap.
 
-**Reveal is visible by default.** Scroll-entry reveals use `Reveal`, whose *resting* CSS state is finished content: no transform, no opacity change, no transition. The hidden start state is applied only from a `useLayoutEffect` — before paint, so nothing flashes — and only when JS is running, `IntersectionObserver` exists, and motion is allowed. A server render, a no-JS browser, a browser without an observer, and a reduced-motion reader all see the completed page immediately. Reveals animate opacity and `translateY` only, so they can never shift layout.
+**Reveal is visible by default.** Scroll-entry reveals use `Reveal`, whose *resting* CSS state is finished content: no transform, no opacity change, no transition. The hidden start state is applied only from a `useLayoutEffect` — before paint, so nothing flashes — and only when JS is running, `IntersectionObserver` exists, and motion is allowed. A server render, a no-JS browser, a browser without an observer, and a reduced-motion reader all see the completed page immediately. Reveals animate opacity and `translateY` only, so they can never shift layout. Focusable regions may use `keepVisible`, which rises without dropping opacity.
+
+**Page-load entrance and digits.** The homepage hero may run one staggered entrance. It never starts at `opacity: 0`, never uses `data-reveal` above the fold, and is skipped under reduced motion and without JavaScript. Changing scores, counts, and drawn numbers roll only the digits that changed. A matching square may take a brief inset emphasis. Board cells do not scale, and the 10×10 geometry stays fixed.
 
 **Parallax is capped.** Scroll-driven parallax moves vertically only, never horizontally (horizontal transforms change page overflow), is clamped to 40px of travel, and is inert under reduced motion and below the `md` breakpoint.
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eyebrow, Glass } from '../../../design/primitives';
+import { DigitFlow, Eyebrow, Glass } from '../../../design/primitives';
 import type { OrganizerLifecycleModel } from '../lifecycle/organizerLifecycle';
 
 export interface ReconcileCardProps {
@@ -41,7 +41,7 @@ export default function ReconcileCard({ model, unpaidCount, unknownCount = 0, hi
         onClick={onToggleHighlightOpen}
         className="min-h-11 w-full rounded-control px-2 text-left font-ui text-[15px] text-fg hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
       >
-        {`${model.assignedCount} filled · ${model.openCount} open · ${unpaidCount} unpaid · ${unknownCount} not asked yet`}
+        <DigitFlow value={model.assignedCount} /> filled · <DigitFlow value={model.openCount} /> open · {unpaidCount} unpaid · {unknownCount} not asked yet
       </button>
       <div role="region" aria-label="Before you can publish" className="border border-hairline rounded-control p-4">
         <h3 className="font-semibold">Before you can publish</h3>

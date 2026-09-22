@@ -4,7 +4,7 @@ type Variant = 'primary' | 'quiet' | 'ghost';
 type Size = 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-action text-action-text font-semibold hover:bg-action-hover',
+  primary: 'group bg-action text-action-text font-semibold hover:bg-action-hover hover:shadow-[0_10px_24px_-12px_var(--g-action)] motion-safe:hover:-translate-y-0.5 motion-safe:focus-visible:-translate-y-0.5',
   quiet: 'bg-panel border border-hairline text-fg hover:bg-panel-hover',
   ghost: 'bg-transparent text-fg-2 hover:text-fg hover:underline underline-offset-4',
 };
@@ -17,15 +17,20 @@ const SIZE: Record<Size, string> = {
 // The transition list names `scale`, NOT `transform`: Tailwind v4 compiles
 // `motion-safe:active:scale-[0.98]` to the independent `scale` property, so a list naming
 // `transform` transitions nothing and the press snaps.
-const BASE = 'inline-flex items-center justify-center gap-2 rounded-capsule font-ui leading-none select-none transition-[background-color,color,scale] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] motion-safe:active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground';
+const BASE = 'inline-flex items-center justify-center gap-2 rounded-capsule font-ui leading-none select-none transition-[background-color,color,box-shadow,translate,scale] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] motion-safe:active:translate-y-0 motion-safe:active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground';
 
 export interface CapsuleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
 }
 
-export function CapsuleButton({ variant = 'primary', size = 'md', className = '', type = 'button', ...rest }: CapsuleButtonProps) {
-  return <button type={type} className={`${BASE} ${VARIANT[variant]} ${SIZE[size]} ${className}`.trim()} {...rest} />;
+export function CapsuleButton({ variant = 'primary', size = 'md', className = '', type = 'button', children, ...rest }: CapsuleButtonProps) {
+  return (
+    <button type={type} className={`${BASE} ${VARIANT[variant]} ${SIZE[size]} ${className}`.trim()} {...rest}>
+      {children}
+      {variant === 'primary' && <span aria-hidden="true" className="motion-safe:transition-[translate] motion-safe:duration-[var(--g-dur-state)] motion-safe:ease-[var(--g-ease-state)] motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1">→</span>}
+    </button>
+  );
 }
 
 type Tone = 'neutral' | 'gold' | 'live' | 'cardinal';

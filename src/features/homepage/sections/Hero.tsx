@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { DEMO_LABEL, demoGame, demoLive, demoWinnerNow } from '../demoData';
 import { MONEY_BOUNDARY } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
+import { Enter } from '../../../design/primitives';
 import { SiteHeader } from '../../site/SiteHeader';
-import { primaryLink, quietLink } from './cta';
+import { quietLink } from './cta';
+import { PrimaryCtaLink } from './PrimaryCtaLink';
 import './hero-studio.css';
 
 // Numbered excerpts keep the real sample assignments legible without scaling 100 cells.
@@ -63,23 +65,27 @@ export function Hero() {
         <SiteHeader />
         <div className="studio-hero-layout">
           <div className="studio-hero-copy">
-            <p className="hero-category">Football squares, together.</p>
-            <h1 className="studio-hero-title">Your fundraiser. <span>One clear board.</span></h1>
-            <p className="studio-hero-description">Build your football squares board, share one link, and give your group a clear view of game day.</p>
-            <div className="studio-hero-actions">
-              <Link to="/create" className={primaryLink}>Create your free board</Link>
-              <Link to="/demo" className={quietLink}>Explore a sample board</Link>
-            </div>
-            <ul className="studio-hero-reassurance"><li>First published board free</li><li>Viewers don’t need an account</li></ul>
-            <p className="studio-hero-boundary">{MONEY_BOUNDARY}</p>
+            <Enter delay={0}><p className="hero-category">Football squares, together.</p></Enter>
+            <Enter as="h1" delay={40} className="studio-hero-title">Your fundraiser. <span>One clear board.</span></Enter>
+            <Enter delay={80}><p className="studio-hero-description">Build your football squares board, share one link, and give your group a clear view of game day.</p></Enter>
+            <Enter delay={120}>
+              <div className="studio-hero-actions">
+                <PrimaryCtaLink to="/create">Create your free board</PrimaryCtaLink>
+                <Link to="/demo" className={quietLink}>Explore a sample board</Link>
+              </div>
+            </Enter>
+            <Enter delay={120}>
+              <ul className="studio-hero-reassurance"><li>First published board free</li><li>Viewers don’t need an account</li></ul>
+              <p className="studio-hero-boundary">{MONEY_BOUNDARY}</p>
+            </Enter>
           </div>
-          <div className="studio-hero-stage">
+          <Enter delay={80} className="studio-hero-stage">
             {/* Viewer first in reading order: the compact answer precedes setup on a phone. */}
             <GameDayExcerpt />
             <PreparationExcerpt />
             <p className="hero-story-connection">Prepare it. Publish it.<br /><span>Everyone follows one link.</span></p>
             <p className="studio-hero-caption">{DEMO_LABEL}</p>
-          </div>
+          </Enter>
         </div>
       </div>
     </section>

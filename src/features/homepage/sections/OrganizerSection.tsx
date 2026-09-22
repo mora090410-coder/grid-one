@@ -1,4 +1,5 @@
 import React from 'react';
+import { Reveal } from '../../../design/primitives';
 import { demoGame } from '../demoData';
 import { MONEY_BOUNDARY } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
@@ -9,11 +10,11 @@ export function OrganizerSection() {
   return (
     <section data-base="cream" className="editorial-organizer" aria-labelledby="organizer-heading">
       <div className="editorial-section">
-        <header className="editorial-intro">
+        <Reveal as="header" className="editorial-intro">
           <p className="editorial-kicker">Before kickoff</p>
           <h2 id="organizer-heading">Less paper. Less chasing.</h2>
           <p>Names, open squares, and what comes next. Keep the preparation in one place, then share one link with your group.</p>
-        </header>
+        </Reveal>
         <div className="editorial-intro">
           <h3 id="chaos-heading">The chaos</h3>
           <ul aria-labelledby="chaos-heading" className="list-disc pl-5 font-ui text-base text-fg-2">

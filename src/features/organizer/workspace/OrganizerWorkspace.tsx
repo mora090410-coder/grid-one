@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { projectBoardTemplate, type BoardTemplate } from '../repeat/boardTemplateModel';
-import { Base, Glass, Eyebrow, CapsuleButton, Sheet } from '../../../design/primitives';
+import { Base, Glass, Eyebrow, CapsuleButton, DigitFlow, Sheet } from '../../../design/primitives';
 import type {
   BoardData,
   SquareAvailability,
@@ -1190,7 +1190,7 @@ export default function OrganizerWorkspace({
         {header}
         <Glass id="organizer-share" tabIndex={-1} className="mt-4 flex flex-col gap-3" padding="md">
           <Eyebrow>{axesCommitted ? (isShared ? 'Shared board · Review game numbers' : 'Numbers drawn · Review your board') : isShared ? 'Selling · Shared board' : 'Set up your board'}</Eyebrow>
-          <p className="font-ui text-[15px] text-fg-2">{paymentModel.totals.assigned} assigned · {100 - paymentModel.totals.assigned} unassigned. {axesCommitted ? 'Review the board before finalizing game numbers.' : 'Allocate squares, then draw game numbers when ready.'}</p>
+          <p className="font-ui text-[15px] text-fg-2"><DigitFlow value={paymentModel.totals.assigned} /> assigned · <DigitFlow value={100 - paymentModel.totals.assigned} /> unassigned. {axesCommitted ? 'Review the board before finalizing game numbers.' : 'Allocate squares, then draw game numbers when ready.'}</p>
           <div className="flex flex-wrap gap-2">
             {!drawRequested && !drawPreview && <CapsuleButton onClick={primary.onClick} disabled={'disabled' in primary ? primary.disabled : false}>{primary.label}</CapsuleButton>}
             {isShared && shareUrl ? <>

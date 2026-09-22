@@ -748,3 +748,21 @@ Final review added legacy-record/pending-score isolation and all-four-milestone 
 Browser verification completed: `PLAYWRIGHT_PORT=5192 npx playwright test playwright-tests/context-notch.spec.ts playwright-tests/context-notch-refine1.spec.ts playwright-tests/context-notch-quickviews.spec.ts --project=chromium --project=phone-webkit` — 30/30 passed. The mock server uses the fixture Supabase project URL and a non-secret test key; an initial missing-env sign-in redirect was resolved without production/auth changes. Four 390px/1280px organizer/viewer screenshots were reviewed. Keyboard activation, focus, overflow and topmost footer hit testing passed. No commit, push or deployment performed for this slice.
 
 Release authorization received for commit, push to main and deployment. Full Chromium release gate: 140/140 passed (1.6m); prior targeted Chromium/phone WebKit 30/30, unit 938/938, TypeScript/build/design gates passed. Release uses the isolated worktree and preserves unrelated canonical-checkout changes.
+
+## 2026-09-22 — Restrained marketing and board motion
+
+Polish only. No pricing, copy, board-rule, or schema changes. Motion ideas from 21st.dev (Text Effect, Blur Fade, Interactive Hover Button, Number Flow, Spotlight Card) were reimplemented with the existing CSS tokens. No framer-motion dependency and no copied component source. Button Magnetic and Dot Pattern were not used.
+
+- Hero entrance is a one-shot stagger (`data-enter`) that floors opacity at 0.45 and moves 8px, so the first paint and the primary actions stay available. It is not `data-reveal`.
+- Primary links and primary capsule buttons lift, deepen their shadow, and nudge a decorative arrow. The accessible name is unchanged.
+- Create preview crossfades the “Choose your game above” line into the selected matchup without moving the 10×10.
+- Scores, filled/open counts, drawn axis digits, and last-digit labels roll only the characters that changed. A newly matching viewer square gets an inset ring. Cells do not scale. Demo pan/zoom uses smooth scrolling and a zoom transition when motion is allowed.
+- Below-the-fold organizer, score, and pricing introductions use `Reveal`. FAQ questions use `keepVisible` so they never hit opacity 0.
+
+### RED → GREEN
+
+1. RED: `npm run test:unit -- tests/design/polishMotion.test.tsx` failed to resolve `CrossfadeText` (modules not written yet).
+2. GREEN: same command, 8/8 passed after the primitives landed. A follow-up kept stable numerals as one text node so `getByText('14 – 7')` still matches; `tests/organizer/gameday.test.tsx` and the motion file passed 21/21.
+3. `npx tsc --noEmit` passed. `npm run build` passed. `npm run design:lint` passed with the five existing orphan-token warnings and zero errors.
+4. `npm run test:unit` passed: 132 files / 947 tests.
+5. `npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/smoke.spec.ts playwright-tests/studio-landing.spec.ts` passed 27/27 after installing the Chromium browser. `npm run test:integration` was not run: Docker is unavailable in this environment.

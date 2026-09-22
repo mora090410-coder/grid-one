@@ -147,6 +147,29 @@ describe('ViewerBoardGrid Slice 7', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Center current result' }));
     fireEvent.click(screen.getByRole('button', { name: 'Center selected square' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+  });
+
+  it('emphasizes a newly matching square without moving the grid', () => {
+    const { rerender } = renderGrid();
+    expect(document.querySelector('[data-match-emphasis="on"]')).toBeNull();
+    rerender(
+      <ViewerBoardGrid
+        board={board}
+        game={game}
+        live={{ ...live, leftScore: 18 }}
+        highlights={{ quarterWinners: { Q3: '4-7' }, currentLabel: 'NOW' }}
+        winnerHistory={winnerHistory}
+        pendingMilestones={[{ milestone: 'Q3', topScore: 24, sideScore: 17, topDigit: 4, sideDigit: 7, stableSince: '', lastObservedAt: '', successfulReadCount: 2 }]}
+        selectedPlayer="Ann Lee"
+        highlightedCoords={{ top: 4, left: 7 }}
+        showOpenSquares
+      />
+    );
+    const emphasized = document.querySelectorAll('[data-match-emphasis="on"]');
+    expect(emphasized).toHaveLength(1);
+    expect(emphasized[0]).toHaveAttribute('data-current', 'true');
+    expect(emphasized[0].className).not.toMatch(/scale|translate/);
   });
 
   it('ViewerShell uses the viewer grid and leaves legacy dynamic quarter controls absent', () => {
