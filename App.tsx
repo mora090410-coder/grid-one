@@ -1,5 +1,6 @@
 import FamilyWorkspace from './src/features/family/FamilyWorkspace';
 import GuestPoolPage from './src/features/guest/GuestPoolPage';
+import SellerClaimPage from './src/features/seller/SellerClaimPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -94,6 +95,7 @@ const App: React.FC = () => {
               />
 
               <Route path="/family" element={<FamilyWorkspace />} />
+              <Route path="/s/:code" element={<SellerClaimPage />} />
               <Route path="/paid" element={<Paid />} />
               <Route path="/articles" element={<ArticlesHub />} />
               <Route path="/articles/run-your-pool-alternative" element={<RunYourPoolAlternative />} />

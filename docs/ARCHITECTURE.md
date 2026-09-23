@@ -27,6 +27,7 @@ This file describes the current production architecture, not an immutable topolo
 | `/b/:shareCode` | `BoardView` — the public viewer link |
 | `/boards/:boardId` | `BoardView` behind `RequireAuth` — the organizer workspace |
 | `/family` | Scoped private family editor; fragment credential, no organizer account |
+| `/s/:code` | Public seller link: pick a seller's unsold squares and claim them by name; no account |
 | `/login` | `pages/Login` |
 | `/dashboard` | `pages/Dashboard` behind `RequireAuth` |
 | `/create` | Public `pages/CreateContest` preview; API creation remains authenticated |
@@ -129,6 +130,8 @@ functions/api/stripe/webhook.ts
 
 `BoardData.participation` and `availability` are explicit public fields. Server and migration 027 validate shape and bounds; the sales projection remains an allowlist. Neither names nor payment notes imply availability.
 
+`POST /api/pools/:id/seller-links` verifies the organizer and creates one active link per seller (`sync`) or replaces one (`rotate`). `GET /api/sellers/:code` and `POST /api/sellers/:code` read a seller's squares and claim unsold ones by name through service-only `gridone_seller_link` (migration `031_seller_links.sql`). The RPC locks the contest row, rechecks shared/lock state, seller scope (current `allocationLabels`), and that each square still shows the seller's name, then writes names and an audit event. `seller_links` has RLS enabled and no anon/authenticated grants.
+
 `POST /api/pools/:id/family` verifies the organizer and issues, revokes, or reassigns scoped family access. `POST /api/family` accepts a family bearer token, hashes it with SHA-256 and invokes service-only `gridone_family_access`. The private table has RLS enabled and no anon/authenticated grants. The RPC serializes on the contest row before checking credential, revision and cell scope. Tokens are randomly generated 256-bit values in URL fragments; they are never stored plaintext, included in public payloads, or sent in referrers. Mutating POST requests are never automatically retried. A conflict preserves UI edits until deliberate reload.
 
 Migration `027_family_access.sql` is additive and must be installed before releasing these controls. Rollback revokes active family links while retaining all edited names and history; do not drop the data or break existing public share links.
@@ -143,7 +146,9 @@ Migration `027_family_access.sql` is additive and must be installed before relea
 The organizer uses a feature-local island with `organizerIslandModel` and token-based CSS, leaving the shared viewer island unchanged. `OrganizerWorkspace` coordinates payment writes, save/failure state, sheet and board focus, and existing lifecycle actions. No database migration or public payload field is added.
 
 
-## Guest invites (local implementation; default off)
+## Guest invites (local implementation; default off, legacy)
+
+> **Superseded 2026-09-23 by Seller links.** Organizers and families no longer create these links in the app. Links already posted still open at `/p/...` and keep working until the numbers lock; the tables, endpoints and occupancy guards below stay in place so nothing already claimed is lost.
 
 `/p/:poolId?invite=<signed token>` is a separate anonymous guest route. On load it retains the invitation capability in browser storage and removes the query from browser history. `/dev/guest-invites` is an injected, in-memory prototype excluded from production builds. `src/features/guest/` owns the UI, transport, credential storage and invalidation hook. The organizer's Guest claim links card is separate from private Family access.
 

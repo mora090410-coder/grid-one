@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Base, CapsuleButton, Eyebrow, Glass } from '../../design/primitives';
-import FamilyShareCard from './FamilyShareCard';
 
 type Availability = 'unspecified' | 'available' | 'unavailable';
 interface FamilyCell { index: number; name: string; availability: Availability }
@@ -16,8 +15,6 @@ export default function FamilyWorkspace() {
   const [error, setError] = useState(validToken ? '' : 'This family link is incomplete. Ask your organizer for a new link.');
   const [conflict, setConflict] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [shareBusy, setShareBusy] = useState(false);
-  const [shareRefreshKey, setShareRefreshKey] = useState(0);
   const mounted = useRef(true);
   const submitting = useRef(false);
 
@@ -52,8 +49,6 @@ export default function FamilyWorkspace() {
     const previous = record?.cells.find(item => item.index === cell.index);
     return previous && (cell.name.trim() !== previous.name || cell.availability !== previous.availability);
   }).map(cell => ({ ...cell, name: cell.name.trim() }));
-  const changesRef = useRef(changes);
-  changesRef.current = changes;
   useEffect(() => {
     if (!changes.length) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -63,13 +58,13 @@ export default function FamilyWorkspace() {
   const invalid = changes.some(cell => !cell.name.trim() || cell.name.trim().length > 80);
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    if (!record || submitting.current || busy || shareBusy || conflict || invalid || changes.length === 0) return;
+    if (!record || submitting.current || busy || conflict || invalid || changes.length === 0) return;
     submitting.current = true;
     setBusy(true); setError(''); setSaved(false);
     try {
       const next = await request({ action: 'edit', revision: record.revision, changes });
       if (!mounted.current) return;
-      setRecord(next); setDraft(next.cells); setSaved(true); setShareRefreshKey(current => current + 1);
+      setRecord(next); setDraft(next.cells); setSaved(true);
     } catch (cause) {
       if (!mounted.current) return;
       if (cause instanceof Error && cause.message === 'conflict') {
@@ -82,11 +77,6 @@ export default function FamilyWorkspace() {
     } finally { submitting.current = false; if (mounted.current) setBusy(false); }
   }
   const edit = (index: number, patch: Partial<FamilyCell>) => { setSaved(false); setDraft(current => current.map(cell => cell.index === index ? { ...cell, ...patch } : cell)); };
-  const refreshAfterShareCreate = async () => {
-    const next = await request({ action: 'read' });
-    if (!mounted.current || changesRef.current.length) throw new Error('Family draft changed during buyer-link creation.');
-    setRecord(next); setDraft(next.cells); setConflict(false); setSaved(false);
-  };
 
   return <Base kind="cream"><main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12">
     <header className="flex flex-col gap-3"><Eyebrow>Family board</Eyebrow><h1 className="break-words font-display text-[40px] leading-none text-fg">{record?.title || 'Your assigned squares'}</h1>
@@ -100,15 +90,14 @@ export default function FamilyWorkspace() {
         <p className="break-words font-ui text-base text-fg">Responsible family: {record.label}</p>
         <p className="font-ui text-sm text-fg-2">These are your squares. Add each buyer’s name as you sell. Collect the money yourself, outside GridOne.</p>
       </Glass>
-      <FamilyShareCard token={token.current} dirty={changes.length > 0} disabled={busy || conflict || shareBusy} refreshKey={shareRefreshKey} onBusy={setShareBusy} onCreated={refreshAfterShareCreate} />
       <ul className="flex flex-col gap-3">{draft.map(cell => <li key={cell.index} className="rounded-card border border-hairline bg-panel p-4">
         <p className="mb-3 font-mono text-sm text-fg-2">Square {cell.index + 1}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex min-w-0 flex-col gap-2 font-ui text-sm text-fg">Name on square {cell.index + 1}
-            <input value={cell.name} maxLength={80} disabled={busy || shareBusy} onChange={event => edit(cell.index, { name: event.target.value })} className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" />
+            <input value={cell.name} maxLength={80} disabled={busy} onChange={event => edit(cell.index, { name: event.target.value })} className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" />
           </label>
           <label className="flex min-w-0 flex-col gap-2 font-ui text-sm text-fg">Availability for square {cell.index + 1}
-            <select value={cell.availability} disabled={busy || shareBusy} onChange={event => edit(cell.index, { availability: event.target.value as Availability })} className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+            <select value={cell.availability} disabled={busy} onChange={event => edit(cell.index, { availability: event.target.value as Availability })} className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
               <option value="unspecified">Not specified</option><option value="available">Available</option><option value="unavailable">Not available</option>
             </select>
           </label>
@@ -116,8 +105,8 @@ export default function FamilyWorkspace() {
       </li>)}</ul>
       <p className="font-ui text-sm text-fg-2">Everyone with the board link sees these names. Mark a square available only if you still have it to sell.</p>
       {saved && <p role="status" className="font-ui text-base text-fg">Changes saved.</p>}
-      <div className="flex flex-wrap gap-3"><CapsuleButton type="submit" disabled={busy || shareBusy || conflict || invalid || !changes.length}>{busy ? 'Saving…' : 'Save changes'}</CapsuleButton>
-        {conflict && <CapsuleButton variant="quiet" disabled={busy || shareBusy} onClick={() => { if (window.confirm('Reload the latest board? This replaces your unsaved entries.')) void load(); }}>Reload latest</CapsuleButton>}
+      <div className="flex flex-wrap gap-3"><CapsuleButton type="submit" disabled={busy || conflict || invalid || !changes.length}>{busy ? 'Saving…' : 'Save changes'}</CapsuleButton>
+        {conflict && <CapsuleButton variant="quiet" disabled={busy} onClick={() => { if (window.confirm('Reload the latest board? This replaces your unsaved entries.')) void load(); }}>Reload latest</CapsuleButton>}
       </div>
     </form>}
   </main></Base>;

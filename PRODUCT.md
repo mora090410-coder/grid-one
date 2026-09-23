@@ -176,6 +176,14 @@ Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, g
 
 Existing copy, hierarchy, materials, tokens, and interaction mechanisms are production baselines. Exploration may challenge them to improve organizer success, viewer comprehension, trust, or maintainability. Label assumptions and recommend the strongest outcome, without manufacturing a redesign. Exploration does not authorize implementation or release: intentional adoption requires an approved scope, coordinated design/journey/test updates, reversible implementation, and relevant rendered, accessibility, and integrity checks. Unchanged surfaces retain current normative tokens. Pricing, money, privacy, permissions, score authority, and evidence truth remain binding.
 
+## Seller links
+
+Most fundraisers sell through sellers: the organizer assigns each player or family a block, and they sell it. After sharing the board, the organizer taps **Get seller links** and gets one public link per seller, then shares each one or copies all of them for the team chat. A seller's unsold squares are the ones still showing the seller's own name.
+
+A buyer opens the link, sees only that seller's squares, taps the open ones (up to 10), types a name, and taps **Claim**. The claim is one atomic database write under the board lock: if someone got there first, the buyer is told to pick another and nothing is claimed. The buyer is remembered on that phone, so on game day the board opens on their squares. The buyer pays the seller directly; GridOne never handles money and a claim is not proof of payment. Unsold squares keep the seller's name. Claiming closes when the numbers are locked; the link then points to the board. **New link** replaces a seller's link and stops the old one. Links are stored plainly (like share codes) because they are meant to be posted publicly.
+
+v1 limits: no hold timers, no claim codes, and no rate limiting beyond the 10-square cap. The organizer's open workspace sees new claims after a reload; a stale autosave reports a conflict rather than overwriting a claim.
+
 ## Optional family editing and repeat setup
 
 A private family link is a bearer capability, distinct from the public board link. Anyone possessing it can update the specified family's names and explicit availability until expiry, revocation, responsibility change, or finalization. The database locks the board and verifies revision, cell scope, and credential on every read/write. No family can access payment notes, alter responsibility, or publish. Creating a new link for a family revokes its previous links.
@@ -185,7 +193,9 @@ An organizer's deliberate pre-finalization reassignment preserves holder names, 
 Use this setup again copies only title and prize descriptions. It creates no board until the organizer selects a new scheduled game and saves. Names, responsibility, availability, payments, axes, identifiers, credentials, scores and subscriptions never carry over.
 
 
-## Guest claim links (controlled rollout)
+## Guest claim links (controlled rollout, legacy)
+
+> **Superseded 2026-09-23 by Seller links.** Organizers and families no longer create these links in the app. Links already posted still open at `/p/...` and keep working until the numbers lock; the tables, endpoints and occupancy guards below stay in place so nothing already claimed is lost.
 
 The organizer can issue a separate public guest claim link for reviewed, explicitly available square IDs on an already shared board. A named seller distributes the link without gaining an organizer account or editing permissions. A link may cover noncontiguous blocks. Ordinary public viewer links retain their existing authority.
 

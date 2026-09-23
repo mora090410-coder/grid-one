@@ -44,7 +44,7 @@ import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
 import SquareSheet from './SquareSheet';
 import AvailabilityControl from './AvailabilityControl';
 import FamilyAccessCard from './FamilyAccessCard';
-import GuestInvitesCard from './GuestInvitesCard';
+import SellerLinksCard from '../sellers/SellerLinksCard';
 import ParticipationCard from './ParticipationCard';
 import OrganizerIsland from './OrganizerIsland';
 import PaymentsPanel from '../payments/PaymentsPanel';
@@ -218,7 +218,6 @@ export default function OrganizerWorkspace({
   });
 
   const [familyBusy, setFamilyBusy] = useState(false);
-  const [guestInvitesBusy, setGuestInvitesBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [sharePending, setSharePending] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -258,9 +257,6 @@ export default function OrganizerWorkspace({
     await reloadLatest();
     setPrivateNotesUncertain(false);
   };
-  const syncGuestState = useCallback(async () => {
-    await onReload?.();
-  }, [onReload]);
   // Bumped once a range apply settles so BoardEditor can take focus back even
   // when the apply failed and the selection is still standing.
   const [rangeFocusSignal, setRangeFocusSignal] = useState(0);
@@ -881,7 +877,7 @@ export default function OrganizerWorkspace({
   const islandNote = firstBlocker ? blockerNote[firstBlocker] || 'Review this board before publishing.' : paymentIssue || note || undefined;
   const openPayments = () => { setOrganizerTask('payments'); setPaymentsOpen(true); };
   const savePayments = async (indices: number[], status: EntryMeta['paid_status']) => {
-    if (!activePoolId || familyBusy || guestInvitesBusy || privateWritesPending > 0 || paymentWriteRef.current || conflicted) {
+    if (!activePoolId || familyBusy || privateWritesPending > 0 || paymentWriteRef.current || conflicted) {
       throw new Error('Wait for the current changes to finish before updating payments.');
     }
     const assigned = new Set(paymentModel.groups.flatMap(group => group.squares.map(square => square.index)));
@@ -902,7 +898,7 @@ export default function OrganizerWorkspace({
       setPaymentBusy(false);
     }
   };
-  const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) { setPaymentsOpen(false); setOrganizerTask('board'); } }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || guestInvitesBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {
+  const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) { setPaymentsOpen(false); setOrganizerTask('board'); } }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {
     setPaymentsOpen(false);
     setOrganizerTask('board');
     setAvailabilityMode(false);
@@ -1174,7 +1170,6 @@ export default function OrganizerWorkspace({
   return (
     <Base kind="cream">
       {familyBusy && <p role="status" className="px-5 py-3 text-sm text-fg-2">Updating family access. Board editing will resume when this finishes.</p>}
-      {guestInvitesBusy && <p role="status" className="px-5 py-3 text-sm text-fg-2">Updating guest links. Board editing will resume when this finishes.</p>}
       <OrganizerIsland
           key={activePoolId}
           {...islandExtras}
@@ -1186,7 +1181,7 @@ export default function OrganizerWorkspace({
         secondary={secondary}
         note={islandNote}
       />
-      <main inert={familyBusy || guestInvitesBusy || paymentBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-2 pb-24">
+      <main inert={familyBusy || paymentBusy} aria-label={mainLabel} className="mx-auto max-w-7xl px-4 pt-2 pb-24">
         {header}
         <Glass id="organizer-share" tabIndex={-1} className="mt-4 flex flex-col gap-3" padding="md">
           <Eyebrow>{axesCommitted ? (isShared ? 'Shared board · Review game numbers' : 'Numbers drawn · Review your board') : isShared ? 'Selling · Shared board' : 'Set up your board'}</Eyebrow>
@@ -1200,6 +1195,15 @@ export default function OrganizerWorkspace({
           </div>
           {onShareBoard && !isShared && saveState.status !== 'clean' && <p className="font-ui text-[14px] text-fg-2">Sharing is available after your latest changes save. Use Retry or Reload latest board above if needed.</p>}
         </Glass>
+        {activePoolId && !isPublished && <SellerLinksCard
+          boardId={activePoolId}
+          boardTitle={game.title || 'our board'}
+          shared={isShared}
+          labels={board.allocationLabels ?? []}
+          squares={board.squares}
+          clean={saveState.status === 'clean' && !rangeBusy}
+          flush={flush}
+        />}
         {alertRegion}
         {/* The island prefers a blocker over its note, and saving is dirty the
             instant a range lands, so the confirmation lives here in the flow. */}
@@ -1264,8 +1268,7 @@ export default function OrganizerWorkspace({
             </div>
             {privateWritesPending > 0 && <p role="status" className="text-sm text-fg-2">Saving private square notes. Family access will resume when this finishes.</p>}
             {privateNotesUncertain && <div role="status" className="text-sm text-fg-2"><p>Refresh private notes before changing family access.</p><CapsuleButton variant="quiet" disabled={privateWritesPending > 0} onClick={() => void reloadFamilyState().catch(() => setAlert('Private notes could not be refreshed. Try again.'))}>Refresh private notes</CapsuleButton></div>}
-            {activePoolId && isShared && <GuestInvitesCard boardId={activePoolId} board={board} workspaceRevision={saveState.revision} clean={saveState.status === 'clean' && payoutDraft === null && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onSync={syncGuestState} onBusy={setGuestInvitesBusy} />}
-            {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && payoutDraft === null && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy && !guestInvitesBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
+            {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && payoutDraft === null && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
             <ParticipationCard details={board.participation ?? {}} onChange={(participation) => setBoard(current => ({ ...current, participation }))} />
             <div id="organizer-review"><ReconcileCard
               model={model}

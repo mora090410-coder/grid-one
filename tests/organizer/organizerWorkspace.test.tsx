@@ -165,13 +165,16 @@ afterEach(() => {
 });
 
 describe('OrganizerWorkspace island', () => {
-  it('offers guest claim links only after the board is explicitly shared', () => {
-    const { unmount } = renderWorkspace({ isShared: false, shareCode: null });
+  it('offers seller links, asking to share first while the board is private', () => {
+    const sellerBoard = { ...boardWithAssignments(3), allocationLabels: Array.from({ length: 100 }, (_, index) => (index < 3 ? 'Mora family' : null)) };
+    const { unmount } = renderWorkspace({ board: sellerBoard, isShared: false, shareCode: null });
+    const privateCard = screen.getByRole('region', { name: 'Send seller links' });
+    expect(within(privateCard).getByText('Share your board first. Then every seller gets their own link.')).toBeInTheDocument();
     expect(screen.queryByText('Guest claim links (optional)')).not.toBeInTheDocument();
     unmount();
 
-    renderWorkspace({ isShared: true, shareCode: 'shared-board' });
-    expect(screen.getByText('Guest claim links (optional)')).toBeInTheDocument();
+    renderWorkspace({ board: sellerBoard, isShared: true, shareCode: 'shared-board' });
+    expect(within(screen.getByRole('region', { name: 'Send seller links' })).getByRole('button', { name: 'Get seller links' })).toBeInTheDocument();
   });
 
   it('offers a persistent Payments action and keeps not-asked squares distinct from unpaid', () => {

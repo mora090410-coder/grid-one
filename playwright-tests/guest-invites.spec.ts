@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { installOrganizerBoard, boardId, ownerId, scheduledGame } from './helpers/organizerMocks';
+import { boardId } from './helpers/organizerMocks';
 
 const inviteId = '33333333-3333-4333-8333-333333333333';
 const guestPath = `/p/${boardId}?invite=browser-test-invite`;
@@ -106,32 +106,6 @@ test('disabled link mid-selection is explained and preserves the entered name',a
   await page.getByRole('button',{name:'Claim 1 square',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('no longer active');
   await expect(page.getByRole('heading',{name:'Your squares are claimed'})).toHaveCount(0);
-});
-
-test('organizer creates a seller link and sees a fresh anonymous guest claim land',async({page,browser},info)=>{
-  await page.clock.install();
-  await installOrganizerBoard(page);const f=await fixture(page,true);
-  await page.route(`**/api/pools/${boardId}`,route=>route.fulfill({json:{id:boardId,share_code:'SHARE123',owner_id:ownerId,title:'Parkside guest board',revision:f.snapshot().revision,gameExternalId:scheduledGame.id,kickoffAt:scheduledGame.kickoffAt,leftName:'Dallas Cowboys',leftAbbr:'DAL',topName:'Washington Commanders',topAbbr:'WAS',board:f.board,published_at:null,shared_at:'2026-09-20T00:00:00Z',locked:false,is_activated:true}}));
-  await page.goto(`/boards/${boardId}`);
-  await page.getByText('Guest claim links (optional)',{exact:true}).click();
-  await page.getByLabel('Seller label',{exact:true}).fill('Anthony');
-  await page.getByLabel('Guest square numbers',{exact:true}).fill('1-10');
-  await page.getByRole('checkbox',{name:'I reviewed the offered squares and understand guest claims replace the current public names.'}).check();
-  await page.getByRole('button',{name:'Create guest link',exact:true}).click();
-  await expect(page.getByRole('article',{name:'Guest link for Anthony'})).toBeVisible();
-  await expect(page.getByLabel('Guest link URL')).toHaveValue(guestPath);
-  await expect(page.getByText('Send families their squares',{exact:true})).toBeVisible();
-  const guestContext=await browser.newContext();const guestPage=await guestContext.newPage();
-  await f.installGuest(guestPage);
-  await guestPage.goto(new URL(guestPath,page.url()).href);
-  await guestPage.getByRole('button',{name:/^Square 1, available/}).click();
-  await guestPage.getByLabel('Name on your squares').fill('Jamie');
-  await guestPage.getByRole('button',{name:'Claim 1 square',exact:true}).click();
-  await expect(guestPage.getByRole('heading',{name:'Your squares are claimed'})).toBeVisible();
-  await page.clock.runFor(15_100);
-  await expect(page.getByRole('listitem').filter({hasText:'Jamie · Squares 1 · Claimed through Anthony'})).toBeVisible();
-  await page.screenshot({path:info.outputPath('organizer-links.png'),fullPage:true});
-  await guestContext.close();
 });
 
 test('disconnected prototype completes a simulated claim without app API or service requests',async({page},info)=>{

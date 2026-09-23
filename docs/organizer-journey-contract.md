@@ -28,6 +28,7 @@ Building, editing, previewing, and redrawing are free and reversible. **Publicat
 | Reconcile | `ReconcileCard` | regions `Before you can publish` and `Private follow-up` |
 | Payouts | `PayoutRulesCard` | `Payout rules`, `Board rules` |
 | Tools | `BoardToolsCard` | `Board tools` |
+| Seller links | `sellers/SellerLinksCard` | region `Send seller links`; `Get seller links`, list `Seller links`, `Share {label}’s link`, `New link for {label}`, `Copy all links`, `Update for new sellers` |
 | Preview → publish | `PreviewSheet` → `PublishSheet` → `PublishedSheet` | dialogs `Private preview — sharing is off`, `Publish viewer link`, `Published` |
 | Upgrade | `UpgradeSheet` | dialog `Choose a plan` |
 | Game day | `gameday/SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard` | `Public board`, `Score authority`, `Correct a published result`, `Review delivery issue`, `Final record` |
@@ -174,6 +175,8 @@ For already shared boards, `Preview final board` leads to `Review and lock numbe
 
 ## Approved optional family workflow
 
+`Send seller links` sits under the share panel on unpublished boards with sellers. Before sharing it says **Share your board first. Then every seller gets their own link.** After sharing, one tap creates a public link per seller; each row shows `{n} squares · {n} not sold yet` (unsold = still showing the seller's name). Claiming through those links ends when the numbers lock.
+
 The setup page includes collapsed **Help people join** and **Send families their squares** sections. Public purpose/price/instructions are explicitly labelled; private contacts are never prefilled. **Availability** remains independent of names and payment. Name entry contains no availability picker and preserves existing availability. The board toolbar’s **Offer squares as available** enters selection mode; **Review {n} selected squares** moves focus to the separate availability controls. Organizers can offer selected squares, mark them unavailable, or remove their explicit availability label. These actions only change availability and do not enable sharing. Published boards expose no availability editing.
 
 **Create private family link** rotates a seven-day scoped link. **Revoke family links** ends that family's access. Only a clean saved draft can perform these actions. **Change responsible family** shows selected squares and previous/new families and requires payment-note acknowledgement; names remain unchanged, old payment notes are archived/reset and previous affected links stop working. Finalized boards never show these controls.
@@ -198,7 +201,9 @@ OrganizerIsland now uses shared ContextNotch in the reserved top strip. Board / 
 Existing organizerIslandModel issue priority and lifecycle labels/disabled callbacks remain authoritative. Before publication the lifecycle primary action remains below the selected detail. After publication only actionable score or delivery issues retain a global review action; Copy link and Open public board belong inside Share. Share never publishes, enables sharing, or copies automatically. Game shows the score, period and authority inline with an explicit score-authority action. Results shows all four milestone summaries inline; published records expose an explicitly labeled Correct a published result action targeting the existing correction surface. Empty and pending results never imply a winner. Hover preview is now supported only on fine hover pointers, with explicit pin/unpin/close; optional cancellable touch hold remains. Existing confirmations, entitlement gates and private metadata boundaries are unchanged.
 
 
-## Guest claim links (local implementation; default off)
+## Guest claim links (local implementation; default off, legacy)
+
+> **Superseded 2026-09-23 by Seller links.** Organizers and families no longer create these links in the app. Links already posted still open at `/p/...` and keep working until the numbers lock; the tables, endpoints and occupancy guards below stay in place so nothing already claimed is lost.
 
 On an already shared, unfinalized board, **Guest claim links (optional)** precedes **Send families their squares**. The organizer explicitly reviews available square IDs, existing public names, public seller label, per-credential limit, expiry, and optional claimant-facing payment instructions. Creating a link acknowledges that claims replace the reviewed placeholder names while retaining responsibility and private payment records. Copy is stable; regeneration is a distinct confirmed revocation of the old invitation. Native sharing opens a share sheet for the user to complete.
 

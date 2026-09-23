@@ -3,7 +3,7 @@
 Date: September 23, 2026
 Owner: Anthony Mora
 Source: a walkthrough of getgridone.com at phone size, a read of the repo on `main` (9e73acb), and a question-and-answer session with Anthony.
-Status (updated 2026-09-23): S1 to S4 are committed on `main`, rebased onto origin/main `8190985`. **S6 turned out to already exist.** origin/main shipped scoped guest claim links on Sep 20 and 21 (`029_guest_invites.sql`, `030_family_guest_links.sql`, `/g/...` guest pages, and a family "public buyer link"). The local checkout was 7 commits behind, so it didn't show. A simpler parallel version was built and tested, then kept off `main` on branch `claude/seller-links-simple` so there aren't two claim systems. The next step is Anthony's call: simplify the shipped guest flow (holds, claim codes, the Available-first rule, and the settings-heavy organizer card) and give its copy the same plain-language pass. S7 needed no change. S5 is not started. Nothing is pushed, migrated, or deployed.
+Status (updated 2026-09-23): S1 to S4 are live (pushed 3c22bc6). S6 is done as the simple version: every seller gets one public link, buyers tap squares, type a name, and claim. There are no holds, claim codes, Available-first rule, or rollout allowlist. This replaces the organizer and family entry points of the earlier guest-link system (`029_guest_invites.sql`, `030_family_guest_links.sql`). Its tables and `/g/` pages stay so links already posted keep working. Migration `031_seller_links.sql` must be applied to production for seller links to work. S7 needed no change. S5 is not started.
 
 ---
 

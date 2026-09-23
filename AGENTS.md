@@ -33,7 +33,7 @@ Read the material that governs the current uncertainty or affected surface; do n
 - Organization: $79 per season for up to 50 published boards plus the documented organization features.
 - The ladder is written once, in `src/features/homepage/pricing.ts`. `tests/pricingCopyConsistency.test.ts` enforces it across the customer-facing corpus.
 - GridOne never collects square money, holds funds, adjudicates off-platform payment, or pays winners.
-- One signed-in organizer owns each board; public viewers cannot edit. Optional private family links may edit scoped names/availability before finalization, with database-enforced revision, revocation, and scope checks.
+- One signed-in organizer owns each board; public viewers cannot edit. Optional private family links may edit scoped names/availability before finalization, with database-enforced revision, revocation, and scope checks. Public seller links (Anthony-approved 2026-09-23) let anyone holding one claim that seller's unsold squares by name before the numbers lock; the database enforces scope, lock, and one-winner races, and nothing else is editable through them.
 - Manual score authority is canonical until deliberately returned to automatic; stale automatic data never overwrites manual or newer state.
 - The released creation flow uses one fixed 0–9 top/side axis set per board. Preserve valid legacy quarter-specific data; never flatten it or silently substitute another period's numbers. An approved new mode must coordinate persistence, validation, publication, scoring and viewer behavior before release.
 - OPEN outcomes stay OPEN, do not roll over, and send no winner email.
