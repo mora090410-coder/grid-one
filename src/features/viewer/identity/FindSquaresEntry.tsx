@@ -23,7 +23,7 @@ const FindSquaresEntry: React.FC<FindSquaresEntryProps> = ({ selectedPlayer, onF
     ) : (
       <>
         <CapsuleButton size="lg" className="w-full" onClick={onFindSquares}>Find my squares</CapsuleButton>
-        <p className="font-ui text-[14px] text-fg-3">Use the name the organizer wrote on the board.</p>
+        <p className="font-ui text-[14px] text-fg-3">Pick your name to see your squares.</p>
       </>
     )}
   </section>

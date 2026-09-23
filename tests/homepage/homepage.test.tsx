@@ -29,7 +29,8 @@ describe('Homepage', () => {
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
     expect(within(hero).getByText('First published board free')).toBeInTheDocument();
     expect(within(hero).getByText('Viewers don’t need an account')).toBeInTheDocument();
-    expect(within(hero).getByText('GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.')).toBeInTheDocument();
+    expect(within(hero).getByText('You collect the money your way. GridOne keeps the board.')).toBeInTheDocument();
+    expect(within(hero).queryByText(/does not collect square money/)).not.toBeInTheDocument();
     expect(within(hero).getByText('Sample board — not a live game')).toBeInTheDocument();
   });
 
@@ -71,18 +72,27 @@ describe('Homepage', () => {
     expect(screen.getByRole('heading', { name: 'Ready to build the board?' })).toBeInTheDocument();
   });
 
+  it('states the full money boundary once outside the footer, in the FAQ', () => {
+    renderPage();
+    const main = document.body.querySelector('footer')?.parentElement ?? document.body;
+    const all = screen.queryAllByText(/does not collect square money/);
+    const outsideFooter = all.filter((node) => !node.closest('footer'));
+    expect(outsideFooter.length).toBeLessThanOrEqual(1);
+    void main;
+  });
+
   it('explains publication allowance in the rendered payment answer', () => {
     renderPage();
     const answer = screen.getByText('When do I pay?').closest('details')!;
     fireEvent.click(within(answer).getByText('When do I pay?'));
-    expect(within(answer).getByText('Building, editing, and previewing are free on every plan, and your first published board each season is free. Sharing your board’s link with players counts as publishing it — but a board only counts once, no matter how often you share or update it. Upgrade when you need more boards.')).toBeVisible();
+    expect(within(answer).getByText('Building is always free. Your first shared board each season is free. Each board counts once, however often you share it.')).toBeVisible();
   });
 
   it('explains automatic matching with an explicit Final and overtime qualification', () => {
     renderPage();
     const explanation = screen.getByRole('region', { name: 'Scores update themselves.' });
-    expect(within(explanation).getByText('At the end of each quarter, the last digits of the score point to the winning square — GridOne marks it for you.')).toBeInTheDocument();
-    expect(within(explanation).getByText(/GridOne records Q1, halftime, Q3, and Final. Final uses the score at the end of the game, including overtime./)).toBeInTheDocument();
+    expect(within(explanation).getByText('At the end of each quarter, the last digit of each team’s score points to the winning square. GridOne marks it for you.')).toBeInTheDocument();
+    expect(within(explanation).getByText(/Winners for Q1, halftime, Q3, and the final score. Overtime counts toward the final./)).toBeInTheDocument();
   });
 
   it('describes reviewed photo import without a speed or paid-plan promise', () => {

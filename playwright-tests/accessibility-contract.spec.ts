@@ -325,8 +325,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
   test('demo and published routes expose semantic headings and synthetic/demo identity', async ({ page }) => {
     await page.goto('/demo');
-    await expect(page.getByRole('heading', { level: 1, name: /Demo: Super Bowl LIX/i })).toBeVisible();
-    await expect(page.getByText(/demo/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Lincoln Softball Booster Board/i })).toBeVisible();
+    await expect(page.getByText(/sample board/i).first()).toBeVisible();
 
     await installPublishedBoard(page);
     await page.goto('/b/ABCDEFGH');
@@ -455,7 +455,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
     const confirmation = page.getByRole('group', { name: /99 squares are open\. Draw anyway\?/i });
     await expect(confirmation).toBeVisible();
-    await expect(confirmation).toContainText('Open squares stay marked OPEN');
+    await expect(confirmation).toContainText('Open squares stay open');
     const keepAssigning = confirmation.getByRole('button', { name: 'Keep assigning' });
     const drawAnyway = confirmation.getByRole('button', { name: 'Draw with 99 OPEN' });
     await expect(keepAssigning).toBeVisible();
@@ -650,7 +650,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(summary.getByText('1 square', { exact: true })).toBeVisible();
     await expect(summary.getByText(/WAS column 0 × DAL row 0/i)).toBeVisible();
     await expect(summary.getByRole('button', { name: /View on board top 0 side 0/i })).toBeVisible();
-    await expect(summary.getByText(/None of the next scores listed here match this square\./i)).toBeVisible();
+    await expect(summary.getByText(/Not one score away yet\./i)).toBeVisible();
     await expect(winnerEmail).toBeVisible();
     const personalizedBeforeEmail = await page.locator('[aria-label="Ann square summary"], [role="form"][aria-label="winner email"]').evaluateAll((nodes) => {
       const [summaryNode, emailNode] = nodes;

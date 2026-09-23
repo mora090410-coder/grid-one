@@ -23,12 +23,12 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
         <h3 className="font-ui text-[22px] font-semibold text-fg">
           {isOrganization
             ? "Sounds like you're running this for a whole organization."
-            : "Your free plan includes 1 board per season"}
+            : "Your free board is used."}
         </h3>
         <p className="font-ui text-[15px] text-fg-2">
           {isOrganization
             ? "The Organization plan puts your club's name on every board, keeps all of them on one dashboard, and gives your treasurer one clean receipt. $79 for the season, up to 50 boards."
-            : 'To publish another board, choose the Game Day plan: $9.99 once for up to 5 total published boards in the 2026 season, including your first board. Your allowance does not reset when a game ends.'}
+            : '$9.99 covers up to 5 boards this season, counting your first. It doesn’t reset after a game.'}
         </p>
 
         {isOrganization && (

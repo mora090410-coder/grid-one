@@ -47,6 +47,8 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
   const currentQuarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, currentQuarter) : [];
   const winsNow = currentNames.includes(selectedPlayer);
+  // The one answer a returning buyer wants: what score would make me win next.
+  const nextWin = rows.find((row) => row.nextLabels.length)?.nextLabels[0] ?? null;
   const topLabel = game.topAbbr || 'Top';
   const leftLabel = game.leftAbbr || 'Side';
 
@@ -57,7 +59,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
       <p className={`font-ui text-[17px] font-medium ${winsNow ? 'text-gold' : 'text-fg-2'}`}>
-        {winsNow ? 'Currently matching: one of your squares.' : 'Currently matching: none of your squares.'}
+        {winsNow ? 'You’re winning right now.' : nextWin ? `Not winning right now. Next winning score: ${nextWin}.` : 'Not winning right now.'}
       </p>
       <ul id={listId} className="flex flex-col gap-2" aria-label="Your squares">
         {visibleRows.map((row) => (
@@ -66,7 +68,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-mono tabular-nums text-[15px] text-fg">{topLabel} column {row.top} × {leftLabel} row {row.left}</span>
                 <span className="font-ui text-[14px] text-fg-2">
-                  {row.matchesCurrent ? 'Currently matching this square.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'None of the next scores listed here match this square.'}
+                  {row.matchesCurrent ? 'Winning right now.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Not one score away yet.'}
                 </span>
               </div>
               {row.top !== null && row.left !== null && (

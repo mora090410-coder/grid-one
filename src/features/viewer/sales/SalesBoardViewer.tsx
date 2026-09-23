@@ -75,9 +75,9 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
           </div>
         <div>
             <CapsuleButton aria-expanded={joining} aria-controls="joining-instructions" onClick={() => setJoining(value => !value)}>How to join</CapsuleButton>
-            {joining && <div id="joining-instructions" className="mt-3 max-w-2xl whitespace-pre-wrap break-words rounded-control border border-hairline bg-panel p-4 font-ui text-base text-fg">{board.participation?.instructions || 'Contact the person who shared this board or the organizer with the square numbers you’re interested in. They will confirm availability and record your name.'}</div>}
+            {joining && <div id="joining-instructions" className="mt-3 max-w-2xl whitespace-pre-wrap break-words rounded-control border border-hairline bg-panel p-4 font-ui text-base text-fg">{board.participation?.instructions || 'Want a square? Text the person who sent you this link with the numbers you want. They’ll add your name.'}</div>}
           </div>
-          <p className="font-ui text-sm text-fg-2">Availability is confirmed by the organizer. Payments happen outside GridOne.</p>
+          <p className="font-ui text-sm text-fg-2">A square is yours once they add your name. You pay them directly, not through GridOne.</p>
         </header>
 
         <Glass padding="lg" className="flex flex-wrap items-center justify-between gap-4">
@@ -120,7 +120,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
               <span className="font-mono text-xs text-fg-3">Square {cell.number}</span>
               <span className="break-words font-ui text-base text-fg">{cell.buyer}</span>
               <span className="break-words font-ui text-sm text-fg-2">{cell.family ? `Responsible: ${cell.family}` : 'No family assigned'}</span>
-              {cell.availability !== 'unspecified' && <span className="font-ui text-sm text-fg-2">{held.has(cell.index) ? 'Guest selecting · temporarily held' : cell.availability === 'available' ? 'Available · confirm with organizer' : 'Not available'}</span>}
+              {cell.availability !== 'unspecified' && <span className="font-ui text-sm text-fg-2">{held.has(cell.index) ? 'Guest selecting · temporarily held' : cell.availability === 'available' ? 'Available' : 'Not available'}</span>}
             </li>)}</ul>}
           </details>
         </section>

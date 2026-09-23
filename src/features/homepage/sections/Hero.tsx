@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { DEMO_LABEL, demoGame, demoLive, demoWinnerNow } from '../demoData';
-import { MONEY_BOUNDARY } from '../pricing';
+import { MONEY_LINE } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
 import { Enter, Grain } from '../../../design/primitives';
 import { SiteHeader } from '../../site/SiteHeader';
@@ -78,7 +78,7 @@ export function Hero() {
             </Enter>
             <Enter delay={120}>
               <ul className="studio-hero-reassurance"><li>First published board free</li><li>Viewers don’t need an account</li></ul>
-              <p className="studio-hero-boundary">{MONEY_BOUNDARY}</p>
+              <p className="studio-hero-boundary">{MONEY_LINE}</p>
             </Enter>
           </div>
           <Enter delay={80} className="studio-hero-stage">

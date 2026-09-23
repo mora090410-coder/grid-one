@@ -72,7 +72,7 @@ Off-platform payment status never gates progression.
 
 ### 3. Draw
 
-Primary action: **`Prepare to publish`**, enabled only when `canEnterDraw`. If squares are still OPEN, a confirmation group named `{n} squares are open. Draw anyway?` appears, states that **Open squares stay marked OPEN**, and offers `Keep assigning` (which takes focus) and `Draw with {n} OPEN`.
+Primary action: **`Prepare to publish`**, enabled only when `canEnterDraw`. If squares are still OPEN, a confirmation group named `{n} squares are open. Draw anyway?` appears, states that **Open squares stay open**, and offers `Keep assigning` (which takes focus) and `Draw with {n} OPEN`.
 
 The draw itself is `crypto.getRandomValues` in `secureDraw.ts`: one permutation of 0–9 per axis, each digit exactly once (`isExactAxis`). The result appears over the axes as a `Draft draw` with `Draw again` and `Use numbers and continue`; `Cancel` discards it. Accepting the draw saves its numbers and opens the private preview directly. The island shows `Numbers drawn`; `Preview and publish` reopens the preview when allowed. `Replace draft draw` remains secondary while the board is unpublished.
 

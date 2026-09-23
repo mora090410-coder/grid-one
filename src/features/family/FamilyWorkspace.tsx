@@ -98,7 +98,7 @@ export default function FamilyWorkspace() {
     {record && <form onSubmit={save} className="flex flex-col gap-6">
       <Glass padding="lg" className="flex flex-col gap-3"><h2 className="font-display text-[32px] text-fg">Your {draft.length} {draft.length === 1 ? 'square' : 'squares'}</h2>
         <p className="break-words font-ui text-base text-fg">Responsible family: {record.label}</p>
-        <p className="font-ui text-sm text-fg-2">Updating a name does not change your family’s responsibility. Arrange all money with your organizer and supporters outside GridOne.</p>
+        <p className="font-ui text-sm text-fg-2">These are your squares. Add each buyer’s name as you sell. Collect the money yourself, outside GridOne.</p>
       </Glass>
       <FamilyShareCard token={token.current} dirty={changes.length > 0} disabled={busy || conflict || shareBusy} refreshKey={shareRefreshKey} onBusy={setShareBusy} onCreated={refreshAfterShareCreate} />
       <ul className="flex flex-col gap-3">{draft.map(cell => <li key={cell.index} className="rounded-card border border-hairline bg-panel p-4">
@@ -114,7 +114,7 @@ export default function FamilyWorkspace() {
           </label>
         </div>
       </li>)}</ul>
-      <p className="font-ui text-sm text-fg-2">Names and availability appear on the shared board. Mark availability deliberately; a name alone does not say whether a square is available.</p>
+      <p className="font-ui text-sm text-fg-2">Everyone with the board link sees these names. Mark a square available only if you still have it to sell.</p>
       {saved && <p role="status" className="font-ui text-base text-fg">Changes saved.</p>}
       <div className="flex flex-wrap gap-3"><CapsuleButton type="submit" disabled={busy || shareBusy || conflict || invalid || !changes.length}>{busy ? 'Saving…' : 'Save changes'}</CapsuleButton>
         {conflict && <CapsuleButton variant="quiet" disabled={busy || shareBusy} onClick={() => { if (window.confirm('Reload the latest board? This replaces your unsaved entries.')) void load(); }}>Reload latest</CapsuleButton>}

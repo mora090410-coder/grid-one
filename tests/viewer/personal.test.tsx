@@ -13,12 +13,19 @@ const game: GameState = { title: 'GridOne Bowl', meta: '', leftAbbr: 'KC', leftN
 const live: LiveGameData = { leftScore: 21, topScore: 14, quarterScores: { Q1: { left: 7, top: 0 }, Q2: { left: 7, top: 7 }, Q3: { left: 7, top: 7 }, Q4: { left: 0, top: 0 }, OT: { left: 0, top: 0 } }, clock: '8:12', period: 3, state: 'in', detail: '3rd quarter', isOvertime: false, sourceName: 'ESPN', retrievedAt: '2026-09-13T20:15:00.000Z', staleAfter: '2026-09-13T20:16:00.000Z', freshness: 'fresh' };
 
 describe('YourSquaresSummary', () => {
+  it('answers "what makes me win" in the headline when not winning now', () => {
+    const oneAway: BoardData = { ...board, squares: board.squares.map((names, index) => index === 34 ? ['Dana Ruiz'] : names) };
+    render(<YourSquaresSummary board={oneAway} game={game} live={live} selectedPlayer="Dana Ruiz" onViewSquare={vi.fn()} />);
+    const region = screen.getByRole('region', { name: 'Dana Ruiz square summary' });
+    expect(within(region).getByText('Not winning right now. Next winning score: KC Safety +2.')).toBeVisible();
+  });
+
   it('shows one detailed list with the current match status first', () => {
     const onViewSquare = vi.fn();
     render(<YourSquaresSummary board={board} game={game} live={live} selectedPlayer="Carrie Moss" onViewSquare={onViewSquare} />);
     const region = screen.getByRole('region', { name: 'Carrie Moss square summary' });
     expect(within(region).getByText('2 squares')).toBeInTheDocument();
-    const winsNow = within(region).getByText('Currently matching: one of your squares.');
+    const winsNow = within(region).getByText('You’re winning right now.');
     expect(winsNow.className).toContain('text-gold');
     const list = within(region).getByRole('list', { name: 'Your squares' });
     expect(within(region).getAllByRole('list')).toHaveLength(1);
@@ -53,7 +60,7 @@ describe('ScenarioDisclosure', () => {
     expect(screen.getByRole('region', { name: 'What score changes the next result?' })).toBeInTheDocument();
     const details = screen.getByText('All possible next scores').closest('details');
     expect(details?.open).toBe(false);
-    expect(screen.getByText('These are arithmetic score outcomes, not odds or predictions.')).toBeInTheDocument();
+    expect(screen.getByText('Just math on the score. Not odds or predictions.')).toBeInTheDocument();
   });
 });
 

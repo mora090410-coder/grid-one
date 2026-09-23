@@ -32,7 +32,7 @@ describe('ViewerIsland', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Your squares' }));
     expect(screen.getByText('Selected name: Carrie Moss')).toBeInTheDocument();
     expect(screen.getByText('Squares 1, 13, 100')).toBeInTheDocument();
-    expect(screen.getByText('Currently matching: one of your squares.')).toBeInTheDocument();
+    expect(screen.getByText('You’re winning right now.')).toBeInTheDocument();
   });
 
   it('honestly labels an unavailable score rather than inventing zeroes', () => {

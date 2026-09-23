@@ -16,7 +16,7 @@ export default function FinalRecordCard({ winnerHistory, onCreateAnotherBoard }:
       <Eyebrow>Final record</Eyebrow>
       <h2 className="font-display text-2xl text-fg">This board is locked as the Final record.</h2>
       <p className="font-ui text-[15px] text-fg-2">
-        Scores, winners, OPEN outcomes, and public corrections stay visible for trust. Regular setup editing is closed; create another board for the next fundraiser or game.
+        This board is done. Scores, winners, and any fixes stay here for everyone to see. Start a new board for your next game.
       </p>
       {rows.length > 0 && (
         <ul className="flex flex-col gap-2">

@@ -248,9 +248,8 @@ describe('UpgradeSheet', () => {
       />,
     );
     expect(screen.getByText('Game Day · up to 5 boards')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Your free plan includes 1 board per season' })).toBeInTheDocument();
-    expect(screen.getByText(/5 total published boards in the 2026 season/)).toBeInTheDocument();
-    expect(screen.getByText(/does not reset when a game ends/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your free board is used.' })).toBeInTheDocument();
+    expect(screen.getByText('$9.99 covers up to 5 boards this season, counting your first. It doesn’t reset after a game.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue to $9.99 checkout' })).not.toBeDisabled();
     expect(screen.queryByLabelText('Organization name')).not.toBeInTheDocument();
   });

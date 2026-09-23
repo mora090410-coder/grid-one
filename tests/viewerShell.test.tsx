@@ -79,10 +79,10 @@ describe('ViewerShell', () => {
     expect(summary.compareDocumentPosition(scenarios)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(summary).getByText('2 squares')).toBeVisible();
-    expect(within(summary).getByText('Currently matching: one of your squares.')).toBeVisible();
+    expect(within(summary).getByText('You’re winning right now.')).toBeVisible();
     expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/ })).toBeInTheDocument();
     expect(screen.getByText('Next score: KC Safety +2')).toBeVisible();
-    expect(screen.getByText('These are arithmetic score outcomes, not odds or predictions.')).toBeVisible();
+    expect(screen.getByText('Just math on the score. Not odds or predictions.')).toBeVisible();
     expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
   });
 

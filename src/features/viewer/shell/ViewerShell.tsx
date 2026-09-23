@@ -109,7 +109,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           <div ref={findRef}><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} tabIndex={-1} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
-          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No resolved winner records have been published yet.</p>}
+          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No quarter winners yet.</p>}
           </div>
           {selectedPlayer && <div ref={personalRef} tabIndex={-1}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {pendingMilestones.length > 0 && servicesEnabled && (

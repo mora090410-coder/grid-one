@@ -455,7 +455,7 @@ export default function OrganizerWorkspace({
       if (saved.status !== 'clean') throw new Error('Save your latest changes before sharing. Use Retry or Reload latest board above.');
       await onShareBoard();
       setShareOpen(false);
-      setNote('Your shared board is ready. Keep allocating squares here; everyone sees updates at the same link.');
+      setNote('Your board is shared. Keep assigning squares here. Everyone sees updates at the same link.');
     } catch (error) {
       const upgradeTo = (error as { upgradeTo?: 'gameday' | 'org' })?.upgradeTo;
       if (upgradeTo) { setShareOpen(false); setUpgradeTier(upgradeTo); }
@@ -990,7 +990,7 @@ export default function OrganizerWorkspace({
         <div className="flex flex-col gap-4">
           <CapsuleButton variant="quiet" className="self-start" disabled={sharePending} onClick={() => setShareOpen(false)}>Cancel</CapsuleButton>
           <p className="font-ui text-[15px] text-fg-2">Everyone with the link can see buyer names and assigned families. The public link cannot edit. You can separately give a family a private link for its assigned squares. Private payment and contact notes stay private.</p>
-          <p className="font-ui text-[15px] text-fg-2">Share now and keep selling. Game numbers appear only after you finalize the board. Sharing uses one board from your season allowance; finalizing this same board uses no additional board.</p>
+          <p className="font-ui text-[15px] text-fg-2">Share now and keep selling. Numbers stay hidden until you lock them. This counts as 1 board for the season, and locking it later doesn’t count again.</p>
           {shareError && <>
             <p role="alert" className="text-tone-cardinal">{shareError}</p>
             {onReload && <CapsuleButton variant="quiet" disabled={sharePending} onClick={() => {

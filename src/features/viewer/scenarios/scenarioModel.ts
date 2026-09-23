@@ -26,7 +26,7 @@ export interface ViewerScenarioModel {
   currentQuarter: ViewerQuarter;
   scenarios: ViewerScenario[];
   lastKnownCheckedAt: string | null;
-  disclaimer: 'These are arithmetic score outcomes, not odds or predictions.';
+  disclaimer: 'Just math on the score. Not odds or predictions.';
 }
 
 export const quarterForLive = (live: LiveGameData | null): ViewerQuarter => {
@@ -74,7 +74,7 @@ export const buildScenarioModel = ({
       currentQuarter,
       scenarios: [],
       lastKnownCheckedAt,
-      disclaimer: 'These are arithmetic score outcomes, not odds or predictions.',
+      disclaimer: 'Just math on the score. Not odds or predictions.',
     };
   }
 
@@ -98,6 +98,6 @@ export const buildScenarioModel = ({
     currentQuarter,
     scenarios,
     lastKnownCheckedAt,
-    disclaimer: 'These are arithmetic score outcomes, not odds or predictions.',
+    disclaimer: 'Just math on the score. Not odds or predictions.',
   };
 };

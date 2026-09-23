@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { BoardData, WinnerHighlights } from '../types';
 import { SAMPLE_BOARD } from '../constants';
+import { demoBoard, demoGame, demoLive } from '../src/features/homepage/demoData';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import '../src/features/viewer/shell/demoStage.css';
@@ -215,31 +216,14 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // 5. Effects
     useEffect(() => {
         if (demoMode) {
-            setBoard(SAMPLE_BOARD);
+            // One sample everywhere: the homepage's Lincoln Softball board.
+            const { retrievedAt: _sampleTime, ...sampleScore } = demoLive;
+            setBoard(demoBoard);
             setGame({
                 ...INITIAL_GAME,
-                title: 'Demo: Super Bowl LIX',
-                dates: '2025-02-09',
-                leftAbbr: 'KC',
-                leftName: 'Kansas City Chiefs',
-                topAbbr: 'PHI',
-                topName: 'Philadelphia Eagles',
+                ...demoGame,
                 scoreSnapshot: {
-                    leftScore: 17,
-                    topScore: 24,
-                    quarterScores: {
-                        Q1: { left: 3, top: 7 },
-                        Q2: { left: 7, top: 7 },
-                        Q3: { left: 7, top: 3 },
-                        Q4: { left: 0, top: 7 },
-                        OT: { left: 0, top: 0 },
-                    },
-                    clock: '2:31',
-                    period: 4,
-                    state: 'in',
-                    detail: 'Sample score',
-                    isOvertime: false,
-                    sourceName: 'Sample score',
+                    ...sampleScore,
                     retrievedAt: new Date().toISOString(),
                     staleAfter: new Date(Date.now() + 3_600_000).toISOString(),
                     freshness: 'fresh',
@@ -420,7 +404,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
-                    {demoMode && <p className="demo-status mx-4 mt-20 font-ui text-sm text-fg-2"><span className="g-pill">Sample board — not a live game</span><br />Sample game · February 9, 2025</p>}
+                    {demoMode && <p className="demo-status mx-4 mt-20 font-ui text-sm text-fg-2"><span className="g-pill">Sample board — not a live game</span><br />Sample game · January 18, 2026</p>}
                     {renderMainContent()}
                     {(demoMode || liveData?.state === 'post') && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
                         <p className="font-ui text-base text-fg-2">{demoMode ? 'This is a sample board. Ready to run yours?' : 'Bring your next game day together.'}</p>

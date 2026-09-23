@@ -51,7 +51,7 @@ const ScenarioDisclosure: React.FC<ScenarioDisclosureProps> = ({ board, game, li
   return (
     <section className="flex flex-col gap-3" role="region" aria-labelledby={titleId}>
       <h2 id={titleId} className="font-display text-[26px] leading-[1.1] text-fg">What score changes the next result?</h2>
-      <p className="font-ui text-[14px] text-fg-3">Read each result across the top team’s columns, then down the side team’s rows.</p>
+      <p className="font-ui text-[14px] text-fg-3">Each line shows a score and whose square it lands on.</p>
       {model.status === 'last-known' && <p className="font-ui text-[14px] text-gold">{lastKnownCopy(model.lastKnownCheckedAt)}</p>}
       {selectedPlayer && selected.length > 0 && (
         <div className="flex flex-col gap-2" aria-label="Next scores that match your squares">

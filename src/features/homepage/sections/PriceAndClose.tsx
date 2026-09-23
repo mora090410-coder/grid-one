@@ -8,15 +8,15 @@ import { PrimaryCtaLink } from './PrimaryCtaLink';
 const faq = [
   { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in.' },
   { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Squares and payouts stay between you and your group.` },
-  { q: 'When do I pay?', a: 'Building, editing, and previewing are free on every plan, and your first published board each season is free. Sharing your board’s link with players counts as publishing it — but a board only counts once, no matter how often you share or update it. Upgrade when you need more boards.' },
-  { q: 'Who can edit the board?', a: 'The organizer controls the board and can give a family a private link to update its assigned names before finalization. Public viewer links cannot edit. Published names change only through a visible, dated correction.' },
+  { q: 'When do I pay?', a: 'Building is always free. Your first shared board each season is free. Each board counts once, however often you share it.' },
+  { q: 'Who can edit the board?', a: 'You control the board. You can give a family a private link to add names to its own squares. Viewers can’t edit, and any fix after the numbers lock is shown to everyone.' },
 ];
 
 export function PriceAndClose() {
   return (
     <>
       <section className="editorial-pricing editorial-section" aria-labelledby="pricing-heading">
-        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Free to start. Ready for your next board.</h2><p>{PRICING_SENTENCE}</p><p className="editorial-boundary">{MONEY_BOUNDARY}</p></Reveal>
+        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Free to start. Ready for your next board.</h2><p>{PRICING_SENTENCE}</p></Reveal>
         <Reveal as="section" aria-label="Plans" className="editorial-plans" delay={60}>
           {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
         </Reveal>

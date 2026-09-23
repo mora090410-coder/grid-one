@@ -57,7 +57,7 @@ const ResultRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameStat
         })}
       </ol>
     ) : (
-      <p className="font-ui text-[15px] text-fg-2">No resolved winner records have been published yet.</p>
+      <p className="font-ui text-[15px] text-fg-2">No quarter winners yet.</p>
     )}
   </Glass>
 );
@@ -129,7 +129,7 @@ const BoardDetailsDisclosure: React.FC<BoardDetailsDisclosureProps> = ({ game, b
       <dl className="mt-3 flex flex-col gap-3">
         <div><dt><Eyebrow as="span">Teams</Eyebrow></dt><dd className="font-ui text-[15px] text-fg">{game.leftName || game.leftAbbr} at {game.topName || game.topAbbr}</dd></div>
         <div><dt><Eyebrow as="span">Squares assigned</Eyebrow></dt><dd className="font-mono tabular-nums text-[15px] text-fg">{board.squares.filter((names) => names.length > 0).length} of 100</dd></div>
-        <div><dt><Eyebrow as="span">Digits</Eyebrow></dt><dd className="font-ui text-[15px] text-fg-2">Top axis and side axis use organizer-published digits.</dd></div>
+        <div><dt><Eyebrow as="span">Digits</Eyebrow></dt><dd className="font-ui text-[15px] text-fg-2">Drawn once by the organizer and locked for the game.</dd></div>
       </dl>
     </details>
   </section>

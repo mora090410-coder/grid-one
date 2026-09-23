@@ -13,7 +13,7 @@ const firstViewport = async (page: import('@playwright/test').Page, height: numb
     ['create', hero.getByRole('link', { name: 'Create your free board' })],
     ['demo', hero.getByRole('link', { name: 'Explore a sample board' })],
     ['free', hero.getByText('First published board free')],
-    ['boundary', hero.getByText(/does not collect square money, hold funds, settle payments, or pay winners/i)],
+    ['boundary', hero.getByText('You collect the money your way. GridOne keeps the board.')],
   ];
   for (const [label, locator] of required) {
     const box = await locator.boundingBox();

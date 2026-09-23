@@ -103,7 +103,7 @@ for (const width of [390, 1440]) {
     await expect(viewer.getByRole('gridcell', { name: 'Square 12, Mora family, Mora family', exact: true })).toBeVisible();
     await expect(viewer.getByRole('link', { name: 'Manage board' })).toHaveCount(0);
     await viewer.getByRole('button', { name: 'How to join', exact: true }).click();
-    await expect(viewer.getByText(/Contact the person who shared this board/)).toBeVisible();
+    await expect(viewer.getByText(/Text the person who sent you this link/)).toBeVisible();
     await viewer.getByRole('searchbox', { name: 'Find a name or square number', exact: true }).fill('12');
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(1);
     await viewer.getByRole('button', { name: 'Clear filters', exact: true }).click();

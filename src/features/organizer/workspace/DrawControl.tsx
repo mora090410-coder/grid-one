@@ -49,7 +49,7 @@ export default function DrawControl({
       <Glass role="group" aria-label={heading} className="flex flex-col gap-3">
         <h2 className="font-display text-[20px] leading-[1.1] text-fg">{heading}</h2>
         <p className="font-ui text-[14px] text-fg-2">
-          Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.
+          Open squares stay open. You can still fill them before kickoff.
         </p>
         <div className="flex flex-wrap gap-2">
           <CapsuleButton variant="quiet" onClick={onKeepAssigning} disabled={disabled}>Keep assigning</CapsuleButton>
@@ -83,7 +83,7 @@ export default function DrawControl({
           <Glass role="group" aria-label={heading} className="flex flex-col gap-3">
             <h2 className="font-display text-[20px] leading-[1.1] text-fg">{heading}</h2>
             <p className="font-ui text-[14px] text-fg-2">
-              Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.
+              Open squares stay open. You can still fill them before kickoff.
             </p>
             <div className="flex flex-wrap gap-2">
               <CapsuleButton variant="quiet" onClick={onKeepAssigning} disabled={disabled}>Keep assigning</CapsuleButton>

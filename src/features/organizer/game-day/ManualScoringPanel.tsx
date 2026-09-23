@@ -39,7 +39,7 @@ export const ManualScoringPanel = ({
         <p className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] mb-2 text-tone-cardinal">Ready when the board goes live</p>
         <h5 className="font-display text-2xl text-fg">Every published board gets the full game-day experience.</h5>
         <p className="font-ui mt-3 text-sm text-fg-2">
-          Keep building and previewing for free. After you publish, the score, winner emails, QR code, and public board link are ready for game day.
+          Building is free. Once you lock the numbers, live scores, winner emails, and the QR code turn on.
         </p>
       </Glass>
     );

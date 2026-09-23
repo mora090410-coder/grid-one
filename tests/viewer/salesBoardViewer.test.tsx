@@ -74,8 +74,8 @@ describe('SalesBoardViewer', () => {
     expect(screen.getByText('Squares with names')).toBeInTheDocument();
     expect(screen.getByText('99 blank squares')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'How to join' }));
-    expect(screen.getByText(/Contact the person who shared this board/)).toBeInTheDocument();
-    expect(screen.getByText('Availability is confirmed by the organizer. Payments happen outside GridOne.')).toBeInTheDocument();
+    expect(screen.getByText(/Text the person who sent you this link/)).toBeInTheDocument();
+    expect(screen.getByText('A square is yours once they add your name. You pay them directly, not through GridOne.')).toBeInTheDocument();
     expect(screen.queryByText(/sold/i)).not.toBeInTheDocument();
   });
 
@@ -89,7 +89,7 @@ describe('SalesBoardViewer', () => {
     const details = screen.getByRole('region', { name: 'Square details' });
     expect(within(details).getAllByRole('listitem')).toHaveLength(1);
     expect(within(details).getByText('Alice Long Buyer Name')).toBeInTheDocument();
-    expect(within(details).getByText('Available · confirm with organizer')).toBeInTheDocument();
+    expect(within(details).getByText('Available')).toBeInTheDocument();
   });
 
   it('reports freshness honestly and exposes refresh and an optional organizer link', () => {

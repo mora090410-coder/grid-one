@@ -11,7 +11,7 @@ describe('FindSquaresEntry', () => {
     expect(button.className).toContain('bg-action');
     fireEvent.click(button);
     expect(onFindSquares).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Use the name the organizer wrote on the board.')).toBeInTheDocument();
+    expect(screen.getByText('Pick your name to see your squares.')).toBeInTheDocument();
   });
 
   it('shows the selected name as a chip with Clear and a change action', () => {

@@ -37,7 +37,7 @@ const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, board, live, liveStat
   const modules: NotchModule[] = [
     { id: 'game', label: 'Game', detail: <>{live && <p className="context-notch-score">{leftLabel} {live.leftScore} · {topLabel} {live.topScore} · {score.periodLabel}</p>}<p>{authority} · {score.authority.detail}</p><p>{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'}</p><p>{score.pollingText}</p>{live?.sourceName && <p>Source · {live.sourceName}</p>}</>, actions: onViewScore ? [{ label: 'View score', onClick: onViewScore }] : [] },
     { id: 'squares', label: selectedPlayer ? 'Your squares' : 'Find squares', reading: selectedPlayer ? `${squareCount} squares` : undefined,
-      detail: selectedPlayer ? <><p>Selected name: {selectedPlayer}</p>{squareNumbers.length > 0 && <p>Squares {squareNumbers.join(', ')}</p>}<p>{stale ? 'Last known · ' : ''}Currently matching: {winsNow ? 'one of your squares' : 'none of your squares'}.</p></> : <p>Choose the name used on this board.</p>,
+      detail: selectedPlayer ? <><p>Selected name: {selectedPlayer}</p>{squareNumbers.length > 0 && <p>Squares {squareNumbers.join(', ')}</p>}<p>{stale ? 'Last known · ' : ''}{winsNow ? 'You’re winning right now.' : 'Not winning right now.'}</p></> : <p>Choose the name used on this board.</p>,
       actions: [
         ...(selectedPlayer && onViewSquares ? [{ label: 'View your squares', onClick: onViewSquares }] : []),
         ...(onFindSquares ? [{ label: selectedPlayer ? 'Choose another name' : 'Find my squares', onClick: onFindSquares }] : []),

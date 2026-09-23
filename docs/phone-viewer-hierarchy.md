@@ -52,8 +52,8 @@ A name is selected through the `Find my squares` dialog. In the current stack, `
 - one detailed list, initially limited to four squares with the current match first; Show all squares exposes the full list,
 - each coordinate as `{away team} column {digit} × {home team} row {digit}`,
 - `View on board top {n} side {n}` per square, which centers the grid without stealing focus first,
-- the current result — `Currently matching this square.` / `Currently matching: none of your squares.`,
-- and, when nothing upcoming matches, `None of the next scores listed here match this square.`
+- the current result — `Winning right now.` / `Not winning right now.`,
+- and, when nothing upcoming matches, `Not one score away yet.`
 
 `FindSquaresEntry` then shows `Selected name` with `Choose another name` and `Clear`. `WinnerEmailDisclosure` (`Get winner emails`) appears **after** the personal answer, never before it.
 

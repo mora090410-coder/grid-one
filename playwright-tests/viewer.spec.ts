@@ -70,7 +70,7 @@ test.describe('viewer shell', () => {
 
   test('places the demo invitation after the board and labels the sample date', async ({ page }) => {
     await page.goto('/demo');
-    await expect(page.getByText('Sample game · February 9, 2025')).toBeVisible();
+    await expect(page.getByText('Sample game · January 18, 2026')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Create your own board' })).toBeVisible();
     const isAfterViewer = await page.getByRole('complementary', { name: 'Run your own board' }).evaluate((element) => {
       const viewer = document.querySelector('main');
@@ -97,7 +97,7 @@ test.describe('viewer shell', () => {
     await page.goto('/demo');
 
     await expect(page.locator('[data-feature-flag]')).toHaveCount(0);
-    await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Demo: Super Bowl LIX/i })).toBeVisible();
+    await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Lincoln Softball Booster Board/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport').getByRole('button', { name: /Find my squares/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport')).not.toContainText(/Payouts|makes me win/i);
 

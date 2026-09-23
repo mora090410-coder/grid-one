@@ -126,7 +126,7 @@ describe('DrawControl', () => {
     const group = screen.getByRole('group', { name: '6 squares are open. Draw anyway?' });
     expect(group).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '6 squares are open. Draw anyway?' })).toBeInTheDocument();
-    expect(screen.getByText('Open squares stay marked OPEN on the shared board. You can still assign them before kickoff.')).toBeInTheDocument();
+    expect(screen.getByText('Open squares stay open. You can still fill them before kickoff.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Keep assigning' }));
     expect(base.onKeepAssigning).toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Draw with 6 OPEN' }));

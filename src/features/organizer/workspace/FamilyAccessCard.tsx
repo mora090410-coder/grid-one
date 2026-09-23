@@ -53,8 +53,8 @@ export default function FamilyAccessCard({ boardId, labels, clean, flush, onRelo
   };
   return <Glass padding="lg"><details><summary className="min-h-11 cursor-pointer font-ui text-lg text-fg">Send families their squares</summary>
     <div className="mt-4 flex flex-col gap-4">
-      <p className="text-sm text-fg-2">Choose a family, then send them their private link by text or email. It opens their assigned squares so they can update names and availability. Where guest sharing is enabled, they can also get a separate link for friends to choose squares without an account.</p>
-      <p className="text-sm text-fg-2">Send this private link only to the responsible family. Anyone with it can manage their squares; it is not the link to post publicly.</p>
+      <p className="text-sm text-fg-2">Pick a family and text or email them their private link. It opens their squares so they can add buyers’ names. Where guest sharing is on, they can also make a public link for friends to pick squares.</p>
+      <p className="text-sm text-fg-2">Only send this link to that family. Anyone with it can edit their squares, so don’t post it publicly.</p>
       {!clean && <p role="status" className="text-sm text-fg-2">Save your latest changes before managing family access.</p>}
       <label className="text-sm text-fg-2">Responsible family<select aria-label="Responsible family" value={label} disabled={busy} onChange={event => { setLabel(event.target.value); setLink(''); }} className="mt-2 min-h-11 w-full rounded-control border border-hairline bg-ground px-3 text-fg"><option value="">Choose a family</option>{families.map(value => <option key={value}>{value}</option>)}</select></label>
       {!families.length && <p className="text-sm text-fg-2">Assign a responsible family before creating an edit link.</p>}
