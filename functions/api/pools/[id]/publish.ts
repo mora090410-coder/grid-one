@@ -124,7 +124,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
         code,
         error: upgradeTo === 'org'
           ? 'Your Game Day plan has published all 5 boards for this season.'
-          : 'Your first board is live. Choose Game Day to publish another.',
+          : 'Your free plan includes 1 board per season. Choose the Game Day plan to publish another.',
         tier,
         used,
         allowance,

@@ -252,7 +252,7 @@ describe.sequential('publish entitlement boundary', () => {
       1,
       1,
       'gameday',
-      'Your first board is live. Choose Game Day to publish another.',
+      'Your free plan includes 1 board per season. Choose the Game Day plan to publish another.',
     ],
     [
       'gameday',

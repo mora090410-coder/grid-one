@@ -7,6 +7,9 @@ const currentPricingCopyFiles = [
   'src/features/homepage/Homepage.tsx',
   'src/features/homepage/sections/PriceAndClose.tsx',
   'src/features/homepage/sections/Hero.tsx',
+  'src/features/homepage/sections/OrganizerSection.tsx',
+  'src/features/homepage/sections/ScoreSection.tsx',
+  'src/features/homepage/sections/Footer.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',
@@ -36,15 +39,17 @@ describe('launch pricing copy', () => {
     expect(read('PRODUCT.md')).toContain('The **Organization** tier is **$79 per season** for up to 50 published boards');
   });
 
-  it('keeps system vocabulary out of the landing-page sales copy', () => {
+  it('keeps reviewed Beta import and the money boundary explicit in landing copy', () => {
     const landing = currentPricingCopyFiles
       .filter((path) => path.startsWith('src/features/homepage/'))
       .map(read)
       .join('\n');
 
-    expect(landing).not.toMatch(/\b(?:beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
-    expect(landing).toContain('Explore a sample board');
-    expect(landing).toContain('First published board free');
+    // These are approved disclosures, not exceptions to a vocabulary blacklist.
+    expect(landing).toContain('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)');
+    expect(landing).toContain('Sign in to import, then review every square before publishing.');
+    expect(landing).toContain('does not collect square money, hold funds, settle payments, or pay winners');
+    expect(landing).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)/i);
   });
 
   it('does not ship invented payout amounts in live board surfaces', () => {
