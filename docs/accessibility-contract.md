@@ -7,6 +7,8 @@
 
 ## Conformance posture
 
+Accessibility outcomes remain binding through exploration and redesign. Named components, palette treatments, focus styling, and motion mechanisms below describe the current production implementation; they are not aesthetic restrictions on proposals. An approved alternative must coordinate contracts/tests and demonstrate equivalent or better keyboard, assistive-technology, focus/recovery, contrast, reflow, touch, and reduced-motion outcomes before adoption. Preserve current normative tokens and checks for unchanged surfaces; do not delete a safety check to accommodate a concept.
+
 GridOne targets WCAG 2.2 Level AA across complete user processes, not isolated components. The product adopts stricter internal requirements where game-day conditions justify them — notably 44×44 CSS-pixel controls, which is above WCAG's minimum target-size criterion.
 
 Automated tooling cannot prove conformance. Release evidence combines the Playwright contract spec, semantic queries in the unit suite, assistive-technology review, and human task testing. Do not claim formal conformance until the complete public and organizer processes have been evaluated and known exceptions documented.
@@ -142,7 +144,7 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 - Disabled meaning is never expressed by low opacity alone.
 - Live, selected, current winner, resolved winner, OPEN, stale, error, and corrected states all carry text or state semantics in addition to color.
 - Forced-colors mode preserves boundaries, focus, and state.
-- Ambient section tints (`SectionTone`, one large soft radial per section in cardinal, live green, or gold) are **light, not UI**. Each is capped so that text over it still meets its normal ratio: the tint token resolves to 22% of its brand color — a hard ceiling, since the worst composited pair (`--g-text-2` over the gold tint over the `#14161D` ground) lands at 4.53:1 against a 4.5:1 requirement — the layer renders at 0.75 opacity behind content that carries its own stacking context, and no tint may raise or lower the effective ground past the pairs checked in `tests/design/contrast.test.ts`. A tint carries no meaning — removing every tint must change nothing a reader needs. The axe sweep over `/` and `/demo` reports zero serious and zero critical with the tints in place; a tint that drops any text below AA is a tint that must be reduced, not an exception to be filed.
+- Current ambient section tints (`SectionTone`, one large soft radial per section in cardinal, live green, or gold) are **light, not UI**. Each is capped so that text over it still meets its normal ratio: the tint token resolves to 22% of its brand color — a hard ceiling, since the worst composited pair (`--g-text-2` over the gold tint over the `#14161D` ground) lands at 4.53:1 against a 4.5:1 requirement — the layer renders at 0.75 opacity behind content that carries its own stacking context, and no tint may raise or lower the effective ground past the pairs checked in `tests/design/contrast.test.ts`. A tint carries no meaning — removing every tint must change nothing a reader needs. The axe sweep over `/` and `/demo` reports zero serious and zero critical with the tints in place; a tint that drops any text below AA is a tint that must be reduced, not an exception to be filed.
 - `npm run design:lint` supplements rendered contrast testing; it does not replace it.
 
 ## Reflow, zoom, and text
@@ -160,9 +162,9 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 - Reduced motion preserves all content and state — asserted: with reduced motion forced, the homepage `Scores update themselves.` heading and `Create your free board` link and the viewer's `Find my squares` button all remain reachable.
 - No content flashes above safe thresholds. Motion is interruptible and never required to progress. No autoplaying sound.
 
-### The reveal contract
+### Current Reveal implementation contract
 
-Scroll reveals (`src/design/primitives/Reveal.tsx`, with the `[data-reveal]` rules in `src/design/tokens.css`) are decoration laid over finished content. They are bound by three rules, in this order:
+Current scroll reveals (`src/design/primitives/Reveal.tsx`, with the `[data-reveal]` rules in `src/design/tokens.css`) are decoration laid over finished content. Their maintained implementation follows these rules; an intentionally adopted alternative must preserve visible, reachable content, focus, and reduced-motion outcomes:
 
 1. **The resting state is visible.** Markup that carries no `data-reveal` attribute has no transition, no transform, and no opacity change. That is what a server render, a browser with JavaScript off, and a browser without `IntersectionObserver` all receive: the finished section, immediately. The hidden state is an attribute that only running JavaScript can add.
 2. **The hidden state is motion-gated.** `Reveal` applies `data-reveal="pending"` from a `useLayoutEffect` — before paint, so there is no flash in either direction — and only when `prefers-reduced-motion` is not `reduce`. Under reduced motion the element carries no `data-reveal` attribute at all, and the reduced-motion CSS block neutralizes `pending` a second time in case the preference flips after mount.
@@ -183,7 +185,7 @@ The editorial homepage hero does not use `data-reveal`. Its one-shot entrance (`
 
 ## Content and cognition
 
-- Canonical vocabulary: Board, Organizer, Viewer, Purchaser, Square, Axis digits, Publish. One concept, one name.
+- Current vocabulary: Board, Organizer, Viewer, Purchaser, Participant, Square, Axis digits, Publish. Use consistent, audience-familiar terms with literal meanings; technical words and truthful requested Beta labeling are not prohibited.
 - Phase and status labels use plain language before technical explanation.
 - A primary action describes its result (`Publish viewer link`, `Publish manual score`, `Publish correction and email both people`, `Draw with {n} OPEN`).
 - Advisories do not masquerade as blockers.
@@ -224,6 +226,7 @@ The moderated baseline includes inclusive-use scenarios where practical: keyboar
 ## Per-slice definition of done
 
 A UI slice is not complete until semantics and accessible names are correct; keyboard, touch, and pointer paths work; focus and dialogs recover correctly; phone, zoom, long-content, loading, error, stale/offline, and success states are checked as applicable; the automated gates pass; the rendered result is inspected; any new exception is documented with an owner and a removal condition; and the complete journey still works.
+
 
 ## Organizer workflow clarification — September 13
 

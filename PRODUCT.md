@@ -53,12 +53,12 @@ Before finalization, `/b/:shareCode` renders `SalesBoardViewer`: board identity,
 
 The finalized viewer at `/b/:shareCode` is composed by `src/features/viewer/shell/ViewerShell.tsx`. Phone viewers first see board identity, the score and current result, score authority and freshness, and **Find my squares**. Selecting a durable participant identity changes the structure to show:
 
-1. **Your squares:** count plus every matching coordinate/digit pair and `View on board`.
-2. **Your current result:** whether the selected viewer wins now.
-3. **What makes this viewer win next:** matching standard scenarios first; all outcomes behind disclosure.
-4. **Winner email:** compact verified opt-in, after identity and status are understood.
-5. **Exact grid:** pan/zoom board with sticky top/side axes, orientation, selected-cell centering, and accessible cell detail.
-6. **Completed winners and details:** ordered after the grid during live play and promoted into the Final record when the game ends.
+1. **Completed results or Final record:** confirmed milestones follow Find my squares, distinct from the current matching score.
+2. **Your squares and current result:** count, matching coordinate/digit pairs, `View on board`, and whether the selected viewer wins now.
+3. **Pending confirmation:** unresolved milestones when applicable.
+4. **What makes this viewer win next:** matching standard scenarios first; all outcomes behind disclosure.
+5. **Winner email:** compact verified opt-in, after identity and status are understood.
+6. **Exact grid and board details:** pan/zoom board with sticky top/side axes, orientation, selected-cell centering, accessible cell detail, and subsequent rules/payout disclosure.
 
 Before selection, the product never uses "me" language. Payouts and rules cannot displace Find my squares. Pregame shows no inert scenario list; stale and offline states identify last-known data; Final suppresses next-score scenarios entirely.
 
@@ -125,9 +125,9 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 
 ## Terminology
 
-Use **Board**, **Organizer**, **Viewer**, **Purchaser**, **Square**, **Axis digits**, and **Publish**.
+Use audience-familiar terms consistently and literally. **Board**, **Organizer**, **Viewer**, **Purchaser**, **Participant**, **Square**, **Axis digits**, and **Publish** are current product language, not a universal vocabulary restriction.
 
-Marketing speaks like a game-day organizer, not a system specification. Do not use `beta`, `synthetic`, `fallback`, `read-only`, `grounded`, `native`, `canonical`, `provenance`, `freshness`, or `entitlement` on sales surfaces. Those terms may still appear where the product must explain actual score authority, safety state, legal boundaries, or internal architecture. `tests/pricingCopyConsistency.test.ts` enforces this on the homepage.
+Marketing should sound like a game-day organizer, not an internal system specification. Prefer plain language; use technical terms when they clarify actual capability, score authority, state, privacy, or legal boundaries. Words are not banned for appearing in generic AI copy. Use Beta when Anthony requests it and the designation is factually accurate; explain relevant limitations. The approved photo-import Beta and review sentences remain exact regression contracts, not exemptions from a blacklist. Copy tests protect truthful disclosures and the approved commercial ladder, not every inherited marketing phrase.
 
 Do not use pool, contest, player, guest, bet, wager, or payout-processing language when those meanings are not literally intended.
 
@@ -166,13 +166,15 @@ Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, g
 ## Brand commitments
 
 - Name: **GridOne**
-- The palette is fixed in `src/design/tokens.css`: cardinal, gold, live green, ink, chyron, broadcast white, newsprint.
-- Root `DESIGN.md` is the normative design overlay. `docs/DESIGN_TOKENS.md` records the CSS-variable and Tailwind mapping. `npm run design:lint` is the gate.
+- The current production palette in `src/design/tokens.css` is cardinal, gold, live green, ink, chyron, broadcast white, newsprint.
+- Root `DESIGN.md` is the normative overlay for the current implementation, not an immutable aesthetic. `docs/DESIGN_TOKENS.md` records the CSS-variable and Tailwind mapping. `npm run design:lint` is the maintained-spec gate.
 - `docs/accessibility-contract.md` targets WCAG 2.2 AA across complete organizer and viewer processes and defines the board-grid keyboard, dialog, touch, zoom, motion, state, and automation gates.
-- Live green means only that a game is actively in progress.
-- Gold means a result has been settled or a high-stakes action is being committed.
+- In current semantic UI, live green means a game is actively in progress; decorative light carries no state meaning.
+- In current semantic UI, gold marks settled results or high-stakes commitment, and actions on dark surfaces as specified in `DESIGN.md`.
 - The product is pre-launch. Never invent customers, testimonials, revenue, usage, or fundraising totals.
 - Demonstration data must be labeled when it could be mistaken for real activity.
+
+Existing copy, hierarchy, materials, tokens, and interaction mechanisms are production baselines. Exploration may challenge them to improve organizer success, viewer comprehension, trust, or maintainability. Label assumptions and recommend the strongest outcome, without manufacturing a redesign. Exploration does not authorize implementation or release: intentional adoption requires an approved scope, coordinated design/journey/test updates, reversible implementation, and relevant rendered, accessibility, and integrity checks. Unchanged surfaces retain current normative tokens. Pricing, money, privacy, permissions, score authority, and evidence truth remain binding.
 
 ## Optional family editing and repeat setup
 

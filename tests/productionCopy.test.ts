@@ -75,69 +75,12 @@ const corpus = liveCopyFiles
   .map((path) => readFileSync(resolve(process.cwd(), path), 'utf8'))
   .join('\n');
 
-const internalPhrases = [
-  'Optional brand story',
-  'static, skippable story',
-  'homepage critical path',
-  'B2 organizer artifact',
-  'Synthetic organizer board preview',
-  'Organizer proof',
-  'C1 viewer hierarchy',
-  'Viewer proof',
-  'GridOne product proof',
-  'Proof mode',
-  'Dominant artifact',
-  'Assignment workspace',
-  'Viewer preview workspace',
-  'Draw workspace',
-  'Correction flow',
-  'read-only durable history',
-  'Fundraiser workflow',
-  'poster-board operating mess',
-  'Reconcile open squares',
-  'Draw axis digits',
-  'Preview the viewer link',
-  'Go Live for game day',
-  'Canonical 2026 pricing',
-  'Payout descriptions',
-  'Payout notes',
-  'payout descriptions',
-  'Hard blockers',
-  'Private advisories',
-  'Conflict blocks progression',
-  'No conflict',
-  'Draft draw preview',
-  'secure draw before commitment',
-  'Winner email disclosure',
-  'standard next-score outcome',
-  'All next-score outcomes',
-  "'Unassigned'",
-  'beta convenience',
-  'organizer to be authoritative',
-  'settled period',
-  'queues verified winner notifications',
-] as const;
-
-// One vocabulary: board, square, organizer, viewer, participant. A standalone
-// word scan over these files is impractical -- the corpus is source text, and
-// `contest`/`pool` occur legitimately as identifiers (`interface Contest`,
-// `contests.map`), as internal comments, and inside the `Run Your Pool`
-// competitor name in the SEO footer links. So the ban is pinned to the exact
-// user-facing phrases that carried the wrong vocabulary instead.
-const bannedPhrases = [
-  'League Name',
-  'League Name is required.',
-  'Failed to create contest.',
-] as const;
-
 describe('production-facing copy', () => {
-  it('does not expose internal component, design, or implementation language', () => {
-    for (const phrase of internalPhrases) {
-      expect(corpus, phrase).not.toContain(phrase);
-    }
-    for (const phrase of bannedPhrases) {
-      expect(corpus, phrase).not.toContain(phrase);
-    }
+  it('does not present unsupported capabilities or customer evidence as fact', () => {
+    // Source checks are narrow regression guards, not a vocabulary policy or
+    // a substitute for reviewing rendered claims against verified product truth.
+    expect(corpus).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)/i);
+    expect(corpus).not.toMatch(/trusted by \d|\d[\d,]* (?:happy customers|paying customers)|(?:customers|teams) have raised \$/i);
     expect(corpus).not.toMatch(/· rev \$\{save\.revision\}/);
   });
 

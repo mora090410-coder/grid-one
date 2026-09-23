@@ -11,6 +11,8 @@ A viewer arrives from a text message, on a phone, mid-game, with no account and 
 
 ## Governing principles
 
+The composition, component boundaries, and disclosure mechanisms below are the current production baseline, not immutable layout rules. Explore alternatives by whether viewers can identify their board, trust the score, find their squares, and understand results. Intentional adoption requires approved scope, coordinated contracts/tests, reversible implementation, and rendered accessibility/integrity evidence. Keep unchanged production behavior until then; privacy, truthful state, arithmetic-only scenarios, and score authority remain binding.
+
 - **Answer before ornament.** Identity, score, authority, `Find my squares`.
 - **No "me" language before selection.** Until a viewer picks a name, the product has no idea who they are and says nothing that implies otherwise.
 - **Say what the score is worth.** Automatic, manual, refreshing, stale, offline, rejected, or Final — always named, never implied by styling alone.
@@ -40,11 +42,11 @@ The first column carries `data-testid="viewer-first-viewport"`, and the accessib
 
 ### Unpersonalized
 
-No name selected. The stack is score, then `Find my squares`, then scenarios, then the board. There is no `Your squares` region, no personal result, and no winner-email form. `ScenarioDisclosure` shows `What score changes the next result?` for the board as a whole.
+No name selected. The current stack is score, `Find my squares`, completed results (or Final record), any pending confirmations, scenarios when applicable, then the board. There is no `Your squares` region, no personal result, and no winner-email form. `ScenarioDisclosure` shows `What score changes the next result?` for the board as a whole.
 
 ### Personalized
 
-A name is selected through the `Find my squares` dialog. `YourSquaresSummary` appears directly under `FindSquaresEntry` and shows:
+A name is selected through the `Find my squares` dialog. In the current stack, `YourSquaresSummary` follows `FindSquaresEntry` and the completed-results/Final-record block and shows:
 
 - the count (`1 square`, `{n} squares`),
 - one detailed list, initially limited to four squares with the current match first; Show all squares exposes the full list,

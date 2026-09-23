@@ -5,11 +5,11 @@
 **Phase authority:** `src/features/organizer/lifecycle/organizerLifecycle.ts`
 **Browser evidence:** `playwright-tests/organizer.spec.ts`, `playwright-tests/accessibility-contract.spec.ts`
 
-Every control name in this document is the accessible name a person actually reads or a screen reader actually announces. If the code and this file disagree, one of them is a defect — fix it, do not paraphrase.
+Control names document the current accessible interface and should agree with implementation and tests. They are not immutable prose: intentionally adopted alternatives require approved scope and coordinated contract/test updates, preserving clear consequences and accessible naming.
 
 ## Product stance
 
-The organizer is a volunteer, not an administrator. The workspace is one page, not a wizard: the board is always visible, the current phase and the one thing worth doing next live in a status island, and nothing is hidden behind a step the organizer must complete in order.
+The organizer is a volunteer, not an administrator. The current workspace is one page rather than a wizard, with the board visible and the current phase and next action in a status island. This is a production mechanism, not a ban on alternative journeys. Explore improvements by organizer success, clarity, recovery, and trust; keep unchanged production controls until an approved, reversible implementation coordinates contracts, tests, and rendered accessibility/integrity evidence. Privacy, payment independence, publication, and score-authority boundaries remain binding.
 
 Building, editing, previewing, and redrawing are free and reversible. **Publication is the trust boundary.** Before it, nothing is public and almost everything is editable. After it, the viewer record is stable and change happens only through an audited, viewer-visible correction.
 
@@ -36,7 +36,7 @@ Board state lives in `useWorkspaceDraft`. Selection lives in `selection.ts`. The
 
 ## Canonical language
 
-Board, Organizer, Viewer, Purchaser, Square, Axis digits, Publish. One concept, one name. Never pool, contest, player, guest, bet, or wager.
+Board, Organizer, Viewer, Purchaser, Participant, Square, Axis digits, Publish are current terms. Use audience-familiar words consistently and literally, not a universal blacklist. Technical terms may clarify authority or state; no wording may imply betting, funds custody, payout processing, or unimplemented capabilities.
 
 Assignment state is `assigned` or `OPEN`. Payment state is `Not asked yet`, `Unpaid`, or `Paid` — and it is always private.
 
@@ -122,7 +122,7 @@ Success opens the `Published` sheet: `Copy link`, `Open public board`, the QR co
 
 Save states, from `draft/draftSaveModel.ts`: `clean` (`Saved`), `dirty` (`Unsaved changes`), `saving` (`Saving…`), `save_failed` (`Save failed`, with `Retry`), `conflicted`.
 
-- Autosave commits on field blur and on explicit commit; it never fires per keystroke.
+- Current autosave commits on field blur and explicit commit, not per keystroke. An approved alternative must preserve revisions, recoverable input, conflict handling, and publication blockers.
 - A revision mismatch produces the alert **`This board changed in another session.`** with **`Reload latest board`**. The conflict is a hard blocker: `Review and publish` is disabled until it is resolved, and the organizer's in-progress input is preserved through the reload prompt.
 - A recovered local draft announces `Recovered draft · review before publishing` and blocks publication until reviewed and saved.
 
@@ -185,7 +185,7 @@ The family editor exposes only its assigned names and availability. Save failure
 
 ## Organizer island and private Payments (September 10)
 
-The centered organizer island reserves its compact height above the workspace; deliberate expansion is bounded and dismissible. Compact text prioritizes save failures/conflicts, then the organizer's open payment task, then lifecycle/game state. Closing Payments restores lifecycle/game status. An explicit touch hold may expand it without interfering with scrolling; click/tap and keyboard remain equivalent. Meaningful changes are politely announced. Paid/Unpaid/Not asked yet counts are square counts, never people or balances. The viewer island is unchanged.
+The current centered organizer island reserves its compact height above the workspace; deliberate expansion is bounded and dismissible. Compact text prioritizes save failures/conflicts, then the organizer's open payment task, then lifecycle/game state. Closing Payments restores lifecycle/game status. An explicit touch hold may expand it without interfering with scrolling; click/tap and keyboard remain equivalent. Meaningful changes are politely announced. Paid/Unpaid/Not asked yet counts are square counts, never people or balances. The viewer island is unchanged.
 
 `Payments` remains a visible workspace action before and after publication. Its private full-height sheet groups by exact responsible allocation, falling back to exact joint displayed names only for legacy unallocated squares. Allocation-only squares count; entirely unallocated unnamed squares do not. Search matches responsibility, displayed names, and permanent square numbers. Collapsed person rows show full-group paid, unpaid and not-asked counts and an explicit **Mark all {n} paid** or **Mark remaining {n} paid** action. This updates all of the person’s not-yet-paid squares, with an explicit scope explanation if search/filter hides some of them. It never rewrites names, responsibility or other private metadata. Group-action retries require unchanged group scope and status. **Show squares** expands individual records. Filters never imply selection. `Select {n} shown squares for {name}` selects only the matching group rows; individual checkboxes and explicit status actions update selected squares. Mixed groups show separate counts. Unknown payment status is `Not asked yet`, never unpaid.
 

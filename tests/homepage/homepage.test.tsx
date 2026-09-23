@@ -109,10 +109,14 @@ describe('Homepage', () => {
     }
   });
 
-  it('never uses banned marketing or system vocabulary', () => {
+  it('labels sample evidence and avoids unsupported import and customer claims', () => {
     const { container } = renderPage();
-    const copy = container.textContent!.replace('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)', '');
-    expect(copy).not.toMatch(/\b(seamless|effortless|unlock|supercharge|elevate|powerful|robust|beta|synthetic|fallback|read-only|grounded|native|canonical|provenance|freshness|entitlement)\b/i);
+    const copy = container.textContent!;
+    expect(screen.getByText('Sample board — not a live game')).toBeInTheDocument();
+    expect(copy).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)|no review (?:needed|required)/i);
+    // Target unsupported evidence claims, not expressive vocabulary. These
+    // checks are regression guards, not proof that every possible claim is true.
+    expect(copy).not.toMatch(/trusted by \d|\d[\d,]* (?:happy customers|paying customers)|(?:customers|teams) have raised \$/i);
   });
 
   it('exposes main and contentinfo landmarks and a visible FAQ affordance', () => {

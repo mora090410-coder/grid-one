@@ -1,6 +1,6 @@
 # GridOne Architecture
 
-One app. One design system. This file describes what is in the repository today.
+This file describes the current production architecture, not an immutable topology or component vocabulary. Explore alternative seams, materials, and mechanisms when they improve the user outcome or maintainability. Adopt them only within approved scope with coordinated contracts/tests, reversible implementation, and relevant verification. Unchanged surfaces retain the coherent current token system. Browser/server credential isolation, owner/public/family privacy, payment boundaries, score authority, and data integrity remain binding.
 
 ## Topology
 
@@ -39,11 +39,11 @@ One app. One design system. This file describes what is in the repository today.
 
 ### `src/design/` — the design system
 
-- `tokens.css` is the single source of token truth: a fixed palette, plus semantic tokens that flip on `[data-base="dark"]` (viewer, homepage, site) and `[data-base="cream"]` (organizer).
+- `tokens.css` is the single source of current production token truth: the maintained palette, plus semantic tokens that flip on `[data-base="dark"]` (viewer, homepage, site) and `[data-base="cream"]` (organizer). Keep its normative values until a replacement is intentionally adopted.
 - `src/index.css` re-exposes those variables to Tailwind v4 through `@theme inline`, and holds the deliberately unlayered cascade guards (button fill re-assertion, focus rule, dialog and organizer-header elevation, square board corners).
 - `Base.tsx` sets `data-base` and the page ground.
-- `primitives/`: `Glass`, `Island`, `Sheet`, `Capsule`, `Ring`, `Numeral`, `Eyebrow`, `Spotlight`, and `motion.ts` (durations, easings, `useReducedMotion()`). Everything else composes these.
-- Mapping reference: `docs/DESIGN_TOKENS.md`. Normative meaning: root `DESIGN.md`.
+- `primitives/`: `Glass`, `Island`, `Sheet`, `Capsule`, `Ring`, `Numeral`, `Eyebrow`, `Spotlight`, and `motion.ts` (durations, easings, `useReducedMotion()`). These are current shared building blocks, not a requirement to reproduce Broadcast Glass in every proposal.
+- Mapping reference: `docs/DESIGN_TOKENS.md`. Normative current-implementation meaning and intentional adoption contract: root `DESIGN.md`.
 
 ### `src/features/` — the shipped surfaces
 

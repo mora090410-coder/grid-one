@@ -564,6 +564,14 @@ RED: `npx vitest run --project unit tests/viewerShell.test.tsx tests/viewer/scor
 
 Rollback is a revert of this viewer-only commit followed by redeployment; confirmed winner records remain intact. Production revision and live verification will be reported after release.
 
+## 2026-09-10 — Deterministic authenticated Playwright fixture configuration
+
+- **Scope:** `playwright.config.ts` now pins the browser dev server to a non-secret Supabase-shaped test URL and dummy anon key. Organizer fixtures seed the matching project-derived local-storage key, so authenticated browser routes no longer silently boot the placeholder client and redirect to `/login` when local environment variables are absent.
+- **Behavior boundary:** production source, server functions, schema, score authority, publication, payment, deployment, and production credentials/data are unchanged. The test URL/key are fixture values; all browser data and API calls remain intercepted by Playwright routes.
+- **Failure reproduced:** an environment-unset `npx playwright test --project=chromium` run failed **30/96** checks. The common failure was the login route replacing mocked organizer routes; a targeted `playwright-tests/organizer.spec.ts` rerun failed **4/5**.
+- **GREEN verification:** after configuration, `PLAYWRIGHT_PORT=5199 npx playwright test --project=chromium` passed **96/96**. `npx tsc --noEmit`, `npm run test:unit` (**115 files / 846 tests**), `npm run test:integration` (**11 files / 76 passed / 1 skipped**), `npm run build`, `npm run design:lint` (**0 errors / 5 existing warnings**), and `git diff --check` passed.
+- **Rollback:** revert the `playwright.config.ts` test-environment addition. This restores the prior environment-dependent browser fixture behavior; no domain state is affected.
+
 ## 2026-09-10 — npm dependency audit remediation (local only)
 
 - Scope: user authorized dependency updates and local verification. Updated exact Wrangler 4.125.0 → 4.131.0 and its required optional peer workers-types 5.20260822.1 → 5.20260910.1; refreshed transitive Babel core 7.28.6 → 7.29.7 and browserslist 4.28.1 → 4.28.9 within existing ranges. Wrangler now resolves Miniflare 5.20260910.0-alpha and Sharp 0.35.4. Related Babel, browser-target data, workerd, and Sharp native packages update with those chains. No overrides or Babel major upgrade added.
@@ -598,6 +606,13 @@ Rollback is a revert of this viewer-only commit followed by redeployment; confir
 
 Anthony authorized commit, push and deployment after approving the completed local page. Release includes the existing GSAP manifest/lock entries required by the explanatory animation. Unrelated Playwright fixture configuration and its log entry remain local. Build and deployment will use the committed source; production revision and live checks will be recorded after release.
 
+## 2026-09-10 — Editorial homepage production verification
+
+- Committed and pushed `aaa46178dd16226eb9fd952ff5bf5b48800d572b` to origin/main with Anthony's explicit authorization. Clean git-archive production build (TypeScript included), 113 unit files / 777 tests, and design lint passed (0 errors, 5 existing warnings).
+- Cloudflare Pages project grid-one deployed production revision aaa4617: direct deployment f8e77bf7-3abc-4ab7-97b7-abb9fa4da763; Git-connected deployment 1273d4f7-a899-43a6-b856-c455c271d574 also reports the same source. The canonical domain served index-DzrXjrwx.js during final browser verification.
+- Live https://www.getgridone.com/ verified at 1440 and 390: approved heading/story, zero horizontal overflow, explanatory animation complete, no page errors, sample-board handoff renders demo score and participant content, creation handoff renders board naming and game selection. No board was created or production data mutated. Initial networkidle-based probe timed out on network activity; bounded DOM/content checks then passed both widths.
+- Live captures and JSON evidence saved alongside prior review artifacts in gridone-editorial-complete. Unrelated playwright.config.ts and its earlier log entry remain uncommitted; this post-release evidence is appended locally. Rollback target preceding this homepage release is 74f029d; no database rollback is required.
+
 
 ## 2026-09-10 — Organizer island and private Payments (implementation)
 
@@ -622,6 +637,19 @@ Final verification and review:
 
 Anthony explicitly authorized commit, push and deployment. Release the organizer island and private status-only Payments slice; preserve unrelated Playwright configuration and prior release-log edits locally. No schema migration is needed. Fresh build, unit and design checks precede release; deployed revision and live results follow.
 
+## 2026-09-11 — Organizer production verification
+
+- Committed `4d7c3eca93b06a53b3bf73a0b10989ab833099a8` and pushed atomically to origin/main and codex/organizer-island-payments with Anthony's explicit authorization. Local main points to that revision. Pre-existing Playwright configuration and earlier release-log edits remain local.
+- Fresh release checks: build/TypeScript passed; design lint 0 errors / 5 existing warnings; unit suite 117 files / 806 passed. A separate clean git-archive build used committed public Vite configuration and passed.
+- Cloudflare Pages grid-one production deployment f44df85c-c5e8-44ad-990e-9bb82ca2c562 completed from the clean committed-source build. Git-connected production deployment 46631912-d4b0-43da-b1cb-38203e0494ef also completed for the same source. Canonical www.getgridone.com serves index-DYtSiNO3.js.
+- Live homepage-to-sample-board handoff verified at 1440 and 390, no horizontal overflow and no page errors. Deployed organizer assets passed all 18 Chromium/WebKit payment/island checks with isolated API fixtures; unmatched writes were explicitly aborted. This verifies the deployed frontend, not a real account payment write.
+- The Mac was locked, preventing native access to Anthony's signed-in board. No production payment data was changed, and a live authenticated owner save is not claimed. No schema migration was required. Rollback is redeploying aaa4617.
+- Logs and deployed frontend captures preserved under the current organizer-payments visualization directory. This post-release evidence is appended locally; application release remains exactly 4d7c3ec.
+
+## 2026-09-11 — Clarify seasonal board allowance
+
+Replaced conversational free-to-Game-Day upgrade copy with the one-board-per-season rule, the paid plan name, $9.99 once for five total published boards in 2026 including the first board, and an explicit statement that a finished game does not reset the allowance. Updated the publish endpoint message to remove the misleading claim that the first board is still live. Pricing, allowance enforcement and checkout behavior unchanged. Existing focused UI/API expectations RED: 2 failed / 19 passed; GREEN with pricing consistency: 24 passed. Build including TypeScript passed; design lint 0 errors / 5 existing warnings. Local copy changes only; no commit, push, deployment or payment performed.
+
 ## 2026-09-11 — Marketing-copy audit and release
 
 - Anthony supplied six copy fixes and then authorized proceeding through verification and deployment. Gilfoyle implemented the bounded homepage/demo pass; Anton independently reviewed it and completed the standardized money boundary across organizer, viewer, terms and transactional-email disclosures. Exact words remain under regression tests; responsibilities and legal context are retained.
@@ -643,6 +671,19 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Evidence: /Users/amm13/.codex/visualizations/2026/09/13/01a09ace-e68d-75d2-9ec0-d72734077fa5/gridone-ux/local/implementation.md; command logs /tmp/gridone-ux-{unit-final,integration,build-final,design-final,chromium-final,workflows-final}.log. Existing unrelated checkout edits preserved. Local implementation only: no commit, push, deployment, schema or configuration change.
 
 
+## 2026-09-13 — Organizer UX production release verification
+
+Committed and pushed `09cea569188ebce2346dd8545ac710c1e1cde86b` to origin/main. Cloudflare Pages deployment `091f43e9-152b-41d0-98a6-ed5b56408794` succeeded. Canonical production and deployment serve the identical index-B9r8g8F6.js asset (SHA-256 b8744061b0fd9eb34ff67a188cfa183b60d2e1f37105d2030fbaf83ff03af563).
+
+Exact staged-source validation: 119 unit files / 836 passed, production build including TypeScript passed, design lint zero errors / five existing warnings. Prior full implementation verification included 77 passing integration tests and all 115 Chromium cases (one selector correction followed by a passing six-test file rerun).
+
+Deployed frontend verification: 17 Chromium tests passed at phone/desktop widths, covering direct person payment actions, persistence/failure behavior, keyboard availability selection, visible publish continuation, and shared-link finalization. These tests used isolated API fixtures with unmatched API/auth/database requests blocked; no production fixture writes occurred. In the actual signed-in browser, the published Raiders test board showed all 100 squares paid in the new compact Payments panel. Closing it restored pregame status; the browser returned to Your boards.
+
+Unrelated working files were hash-checked unchanged before commit and remain local. No schema or configuration change. Rollback is redeploying prior production revision 373f1ee. Release evidence is local; the application commit remains exactly 09cea56.
+
+One redundant unit run in the dirty canonical checkout, overlapping isolated verification, timed out in a 5-second workspace test; the complete exact staged-source run passed. No timeout/assertion was weakened.
+
+
 ## 2026-09-13 — Remove extra ESPN live-score CDN delay
 
 - Reported severe score delay reproduced against Bears event401872661. At17:58UTC the stable CDN scoreboard showed CHI21–CAR7 and13:57Q2 while ESPN's site scoreboard showed21–13 and12:40Q2. The CDN advertised minutes of remaining cache lifetime. Scheduler tail showed healthy minute ticks.
@@ -651,6 +692,13 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - RED tests captured stale scoreboard27 instead of30 and stale exact-game clock0:00 instead of12:40. Focused adapter/cache/activation suite GREEN43/43. Full unit suite GREEN838/838 after fixing pregame workspace fixtures that depended on the real wall clock and failed after today's kickoff. Integration checks also exposed fixed-date pregame fixtures; only fixture times are being repaired, with cutoff assertions retained. Production build/TypeScript and design lint passed; final browser/integration and live release evidence follow below.
 
 - Final release validation:838 unit tests;43 focused provider/cache/activation tests;77 integration tests with one existing skip (75 passed initially, then both date-fixture failures passed in focused5+7-test reruns); TypeScript, clean staged-source build and design lint passed. Chromium113 passed initially; two navigation-interrupted cases passed on focused rerun with no assertion change. Independent review found no substantive defects. No production scoring, milestone, permission or schema logic changed beyond upstream live request cache keys.
+
+
+## 2026-09-13 — Live scoring cache fix production verification
+
+- Released d509ff1 to origin/main and Cloudflare deployment 0b21535e-4caa-4092-b1d4-5e902ad177be. At 18:09 UTC production and the fresh adapter matched 21–14, 9:21 Q2; the stable CDN URL still showed 10:34. The signed-in Bears organizer displayed the updated score after reload. Existing polling/feed latency remains.
+- Full evidence: /Users/amm13/.codex/visualizations/2026/09/13/01a09ace-e68d-75d2-9ec0-d72734077fa5/score-delay/result.md. Unrelated local changes preserved; rollback 09cea56. This verification note remains local.
+
 
 ## 2026-09-13 — Halftime Q2 confirmation correction prepared
 
@@ -662,6 +710,16 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 
 - Anthony approved applying the prepared migration. Applied to production project illqymckwqiawdwxhwcy successfully; read-back verified explicit Halftime Q2 eligibility. Before application, the Bears board had already confirmed Q2 Anthony W at 31–24 after Q3 began (19:03:56 UTC). This live game therefore does not prove the new halftime transition; the 11 passing database tests provide that evidence. No score or winner manually changed.
 
+## 2026-09-13 — Independent NFL score recovery prepared
+
+- Reproduced production ESPN slate and exact-event HTTP403 failures in the preceding investigation; both dependent paths failed. During this implementation the Bears public API recovered to fresh ESPN data (59–37, 3:40 Q4, retrieved20:28:54UTC), demonstrating intermittent failure rather than a permanent game identity problem.
+- Prepared a server-only API-Sports NFL adapter with exact home/away/kickoff identity, explicit halftime/final states, complete played-quarter validation, cumulative totals, bounded fetch timeout, transport-age rejection and sanitized errors. No new schema or manually changed score authority.
+- Date-batched independent recovery runs only in the existing authenticated cron, caches successful and failed requests within each tick, and skips repeated denied ESPN summaries after a slate403 when the alternate key is configured. Viewer traffic cannot trigger paid requests. Completely failed ticks now return503 for scheduler visibility.
+- Persistence rejects observations at least120seconds old or more than5seconds in the future before DB insertion; live expiration follows observation time. Stale automatic finals stay visibly degraded and keep polling instead of stopping as trusted final.
+- RED reproduced two missing-recovery/outage-status failures, three observation-freshness failures, and stale-final hook/model failures. Focused recovery tests passed50/50 before the final age guard; guard plus scheduler/activation passed18/18. Milestone PostgreSQL suite passed11/11. Full Chromium passed116/116 including phone/desktop stale-final checks; screenshots visually inspected. TypeScript and design lint passed (zero errors/five existing warnings). Final unit/build results follow below.
+- Read-only Cloudflare production secret-name listing confirms API_SPORTS_KEY is absent. No new account, purchase, key, configuration change, production fallback activation or deployment performed. API-Sports Pro is documented at$15/month with7,500requests/day and30second game updates. Provider account approval and a securely configured key are necessary to validate an actual live response and activate this prepared integration. The adapter's HTTP age guard cannot certify an undocumented underlying per-game update timestamp; no live latency guarantee is claimed from fixtures.
+- Final validation:869 full unit tests passed; subsequent adapter-only boundary correction passed16/16 (adds one Age30 acceptance case). Production build and TypeScript passed. Independent review's aged-observation and viewer-quota findings were addressed and focused18-test regression run passed. Work is prepared locally, not committed/pushed/deployed; activation is pending paid-provider/account approval and secure key configuration.
+
 
 ## 2026-09-13 — Three-minute automatic scoring cadence
 
@@ -670,6 +728,8 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Exact release tree:35 focused tests passed initially; full unit run837/838 passed with the one failure an old60second response expectation, corrected to180. Focused hook/cache/scheduler rerun verifies180second polling with no early request, server override support and hidden-tab pause. TypeScript, build and design lint passed (zero errors/five existing warnings). Full current-checkout Chromium verification covers matching disclosure on phone/desktop; release results recorded below.
 
 - Final cadence verification: isolated hook/cache/scheduler22/22 passed after correcting the old response expectation and removing a fake-timer wait that advanced past the boundary. Full Chromium114 passed initially; two navigation-interrupted cases passed on unchanged serial rerun. No test assertion weakened. Cadence-only indexed diff inspected; paid-provider code and unrelated work excluded.
+
+- Released cadence-only commit0c9c1ab to main; Cloudflare deployment6c436139-9375-43d8-868b-f21601a274c0 succeeded. Canonical public Bears score API verified nextPollSeconds180 with fresh score. Canonical frontend asset verified three-minute disclosure. Pending paid-provider work and unrelated checkout edits remain local.
 
 
 ## 2026-09-13 — View on board navigation
@@ -680,6 +740,7 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Design hook's font-size findings are unchanged production typography outside this navigation-only diff; classified as pre-existing out-of-scope findings, with no ignore configuration added. Unapproved provider work and other checkout changes are excluded from this release.
 
 - Full isolated Chromium run108 passed initially; all9 failed cases passed on unchanged serial rerun. Total117 cases verified. Failures were timing/navigation under concurrent build/unit/browser load; assertions and production code were not altered to clear them.
+- Released6924ec7 to main; Cloudflare deploymentc272ba3c-fb3f-416b-b4b2-71259d79530f succeeded. Canonical getgridone.com frontend passed all4 phone/desktop Chromium/WebKit View on board checks: selected cell focused and fully visible, shuffled axes and repeated keyboard activation verified. Browser checks used isolated API fixtures with all unmatched API/Supabase traffic blocked; no production board data changed. Other checkout work remains local.
 
 ## 2026-09-16 — Replacement context notch, verified locally
 
@@ -692,7 +753,7 @@ Anthony explicitly authorized commit, push and deployment. Release the organizer
 - Protected unrelated work was preserved:24 non-exempt hashed files unchanged; only seven authorized focus-retirement lines were added to the already-dirty viewer C1 test. Existing dirty docs were updated narrowly without discarding their prior changes.
 - Evidence and exact commands: `.hermes/notch-implementation/anton-verification.md`, `implementation-report.md`, `refinement-report.md`, `anton-chromium-final.log`, `anton-unit-final.log`, baseline snapshots and `evidence-pass-refine1/`. Non-blocking lifecycle/test hardening suggestions are recorded in Anton's report, not claimed completed.
 
-### Release authorization
+### Notch release result
 
 Anthony approved commit, push and deployment of the notch-only slice. Release preparation excludes all unrelated working-tree edits, including score-provider recovery, pricing/copy changes and existing Playwright fixture config. Exact release tree is verified separately; deployment results are recorded after remote read-back.
 
@@ -787,3 +848,23 @@ Visual chrome only, after the motion pass was rejected as too plain. Home, the `
 3. `npx tsc --noEmit` passed. `npm run build` passed. `npm run design:lint` passed with the five existing orphan-token warnings and zero errors.
 4. `npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/smoke.spec.ts playwright-tests/studio-landing.spec.ts` passed 27/27. `npm run test:integration` was not run: Docker is unavailable in this environment.
 5. Before screenshots are a local checkout of `origin/main` at `5fbb7b5`. The live site returned a Cloudflare challenge from this environment, so it was not used as the before.
+- Anthony authorized commit, push and deploy. Released notch-only commit `9e73acb879e7e11675a84969d164ba7f2b3f36b9` to origin/main; remote SHA read-back matches. Cloudflare Pages production deployment `8ef458ea-bc22-4301-a156-054d3711d67e` completed successfully for that source. Canonical browser loaded `/assets/index-Cj-4wBIh.js` and rendered the new notch markup. Unrelated provider/copy/config changes remain local.
+- Exact isolated release tree passed TypeScript,844 unit tests, build and design lint. Full Chromium127 passed/one known reversal-sampling failure; unchanged retry and pre-notch serial baseline each passed1/failed2. The previous876-unit/129-browser full working-tree counts include unrelated local changes and are not exact-release counts.
+- Live UI acceptance is incomplete: three isolated canonical smoke attempts could not scroll the fixture's main score out of view (observed scrollY122), so the viewer notch stayed hidden. No actual production data was changed. Stopped after the third blocked attempt; manual real-board verification requested rather than claiming full live UI success. Complete release evidence and rollback handle: `.hermes/notch-release/release-report.md`.
+
+## 2026-09-17 — Desktop first-viewport trust copy without web fonts
+
+- Task `t_da4584f4`, isolated worktree, baseline `9e73acb`. Selected one reproduced trust/readiness defect: fallback font metrics pushed the free-board/no-account assurances and full money boundary below a 720px desktop viewport. No pricing, wording, font size, target size, score, publication, payment, schema, or API changes.
+- RED: baseline `npm run test:unit` passed 844 tests; full Chromium with two workers passed 127/128, failing the desktop first-viewport contract. Repeating that contract failed 2/3. Added `playwright-tests/homepage-viewport.spec.ts`, blocking non-local requests and measuring all hero identity/action/assurance/boundary boxes. All three new tests failed at 1024/1280/1440px. Money-boundary bottom edges were 790.9375/807.1875/762.328125px, respectively.
+- GREEN: seven CSS lines in `src/features/homepage/sections/hero-studio.css` remove decorative top spacing only on desktops at least 1024px wide and at most 800px tall. Phone and tall-desktop rules remain unchanged. No assertions weakened, font-arrival wait added to conceal fallback, or content hidden. The new regression passed 6/6 across Chromium/WebKit; boundary bottoms are 706.9375/699.1875/654.328125px in both engines.
+- Browser command prefix for every run: `PLAYWRIGHT_PORT=5197 VITE_SUPABASE_URL=https://illqymckwqiawdwxhwcy.supabase.co VITE_SUPABASE_ANON_KEY=playwright-test-anon-key`. These are the previously reviewed non-secret fixture values, supplied via environment rather than duplicating the protected canonical config change.
+- Verification: `npx tsc --noEmit` exit 0; `npm run test:unit` 122 files / 844 tests passed; `npm run build` exit 0; `npm run design:lint` zero errors / five existing warnings. `npx playwright test --project=chromium --workers=1 --reporter=json` passed 131/131. `npx playwright test playwright-tests/homepage.spec.ts playwright-tests/homepage-viewport.spec.ts playwright-tests/studio-landing.spec.ts --project=webkit --project=phone-chromium --project=phone-webkit --workers=2 --reporter=json` passed 75/75, including phone reflow, 200% text, blocked fonts, reduced motion and keyboard FAQ. Full Chromium includes the ten-route axe sweep and keyboard/target contracts. Earlier post-fix two-worker Chromium run was 130/131: the known unrelated organizer reversal-frame sampling assertion failed; unchanged serial run passed. No claim of parallel-suite stability.
+- Evidence: `.hermes/qa-t_da4584f4/{red,green,chromium,chromium-serial,cross-browser}.json`, including screenshot and geometry attachments in focused reports. Rendered browser geometry/overflow inspected programmatically; no human visual or VoiceOver/NVDA certification claimed. PostgreSQL and Stripe smoke are not applicable to this CSS-only production change. No release surface, deployment configuration, or persisted state changed.
+- Risk: low, homepage layout only. Rollback removes the seven-line media-query block; no data rollback. Recommend independent Anton review/reconciliation, not deployment from this worker. No commit/push/deploy, production access, or customer-metric change occurred. Preserve the canonical dirty tree. Hotspot: this log already has protected canonical edits; append this entry only, never replace the file.
+
+### Anton independent review and canonical reconciliation
+
+- Review `t_aa458df2`: approved the bounded local homepage slice, not a whole-app release. Exact CSS and regression spec match Gilfoyle's isolated files. All 29 other protected files remain SHA-256-identical; the complete pre-review log byte prefix is preserved. Worker evidence above is relative to `.worktrees/t_da4584f4/`, not this canonical root.
+- Independently reran isolated Chromium/WebKit regression: 6/6 passed. Canonical `npx tsc --noEmit`, `npm run test:unit` (125 files / 876 tests), `npm run build`, `npm run design:lint` (0 errors / 5 warnings), and `git diff --check` passed. `PLAYWRIGHT_PORT=5198 npx playwright test --project=chromium --workers=1 --reporter=json` passed 131/132; the known organizer reversal-frame assertion at `organizer-payments.spec.ts:260` failed even serially. Do not describe that problem as parallel-only or claim the canonical release gate is green. Scoped homepage/studio WebKit and phone projects passed 75/75; no test weakened or retry substituted for the failed full-run result.
+- Independent offline rendered comparison used exact pre-fix CSS in disposable browser pages: six short-desktop cases reproduced the overflow before and passed after across Chromium/WebKit; six phone/tall-desktop controls retained identical measured geometry. At 1280×720 the boundary bottom moved from 807.1875px to 699.1875px without changing heading/disclaimer font or action dimensions. Desktop Chromium and phone WebKit screenshot review found no visible action/disclaimer clipping or overlap; secondary desktop demo content intentionally continues below the fold. This is not human or assistive-technology certification.
+- Exact commands, JSON, screenshots, protected-file snapshot and review result are in `.hermes/review-t_aa458df2/`. `git apply --reverse --check --include=src/features/homepage/sections/hero-studio.css --include=playwright-tests/homepage-viewport.spec.ts .worktrees/t_da4584f4/.hermes/qa-t_da4584f4/CHANGE.patch` passed. Database/Stripe checks are not applicable to this CSS-only slice. No commit, push, deploy, payment/provider action or production metric change; existing organizer-motion, manual-AT and live-release gates remain unwaived.

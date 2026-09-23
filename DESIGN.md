@@ -96,13 +96,19 @@ components:
 
 # GridOne Design System — Broadcast Glass
 
-Normative contract. Implementation lives in `src/design/tokens.css` and `src/design/primitives/`. Mapping in `docs/DESIGN_TOKENS.md`. Full rationale in `docs/superpowers/specs/2026-09-01-broadcast-glass-redesign-design.md`.
+Normative current-production baseline. Implementation lives in `src/design/tokens.css` and `src/design/primitives/`. Mapping in `docs/DESIGN_TOKENS.md`. Full rationale in `docs/superpowers/specs/2026-09-01-broadcast-glass-redesign-design.md`.
 
-## Thesis
+## Exploration and intentional adoption
+
+Broadcast Glass is the maintained implementation, not a ceiling on creative judgment. The palette, type, layout, geometry, iconography, materials, and motion mechanisms below describe current choices. Propose stronger alternatives when they improve organizer success, viewer comprehension, trust, or maintainability; do not reject them solely for departing from this style. Label concepts and unverified assumptions.
+
+Exploration is not production authorization. A selected alternative requires approved scope, coordinated token/design/journey/test updates, reversible implementation, and relevant rendered, accessibility, integrity, and release evidence. Keep the exact token values above and current contracts for unchanged surfaces until intentional adoption. Truthful claims, pricing, permissions, privacy, payment boundaries, score authority, and accessibility outcomes are not aesthetic options.
+
+## Current production thesis
 
 Game day should feel like a broadcast graphic on a quiet phone: one number that matters, glass over a dark field, nothing to click twice. Setup should feel like a sheet of warm paper: everything editable in place, progress visible in one glance.
 
-## Two bases, one palette
+## Current bases and palette
 
 - **Dark** (viewer, homepage, article pages): ground `#14161D`, one spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the brand mark and destructive confirmations with explicit text. Marketing stages use the near-black `--g-stage` and a white stage light; see Marketing stage.
 - **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
@@ -111,18 +117,18 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 **Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The public marketing homepage is one near-black stage with glass cards, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 22% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
-## Type
+## Current type
 
 - Display: Instrument Serif. Hero headlines and board names only.
 - Interface: Geist 400/500; 600 only for the single primary action.
 - Data and eyebrow: Geist Mono, tabular. Large numerals dim their secondary segment.
 - Essential text ≥ 14px. Grid-cell labels are the precision exception and carry accessible full labels.
 
-## Shape
+## Current shape
 
 Controls 12px. Cards, sheets, glass 20px. Buttons, tags, chips, island: capsule. Grid cells 4px.
 
-## Motion
+## Current motion
 
 State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot, for island, sheet, shared-element moves, and the draw. Reduced motion collapses both to a 120ms fade. Routes never hard-swap.
 
@@ -132,7 +138,7 @@ State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot,
 
 **Parallax is capped.** Scroll-driven parallax moves vertically only, never horizontally (horizontal transforms change page overflow), is clamped to 40px of travel, and is inert under reduced motion and below the `md` breakpoint.
 
-## The Island
+## Current Island mechanisms
 
 Viewer: the existing score capsule appears only after the main score leaves view. Its interaction remains unchanged.
 
@@ -142,16 +148,16 @@ Payment counts always describe squares. Paid, Unpaid and Not asked yet remain se
 
 Score freshness is information, not decoration: viewer updates arrive about every three minutes, and the island's expanded state always shows the source and the retrieved time. Never imply realtime delivery.
 
-## Anti-slop rules
+## Current editorial direction
 
-1. The product is the hero image. No illustrations, stock, or abstract 3D.
-2. Asymmetric, left-anchored layouts on desktop. Centered only on single-column phone.
-3. One spotlight per page, focused behind the artifact. A section may additionally carry one ambient ground tint (`SectionTone`) — light in the room, not a second spotlight: far larger, far softer, edge-anchored, and never focused on anything. A section may hold both.
-4. Hierarchy from scale contrast, not card count. No three-up feature rows.
-5. Real numbers and real team names everywhere, including empty states.
-6. Icons almost never. When required: one set, one stroke weight, 16px, muted.
-7. Copy is short, specific, occasionally dry. Banned: seamless, effortless, unlock, supercharge, elevate, powerful, robust.
-8. No purple, no multi-color gradients, no corner glows, no uniform radius on every element.
+1. Current hero imagery uses the product. Illustrations, photography, or other treatments may be explored when they better explain the outcome without implying nonexistent features or customer evidence.
+2. Current desktop layouts are asymmetric and left-anchored; phone layouts may center. Evaluate alternatives by comprehension and task completion, not alignment alone.
+3. Current lighting uses one artifact spotlight with optional soft, edge-anchored `SectionTone` ground light. Different treatments require intentional adoption and rendered contrast verification.
+4. Current hierarchy relies on scale contrast rather than repeated feature cards. Alternative grouping is valid when it improves scanning and understanding.
+5. Use verified actual values when available; otherwise show truthful empty or unknown states. Clearly label demo fixtures and example matchups. Never imply real customers, usage, scores, payments, or fundraising results from fixtures.
+6. Current icon use is restrained and visually coherent. Use icons when they help recognition; preserve accessible names and never make meaning icon-only.
+7. Choose voice and length for the audience and action. Prefer specific, natural copy over filler; there is no universal word blacklist. Use truthful requested Beta labeling and explain review or other limitations, without exact-sentence exemptions.
+8. Current palette, lighting, and varied radii remain the unchanged-production baseline. Other colors, gradients, geometry, and materials may be proposed and intentionally adopted with coherent tokens and accessibility evidence.
 
 ## Accessibility
 
@@ -165,15 +171,15 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. Those surfaces use `--g-stage`, frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Gold appears on primary actions through `--g-cta-glow` and stays off status, prices, and matching squares on these surfaces. Matching emphasis there is white with a static outer glow. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
 
-## Absolute bans
+## Truth, access, and integrity requirements
 
 - No invented payout, customer, fundraising, or guarantee claims. GridOne never collects square money, holds a pot, or pays winners, and every surface that mentions money says so.
-- One vocabulary: board, square, organizer, viewer, participant. Never pool, contest, player, or guest in product copy.
+- Use audience-familiar terms consistently and literally, following `PRODUCT.md`. Do not imply betting, funds custody, payout processing, or unavailable capabilities; a word alone is not a violation.
 - Score source and retrieved time are never hidden while a score is shown.
 - No hover-only meaning. No color-only state.
-- No tiny full-name cells as the primary phone board; the personal summary and Find My Squares come first.
+- Phone viewers must be able to find their squares and read full details without deciphering tiny grid labels. The current personal summary and Find My Squares satisfy that outcome; an approved alternative must preserve it.
 
-## Deliberate exceptions
+## Current material conventions
 
 - The island renders dark on the cream base; it is a broadcast object.
 - Pills are the default for actions, tags, and inputs. The former pill prohibition is withdrawn.
