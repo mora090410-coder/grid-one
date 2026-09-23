@@ -6,6 +6,7 @@ import usePoolData from '../hooks/usePoolData';
 import { BoardData, GameState, PayoutDescriptions } from '../types';
 import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings } from '../src/design/primitives';
 import { hasBoardActivation } from '../utils/boardActivation';
+import { hasValidAxes } from '../utils/boardValidation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
 
@@ -51,10 +52,7 @@ const filledCount = (board: BoardData | null | undefined): number => {
 
 /** Digits are drawn once both axes carry numbers. */
 const numbersDrawn = (board: BoardData | null | undefined): boolean => {
-    if (!board || !Array.isArray(board.leftAxis) || !Array.isArray(board.topAxis)) return false;
-    const hasDigits = (axis: (number | null)[]) =>
-        axis.length > 0 && axis.every((digit) => typeof digit === 'number');
-    return hasDigits(board.leftAxis) && hasDigits(board.topAxis);
+    return Boolean(board && hasValidAxes(board));
 };
 
 const Dashboard: React.FC = () => {

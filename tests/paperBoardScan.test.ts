@@ -170,7 +170,7 @@ describe('paper-board scan endpoint', () => {
     });
     expect(response.status).toBe(200);
     const result = await response.json() as any;
-    expect(result.board).toEqual(normalizedBoard);
+    expect(result.board).toEqual({ ...normalizedBoard, scanReview: { topTeamText: '', leftTeamText: '', literalAxes: JSON.stringify({leftAxis:axis,topAxis:[...axis].reverse()}) } });
     expect(result.warning).toMatch(/Review every imported square/i);
     const providerRequest = providerFetch.mock.calls[0][1];
     expect(providerRequest.body).not.toContain('client-token');
@@ -196,19 +196,19 @@ describe('paper-board scan endpoint', () => {
   it.each([
     ['missing candidate text', { candidates: [] }, 502, 'no board data'],
     ['invalid JSON', { candidates: [{ content: { parts: [{ text: 'not-json' }] } }] }, 422, 'Unexpected token'],
-    ['unreliable axes', {
+    ['invalid ownership grid', {
       candidates: [{
         content: {
           parts: [{
             text: JSON.stringify({
               leftAxis: Array(10).fill(0),
               topAxis: axis,
-              squaresGrid,
+              squaresGrid: [],
             }),
           }],
         },
       }],
-    }, 422, 'axis digits'],
+    }, 422, '10 by 10 grid'],
   ])('rejects malformed provider output: %s', async (_name, payload, status, message) => {
     vi.stubGlobal('fetch', vi.fn(async (..._args: any[]) => new Response(JSON.stringify(payload), {
       status: 200,

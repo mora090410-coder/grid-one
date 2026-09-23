@@ -1,4 +1,6 @@
 import { BoardData, GameState } from '../types';
+import { getAxisForQuarter } from './winnerLogic';
+import { QUARTER_LABELS, type QuarterAxisKey } from './quarterAxes';
 
 // Canvas-rendered board export.
 //
@@ -27,6 +29,7 @@ const FOOTER = 92;
 const HEIGHT = PAD * 2 + HEADER + GUTTER + GRID + FOOTER;
 
 export interface BoardImageOptions {
+  quarter?: QuarterAxisKey;
   board: BoardData;
   game: GameState;
   /** Optional per-cell seller labels, keyed by cell index. */
@@ -275,6 +278,7 @@ const drawFooter = (ctx: CanvasRenderingContext2D, shareUrl?: string) => {
 /** Renders the board to a PNG blob at 2x for retina-sharp text in a message thread. */
 export const renderBoardPng = async (options: BoardImageOptions): Promise<Blob> => {
   const { board, game, sellersByIndex = {}, mode = 'owners', shareUrl } = options;
+  if (board.isDynamic && !options.quarter) throw new Error('Choose the quarter before exporting its numbers.');
 
   const scale = 2;
   const canvas = document.createElement('canvas');
@@ -287,14 +291,14 @@ export const renderBoardPng = async (options: BoardImageOptions): Promise<Blob> 
   ctx.fillStyle = PALETTE.broadcastWhite;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const sideAxis = (board.leftAxis || []).slice(0, 10);
-  const topAxis = (board.topAxis || []).slice(0, 10);
+  const sideAxis = getAxisForQuarter(board, 'left', options.quarter).slice(0, 10);
+  const topAxis = getAxisForQuarter(board, 'top', options.quarter).slice(0, 10);
 
   drawHeader(ctx, game, mode);
   drawAxisLabels(ctx, game);
   drawDigits(ctx, sideAxis, topAxis);
   drawCells(ctx, board, sellersByIndex, mode);
-  drawFooter(ctx, shareUrl);
+  drawFooter(ctx, board.isDynamic && options.quarter ? `${QUARTER_LABELS[options.quarter]} numbers${options.quarter === 'Q4' ? ' · Includes overtime' : ''}${shareUrl ? ' · ' + shareUrl : ''}` : shareUrl);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

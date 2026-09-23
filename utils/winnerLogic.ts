@@ -1,4 +1,6 @@
 import { BoardData, LiveGameData, WinnerHighlights } from '../types';
+import { quarterAxisKey } from './quarterAxes';
+import { hasValidAxes } from './boardValidation';
 
 /**
  * Get axis for a specific quarter (dynamic boards) or standard axis
@@ -8,13 +10,13 @@ export const getAxisForQuarter = (
     side: 'left' | 'top',
     quarter?: string
 ): (number | null)[] => {
-    if (!board.isDynamic || !quarter) {
-        return side === 'left' ? board.leftAxis : board.topAxis;
+    if (!board.isDynamic) {
+        return (side === 'left' ? board.leftAxis : board.topAxis) ?? Array(10).fill(null);
     }
     // Map quarter to axis key (Final uses Q4)
-    const qKey = (quarter === 'Final' ? 'Q4' : quarter) as 'Q1' | 'Q2' | 'Q3' | 'Q4';
+    const qKey = quarterAxisKey(quarter);
     const axes = side === 'left' ? board.leftAxisByQuarter : board.topAxisByQuarter;
-    return axes?.[qKey] || (side === 'left' ? board.leftAxis : board.topAxis);
+    return (qKey && axes?.[qKey]) || Array(10).fill(null);
 };
 
 export const calculateWinnerHighlights = (liveData: LiveGameData | null): WinnerHighlights => {
@@ -44,7 +46,7 @@ export const calculateWinnerHighlights = (liveData: LiveGameData | null): Winner
 };
 
 export const calculateCurrentWinner = (liveData: LiveGameData | null, board: BoardData) => {
-    if (!liveData) return null;
+    if (!liveData || !hasValidAxes(board)) return null;
     const topDigit = liveData.topScore % 10;
     const leftDigit = liveData.leftScore % 10;
 

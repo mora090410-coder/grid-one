@@ -72,6 +72,8 @@ export interface ParticipationDetails {
 }
 
 export interface BoardData {
+  /** Organizer-only literal scan evidence; never projected to viewers. */
+  scanReview?: { topTeamText: string; leftTeamText: string; literalAxes: string; orientation?: { topAbbr:string; leftAbbr:string; operation:'unchanged'|'transposed' } };
   /** Explicit public organizer instructions; never populated from private contact notes. */
   participation?: ParticipationDetails;
   /** An offer is independent of a displayed name or a private payment note. */

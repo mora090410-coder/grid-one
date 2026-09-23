@@ -1,6 +1,8 @@
 import React from 'react';
 import { Sheet, CapsuleButton, CapsuleTag } from '../../../design/primitives';
 import type { BoardData, GameState } from '../../../../types';
+import { QUARTER_KEYS, QUARTER_LABELS } from '../../../../utils/quarterAxes';
+import { getAxisForQuarter } from '../../../../utils/winnerLogic';
 
 export interface PublishSheetProps {
   open: boolean;
@@ -52,10 +54,12 @@ export default function PublishSheet({ open, isShared = false, onClose, game, bo
           <dd>{formatKickoff(game)}</dd>
           <dt className="text-fg-3">Squares</dt>
           <dd>{assigned} assigned · {open_} OPEN</dd>
-          <dt className="text-fg-3">Top axis</dt>
-          <dd className="font-mono">{board.topAxis.map((n) => (n ?? '—')).join(' ')}</dd>
-          <dt className="text-fg-3">Side axis</dt>
-          <dd className="font-mono">{board.leftAxis.map((n) => (n ?? '—')).join(' ')}</dd>
+          {(board.isDynamic ? QUARTER_KEYS : ['Q1'] as const).map(key => <React.Fragment key={key}>
+            <dt className="text-fg-3">{board.isDynamic ? QUARTER_LABELS[key] + ' · ' : ''}Top axis</dt>
+            <dd className="min-w-0 break-words font-mono">{getAxisForQuarter(board, 'top', key).map(n => n ?? '—').join(' ')}</dd>
+            <dt className="text-fg-3">{board.isDynamic ? QUARTER_LABELS[key] + ' · ' : ''}Side axis</dt>
+            <dd className="min-w-0 break-words font-mono">{getAxisForQuarter(board, 'left', key).map(n => n ?? '—').join(' ')}</dd>
+          </React.Fragment>)}
         </dl>
 
         {open_ > 0 && (

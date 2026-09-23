@@ -129,7 +129,7 @@ Any stale-family state prefixes the timestamp line with `Last known · `. When n
 
 ## Fixed-axis guard
 
-The viewer renders one fixed set of 0–9 digits per axis for all quarters. Legacy dynamic boards are not supported and must not be silently flattened.
+The viewer renders the numbers for the current quarter. Boards with new numbers each quarter show `Quarter numbers` tabs (`1st`, `2nd`, `3rd`, `Final`) above the grid and `New numbers each quarter. Showing {quarter} numbers (now).` Any tab can be opened; tapping a scenario or `View on board` returns to the current quarter. Current match, your squares and next-score scenarios always use the current quarter's set. If any set is incomplete, the viewer says `The organizer is still checking the numbers.` and resolves no winner.
 
 ## Architecture seams
 

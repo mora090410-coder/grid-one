@@ -2,8 +2,10 @@ import React from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { buildBoardGridModel, type ViewerBoardCellModel } from './boardGridModel';
 import { CapsuleButton, scrollBehavior, useReducedMotion } from '../../../design/primitives';
+import type { ViewerQuarter } from '../scenarios/scenarioModel';
 
 interface ViewerBoardGridProps {
+  selectedQuarter?: ViewerQuarter;
   board: BoardData;
   game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'>;
   live: LiveGameData | null;
@@ -35,6 +37,7 @@ const stateClass = (cell: ViewerBoardCellModel) => {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
+  selectedQuarter,
   board,
   game,
   live,
@@ -48,6 +51,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   chrome = 'default',
 }) => {
   const model = React.useMemo(() => buildBoardGridModel({
+    selectedQuarter,
     board,
     game,
     live,
@@ -57,7 +61,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     selectedPlayer,
     highlightedCoords,
     showOpenSquares,
-  }), [board, game, live, highlights, winnerHistory, pendingMilestones, selectedPlayer, highlightedCoords, showOpenSquares]);
+  }), [selectedQuarter, board, game, live, highlights, winnerHistory, pendingMilestones, selectedPlayer, highlightedCoords, showOpenSquares]);
 
   const initialFocus = React.useMemo(() => {
     for (const row of model.cells) {

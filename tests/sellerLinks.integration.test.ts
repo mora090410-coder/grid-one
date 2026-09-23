@@ -254,6 +254,17 @@ describe('seller links', () => {
     expect((await read(code)).cells.map((cell: { index: number }) => cell.index)).not.toContain(2);
   });
 
+  it('works on boards that use new numbers each quarter', async () => {
+    const digits = [0,1,2,3,4,5,6,7,8,9];
+    const sets = { Q1: digits, Q2: [...digits].reverse(), Q3: digits, Q4: [...digits].reverse() };
+    await executeSql(`UPDATE public.contests SET board_data = board_data || ${sqlText(JSON.stringify({ isDynamic: true, leftAxisByQuarter: sets, topAxisByQuarter: sets }))}::jsonb WHERE id='${id}';`);
+    await share();
+    const code = await codeFor('Mora');
+    expect((await read(code)).open).toBe(true);
+    await claim(code, [4], 'Quarter Buyer');
+    expect(await nameAt(4)).toBe('Quarter Buyer');
+  });
+
   it('closes claiming once numbers are locked but keeps the link readable', async () => {
     await share();
     const code = await codeFor('Mora');

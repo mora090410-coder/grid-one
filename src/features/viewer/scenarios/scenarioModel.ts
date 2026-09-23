@@ -1,5 +1,6 @@
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { getAxisForQuarter } from '../../../../utils/winnerLogic';
+import { hasValidAxes } from '../../../../utils/boardValidation';
 
 export type ViewerQuarter = 'Q1' | 'Q2' | 'Q3' | 'Final';
 export type ScenarioStatus = 'available' | 'last-known' | 'no-score' | 'final';
@@ -30,6 +31,7 @@ export interface ViewerScenarioModel {
 }
 
 export const quarterForLive = (live: LiveGameData | null): ViewerQuarter => {
+  if (live?.state === 'post') return 'Final';
   if (!live || live.period <= 1) return 'Q1';
   if (live.period === 2) return 'Q2';
   if (live.period === 3) return 'Q3';
@@ -42,6 +44,7 @@ export const playersForDigits = (
   leftDigit: number,
   quarter: ViewerQuarter,
 ): string[] => {
+  if (!hasValidAxes(board)) return [];
   const topAxis = getAxisForQuarter(board, 'top', quarter);
   const leftAxis = getAxisForQuarter(board, 'left', quarter);
   const col = topAxis.indexOf(topDigit);
@@ -68,7 +71,7 @@ export const buildScenarioModel = ({
   const currentQuarter = quarterForLive(live);
   const status = scenarioStatus(live);
   const lastKnownCheckedAt = status === 'last-known' ? live?.retrievedAt || null : null;
-  if (!live || status === 'final') {
+  if (!live || status === 'final' || !hasValidAxes(board)) {
     return {
       status,
       currentQuarter,

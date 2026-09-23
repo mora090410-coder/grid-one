@@ -9,7 +9,10 @@ import YourSquaresSummary from '../personal/YourSquaresSummary';
 import ScenarioDisclosure from '../scenarios/ScenarioDisclosure';
 import WinnerEmailDisclosure from '../notifications/WinnerEmailDisclosure';
 import BoardDetailsDisclosure, { CompletedResults, FinalRecord } from '../details/BoardDetailsDisclosure';
-import { playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
+import { playersForDigits, quarterForLive, type ViewerQuarter } from '../scenarios/scenarioModel';
+import { hasValidAxes } from '../../../../utils/boardValidation';
+
+const VIEWER_QUARTER_LABEL = { Q1: '1st', Q2: '2nd', Q3: '3rd', Final: 'Final' } as const;
 
 export interface ViewerShellProps {
   game: GameState;
@@ -48,6 +51,10 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
     target.current?.scrollIntoView({ block: 'center', behavior: 'instant' });
     target.current?.focus({ preventScroll: true });
   };
+  const activeQuarter = quarterForLive(live);
+  const [inspectedQuarter, setInspectedQuarter] = useState<ViewerQuarter | null>(null);
+  useEffect(() => { setInspectedQuarter(null); setBoardFocus(null); }, [activeQuarter, shareCode]);
+  const selectedQuarter = inspectedQuarter ?? activeQuarter;
   const [scoreAboveViewport, setScoreAboveViewport] = useState(false);
   useEffect(() => {
     const target = scoreRef.current;
@@ -79,6 +86,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   }, [board, live, selectedPlayer]);
 
   const setFocus = (coords: { left: number; top: number } | null) => {
+    setInspectedQuarter(null);
     setBoardFocus(coords);
     onScenarioFocus(coords);
   };
@@ -138,10 +146,17 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               <span className="lg:hidden"><CapsuleButton variant="quiet" onClick={onFindSquares}>Find</CapsuleButton></span>
             </div>
           </div>
+          {board.isDynamic && <div className="flex flex-col gap-2">
+            <div role="group" aria-label="Quarter numbers" className="flex flex-wrap gap-2">
+              {(['Q1', 'Q2', 'Q3', 'Final'] as const).map((quarter) => <CapsuleButton key={quarter} variant="quiet" aria-pressed={selectedQuarter === quarter} onClick={() => { setInspectedQuarter(quarter === activeQuarter ? null : quarter); setBoardFocus(null); }}>{VIEWER_QUARTER_LABEL[quarter]}</CapsuleButton>)}
+            </div>
+            <p role="status" className="text-sm text-fg-2">New numbers each quarter. Showing {VIEWER_QUARTER_LABEL[selectedQuarter]} numbers{selectedQuarter === activeQuarter ? ' (now)' : ''}.</p>
+          </div>}
+          {!hasValidAxes(board) && <p role="status" className="text-sm text-fg-2">The organizer is still checking the numbers.</p>}
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <div className="relative z-[1]"><ViewerBoardGrid board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={boardFocus} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
+            <div className="relative z-[1]"><ViewerBoardGrid selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>

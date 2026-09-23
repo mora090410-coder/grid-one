@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { BOARD_SCAN_PROMPT, parseScannedBoard } from '../../_lib/scanBoard';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
 
@@ -7,11 +8,6 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
 
-const validAxis = (value: unknown): value is number[] =>
-  Array.isArray(value)
-  && value.length === 10
-  && value.every((digit) => Number.isInteger(digit) && digit >= 0 && digit <= 9)
-  && new Set(value).size === 10;
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
@@ -29,9 +25,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     return json({ error: 'Upload a JPG, PNG, or WebP image under 6 MB.' }, 400);
   }
 
-  const prompt = `Read this football squares board as a 10 by 10 grid. Return JSON only:
-{"leftAxis":[10 unique digits 0-9 top to bottom],"topAxis":[10 unique digits 0-9 left to right],"squaresGrid":[10 rows of 10 strings]}
-Use "" for blank cells and "???" when text is genuinely unreadable. Never invent names.`;
+  const prompt = BOARD_SCAN_PROMPT;
   const model = env.OCR_MODEL || 'gemini-2.5-flash';
   let providerResponse: Response;
   let raw: any;
@@ -59,28 +53,9 @@ Use "" for blank cells and "???" when text is genuinely unreadable. Never invent
   if (!text) return json({ error: 'The scan provider returned no board data.' }, 502);
 
   try {
-    const parsed = JSON.parse(text);
-    if (!validAxis(parsed.leftAxis) || !validAxis(parsed.topAxis)) {
-      throw new Error('The axis digits could not be read reliably.');
-    }
-    if (!Array.isArray(parsed.squaresGrid) || parsed.squaresGrid.length !== 10) {
-      throw new Error('The 10 by 10 grid could not be read reliably.');
-    }
-    const squares: string[][] = [];
-    for (const row of parsed.squaresGrid) {
-      if (!Array.isArray(row) || row.length !== 10) throw new Error('The 10 by 10 grid could not be read reliably.');
-      for (const cell of row) {
-        const name = typeof cell === 'string' ? cell.trim().slice(0, 80) : '';
-        squares.push(name ? [name] : []);
-      }
-    }
+    const board = parseScannedBoard(JSON.parse(text));
     return json({
-      board: {
-        leftAxis: parsed.leftAxis,
-        topAxis: parsed.topAxis,
-        squares,
-        isDynamic: false,
-      },
+      board,
       warning: 'Review every imported square before publishing.',
     });
   } catch (error: any) {

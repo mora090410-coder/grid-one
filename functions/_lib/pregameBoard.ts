@@ -1,4 +1,7 @@
+import { validDraftAxisMode } from '../../utils/quarterAxes';
+
 export const validateParticipation = (board: Record<string, unknown>): string | null => {
+  if (!validDraftAxisMode(board)) return 'Invalid number mode or quarter axis shape.';
   if (board.availability !== undefined && (!Array.isArray(board.availability) || board.availability.length !== 100 || board.availability.some(value => !['unspecified', 'available', 'unavailable'].includes(value)))) return 'Availability must contain exactly 100 valid statuses.';
   if (board.participation !== undefined) {
     const details = board.participation;
@@ -24,7 +27,7 @@ export const validateAllocationLabels = (value: unknown): string | null => {
 export const validateSalesBoard = (value: unknown): string | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return 'The board must contain exactly 100 squares.';
   const board = value as Record<string, unknown>;
-  if (board.isDynamic === true) return 'Legacy dynamic boards require a preservation plan before sharing.';
+  if (!validDraftAxisMode(board)) return 'Invalid number mode or quarter axis shape.';
   if (!Array.isArray(board.squares) || board.squares.length !== 100) return 'The board must contain exactly 100 squares.';
   if (board.squares.some(cell => !Array.isArray(cell) || cell.length > 1 || cell.some(name => (
     typeof name !== 'string' || name.length < 1 || name.length > 80 || name.trim() !== name
@@ -39,7 +42,7 @@ export const projectSalesBoard = (board: Record<string, any>) => ({
   allocationLabels: board.allocationLabels ? [...board.allocationLabels] : Array(100).fill(null),
   leftAxis: Array(10).fill(null),
   topAxis: Array(10).fill(null),
-  isDynamic: false,
+  isDynamic: board.isDynamic === true,
 });
 
 /** Only explicitly shared, still-unfinalized boards qualify; never reuse for scoring/email. */

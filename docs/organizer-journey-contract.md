@@ -77,7 +77,7 @@ Primary action: **`Prepare to publish`**, enabled only when `canEnterDraw`. If s
 
 The draw itself is `crypto.getRandomValues` in `secureDraw.ts`: one permutation of 0–9 per axis, each digit exactly once (`isExactAxis`). The result appears over the axes as a `Draft draw` with `Draw again` and `Use numbers and continue`; `Cancel` discards it. Accepting the draw saves its numbers and opens the private preview directly. The island shows `Numbers drawn`; `Preview and publish` reopens the preview when allowed. `Replace draft draw` remains secondary while the board is unpublished.
 
-Dynamic axes are not supported at launch (`dynamic_axes_not_supported`). Do not flatten a legacy dynamic board without an approved preservation plan.
+`Game numbers` (`NumberSetsEditor`) offers `One set for the whole game` or `New numbers each quarter`. Switching when numbers exist asks first (`Keep it` / `Switch`) and never copies or redraws. With new numbers each quarter, the draw produces four independent sets. The `Quarter numbers` tabs (`1st`, `2nd`, `3rd`, `Final`) switch which set the board and the draft draw show. Digit inputs appear only for boards read from a photo. Publication requires ten unique digits in every set.
 
 ### 4. Preview
 

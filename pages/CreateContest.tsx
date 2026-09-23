@@ -11,6 +11,7 @@ import { Base, CapsuleButton, CrossfadeText, Eyebrow, Glass, CapsuleInput } from
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
 import { readCreateDraft, writeCreateDraft, clearCreateDraft } from '../src/features/organizer/create/createDraft';
 import '../src/features/organizer/create/previewStage.css';
+import NumberSetsEditor from '../src/features/organizer/workspace/NumberSetsEditor';
 
 const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-[color,background-color,border-color,scale] hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
 
@@ -261,6 +262,7 @@ const CreateContest: React.FC = () => {
                     </div>
                     <p className="font-ui text-[14px] text-fg-2">After saving, add names, share your board, then draw the numbers before the game. Square payments happen outside GridOne.</p>
                     </div>
+                    {board.scanReview && <NumberSetsEditor board={board} game={game} onChange={setBoard} disabled={isLoading || isScanning} allowPhotoTranspose />}
                 </section>
 
                 </div>

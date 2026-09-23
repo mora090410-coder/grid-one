@@ -11,6 +11,9 @@ import {
   validatePayoutDescriptions,
 } from '../_lib/payoutDescriptions';
 
+import { validDraftAxisMode } from '../../utils/quarterAxes';
+import { isValidAxis } from '../../utils/boardValidation';
+
 type PagesFunction = (context: any) => Promise<Response> | Response;
 const LAUNCH_SEASON_YEAR = 2026;
 
@@ -95,6 +98,7 @@ const validate = (input: unknown): CreateBoardPayload => {
   if (!candidate.board || !Array.isArray(candidate.board.squares) || candidate.board.squares.length !== 100) {
     throw new Error('A board must contain exactly 100 squares.');
   }
+  if (!validDraftAxisMode(candidate.board)) throw new Error('Invalid number mode or quarter axis shape.');
   const payoutDescriptions = validatePayoutDescriptions(
     candidate.game?.payoutDescriptions ?? {},
   );
@@ -168,12 +172,10 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       ...payload.game,
       title: payload.game.title.trim(),
     }, scheduledGame);
-    const sideAxis = Array.isArray(payload.board.leftAxis) && payload.board.leftAxis.every(Number.isInteger)
-      ? payload.board.leftAxis
-      : null;
-    const topAxis = Array.isArray(payload.board.topAxis) && payload.board.topAxis.every(Number.isInteger)
-      ? payload.board.topAxis
-      : null;
+    // SQL compatibility columns are a constrained pair; board_data retains literal evidence.
+    const validPair = isValidAxis(payload.board.leftAxis) && isValidAxis(payload.board.topAxis);
+    const sideAxis = validPair ? payload.board.leftAxis : null;
+    const topAxis = validPair ? payload.board.topAxis : null;
     if (scoreTestMode && !env.SUPABASE_SERVICE_ROLE_KEY) {
       return json(request, { error: 'Server configuration is incomplete.' }, 503, env.PUBLIC_SITE_URL);
     }
@@ -217,7 +219,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   } catch (error: any) {
     const message = error?.message || 'Unable to create the board.';
     const validationError = error instanceof PayoutDescriptionsValidationError
-      || /board name|100 squares|invalid request|scheduled NFL game/i.test(message);
+      || /board name|100 squares|invalid request|scheduled NFL game|invalid number mode or quarter axis shape/i.test(message);
     return json(request, { error: message }, validationError ? 400 : 500, env.PUBLIC_SITE_URL);
   }
 };

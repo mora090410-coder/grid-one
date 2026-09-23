@@ -2,6 +2,8 @@ import React from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { buildScenarioModel, playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
 import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
+import { getAxisForQuarter } from '../../../../utils/winnerLogic';
+import { hasValidAxes } from '../../../../utils/boardValidation';
 
 interface SquareRow {
   index: number;
@@ -18,9 +20,9 @@ const selectedRows = (board: BoardData, game: Pick<GameState, 'leftAbbr' | 'topA
     if (!names.includes(selectedPlayer)) return [];
     const row = Math.floor(index / 10);
     const col = index % 10;
-    const top = board.topAxis[col] ?? null;
-    const left = board.leftAxis[row] ?? null;
-    const matchesCurrent = Boolean(live && top === live.topScore % 10 && left === live.leftScore % 10);
+    const top = getAxisForQuarter(board, 'top', quarterForLive(live))[col] ?? null;
+    const left = getAxisForQuarter(board, 'left', quarterForLive(live))[row] ?? null;
+    const matchesCurrent = Boolean(hasValidAxes(board) && live && live.state !== 'pre' && top === live.topScore % 10 && left === live.leftScore % 10);
     const nextLabels = scenarioModel.scenarios
       .filter((scenario) => scenario.top === top && scenario.left === left)
       .map((scenario) => `${scenario.team || 'Team'} ${scenario.label} +${scenario.points}`);
@@ -59,7 +61,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
       <p className={`font-ui text-[17px] font-medium ${winsNow ? 'text-gold' : 'text-fg-2'}`}>
-        {winsNow ? 'You’re winning right now.' : nextWin ? `Not winning right now. Next winning score: ${nextWin}.` : 'Not winning right now.'}
+        {!hasValidAxes(board) ? 'Numbers need review before matching your squares.' : winsNow ? 'You’re winning right now.' : nextWin ? `Not winning right now. Next winning score: ${nextWin}.` : 'Not winning right now.'}
       </p>
       <ul id={listId} className="flex flex-col gap-2" aria-label="Your squares">
         {visibleRows.map((row) => (
@@ -71,7 +73,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
                   {row.matchesCurrent ? 'Winning right now.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Not one score away yet.'}
                 </span>
               </div>
-              {row.top !== null && row.left !== null && (
+              {hasValidAxes(board) && row.top !== null && row.left !== null && (
                 <CapsuleButton variant="quiet" className="shrink-0 whitespace-nowrap" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
                   <span aria-hidden="true">View on board</span>
                   <span className="sr-only">View on board top {row.top} side {row.left}</span>

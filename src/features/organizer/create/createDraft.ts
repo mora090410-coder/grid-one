@@ -1,4 +1,5 @@
 import { projectBoardTemplate } from '../repeat/boardTemplateModel';
+import { validDraftAxisMode } from '../../../../utils/quarterAxes';
 import type { BoardData, GameState } from '../../../../types';
 
 export const CREATE_DRAFT_KEY = 'gridone_create_preview_v1';
@@ -30,7 +31,15 @@ export function readCreateDraft(storage: StorageReader, now = Date.now()): { dra
       ...(input.gameExternalId ? { gameExternalId: input.gameExternalId.slice(0, 100) } : {}),
       ...(typeof input.kickoffAt === 'string' && Number.isFinite(Date.parse(input.kickoffAt)) ? { kickoffAt: input.kickoffAt } : {}),
     };
-    const board: BoardData = { squares: value.board.squares, leftAxis: value.board.leftAxis, topAxis: value.board.topAxis, isDynamic: false };
+    if (!validDraftAxisMode(value.board)) return { issue: 'invalid' };
+    const board: BoardData = { squares: value.board.squares, leftAxis: value.board.leftAxis, topAxis: value.board.topAxis, isDynamic: value.board.isDynamic === true,
+      ...(value.board.topAxisByQuarter ? { topAxisByQuarter: value.board.topAxisByQuarter } : {}),
+      ...(value.board.leftAxisByQuarter ? { leftAxisByQuarter: value.board.leftAxisByQuarter } : {}),
+      ...(value.board.scanReview && ['topTeamText', 'leftTeamText', 'literalAxes'].every(key => typeof value.board.scanReview[key] === 'string') ? { scanReview: {
+        topTeamText: value.board.scanReview.topTeamText.slice(0,100), leftTeamText: value.board.scanReview.leftTeamText.slice(0,100), literalAxes: value.board.scanReview.literalAxes.slice(0,12000),
+        ...(['unchanged','transposed'].includes(value.board.scanReview.orientation?.operation) && typeof value.board.scanReview.orientation?.topAbbr === 'string' && typeof value.board.scanReview.orientation?.leftAbbr === 'string' ? {orientation:{operation:value.board.scanReview.orientation.operation,topAbbr:value.board.scanReview.orientation.topAbbr.slice(0,10),leftAbbr:value.board.scanReview.orientation.leftAbbr.slice(0,10)}} : {}),
+      } } : {}),
+    };
     return { draft: { game, board } };
   } catch { return { issue: 'invalid' }; }
 }

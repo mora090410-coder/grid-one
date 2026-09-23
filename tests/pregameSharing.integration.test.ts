@@ -234,10 +234,10 @@ describe.sequential('pregame sharing on disposable PostgreSQL',()=>{
   await executeSql(asUser(OWNER_ID,`DELETE FROM contests WHERE id='${draftId}';`));
   expect(await queryScalar(`SELECT count(*) FROM contests WHERE id='${draftId}'`)).toBe('0');
  });
- it('rejects legacy dynamic sharing without modifying it',async()=>{
+ it('preserves legacy dynamic mode and still enforces the seasonal sharing allowance',async()=>{
   await executeSql(asUser(OWNER_ID,`UPDATE contests SET board_data=jsonb_set(board_data - 'allocationLabels','{isDynamic}','true') WHERE id='${OPEN_CONTEST_ID}';`));
   const rev=await queryScalar(`SELECT revision FROM contests WHERE id='${OPEN_CONTEST_ID}'`);
-  await expect(share(OPEN_CONTEST_ID,OWNER_ID,rev)).rejects.toThrow(/Legacy dynamic/);
+  await expect(share(OPEN_CONTEST_ID,OWNER_ID,rev)).rejects.toThrow(/PUBLISH_ALLOWANCE_EXHAUSTED:free:1:1/);
   expect(await queryScalar(`SELECT board_data->>'isDynamic' FROM contests WHERE id='${OPEN_CONTEST_ID}'`)).toBe('true');
  });
 });

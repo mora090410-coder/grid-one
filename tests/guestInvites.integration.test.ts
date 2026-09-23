@@ -321,7 +321,7 @@ describe.sequential('guest invite transactions on disposable PostgreSQL', () => 
     await expect(executeSql(`INSERT INTO public.public_board_snapshots(contest_id,share_code,revision,board_title,matchup,board,published_at)
       SELECT id,share_code,revision,title,'{}','{"squares":[["wrong"]]}',published_at FROM public.contests WHERE id='${boardId}'`)).rejects.toThrow(/guest_snapshot_conflict/);
     await executeSql(`INSERT INTO public.public_board_snapshots(contest_id,share_code,revision,board_title,matchup,board,published_at)
-      SELECT id,share_code,revision,title,'{}',board_data,published_at FROM public.contests WHERE id='${boardId}';
+      SELECT id,share_code,revision,title,'{}',board_data || jsonb_build_object('leftAxis',to_jsonb(side_axis),'topAxis',to_jsonb(top_axis)),published_at FROM public.contests WHERE id='${boardId}';
       SELECT set_config('request.jwt.claim.sub','${OWNER_ID}',false); SET ROLE authenticated;
       SELECT public.gridone_rename_published_square('${boardId}',0,'Audited buyer');`);
     expect(await queryScalar(`SELECT board#>>'{squares,0,0}' FROM public.public_board_snapshots WHERE contest_id='${boardId}'`)).toBe('Audited buyer');

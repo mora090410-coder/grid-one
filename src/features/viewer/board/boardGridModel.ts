@@ -1,5 +1,6 @@
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { getAxisForQuarter } from '../../../../utils/winnerLogic';
+import { hasValidAxes } from '../../../../utils/boardValidation';
 import { quarterForLive, type ViewerQuarter } from '../scenarios/scenarioModel';
 
 export type ViewerBoardCellState = 'selected' | 'current' | 'resolved' | 'milestone' | 'pending' | 'open' | 'corrected' | 'scenario';
@@ -27,6 +28,7 @@ export interface ViewerBoardGridModel {
 }
 
 export interface BuildBoardGridModelInput {
+  selectedQuarter?: ViewerQuarter;
   board: BoardData;
   game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'>;
   live: LiveGameData | null;
@@ -140,6 +142,7 @@ const buildAriaName = ({
 };
 
 export const buildBoardGridModel = ({
+  selectedQuarter,
   board,
   game,
   live,
@@ -150,16 +153,18 @@ export const buildBoardGridModel = ({
   highlightedCoords,
   showOpenSquares,
 }: BuildBoardGridModelInput): ViewerBoardGridModel => {
-  const quarter = quarterForLive(live);
+  const quarter = selectedQuarter ?? quarterForLive(live);
   const topTeamName = game.topName || game.topAbbr;
   const sideTeamName = game.leftName || game.leftAbbr;
   const topAxis = getAxisForQuarter(board, 'top', quarter).slice(0, 10);
   const sideAxis = getAxisForQuarter(board, 'left', quarter).slice(0, 10);
   const selected = selectedPlayer.trim();
-  const current = currentDigits(live);
-  const milestonesByDigit = milestoneEntries(highlights);
-  const historyByDigit = historyEntries(winnerHistory);
-  const pendingByDigit = pendingEntries(pendingMilestones);
+  const valid = hasValidAxes(board);
+  const current = valid && quarter === quarterForLive(live) ? currentDigits(live) : null;
+  const matchesQuarter = (milestone: string) => !board.isDynamic || milestone.toUpperCase() === quarter.toUpperCase();
+  const milestonesByDigit = milestoneEntries({ ...highlights, quarterWinners: valid ? Object.fromEntries(Object.entries(highlights.quarterWinners).filter(([key]) => matchesQuarter(key))) : {} });
+  const historyByDigit = historyEntries(valid ? winnerHistory.filter(winner => matchesQuarter(winner.milestone)) : []);
+  const pendingByDigit = pendingEntries(valid ? pendingMilestones.filter(pending => matchesQuarter(pending.milestone)) : []);
 
   const cells = sideAxis.map((sideDigit, rowIndex) => topAxis.map((topDigit, colIndex) => {
     const names = board.squares[rowIndex * 10 + colIndex] ?? [];

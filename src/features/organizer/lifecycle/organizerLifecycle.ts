@@ -1,4 +1,5 @@
 import type { DraftSaveState, DraftSaveStatus } from '../draft/draftSaveModel';
+import { QUARTER_KEYS } from '../../../../utils/quarterAxes';
 
 export type OrganizerLifecyclePhase =
   | 'Create Draft'
@@ -43,6 +44,8 @@ export interface OrganizerLifecycleBoardInput {
   topAxis?: unknown;
   sideAxis?: unknown;
   isDynamic?: unknown;
+  topAxisByQuarter?: unknown;
+  leftAxisByQuarter?: unknown;
   openSquaresAcknowledged?: unknown;
   publishedAt?: unknown;
   gameState?: unknown;
@@ -132,7 +135,7 @@ export const evaluateOrganizerLifecycle = ({
   if (!nonEmptyString(board.id) || !nonEmptyString(board.title)) hardBlockers.push('missing_board_identity');
   if (!nonEmptyString(board.ownerId)) hardBlockers.push('missing_owner');
   if (!hasScheduledGame(board.scheduledGame)) hardBlockers.push('missing_scheduled_game');
-  if (board.isDynamic === true) hardBlockers.push('dynamic_axes_not_supported');
+
 
   if (!Array.isArray(board.cells) || board.cells.length !== 100) {
     hardBlockers.push('invalid_board_shape');
@@ -187,8 +190,11 @@ export const evaluateOrganizerLifecycle = ({
   const saveHardBlocker = saveBlocker(save);
   if (saveHardBlocker) hardBlockers.push(saveHardBlocker);
 
-  const axesReady = isExactAxis(board.topAxis) && isExactAxis(board.sideAxis);
-  const axesBlank = isBlankAxis(board.topAxis) && isBlankAxis(board.sideAxis);
+  const axes = board.isDynamic === true
+    ? QUARTER_KEYS.flatMap(key => [isRecord(board.topAxisByQuarter) ? board.topAxisByQuarter[key] : undefined, isRecord(board.leftAxisByQuarter) ? board.leftAxisByQuarter[key] : undefined])
+    : [board.topAxis, board.sideAxis];
+  const axesReady = axes.every(isExactAxis);
+  const axesBlank = axes.every(axis => axis === undefined || isBlankAxis(axis));
   if (!axesReady && !axesBlank) hardBlockers.push('invalid_committed_axes');
 
   const uniqueHardBlockers = [...new Set(hardBlockers)];

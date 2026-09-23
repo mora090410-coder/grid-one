@@ -12,7 +12,12 @@ import type {
   WinnerResolution,
   PendingMilestone,
 } from '../../../../types';
-import { evaluateOrganizerLifecycle, isExactAxis } from '../lifecycle/organizerLifecycle';
+import { evaluateOrganizerLifecycle } from '../lifecycle/organizerLifecycle';
+import { hasValidAxes } from '../../../../utils/boardValidation';
+import { getAxisForQuarter } from '../../../../utils/winnerLogic';
+import { QUARTER_KEYS, type QuarterAxisKey } from '../../../../utils/quarterAxes';
+import type { QuarterAxes } from '../../../../types';
+import NumberSetsEditor from './NumberSetsEditor';
 import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
@@ -222,7 +227,8 @@ export default function OrganizerWorkspace({
   const [sharePending, setSharePending] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [drawRequested, setDrawRequested] = useState(false);
-  const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[] } | null>(null);
+  const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[]; topSets?: QuarterAxes; leftSets?: QuarterAxes } | null>(null);
+  const [numberPeriod, setNumberPeriod] = useState<QuarterAxisKey>('Q1');
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [highlightOpen, setHighlightOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
@@ -307,7 +313,7 @@ export default function OrganizerWorkspace({
   const assignedCount = 100 - openCount;
   const paymentModel = useMemo(() => buildPaymentModel(board, entryMeta), [board, entryMeta]);
   const { paid: paidCount, unpaid: unpaidCount, unknown: unknownCount } = paymentModel.totals;
-  const axesCommitted = isExactAxis(board.topAxis) && isExactAxis(board.leftAxis);
+  const axesCommitted = hasValidAxes(board);
   const conflicted = saveState.status === 'conflicted';
 
   const model = useMemo(() => evaluateOrganizerLifecycle({
@@ -320,6 +326,8 @@ export default function OrganizerWorkspace({
       topAxis: board.topAxis,
       sideAxis: board.leftAxis,
       isDynamic: board.isDynamic,
+      topAxisByQuarter: board.topAxisByQuarter,
+      leftAxisByQuarter: board.leftAxisByQuarter,
       // Report the honest state; the draw gate below is what excuses it,
       // because DrawControl asks the question inline right before the draw.
       openSquaresAcknowledged: board.allowOpenSquares === true || openCount === 0,
@@ -340,14 +348,18 @@ export default function OrganizerWorkspace({
   const finalRecord = isPublished && liveData?.state === 'post';
 
   // Everything except the acknowledgement, which the draw itself collects.
-  const DRAW_TOLERATED = new Set<string>([ACKNOWLEDGEMENT_BLOCKER, 'save_dirty', 'save_saving']);
+  const DRAW_TOLERATED = new Set<string>([ACKNOWLEDGEMENT_BLOCKER, 'save_dirty', 'save_saving', 'invalid_committed_axes']);
   const canEnterDraw = !conflicted
     && model.hardBlockers.every((blocker) => DRAW_TOLERATED.has(blocker));
   const publishBlocked = model.hardBlockers.some((blocker) => !String(blocker).startsWith('save_'));
 
   const startPreview = useCallback(() => {
-    setDrawPreview({ top: secureShuffleDigits(), left: secureShuffleDigits() });
-  }, []);
+    if (board.isDynamic) {
+      const topSets = Object.fromEntries(QUARTER_KEYS.map(key => [key, secureShuffleDigits()])) as unknown as QuarterAxes;
+      const leftSets = Object.fromEntries(QUARTER_KEYS.map(key => [key, secureShuffleDigits()])) as unknown as QuarterAxes;
+      setDrawPreview({ top: topSets.Q1 as number[], left: leftSets.Q1 as number[], topSets, leftSets });
+    } else setDrawPreview({ top: secureShuffleDigits(), left: secureShuffleDigits() });
+  }, [board.isDynamic]);
 
   const requestDraw = () => {
     setDrawRequested(true);
@@ -379,12 +391,12 @@ export default function OrganizerWorkspace({
     const { top, left } = drawPreview;
     setBoard((current) => ({
       ...current,
-      topAxis: top,
-      leftAxis: left,
-      isDynamic: false,
+      topAxis: current.isDynamic ? current.topAxis : top,
+      leftAxis: current.isDynamic ? current.leftAxis : left,
+      isDynamic: current.isDynamic === true,
       allowOpenSquares: openCount > 0,
-      leftAxisByQuarter: undefined,
-      topAxisByQuarter: undefined,
+      leftAxisByQuarter: drawPreview.leftSets ?? current.leftAxisByQuarter,
+      topAxisByQuarter: drawPreview.topSets ?? current.topAxisByQuarter,
     }));
     setDrawPreview(null);
     setDrawRequested(false);
@@ -572,8 +584,8 @@ export default function OrganizerWorkspace({
       });
       const compressed = await compressImage(raw);
       const scanned = await parseBoardImage(compressed);
-      setBoard((current) => ({ ...current, squares: scanned.squares }));
-      setNote('Names read from the photo. Check every square before you draw.');
+      setBoard((current) => ({ ...current, ...scanned }));
+      setNote('Photo values preserved. Review names, team orientation and every number set before finalizing. No numbers were redrawn.');
     } catch (error: any) {
       setAlert(error?.message || 'The photo could not be read.');
     } finally {
@@ -593,6 +605,7 @@ export default function OrganizerWorkspace({
       const blob = await renderBoardPng({
         board,
         game,
+        quarter: numberPeriod,
         sellersByIndex,
         mode,
         shareUrl: published ? shareUrl : undefined,
@@ -1109,8 +1122,9 @@ export default function OrganizerWorkspace({
                 onUpdateManualQuarter={updateManualQuarter}
                 onSaveManualScore={() => void saveManualScore()}
               /></div>
+              <NumberSetsEditor board={board} game={game} selected={numberPeriod} onSelect={setNumberPeriod} />
               <BoardEditor
-                board={board}
+                board={{ ...board, topAxis: getAxisForQuarter(board, 'top', numberPeriod), leftAxis: getAxisForQuarter(board, 'left', numberPeriod) }}
                 game={game}
                 entryMeta={entryMeta}
                 drawPreview={null}
@@ -1210,6 +1224,7 @@ export default function OrganizerWorkspace({
         {note ? <p role="status" className="mt-4 font-ui text-[15px] text-fg-2">{note}</p> : null}
         <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
           <section id="workspace-board" aria-label="Board" style={{ scrollMarginTop: 100 }} className="flex min-w-0 max-w-full flex-col gap-4">
+            <NumberSetsEditor board={drawPreview?.topSets ? { ...board, topAxisByQuarter: drawPreview.topSets, leftAxisByQuarter: drawPreview.leftSets } : board} game={game} selected={numberPeriod} onSelect={setNumberPeriod} disabled={conflicted || Boolean(drawPreview)} onChange={next => setBoard(() => next)} />
             {(drawRequested || drawPreview || axesCommitted) && (
               <DrawControl
                 openCount={openCount}
@@ -1231,10 +1246,10 @@ export default function OrganizerWorkspace({
             <BoardEditor
               availabilityMode={availabilityMode}
               onOfferAvailability={() => { setAvailabilityMode(true); setSelectMode(true); setSelection(new Set()); setOrganizerTask('board'); setRangeFocusSignal(current => current + 1); }}
-              board={board}
+              board={{ ...board, topAxis: getAxisForQuarter(board, 'top', numberPeriod), leftAxis: getAxisForQuarter(board, 'left', numberPeriod) }}
               game={game}
               entryMeta={entryMeta}
-              drawPreview={drawPreview}
+              drawPreview={drawPreview?.topSets ? { top: drawPreview.topSets[numberPeriod] as number[], left: drawPreview.leftSets![numberPeriod] as number[] } : drawPreview}
               highlightOpen={highlightOpen}
               isPublished={false}
               canAssignOpenSquares={false}

@@ -135,7 +135,9 @@ describe('organizer lifecycle model', () => {
   it('fails closed for malformed input, invalid axes, dynamic axes, and impossible transitions', () => {
     expect(evaluateOrganizerLifecycle({ board: { id: 'bad' }, save: saved }).hardBlockers).toContain('invalid_board_shape');
     expect(evaluateOrganizerLifecycle({ board: board({ topAxis: [0, 1], sideAxis: digits }), save: saved })).toMatchObject({ canEnterDraw: false, canPublish: false });
-    expect(evaluateOrganizerLifecycle({ board: board({ topAxis: digits, sideAxis: digits, isDynamic: true }), save: saved }).hardBlockers).toContain('dynamic_axes_not_supported');
+    expect(evaluateOrganizerLifecycle({ board: board({ topAxis: digits, sideAxis: digits, isDynamic: true }), save: saved }).canPublish).toBe(false);
+    const sets = { Q1: digits, Q2: [...digits].reverse(), Q3: digits, Q4: [...digits].reverse() };
+    expect(evaluateOrganizerLifecycle({ board: board({ topAxis: digits, sideAxis: digits, isDynamic: true, topAxisByQuarter: sets, leftAxisByQuarter: sets }), save: saved }).canPublish).toBe(true);
 
     expect(transitionOrganizerLifecycle('Preview', 'go_live_succeeded')).toMatchObject({ ok: false, phase: 'Preview', reason: 'impossible_transition' });
     expect(transitionOrganizerLifecycle('Preview', 'previewed')).toMatchObject({ ok: true, phase: 'Go Live' });

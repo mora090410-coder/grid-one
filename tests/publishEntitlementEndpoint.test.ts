@@ -124,6 +124,49 @@ describe.sequential('publish entitlement boundary', () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ code: 'ACTIVE_GUEST_HOLDS', error: 'Guests are choosing squares. Wait for their holds to finish, or cancel holds in Guest claim links before locking numbers.' });
   });
+
+  it('retains exact fixed canonical columns when legacy JSON axes are absent or unusable', async () => {
+    for (const axes of [{}, {leftAxis:[],topAxis:Array(10).fill(null)}]) {
+      const admin=adminClient({contestData:{...contest,side_axis:contest.board_data.leftAxis,top_axis:contest.board_data.topAxis,board_data:{squares:contest.board_data.squares,...axes}}});
+      mocks.clients.push(authClient(),admin);
+      expect((await publishBoard({request:request(),env,params:{id:'board-1'}})).status).toBe(200);
+      expect((admin.rpc.mock.calls as unknown as [string,any][])[0][1]).toMatchObject({p_side_axis:contest.board_data.leftAxis,p_top_axis:contest.board_data.topAxis});
+    }
+  });
+  it('blocks unresolved photo orientation even with eight valid axes', async () => {
+    const admin=adminClient({contestData:{...contest,board_data:{...contest.board_data,scanReview:{topTeamText:'CHI',leftTeamText:'GB',literalAxes:'literal'}}}});
+    mocks.clients.push(authClient(),admin);
+    const result=await publishBoard({request:request(),env,params:{id:'board-1'}});
+    expect(result.status).toBe(409); expect(await result.json()).toEqual({error:expect.stringMatching(/photo team orientation/)});
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+  it('publishes all quarter sets and excludes literal scan evidence from the public payload', async () => {
+    const digits = contest.board_data.leftAxis;
+    const sets = {Q1:digits,Q2:[...digits.slice(1),0],Q3:[...digits.slice(2),0,1],Q4:[...digits].reverse()};
+    const admin = adminClient({contestData:{...contest,board_data:{...contest.board_data,isDynamic:true,leftAxisByQuarter:sets,topAxisByQuarter:sets,scanReview:{literalAxes:'PRIVATE',orientation:{topAbbr:'GB',leftAbbr:'CHI',operation:'unchanged'}}}}});
+    mocks.clients.push(authClient(),admin);
+    const response = await publishBoard({request:request(),env,params:{id:'board-1'}});
+    expect(response.status).toBe(200);
+    const payload = (admin.rpc.mock.calls as unknown as [string,any][])[0][1];
+    expect(payload.p_public_board.topAxisByQuarter).toEqual(sets);
+    expect(payload.p_public_board.leftAxisByQuarter).toEqual(sets);
+    expect(payload.p_public_board.isDynamic).toBe(true);
+    expect(payload.p_public_board).not.toHaveProperty('scanReview');
+    expect(payload.p_normalized_names).toEqual(contest.board_data.squares);
+  });
+
+  it('blocks duplicate or missing quarter axes even when fixed compatibility axes are valid', async () => {
+    const digits = contest.board_data.leftAxis;
+    for (const finalAxis of [undefined,[9,2,6,0,7,4,5,8,0,9]]) {
+      const sets = {Q1:digits,Q2:digits,Q3:digits,...(finalAxis ? {Q4:finalAxis} : {})};
+      const admin = adminClient({contestData:{...contest,board_data:{...contest.board_data,isDynamic:true,leftAxisByQuarter:sets,topAxisByQuarter:sets}}});
+      mocks.clients.push(authClient(),admin);
+      const response = await publishBoard({request:request(),env,params:{id:'board-1'}});
+      expect(response.status).toBe(409);
+      expect(admin.rpc).not.toHaveBeenCalled();
+    }
+  });
+
   it('rejects an unverified email before reading or writing board data', async () => {
     mocks.clients.push(authClient({ verified: false }));
 

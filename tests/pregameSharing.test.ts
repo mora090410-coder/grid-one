@@ -13,7 +13,11 @@ describe('pregame public projection',()=>{
   expect(validateSalesBoard({...board(),allocationLabels:['Family']})).toMatch(/100/);
   expect(validateSalesBoard({...board(),allocationLabels:Array(100).fill('  ')})).toMatch(/allocation/i);
   expect(validateSalesBoard({...board(),squares:Array(100).fill(['A','B'])})).toMatch(/buyer/i);
-  expect(validateSalesBoard({...board(),isDynamic:true})).toMatch(/dynamic/i);
+  expect(validateSalesBoard({...board(),isDynamic:true})).toBeNull();
+  expect(validateSalesBoard({...board(),isDynamic:'true'})).toMatch(/number mode/i);
+  const dynamic = {...board(),isDynamic:true,topAxisByQuarter:{Q1:[9,2,6,0,7,4,5,8,0,9]}};
+  expect(projectSalesBoard(dynamic).isDynamic).toBe(true);
+  expect(projectSalesBoard(dynamic)).not.toHaveProperty('topAxisByQuarter');
  });
  it('does not infer allocation from a legacy seller field',()=>{
   const input=board(); delete (input as any).allocationLabels;

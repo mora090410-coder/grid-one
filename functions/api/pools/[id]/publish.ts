@@ -1,6 +1,9 @@
 import { validateAllocationLabels } from '../../../_lib/pregameBoard';
 import { createClient } from '@supabase/supabase-js';
-import { isValidAxis } from '../../../../utils/boardValidation';
+import { hasValidAxes, isValidAxis } from '../../../../utils/boardValidation';
+import { projectQuarterAxes, validDraftAxisMode } from '../../../../utils/quarterAxes';
+import { getAxisForQuarter } from '../../../../utils/winnerLogic';
+import { photoOrientationResolved } from '../../../../utils/photoOrientation';
 import { nextUpgradeTier, type PricingTier } from '../../../_lib/pricingTiers';
 
 type PagesFunction = (context: any) => Promise<Response> | Response;
@@ -37,13 +40,22 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     .maybeSingle();
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
-  const board = contest.board_data || {};
-  if (board.isDynamic === true) return Response.json({ error: 'Legacy dynamic boards require a preservation plan before finalizing.' }, { status: 409 });
+  const storedBoard = contest.board_data || {};
+  if (!photoOrientationResolved(storedBoard, {topAbbr:contest.top_team_abbr || contest.settings?.topAbbr, leftAbbr:contest.side_team_abbr || contest.settings?.leftAbbr})) {
+    return Response.json({error:'Review and resolve the photo team orientation before publishing.'},{status:409});
+  }
+  // Fixed legacy columns remain authoritative fallback evidence. Never use this for dynamic sets.
+  const board = storedBoard.isDynamic === true ? storedBoard : {
+    ...storedBoard,
+    leftAxis: isValidAxis(storedBoard.leftAxis) ? storedBoard.leftAxis : contest.side_axis,
+    topAxis: isValidAxis(storedBoard.topAxis) ? storedBoard.topAxis : contest.top_axis,
+  };
+  if (!validDraftAxisMode(board)) return Response.json({ error: 'Invalid number mode or quarter axis shape.' }, { status: 409 });
   const allocationError = validateAllocationLabels(board.allocationLabels);
   if (allocationError) return Response.json({ error: allocationError }, { status: 409 });
-  const sideAxis = isValidAxis(board.leftAxis) ? board.leftAxis : contest.side_axis;
-  const topAxis = isValidAxis(board.topAxis) ? board.topAxis : contest.top_axis;
-  if (!isValidAxis(sideAxis) || !isValidAxis(topAxis)) {
+  const sideAxis = getAxisForQuarter(board, 'left', 'Q1');
+  const topAxis = getAxisForQuarter(board, 'top', 'Q1');
+  if (!hasValidAxes(board)) {
     return Response.json({ error: 'Draw all ten unique axis digits before publishing.' }, { status: 409 });
   }
   if (!Array.isArray(board.squares) || board.squares.length !== 100) {
@@ -71,7 +83,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     topAxis: topAxis,
     squares: normalizedNames,
     ...(board.allocationLabels ? { allocationLabels: board.allocationLabels } : {}),
-    isDynamic: false,
+    ...projectQuarterAxes(board),
     allowOpenSquares: effectiveOpenSquareOptIn,
   };
   const matchup = {

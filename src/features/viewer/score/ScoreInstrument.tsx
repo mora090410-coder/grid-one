@@ -3,6 +3,7 @@ import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { DigitFlow, Eyebrow, Glass, Numeral } from '../../../design/primitives';
 import { buildViewerScoreModel } from './viewerScoreModel';
 import { playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
+import { hasValidAxes } from '../../../../utils/boardValidation';
 
 const shortName = (names: string[], empty = 'Unassigned') => {
   if (!names.length) return empty;
@@ -54,8 +55,8 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
       </Glass>
 
       <div className="flex flex-col gap-1 font-ui text-[15px] text-fg" role="status" aria-live="polite">
-        <p>{live?.state === 'post' ? 'Final score matches:' : 'Currently matching:'} <strong className="font-medium">{live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
-        {live && live.state !== 'pre' && <p>Square: <strong className="font-mono font-medium">{topLabel} <DigitFlow value={topDigit ?? ''} /> across × {leftLabel} <DigitFlow value={sideDigit ?? ''} /> down</strong></p>}
+        <p>{live?.state === 'post' ? 'Final score matches:' : 'Currently matching:'} <strong className="font-medium">{!hasValidAxes(board) ? 'Numbers need review' : live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
+        {hasValidAxes(board) && live && live.state !== 'pre' && <p>Square: <strong className="font-mono font-medium">{topLabel} <DigitFlow value={topDigit ?? ''} /> across × {leftLabel} <DigitFlow value={sideDigit ?? ''} /> down</strong></p>}
         <p className="text-fg-2"><strong className="font-medium text-fg">{score.authority.label}</strong> · {score.authority.detail}</p>
         <p className="font-mono text-[13px] text-fg-3">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
         {score.phaseDetail && <p className="text-fg-3">{score.phaseDetail}</p>}
