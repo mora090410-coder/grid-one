@@ -22,6 +22,7 @@ import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
 import { renderBoardPng, shareBoardPng, boardImageFilename } from '../../../../utils/boardImage';
 import { useWorkspaceDraft } from './useWorkspaceDraft';
+import { useSharedBoardRefresh } from './useSharedBoardRefresh';
 import { applyScheduledGame } from './applyScheduledGame';
 import { saveEntryMeta, saveEntryMetaBatch, savePaymentStatuses, clearEntryMeta } from './entryMetaService';
 import { assignable, type Selection } from './selection';
@@ -911,6 +912,18 @@ export default function OrganizerWorkspace({
       setPaymentBusy(false);
     }
   };
+  // Buyers claim squares through seller links while the organizer has this
+  // page open. Pull those names in, but only when nothing local is unsaved,
+  // mid-save, conflicted, or open in a dialog.
+  useSharedBoardRefresh({
+    enabled: Boolean(activePoolId && isShared && !isPublished && onReload),
+    canRefresh: () => saveState.status === 'clean'
+      && !familyBusy && !paymentBusy && !paymentsOpen && !rangeBusy && privateWritesPending === 0 && !privateNotesUncertain
+      && payoutDraft === null && selectedSquare === null && !drawRequested && !drawPreview
+      && !previewOpen && !publishOpen && !shareOpen && upgradeTier === null,
+    refresh: async () => { await onReload?.(); },
+  });
+
   const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) { setPaymentsOpen(false); setOrganizerTask('board'); } }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {
     setPaymentsOpen(false);
     setOrganizerTask('board');

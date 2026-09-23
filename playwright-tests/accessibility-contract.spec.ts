@@ -627,7 +627,11 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     const firstViewportOrder = await firstViewport.evaluate((root) => {
       const heading = root.querySelector('h1');
       const status = root.querySelector('[role="status"]');
-      const find = Array.from(root.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Find my squares');
+      // Read the button's words the way a screen reader does: skip the decorative aria-hidden arrow.
+      const spokenText = (element: Element) => Array.from(element.childNodes)
+        .filter((node) => !(node instanceof Element && node.getAttribute('aria-hidden') === 'true'))
+        .map((node) => node.textContent ?? '').join('').trim();
+      const find = Array.from(root.querySelectorAll('button')).find((button) => spokenText(button) === 'Find my squares');
       const details = Array.from(root.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('All possible next scores'));
       if (!heading || !status || !find || !details) return false;
       const position = Node.DOCUMENT_POSITION_FOLLOWING;

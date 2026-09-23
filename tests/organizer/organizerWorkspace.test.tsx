@@ -177,6 +177,25 @@ describe('OrganizerWorkspace island', () => {
     expect(within(screen.getByRole('region', { name: 'Send seller links' })).getByRole('button', { name: 'Get seller links' })).toBeInTheDocument();
   });
 
+  it('pulls in names from seller links on a shared board without a manual reload', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const shared = renderWorkspace({ isShared: true, shareCode: 'shared-board' });
+      await act(async () => { vi.advanceTimersByTime(20_000); });
+      expect(shared.onReload).toHaveBeenCalledTimes(1);
+      shared.unmount();
+
+      for (const overrides of [{ isShared: false }, { isShared: true, isPublished: true }]) {
+        const other = renderWorkspace({ ...overrides, shareCode: 'shared-board' });
+        await act(async () => { vi.advanceTimersByTime(60_000); });
+        expect(other.onReload).not.toHaveBeenCalled();
+        other.unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('offers a persistent Payments action and keeps not-asked squares distinct from unpaid', () => {
     renderWorkspace({ board: boardWithAssignments(3), entryMeta: { 0: paidMeta(0), 1: { ...paidMeta(1), paid_status: 'unpaid' } } });
     fireEvent.click(screen.getByRole('button', { name: 'Payments' }));

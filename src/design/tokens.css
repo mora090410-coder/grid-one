@@ -375,3 +375,16 @@
     overflow-x: hidden;
   }
 }
+
+/* Film grain (Grain primitive). The blend lives on a pseudo-element, not on
+   the element itself: accessibility checkers read a blended element as part
+   of every control above it and misjudge their contrast. */
+.g-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--g-grain-image);
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}

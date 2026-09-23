@@ -160,14 +160,19 @@ describe('Grain', () => {
     expect(grain.className).toContain('fixed');
     expect(grain.className).toContain('inset-0');
     expect(grain.className).toContain('pointer-events-none');
-    expect(grain.style.opacity).toBe('0.035');
-    expect(grain.style.mixBlendMode).toBe('overlay');
-    expect(grain.style.backgroundImage).toContain('feTurbulence');
+    // Faintness is baked into the texture and the blend lives on the .g-grain
+    // ::before, so axe never folds this layer into the controls above it.
+    expect(grain.className).toContain('g-grain');
+    expect(grain.style.opacity).toBe('');
+    expect(grain.style.mixBlendMode).toBe('');
+    const texture = grain.style.getPropertyValue('--g-grain-image');
+    expect(texture).toContain('feTurbulence');
+    expect(texture).toContain("opacity='0.035'");
   });
 
   it('accepts an opacity override', () => {
     const { container } = render(<Grain opacity={0.02} />);
-    expect((container.firstElementChild as HTMLElement).style.opacity).toBe('0.02');
+    expect((container.firstElementChild as HTMLElement).style.getPropertyValue('--g-grain-image')).toContain("opacity='0.02'");
   });
 });
 
