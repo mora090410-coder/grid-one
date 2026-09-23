@@ -36,3 +36,6 @@ playwright-report
 .superpowers
 # Agent worktrees
 .worktrees
+
+# Hermes agent run artifacts (local evidence; kept on disk, not in git)
+.hermes/
