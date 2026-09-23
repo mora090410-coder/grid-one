@@ -58,6 +58,16 @@ const installPublishedBoard = async (page: Page, score = liveScore) => {
 };
 
 test.describe('viewer shell', () => {
+  test('keeps an automatic stale final visibly degraded on phone and desktop', async ({ page }) => {
+    await installPublishedBoard(page, { ...liveScore, state: 'post', clock: 'Final', freshness: 'stale' });
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/b/ABCDEFGH');
+      await expect(page.getByRole('status').filter({ hasText: 'Stale · last known' })).toBeVisible();
+      await page.screenshot({ path: `/tmp/gridone-stale-final-${width}.png`, fullPage: true });
+    }
+  });
+
   test('places the demo invitation after the board and labels the sample date', async ({ page }) => {
     await page.goto('/demo');
     await expect(page.getByText('Sample game · February 9, 2025')).toBeVisible();

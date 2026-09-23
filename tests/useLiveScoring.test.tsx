@@ -112,6 +112,32 @@ describe('legacy manual live scoring', () => {
     unmount();
   });
 
+  it.each(['stale', 'offline', 'refreshing', 'rejected'] as const)('retries an initial %s automatic final and resumes trusted final behavior only after recovery', async (freshness) => {
+    vi.useFakeTimers();
+    const staleFinal: LiveGameData = { ...manualSnapshot, isManual: false, freshness };
+    const freshFinal: LiveGameData = { ...staleFinal, freshness: 'fresh' };
+    vi.mocked(fetchLiveScore)
+      .mockResolvedValueOnce({ score: staleFinal })
+      .mockResolvedValueOnce({ score: freshFinal });
+    const game = { ...legacyGame, gameExternalId: '401772988', scoreSnapshot: staleFinal };
+    const { result, unmount } = renderHook(() => useLiveScoring(game, true, false, 'board-id'));
+    try {
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(fetchLiveScore).toHaveBeenCalledTimes(1);
+      expect(result.current.isSynced).toBe(false);
+      expect(result.current.liveStatus).not.toBe('FINAL');
+      await act(async () => { await vi.advanceTimersByTimeAsync(180_000); });
+      expect(fetchLiveScore).toHaveBeenCalledTimes(2);
+      expect(result.current.liveStatus).toBe('FINAL');
+      expect(result.current.isSynced).toBe(true);
+      await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
+      expect(fetchLiveScore).toHaveBeenCalledTimes(2);
+    } finally {
+      unmount();
+      vi.useRealTimers();
+    }
+  });
+
   it('does not restart polling across forty unrelated organizer edits', async () => {
     const providerSnapshot: LiveGameData = {
       ...manualSnapshot,

@@ -44,11 +44,11 @@ export const viewerAuthorityLabel = (
   if (!live) return { label: 'Score unavailable', detail: liveStatus || 'Try again shortly', tone: 'stale' };
 
   const source = live.sourceName || 'Automatic beta score';
-  if (live.state === 'post') return { label: 'Final', detail: source, tone: 'final' };
   if (live.freshness === 'refreshing') return { label: 'Refreshing', detail: `${source} · last known score shown`, tone: 'stale' };
   if (live.freshness === 'offline') return { label: 'Offline · last known', detail: source, tone: 'stale' };
   if (live.freshness === 'rejected') return { label: 'Source rejected', detail: 'Organizer review needed', tone: 'stale' };
   if (live.freshness === 'stale') return { label: 'Stale · last known', detail: source, tone: 'stale' };
+  if (live.state === 'post') return { label: 'Final', detail: source, tone: 'final' };
   if (live.state === 'in' && isSynced) return { label: 'Live', detail: source, tone: 'live' };
   if (live.state === 'pre') return { label: 'Pregame', detail: source, tone: 'pregame' };
   return { label: 'Last known score', detail: source, tone: 'stale' };

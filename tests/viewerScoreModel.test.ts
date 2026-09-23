@@ -37,6 +37,13 @@ describe('viewer score model', () => {
     expect(buildViewerScoreModel({ live: live(), liveStatus: '', isSynced: true }).pollingText).toBe('Score updates about every three minutes');
   });
 
+  it.each(['stale', 'offline', 'refreshing', 'rejected'] as const)('keeps %s final snapshots visibly untrusted while preserving manual authority', (freshness) => {
+    const automatic = buildViewerScoreModel({ live: live({ state: 'post', freshness }), liveStatus: '', isSynced: false });
+    expect(automatic.authority.tone).toBe('stale');
+    expect(automatic.authority.label).not.toBe('Final');
+    expect(buildViewerScoreModel({ live: live({ state: 'post', freshness, isManual: true }), liveStatus: '', isSynced: true }).authority.label).toBe('Manual score');
+  });
+
   it('formats period labels and checked-at freshness without inventing realtime language', () => {
     const model = buildViewerScoreModel({ live: live(), liveStatus: '', isSynced: true });
     expect(model.periodLabel).toBe('Q2 · 8:12');

@@ -24,6 +24,7 @@ export type ProviderScore = {
 };
 
 export type ProviderScoreResult = {
+  provider?: 'espn' | 'api-sports';
   score: ProviderScore;
   source: { title: string; uri: string };
   raw: unknown;
@@ -179,13 +180,20 @@ export const applyProviderScore = async (
   previousSnapshot: any,
 ): Promise<ApplyProviderScoreResult> => {
   const retrievedAt = new Date();
-  const staleAfter = scoreStaleAfter(provider.score.state, retrievedAt, contest.game_starts_at);
+  const observedAt = new Date(provider.score.sourceObservedAt);
+  const observationAge = retrievedAt.getTime() - observedAt.getTime();
+  if (!Number.isFinite(observationAge) || observationAge >= 120_000 || observationAge < -5_000) {
+    throw new Error('Provider observation is expired or has an invalid future timestamp.');
+  }
+  const staleAfter = provider.score.state === 'in'
+    ? new Date(observedAt.getTime() + 240_000).toISOString()
+    : scoreStaleAfter(provider.score.state, retrievedAt, contest.game_starts_at);
   const { data: inserted, error: insertError } = await admin
     .from('score_snapshots')
     .insert({
       contest_id: contest.id,
       source_mode: 'automatic',
-      provider: 'espn',
+      provider: provider.provider ?? 'espn',
       game_state: provider.score.state,
       period: provider.score.period,
       side_score: provider.score.leftScore,

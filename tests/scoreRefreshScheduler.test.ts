@@ -213,6 +213,43 @@ beforeEach(() => {
 });
 
 describe.sequential('cron score refresh endpoint', () => {
+  const alternateGame = {
+    game: { id: 500, date: { timestamp: Date.parse('2025-09-28T20:25:00Z') / 1000 }, status: { short: 'HT', timer: null } },
+    league: { id: 1 },
+    teams: { home: { id: 1, name: 'Washington Commanders' }, away: { id: 2, name: 'Dallas Cowboys' } },
+    scores: {
+      home: { quarter_1: 7, quarter_2: 10, quarter_3: null, quarter_4: null, overtime: null, total: 17 },
+      away: { quarter_1: 7, quarter_2: 7, quarter_3: null, quarter_4: null, overtime: null, total: 14 },
+    },
+  };
+
+  it('recovers an ESPN denial through one independent date request for multiple boards', async () => {
+    const admin = buildAdmin({ contests: [activeContest('one'), activeContest('two')] });
+    mocks.clients.push(admin);
+    const fetchSpy = vi.fn(async (input: string | URL | Request) => String(input).includes('api-sports.io')
+      ? jsonResponse({ errors: [], response: [alternateGame] })
+      : new Response('Access denied', { status: 403 }));
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.stubGlobal('crypto', { randomUUID: () => '00000000-0000-4000-8000-000000000000' });
+    const response = await refreshScores({ request: cronRequest(), env: { ...cronEnv, API_SPORTS_KEY: 'test-only' } });
+    expect(await response.json()).toMatchObject({ active: 2, refreshed: 2, failed: 0 });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const inserts = admin.from.mock.results.map(result => result.value?.insert).filter(Boolean);
+    expect(inserts.some(insert => insert.mock.calls.some(([row]: any[]) => row.provider === 'api-sports' && row.side_score === 14 && row.top_score === 17))).toBe(true);
+  });
+
+  it('reports complete provider outage as a failed tick without promoting a score', async () => {
+    const admin = buildAdmin({ contests: [activeContest('one'), activeContest('two')] });
+    mocks.clients.push(admin);
+    const fetchSpy = vi.fn(async () => new Response('Denied', { status: 403 }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const response = await refreshScores({ request: cronRequest(), env: { ...cronEnv, API_SPORTS_KEY: 'test-only' } });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ refreshed: 0, failed: 2 });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(admin.rpcCalls.some(call => call.name === 'gridone_promote_score_snapshot')).toBe(false);
+  });
+
   it('rejects a wrong or missing cron secret', async () => {
     const response = await refreshScores({ request: cronRequest('wrong'), env: cronEnv, params: {} });
     expect(response.status).toBe(401);

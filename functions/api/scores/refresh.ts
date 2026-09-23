@@ -10,6 +10,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { fetchLiveScoreboard } from '../../_lib/espnNfl';
+import { createScoreProviderRecovery } from '../../_lib/scoreProviderRecovery';
 import {
   fetchExactEventScore,
   liveScoringEnabled,
@@ -102,13 +103,18 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   }
 
   let refreshed = 0;
+  const recoverScore = createScoreProviderRecovery(env);
   const errors: Array<{ contestId: string; error: string }> = [];
   for (const contest of active) {
     try {
       const entry = scoreboard?.games.get(String(contest.game_external_id));
-      const provider = entry
-        ? providerScoreFromEspnSnapshot(contest, entry.snapshot, entry.rawEvent)
-        : await fetchExactEventScore(contest);
+      const provider = await recoverScore(contest, async () => {
+        if (entry) return providerScoreFromEspnSnapshot(contest, entry.snapshot, entry.rawEvent);
+        // A denied slate endpoint is already evidence of a provider outage.
+        // Use the independent feed directly instead of repeating denied calls.
+        if (env.API_SPORTS_KEY && scoreboardError?.includes('HTTP 403')) throw new Error(scoreboardError);
+        return fetchExactEventScore(contest);
+      });
       const outcome = await refreshContestScore(admin, contest, provider);
       if (outcome.status === 'refreshed') refreshed += 1;
       else if (outcome.status === 'error') errors.push({ contestId: contest.id, error: outcome.error });
@@ -131,5 +137,5 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     failed: errors.length,
     pollSeconds,
     ...(scoreboardError ? { scoreboardError } : {}),
-  });
+  }, errors.length > 0 && refreshed === 0 ? 503 : 200);
 };

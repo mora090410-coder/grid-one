@@ -21,6 +21,19 @@ interface UseLiveScoringReturn {
 const EMPTY_WINNER_HISTORY: WinnerResolution[] = [];
 const EMPTY_PENDING_MILESTONES: PendingMilestone[] = [];
 
+const hasUntrustedFreshness = (score: LiveGameData) =>
+    ['stale', 'offline', 'refreshing', 'rejected'].includes(score.freshness || '');
+
+const snapshotStatus = (score: LiveGameData) => {
+    if (!score.isManual) {
+        if (score.freshness === 'offline') return 'OFFLINE · LAST KNOWN';
+        if (score.freshness === 'refreshing') return 'REFRESHING';
+        if (score.freshness === 'rejected') return 'SOURCE REJECTED';
+        if (score.freshness === 'stale') return 'STALE · LAST KNOWN';
+    }
+    return score.state === 'post' ? 'FINAL' : score.state === 'in' ? 'LIVE' : 'PRE-GAME';
+};
+
 export function useLiveScoring(
     game: GameState,
     dataReady: boolean,
@@ -85,11 +98,12 @@ export function useLiveScoring(
             && !manualScoringEnabled
             && externalEventId,
         );
-        isFinalRef.current = score.state === 'post' && !needsAutomaticRefresh;
+        isFinalRef.current = score.state === 'post' && !needsAutomaticRefresh
+            && (Boolean(score.isManual) || !hasUntrustedFreshness(score));
         if (isFinalRef.current) clearPoll();
         setLiveData(score);
-        setLiveStatus(score.state === 'post' ? 'FINAL' : score.freshness === 'stale' ? 'STALE' : score.state === 'in' ? 'LIVE' : 'PRE-GAME');
-        setIsSynced(score.freshness !== 'offline' && score.freshness !== 'rejected');
+        setLiveStatus(snapshotStatus(score));
+        setIsSynced(score.isManual ? score.freshness !== 'offline' && score.freshness !== 'rejected' : !hasUntrustedFreshness(score));
         setLastUpdated(score.retrievedAt ? new Date(score.retrievedAt).toLocaleTimeString() : '');
     }, [clearPoll, enabled, externalEventId, game.scoreSnapshot, manualScoringEnabled]);
 
@@ -217,22 +231,12 @@ export function useLiveScoring(
                 setPollIntervalMs(current => current === nextSeconds! * 1000 ? current : nextSeconds! * 1000);
             }
 
-            if (data.freshness === 'offline') {
-                setLiveStatus('OFFLINE · LAST KNOWN');
-            } else if (data.freshness === 'refreshing') {
-                setLiveStatus('REFRESHING');
-            } else if (data.freshness === 'stale') {
-                setLiveStatus('STALE · LAST KNOWN');
-            } else if (data.state === 'post') {
+            setLiveStatus(snapshotStatus(data));
+            if (data.state === 'post' && (data.isManual || !hasUntrustedFreshness(data))) {
                 isFinalRef.current = true;
                 clearPoll();
-                setLiveStatus('FINAL');
-            } else if (data.state === 'in') {
-                setLiveStatus('LIVE');
-            } else {
-                setLiveStatus('PRE-GAME');
             }
-            setIsSynced(data.freshness !== 'offline' && data.freshness !== 'rejected');
+            setIsSynced(data.isManual ? data.freshness !== 'offline' && data.freshness !== 'rejected' : !hasUntrustedFreshness(data));
             setLastUpdated(data.retrievedAt ? new Date(data.retrievedAt).toLocaleTimeString() : new Date().toLocaleTimeString());
         } catch (err: unknown) {
             console.error("Live Scoring Error:", err);
