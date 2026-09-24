@@ -10,7 +10,9 @@ const IMAGE_LIMIT_MESSAGE = 'Upload a JPG, PNG, or WebP image under 6 MB.';
 const MAX_BASE64_IMAGE_CHARS = 8_000_000;
 // The image field plus its JSON envelope; anything larger cannot hold a valid image.
 const MAX_SCAN_BODY_BYTES = MAX_BASE64_IMAGE_CHARS + 64 * 1024;
-const PROVIDER_TIMEOUT_MS = 30_000;
+// Generous on purpose: reading a large handwritten board photo can take well over
+// 30 seconds. The limit only exists so a hung provider call cannot wait forever.
+const PROVIDER_TIMEOUT_MS = 90_000;
 const PROVIDER_UNAVAILABLE = 'The scan provider is unavailable.';
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {

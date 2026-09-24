@@ -540,6 +540,14 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
     }
     return jsonResponse({ ok: true, revision: data.revision, updatedAt: data.updated_at }, 200);
   } catch (error: any) {
+    // Guest claims landed between the organizer's load and this save. Say so
+    // plainly instead of a generic failure, the same way publish does.
+    if (/guest_(square|snapshot)_conflict|guest_holds_active/i.test(error?.message || '')) {
+      return jsonResponse({
+        error: 'Guest claims changed this board. Reload the latest board before saving again.',
+        code: 'GUEST_CONFLICT',
+      }, 409);
+    }
     return serverFailure('Board save failed', error, SAVE_FAILED);
   }
 };

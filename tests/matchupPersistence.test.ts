@@ -387,6 +387,34 @@ describe('scheduled-game persistence', () => {
     });
   });
 
+  it('tells the organizer when guest claims changed the board under a save', async () => {
+    fetchScheduledGameByIdMock.mockResolvedValue(scheduledGame);
+    const currentQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { published_at: null, status: 'draft', board_data: { squares: [] }, settings: {}, game_external_id: null, game_starts_at: null, season_year: 2026 },
+        error: null,
+      }),
+    };
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'guest_square_conflict' } });
+    createClientMock.mockReturnValue(authClient({ from: vi.fn().mockReturnValue(currentQuery), rpc }));
+    const response = await onRequestPut({
+      request: new Request('https://getgridone.com/api/pools/11111111-1111-4111-8111-111111111111', {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 3, game: { title: 'Draft', gameExternalId: scheduledGame.id } }),
+      }),
+      env,
+      params: { id: '11111111-1111-4111-8111-111111111111' },
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: 'GUEST_CONFLICT',
+      error: 'Guest claims changed this board. Reload the latest board before saving again.',
+    });
+  });
+
   it('returns the latest revision so an explicit organizer retry can recover', async () => {
     const currentQuery = {
       select: vi.fn().mockReturnThis(),

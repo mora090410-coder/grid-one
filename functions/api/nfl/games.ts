@@ -55,7 +55,9 @@ export const onRequestGet: PagesFunction = async (context) => {
     const games = await fetchScheduledGames({ scope, limit });
     if (completedAccess) return json({ games, scoreTestMode: true }, 200, 'private, no-store');
     const response = json({ games }, 200, PUBLIC_SCHEDULE_CACHE_CONTROL);
-    if (edgeCache && typeof context.waitUntil === 'function') {
+    // Never pin an empty schedule: a brief bad provider read would otherwise
+    // empty every organizer's game picker for the whole cache lifetime.
+    if (edgeCache && games.length > 0 && typeof context.waitUntil === 'function') {
       context.waitUntil(edgeCache.put(cacheKey, response.clone()).catch(() => undefined));
     }
     return response;

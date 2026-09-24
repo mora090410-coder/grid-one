@@ -475,6 +475,16 @@ describe('NFL schedule edge cache', () => {
     expect(mocks.fetchScheduledGames).toHaveBeenCalledTimes(1);
   });
 
+  it('never pins an empty public schedule at the edge', async () => {
+    const cache = { match: vi.fn(async () => undefined), put: vi.fn(async () => undefined) };
+    vi.stubGlobal('caches', { default: cache });
+    mocks.fetchScheduledGames.mockResolvedValueOnce([]);
+    const waitUntil = vi.fn();
+    const response = await nflGames({ request: new Request('https://x.test/api/nfl/games'), env, waitUntil });
+    expect(await response.json()).toEqual({ games: [] });
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
   it('never caches an error or the private completed-game list', async () => {
     const cache = { match: vi.fn(async () => undefined), put: vi.fn(async () => undefined) };
     vi.stubGlobal('caches', { default: cache });
