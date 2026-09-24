@@ -1,13 +1,11 @@
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 import {
   configuredPriceForTier,
   nextUpgradeTier,
   paidTierFromRequest,
   type PricingTier,
 } from '../../_lib/pricingTiers';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { adminClient, currentSeason, maskedError, readJsonObject, requireUser, type PagesFunction } from '../../_lib/http';
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   try {
@@ -15,22 +13,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     if (required.some((key) => !env[key])) {
       return Response.json({ error: 'Checkout is not configured.' }, { status: 503 });
     }
-    const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-    if (!token) return Response.json({ error: 'Sign in before checkout.' }, { status: 401 });
-    const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: authData } = await auth.auth.getUser(token);
-    if (!authData.user) return Response.json({ error: 'Your session has expired.' }, { status: 401 });
+    const user = await requireUser(request, env, { missing: 'Sign in before checkout.', expired: 'Your session has expired.' });
+    if (user instanceof Response) return user;
+    const body = await readJsonObject(request, 16_384);
+    if (body instanceof Response) return body;
     const {
       contestId,
       tier: requestedTierValue,
       organizationName: organizationNameValue,
-    } = await request.json() as {
+    } = body as {
       contestId?: string;
       tier?: unknown;
       organizationName?: unknown;
     };
+    const seasonYear = currentSeason(env);
     if (!contestId) return Response.json({ error: 'Choose the draft you want to publish.' }, { status: 400 });
     const requestedTier = paidTierFromRequest(requestedTierValue);
     if (!requestedTier) {
@@ -47,14 +43,12 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       return Response.json({ error: 'Enter the organization name to show on its boards and receipt.' }, { status: 400 });
     }
 
-    const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const admin = adminClient(env);
     const { data: contest } = await admin
       .from('contests')
       .select('id, owner_id, season_year')
       .eq('id', contestId)
-      .eq('owner_id', authData.user.id)
+      .eq('owner_id', user.id)
       .maybeSingle();
     if (!contest) return Response.json({ error: 'You do not own this board.' }, { status: 403 });
 
@@ -75,8 +69,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const { data: entitlement } = await admin
       .from('season_entitlements')
       .select('id, tier, status, boards_allowance')
-      .eq('owner_id', authData.user.id)
-      .eq('season_year', 2026)
+      .eq('owner_id', user.id)
+      .eq('season_year', seasonYear)
       .maybeSingle();
     let used = 0;
     if (entitlement?.id) {
@@ -140,8 +134,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const { data: existingOrders, error: ordersError } = await admin
       .from('checkout_orders')
       .select('id, contest_id, status, price_id, stripe_checkout_session_id, created_at')
-      .eq('owner_id', authData.user.id)
-      .eq('season_year', 2026)
+      .eq('owner_id', user.id)
+      .eq('season_year', seasonYear)
       .in('status', ['pending', 'checkout_created', 'awaiting_payment'])
       .order('created_at', { ascending: false })
       .limit(100);
@@ -181,9 +175,9 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       if (expireError) throw expireError;
     }
     const { data: claimData, error: claimError } = await admin.rpc('gridone_claim_checkout_order', {
-      p_owner_id: authData.user.id,
+      p_owner_id: user.id,
       p_contest_id: contest.id,
-      p_season_year: 2026,
+      p_season_year: seasonYear,
       p_price_id: price.id,
       p_price_cents: price.unit_amount,
       p_currency: price.currency,
@@ -229,20 +223,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       cancel_url: `${site}/?poolId=${contest.id}`,
       metadata: {
         order_id: claim.order_id,
-        owner_id: authData.user.id,
+        owner_id: user.id,
         contest_id: contest.id,
-        season: '2026',
+        season: String(seasonYear),
         tier: requestedTier,
         ...(requestedTier === 'org' ? { organization_name: organizationName } : {}),
       },
       payment_intent_data: {
         description: requestedTier === 'org'
           ? `GridOne Organization — ${organizationName}`
-          : 'GridOne Game Day — 2026 season',
+          : `GridOne Game Day — ${seasonYear} season`,
         metadata: {
           order_id: claim.order_id,
-          owner_id: authData.user.id,
-          season: '2026',
+          owner_id: user.id,
+          season: String(seasonYear),
           tier: requestedTier,
           ...(requestedTier === 'org' ? { organization_name: organizationName } : {}),
         },
@@ -257,7 +251,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     });
     if (attachError) throw attachError;
     return Response.json({ url: session.url, orderId: claim.order_id });
-  } catch (error: any) {
-    return Response.json({ error: error?.message || 'Unable to start checkout.' }, { status: 500 });
+  } catch (error) {
+    return maskedError('Checkout session creation failed', error, 'Unable to start checkout. Please try again.');
   }
 };

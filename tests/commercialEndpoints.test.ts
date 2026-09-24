@@ -494,7 +494,7 @@ describe.sequential('billing status endpoint', () => {
       adminClient([
         {
           data: {
-            id: 'order-1',
+            id: '44444444-4444-4444-8444-444444444444',
             contest_id: 'board-1',
             season_year: 2026,
             status: 'paid',
@@ -521,7 +521,7 @@ describe.sequential('billing status endpoint', () => {
 
     const response = await billingStatus({
       request: new Request(
-        'https://example.test/api/billing/status?order=order-1',
+        'https://example.test/api/billing/status?order=44444444-4444-4444-8444-444444444444',
         { headers: { Authorization: 'Bearer access-token' } },
       ),
       env,

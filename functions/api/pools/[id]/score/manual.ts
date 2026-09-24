@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { adminClient, isUuid, maskedError, readJsonObject, requireUser, type PagesFunction } from '../../../../_lib/http';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
 type QuarterKey = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT';
 
 const quarterKeys: QuarterKey[] = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'];
@@ -9,36 +8,35 @@ const json = (body: unknown, status = 200) => Response.json(body, {
   headers: { 'Cache-Control': 'no-store' },
 });
 
+const SCORE_SAVE_FAILED = 'The score could not be saved. Please try again.';
+const SCORING_MODE_FAILED = 'The scoring mode could not be changed. Please try again.';
+
 const authenticatedOwner = async (request: Request, env: any, contestId: string) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return { error: json({ error: 'Manual scoring is not configured.' }, 503) };
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return { error: json({ error: 'Sign in before changing a score.' }, 401) };
-  const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: authData } = await auth.auth.getUser(token);
-  if (!authData.user) return { error: json({ error: 'Your session has expired.' }, 401) };
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!isUuid(contestId)) return { error: json({ error: 'Invalid board ID.' }, 400) };
+  const user = await requireUser(request, env, { missing: 'Sign in before changing a score.', expired: 'Your session has expired.' });
+  if (user instanceof Response) return { error: user };
+  const admin = adminClient(env);
   const { data: contest } = await admin
     .from('contests')
     .select('id, status, published_at, game_external_id')
     .eq('id', contestId)
-    .eq('owner_id', authData.user.id)
+    .eq('owner_id', user.id)
     .maybeSingle();
   if (!contest) return { error: json({ error: 'Board not found.' }, 404) };
   if (!contest.published_at || !['published', 'live', 'final'].includes(contest.status)) {
     return { error: json({ error: 'Draw and lock the board numbers before managing scores.' }, 409) };
   }
-  return { admin, user: authData.user, contest };
+  return { admin, user, contest };
 };
 
 export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
   const contestId = String(params.id || '');
   const owner = await authenticatedOwner(request, env, contestId);
   if (owner.error) return owner.error;
-  const body = await request.json() as {
+  const parsed = await readJsonObject(request, 16_384);
+  if (parsed instanceof Response) return parsed;
+  const body = parsed as {
     quarterScores?: Record<QuarterKey, { left: number; top: number }>;
     period?: number;
     state?: 'pre' | 'in' | 'post';
@@ -74,7 +72,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     p_clock: String(body.clock || '').slice(0, 32),
     p_observed_at: now.toISOString(),
   });
-  if (commitError) return json({ error: commitError.message }, 500);
+  if (commitError) return maskedError('Manual score commit failed', commitError, SCORE_SAVE_FAILED);
   const snapshot = Array.isArray(committed) ? committed[0] : committed;
   if (!snapshot?.id) return json({ error: 'The manual score was not committed.' }, 500);
   const publicScore = {
@@ -98,7 +96,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     .select('winner_history, pending_milestones')
     .eq('contest_id', contestId)
     .maybeSingle();
-  if (projectionError) return json({ error: projectionError.message }, 500);
+  if (projectionError) return maskedError('Manual score projection read failed', projectionError, SCORE_SAVE_FAILED);
   return json({
     score: publicScore,
     winnerHistory: Array.isArray(milestoneProjection?.winner_history)
@@ -119,7 +117,7 @@ export const onRequestPut: PagesFunction = async ({ request, env, params }) => {
     p_owner_id: owner.user!.id,
     p_changed_at: new Date().toISOString(),
   });
-  if (error) return json({ error: error.message }, 500);
+  if (error) return maskedError('Scoring mode change failed', error, SCORING_MODE_FAILED);
   if (!enabled) return json({ error: 'Manual scoring could not be enabled.' }, 409);
   return json({
     scoringMode: 'manual',
@@ -142,7 +140,7 @@ export const onRequestDelete: PagesFunction = async ({ request, env, params }) =
     p_owner_id: owner.user!.id,
     p_changed_at: new Date().toISOString(),
   });
-  if (error) return json({ error: error.message }, 500);
+  if (error) return maskedError('Scoring mode change failed', error, SCORING_MODE_FAILED);
   if (!enabled) return json({ error: 'Automatic scoring could not be enabled.' }, 409);
   return json({ scoringMode: 'automatic' });
 };

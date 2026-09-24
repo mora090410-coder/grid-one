@@ -1,26 +1,25 @@
 import { validateAllocationLabels } from '../../../_lib/pregameBoard';
-import { createClient } from '@supabase/supabase-js';
 import { hasValidAxes, isValidAxis } from '../../../../utils/boardValidation';
 import { projectQuarterAxes, validDraftAxisMode } from '../../../../utils/quarterAxes';
 import { getAxisForQuarter } from '../../../../utils/winnerLogic';
 import { photoOrientationResolved } from '../../../../utils/photoOrientation';
-import { nextUpgradeTier, type PricingTier } from '../../../_lib/pricingTiers';
+import { allowanceErrorResponse } from '../../../_lib/pricingTiers';
+import { adminClient, isUuid, maskedError, requireUser, type PagesFunction } from '../../../_lib/http';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
+const PUBLISH_FAILED = 'The board could not be published. Please try again.';
 
 export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return Response.json({ error: 'Publishing is not configured.' }, { status: 503 });
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return Response.json({ error: 'Sign in before publishing.' }, { status: 401 });
-  const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: authData } = await auth.auth.getUser(token);
-  if (!authData.user) return Response.json({ error: 'Your session has expired.' }, { status: 401 });
-  if (!authData.user.email || !authData.user.email_confirmed_at) {
+  const contestId = String(params.id || '');
+  if (!isUuid(contestId)) return Response.json({ error: 'Invalid board ID.' }, { status: 400 });
+  const user = await requireUser(request, env, { missing: 'Sign in before publishing.', expired: 'Your session has expired.' });
+  if (user instanceof Response) return user;
+  if (!user.email || !user.email_confirmed_at) {
     return Response.json({ error: 'Verify your email before publishing your free board.' }, { status: 403 });
   }
-  const body = await request.json().catch(() => ({})) as { allowOpenSquares?: unknown };
+  // An empty body means "no open-square opt-in"; a JSON null or array does too.
+  const parsed: unknown = await request.json().catch(() => ({}));
+  const body = (parsed && typeof parsed === 'object' ? parsed : {}) as { allowOpenSquares?: unknown };
   if (
     Object.prototype.hasOwnProperty.call(body, 'allowOpenSquares')
     && typeof body.allowOpenSquares !== 'boolean'
@@ -29,16 +28,14 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   }
   const allowOpenSquares = body.allowOpenSquares === true;
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
   const { data: contest, error } = await admin
     .from('contests')
     .select('id, share_code, owner_id, title, revision, settings, board_data, published_at, side_axis, top_axis, side_team_name, side_team_abbr, top_team_name, top_team_abbr, game_external_id, game_starts_at, payout_labels')
-    .eq('id', String(params.id || ''))
-    .eq('owner_id', authData.user.id)
+    .eq('id', contestId)
+    .eq('owner_id', user.id)
     .maybeSingle();
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) return maskedError('Publish contest lookup failed', error, PUBLISH_FAILED);
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
   const storedBoard = contest.board_data || {};
   if (!photoOrientationResolved(storedBoard, {topAbbr:contest.top_team_abbr || contest.settings?.topAbbr, leftAbbr:contest.side_team_abbr || contest.settings?.leftAbbr})) {
@@ -97,7 +94,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   };
   const { data: publishedRows, error: publishError } = await admin.rpc('gridone_publish_board', {
     p_contest_id: contest.id,
-    p_owner_id: authData.user.id,
+    p_owner_id: user.id,
     p_expected_revision: contest.revision,
     p_side_axis: sideAxis,
     p_top_axis: topAxis,
@@ -116,37 +113,12 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
       code: 'REVISION_CONFLICT',
       error: 'Guest claims changed this board. Reload the latest board before locking numbers.',
     }, { status: 409 });
-    const allowanceMatch = message.match(
-      /PUBLISH_(ALLOWANCE_EXHAUSTED|ENTITLEMENT_INACTIVE):([^:]+):(\d+):(\d+)/i,
-    );
-    if (allowanceMatch) {
-      const [, reason, tierValue, usedValue, allowanceValue] = allowanceMatch;
-      const tier = tierValue.toLowerCase() as PricingTier;
-      const used = Number(usedValue);
-      const allowance = Number(allowanceValue);
-      const upgradeTo = reason.toUpperCase() === 'ENTITLEMENT_INACTIVE'
-        ? tier === 'org'
-          ? 'org'
-          : 'gameday'
-        : nextUpgradeTier(tier);
-      const code = reason.toUpperCase() === 'ENTITLEMENT_INACTIVE'
-        ? 'PUBLISH_ENTITLEMENT_INACTIVE'
-        : 'PUBLISH_ALLOWANCE_EXHAUSTED';
-      return Response.json({
-        code,
-        error: upgradeTo === 'org'
-          ? 'Your Game Day plan has published all 5 boards for this season.'
-          : 'Your free plan includes 1 board per season. Choose the Game Day plan to publish another.',
-        tier,
-        used,
-        allowance,
-        upgradeTo,
-      }, { status: 402 });
+    const allowance = allowanceErrorResponse(message);
+    if (allowance) return allowance;
+    if (/scheduled NFL game|axis|100 squares|open square|purchaser name/i.test(message)) {
+      return Response.json({ error: message }, { status: 409 });
     }
-    const status = /scheduled NFL game|axis|100 squares|open square|purchaser name/i.test(message)
-        ? 409
-        : 500;
-    return Response.json({ error: message }, { status });
+    return maskedError('Publish RPC failed', publishError, PUBLISH_FAILED);
   }
   const published = Array.isArray(publishedRows) ? publishedRows[0] : publishedRows;
   if (!published) {

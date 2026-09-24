@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
@@ -19,10 +18,13 @@ export {
   validateScore,
 } from '../../../_lib/scoreRefresh';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const sharePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
+import {
+  adminClient,
+  requireUser,
+  SHARE_CODE_PATTERN as sharePattern,
+  UUID_PATTERN as uuidPattern,
+  type PagesFunction,
+} from '../../../_lib/http';
 
 // How long past stale_after the anonymous share-code path tolerates before it
 // falls back to an inline ESPN refresh. The cron normally keeps snapshots
@@ -134,28 +136,26 @@ export const onRequestGet: PagesFunction = async (context) => {
     return response;
   };
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
 
   let ownerId: string | null = null;
   if (!isPublicRef) {
-    const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-    if (!token) return json({ error: 'Sign in before refreshing an organizer board.' }, 401);
-    const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
+    const user = await requireUser(request, env, {
+      missing: 'Sign in before refreshing an organizer board.',
+      expired: 'Your session has expired.',
     });
-    const { data } = await auth.auth.getUser(token);
-    ownerId = data.user?.id || null;
-    if (!ownerId) return json({ error: 'Your session has expired.' }, 401);
+    if (user instanceof Response) return user;
+    ownerId = user.id;
   }
   let contest: any = null;
   if (!isPublicRef) {
-    let contestQuery = admin
+    // The organizer path only ever reads the caller's own board.
+    const { data, error } = await admin
       .from('contests')
-      .select('id, owner_id, status, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)');
-    if (ownerId) contestQuery = contestQuery.eq('owner_id', ownerId);
-    const { data, error } = await contestQuery.eq('id', ref).maybeSingle();
+      .select('id, owner_id, status, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+      .eq('owner_id', ownerId)
+      .eq('id', ref)
+      .maybeSingle();
     if (error) {
       console.error('Score contest lookup failed:', error);
       return json({ error: 'Unable to load the board.' }, 500);

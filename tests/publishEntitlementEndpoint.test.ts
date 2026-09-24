@@ -22,7 +22,7 @@ const env = {
 };
 
 const request = (body?: unknown) => new Request(
-  'https://example.test/api/pools/board-1/publish',
+  'https://example.test/api/pools/33333333-3333-4333-8333-333333333333/publish',
   {
     method: 'POST',
     headers: { Authorization: 'Bearer access-token' },
@@ -51,7 +51,7 @@ const authClient = ({
 });
 
 const contest = {
-  id: 'board-1',
+  id: '33333333-3333-4333-8333-333333333333',
   share_code: 'ABCDEFGH',
   owner_id: 'user-1',
   title: 'Riverside Ravens',
@@ -120,7 +120,7 @@ beforeEach(() => {
 describe.sequential('publish entitlement boundary', () => {
   it('keeps finalization recoverable while guest holds are active', async () => {
     mocks.clients.push(authClient(), adminClient({ rpcError: { message: 'guest_holds_active' } }));
-    const response = await publishBoard({ request: request(), env, params: { id: 'board-1' } });
+    const response = await publishBoard({ request: request(), env, params: { id: '33333333-3333-4333-8333-333333333333' } });
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ code: 'ACTIVE_GUEST_HOLDS', error: 'Guests are choosing squares. Wait for their holds to finish, or cancel holds in Guest claim links before locking numbers.' });
   });
@@ -129,14 +129,14 @@ describe.sequential('publish entitlement boundary', () => {
     for (const axes of [{}, {leftAxis:[],topAxis:Array(10).fill(null)}]) {
       const admin=adminClient({contestData:{...contest,side_axis:contest.board_data.leftAxis,top_axis:contest.board_data.topAxis,board_data:{squares:contest.board_data.squares,...axes}}});
       mocks.clients.push(authClient(),admin);
-      expect((await publishBoard({request:request(),env,params:{id:'board-1'}})).status).toBe(200);
+      expect((await publishBoard({request:request(),env,params:{id:'33333333-3333-4333-8333-333333333333'}})).status).toBe(200);
       expect((admin.rpc.mock.calls as unknown as [string,any][])[0][1]).toMatchObject({p_side_axis:contest.board_data.leftAxis,p_top_axis:contest.board_data.topAxis});
     }
   });
   it('blocks unresolved photo orientation even with eight valid axes', async () => {
     const admin=adminClient({contestData:{...contest,board_data:{...contest.board_data,scanReview:{topTeamText:'CHI',leftTeamText:'GB',literalAxes:'literal'}}}});
     mocks.clients.push(authClient(),admin);
-    const result=await publishBoard({request:request(),env,params:{id:'board-1'}});
+    const result=await publishBoard({request:request(),env,params:{id:'33333333-3333-4333-8333-333333333333'}});
     expect(result.status).toBe(409); expect(await result.json()).toEqual({error:expect.stringMatching(/photo team orientation/)});
     expect(admin.rpc).not.toHaveBeenCalled();
   });
@@ -145,7 +145,7 @@ describe.sequential('publish entitlement boundary', () => {
     const sets = {Q1:digits,Q2:[...digits.slice(1),0],Q3:[...digits.slice(2),0,1],Q4:[...digits].reverse()};
     const admin = adminClient({contestData:{...contest,board_data:{...contest.board_data,isDynamic:true,leftAxisByQuarter:sets,topAxisByQuarter:sets,scanReview:{literalAxes:'PRIVATE',orientation:{topAbbr:'GB',leftAbbr:'CHI',operation:'unchanged'}}}}});
     mocks.clients.push(authClient(),admin);
-    const response = await publishBoard({request:request(),env,params:{id:'board-1'}});
+    const response = await publishBoard({request:request(),env,params:{id:'33333333-3333-4333-8333-333333333333'}});
     expect(response.status).toBe(200);
     const payload = (admin.rpc.mock.calls as unknown as [string,any][])[0][1];
     expect(payload.p_public_board.topAxisByQuarter).toEqual(sets);
@@ -161,7 +161,7 @@ describe.sequential('publish entitlement boundary', () => {
       const sets = {Q1:digits,Q2:digits,Q3:digits,...(finalAxis ? {Q4:finalAxis} : {})};
       const admin = adminClient({contestData:{...contest,board_data:{...contest.board_data,isDynamic:true,leftAxisByQuarter:sets,topAxisByQuarter:sets}}});
       mocks.clients.push(authClient(),admin);
-      const response = await publishBoard({request:request(),env,params:{id:'board-1'}});
+      const response = await publishBoard({request:request(),env,params:{id:'33333333-3333-4333-8333-333333333333'}});
       expect(response.status).toBe(409);
       expect(admin.rpc).not.toHaveBeenCalled();
     }
@@ -173,7 +173,7 @@ describe.sequential('publish entitlement boundary', () => {
     const response = await publishBoard({
       request: request(),
       env,
-      params: { id: 'board-1' },
+      params: { id: '33333333-3333-4333-8333-333333333333' },
     });
 
     expect(response.status).toBe(403);
@@ -190,7 +190,7 @@ describe.sequential('publish entitlement boundary', () => {
     const response = await publishBoard({
       request: request(),
       env,
-      params: { id: 'board-1' },
+      params: { id: '33333333-3333-4333-8333-333333333333' },
     });
 
     expect(response.status).toBe(200);
@@ -209,7 +209,7 @@ describe.sequential('publish entitlement boundary', () => {
     expect(admin.rpc).toHaveBeenCalledWith(
       'gridone_publish_board',
       expect.objectContaining({
-        p_contest_id: 'board-1',
+        p_contest_id: '33333333-3333-4333-8333-333333333333',
         p_owner_id: 'user-1',
         p_expected_revision: 4,
         p_allow_open_squares: false,
@@ -232,7 +232,7 @@ describe.sequential('publish entitlement boundary', () => {
     const rejected = await publishBoard({
       request: request(),
       env,
-      params: { id: 'board-1' },
+      params: { id: '33333333-3333-4333-8333-333333333333' },
     });
 
     expect(rejected.status).toBe(409);
@@ -257,7 +257,7 @@ describe.sequential('publish entitlement boundary', () => {
     const response = await publishBoard({
       request: request({ allowOpenSquares: true }),
       env,
-      params: { id: 'board-1' },
+      params: { id: '33333333-3333-4333-8333-333333333333' },
     });
 
     expect(response.status).toBe(200);
@@ -282,7 +282,7 @@ describe.sequential('publish entitlement boundary', () => {
     const response = await publishBoard({
       request: request({ allowOpenSquares: true }),
       env,
-      params: { id: 'board-1' },
+      params: { id: '33333333-3333-4333-8333-333333333333' },
     });
 
     expect(response.status).toBe(409);
@@ -318,7 +318,7 @@ describe.sequential('publish entitlement boundary', () => {
       const response = await publishBoard({
         request: request(),
         env,
-        params: { id: 'board-1' },
+        params: { id: '33333333-3333-4333-8333-333333333333' },
       });
 
       expect(response.status).toBe(402);

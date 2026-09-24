@@ -1,4 +1,4 @@
-import {createClient} from '@supabase/supabase-js';
+import {anonClient,authenticate,authUnavailableBody} from '../../../_lib/http';
 import {familyAdmin,familyFailure,familyResponse,hashFamilyToken,newFamilyToken,readFamilyBody,validCells,validLabel,validRevision,type FamilyEnv} from '../../../_lib/familyAccess';
 
 export const onRequestPost = async ({request,env,params}: {request:Request;env:FamilyEnv;params:{id:string}}) => {
@@ -7,9 +7,9 @@ export const onRequestPost = async ({request,env,params}: {request:Request;env:F
  const bearer=request.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
  if(!bearer)return familyResponse({error:'Sign in to manage family access.'},401);
  try{
-  const client=createClient(env.VITE_SUPABASE_URL,env.VITE_SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:auth,error:authError}=await client.auth.getUser(bearer);
-  if(authError||!auth.user)return familyResponse({error:'Sign in to manage family access.'},401);
+  const client=anonClient(env);
+  const auth=await authenticate(client,bearer);
+  if(!('user' in auth))return auth.failure==='unavailable'?familyResponse(authUnavailableBody(),503):familyResponse({error:'Sign in to manage family access.'},401);
   let body; try { body=await readFamilyBody(request); } catch { return familyResponse({error:'Invalid family request.'},400); }
   if(!body||typeof body.action!=='string'||!['invite','revoke','reassign'].includes(body.action)||!validRevision(body.revision)||!validLabel(body.label)||Object.keys(body).some(key=>!['action','revision','label','cells','reviewPaymentNotes'].includes(key))||(body.action!=='revoke'&&!validCells(body.cells))||(body.action==='reassign'&&body.reviewPaymentNotes!==true))return familyResponse({error:'Review the family, selected squares, and payment-note acknowledgement.'},400);
   const token=body.action==='invite'?newFamilyToken():null;

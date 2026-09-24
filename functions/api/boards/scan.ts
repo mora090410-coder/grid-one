@@ -1,28 +1,30 @@
-import { createClient } from '@supabase/supabase-js';
 import { BOARD_SCAN_PROMPT, parseScannedBoard } from '../../_lib/scanBoard';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { readJsonObject, requireUser, type PagesFunction } from '../../_lib/http';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
 
+const IMAGE_LIMIT_MESSAGE = 'Upload a JPG, PNG, or WebP image under 6 MB.';
+const MAX_BASE64_IMAGE_CHARS = 8_000_000;
+// The image field plus its JSON envelope; anything larger cannot hold a valid image.
+const MAX_SCAN_BODY_BYTES = MAX_BASE64_IMAGE_CHARS + 64 * 1024;
+const PROVIDER_TIMEOUT_MS = 30_000;
+const PROVIDER_UNAVAILABLE = 'The scan provider is unavailable.';
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return json({ error: 'Sign in before importing a board.' }, 401);
-  const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: authData } = await auth.auth.getUser(token);
-  if (!authData.user) return json({ error: 'Your session has expired.' }, 401);
+  const user = await requireUser(request, env, { missing: 'Sign in before importing a board.', expired: 'Your session has expired.' });
+  if (user instanceof Response) return user;
   if (!env.GEMINI_API_KEY) return json({ error: 'Paper-board import is not configured.' }, 503);
 
-  const body = await request.json() as { image?: string };
-  const match = body.image?.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
-  if (!match || match[2].length > 8_000_000) {
-    return json({ error: 'Upload a JPG, PNG, or WebP image under 6 MB.' }, 400);
+  const body = await readJsonObject(request, MAX_SCAN_BODY_BYTES, { tooLarge: IMAGE_LIMIT_MESSAGE });
+  if (body instanceof Response) return body;
+  const match = typeof body.image === 'string'
+    ? body.image.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/)
+    : null;
+  if (!match || match[2].length > MAX_BASE64_IMAGE_CHARS) {
+    return json({ error: IMAGE_LIMIT_MESSAGE }, 400);
   }
 
   const prompt = BOARD_SCAN_PROMPT;
@@ -30,9 +32,10 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   let providerResponse: Response;
   let raw: any;
   try {
-    providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
+    // The key travels in a header, never in a URL that proxies or logs may keep.
+    providerResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({
         contents: [{
           role: 'user',
@@ -43,12 +46,18 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
         }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0 },
       }),
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
     raw = await providerResponse.json();
-  } catch {
-    return json({ error: 'The scan provider is unavailable.' }, 502);
+  } catch (error) {
+    console.error('Scan provider request failed:', error);
+    return json({ error: PROVIDER_UNAVAILABLE }, 502);
   }
-  if (!providerResponse.ok) return json({ error: raw?.error?.message || 'The scan provider is unavailable.' }, 502);
+  if (!providerResponse.ok) {
+    // Provider error text can name keys, quotas or projects; keep it in logs only.
+    console.error('Scan provider rejected the request:', providerResponse.status, raw?.error?.message);
+    return json({ error: PROVIDER_UNAVAILABLE }, 502);
+  }
   const text = raw?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('');
   if (!text) return json({ error: 'The scan provider returned no board data.' }, 502);
 

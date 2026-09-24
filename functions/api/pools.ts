@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import {
   fetchScheduledGameById,
   fetchScheduledGames,
@@ -11,11 +10,24 @@ import {
   validatePayoutDescriptions,
 } from '../_lib/payoutDescriptions';
 
+import { canonicalizeGameSettings, legacyDateFromKickoff } from '../_lib/matchup';
+import {
+  adminClient,
+  bearerToken,
+  currentSeason,
+  jsonResponse,
+  maskedError,
+  readJsonObject,
+  userClient,
+  verifyUser,
+  type PagesFunction,
+} from '../_lib/http';
+
 import { validDraftAxisMode } from '../../utils/quarterAxes';
 import { isValidAxis } from '../../utils/boardValidation';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
-const LAUNCH_SEASON_YEAR = 2026;
+// A 100-square board with names, payout text and quarter numbers is far below this.
+const MAX_CREATE_BODY_BYTES = 256 * 1024;
 
 interface CreateBoardPayload {
   scoreTestMode?: boolean;
@@ -40,52 +52,8 @@ interface CreateBoardPayload {
 
 export { scoreTestModeAllowed };
 
-const allowedOrigins = new Set([
-  'http://localhost:8788',
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:49575',
-  'https://getgridone.com',
-  'https://www.getgridone.com',
-]);
-
-const json = (request: Request, body: unknown, status: number, siteOrigin?: string) => {
-  const requestOrigin = request.headers.get('Origin');
-  const configuredOrigin = siteOrigin ? new URL(siteOrigin).origin : null;
-  const origin = requestOrigin && (allowedOrigins.has(requestOrigin) || requestOrigin === configuredOrigin)
-    ? requestOrigin
-    : configuredOrigin || 'https://www.getgridone.com';
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Vary': 'Origin',
-    },
-  });
-};
-
-export const legacyDateFromKickoff = (kickoffAt: string) => kickoffAt.slice(0, 10);
-
-export const canonicalizeGameSettings = (
-  submitted: CreateBoardPayload['game'],
-  scheduled: ScheduledGame,
-) => ({
-  ...submitted,
-  gameExternalId: scheduled.id,
-  gameStartsAt: scheduled.kickoffAt,
-  kickoffAt: scheduled.kickoffAt,
-  gameSeason: scheduled.season,
-  gameWeek: scheduled.week,
-  dates: legacyDateFromKickoff(scheduled.kickoffAt),
-  leftAbbr: scheduled.awayTeam.abbr,
-  leftName: scheduled.awayTeam.name,
-  topAbbr: scheduled.homeTeam.abbr,
-  topName: scheduled.homeTeam.name,
-});
+// Re-exported for existing consumers; the shared copy lives in _lib/matchup.
+export { canonicalizeGameSettings, legacyDateFromKickoff };
 
 const validate = (input: unknown): CreateBoardPayload => {
   if (!input || typeof input !== 'object') throw new Error('Invalid request body.');
@@ -114,58 +82,52 @@ const validate = (input: unknown): CreateBoardPayload => {
   } as CreateBoardPayload;
 };
 
-export const onRequestOptions: PagesFunction = ({ request, env }) =>
-  json(request, {}, 204, env.PUBLIC_SITE_URL);
-
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   try {
-    const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-    if (!bearer) return json(request, { error: 'Sign in before creating a board.' }, 401, env.PUBLIC_SITE_URL);
+    const bearer = bearerToken(request);
+    if (!bearer) return jsonResponse({ error: 'Sign in before creating a board.' }, 401);
 
-    const payload = validate(await request.json());
-    const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${bearer}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: authData, error: authError } = await supabase.auth.getUser(bearer);
-    if (authError || !authData.user) {
-      return json(request, { error: 'Your session has expired. Sign in again.' }, 401, env.PUBLIC_SITE_URL);
-    }
+    const body = await readJsonObject(request, MAX_CREATE_BODY_BYTES);
+    if (body instanceof Response) return body;
+    const payload = validate(body);
+    const supabase = userClient(env, bearer);
+    const user = await verifyUser(supabase, bearer, { expired: 'Your session has expired. Sign in again.' });
+    if (user instanceof Response) return user;
     const scoreTestGateOpen = payload.scoreTestMode === true
-      && scoreTestModeAllowed(env, authData.user.id);
+      && scoreTestModeAllowed(env, user.id);
 
     let scheduledGame: ScheduledGame | null;
     try {
       scheduledGame = await fetchScheduledGameById(payload.game.gameExternalId);
     } catch {
-      return json(request, {
+      return jsonResponse({
         error: 'The NFL schedule provider is unavailable. Retry in a moment.',
-      }, 503, env.PUBLIC_SITE_URL);
+      }, 503);
     }
     if (!scheduledGame) {
-      return json(request, {
+      return jsonResponse({
         error: 'That NFL game could not be verified. Choose a scheduled game and try again.',
-      }, 400, env.PUBLIC_SITE_URL);
+      }, 400);
     }
     const scoreTestMode = scoreTestGateOpen && scheduledGame.state !== 'pre';
     if (scheduledGame.state !== 'pre') {
       if (!scoreTestMode) {
-        return json(request, {
+        return jsonResponse({
           error: 'Choose an upcoming NFL game.',
-        }, 400, env.PUBLIC_SITE_URL);
+        }, 400);
       }
       let recentCompleted: ScheduledGame[];
       try {
         recentCompleted = await fetchScheduledGames({ scope: 'completed', limit: 5 });
       } catch {
-        return json(request, {
+        return jsonResponse({
           error: 'The completed-game test list is unavailable. Retry in a moment.',
-        }, 503, env.PUBLIC_SITE_URL);
+        }, 503);
       }
       if (!recentCompleted.some((game) => game.id === scheduledGame.id)) {
-        return json(request, {
+        return jsonResponse({
           error: 'Score-test boards are limited to the five most recent completed NFL games.',
-        }, 400, env.PUBLIC_SITE_URL);
+        }, 400);
       }
     }
     const game = canonicalizeGameSettings({
@@ -177,21 +139,19 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const sideAxis = validPair ? payload.board.leftAxis : null;
     const topAxis = validPair ? payload.board.topAxis : null;
     if (scoreTestMode && !env.SUPABASE_SERVICE_ROLE_KEY) {
-      return json(request, { error: 'Server configuration is incomplete.' }, 503, env.PUBLIC_SITE_URL);
+      return jsonResponse({ error: 'Server configuration is incomplete.' }, 503);
     }
     const writeClient = scoreTestMode
-      ? createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      })
+      ? adminClient(env)
       : supabase;
 
     const { data, error } = await writeClient
       .from('contests')
       .insert({
-        owner_id: authData.user.id,
+        owner_id: user.id,
         score_test_mode: scoreTestMode,
         title: game.title,
-        season_year: LAUNCH_SEASON_YEAR,
+        season_year: currentSeason(env),
         game_external_id: scheduledGame.id,
         game_starts_at: scheduledGame.kickoffAt,
         side_team_abbr: scheduledGame.awayTeam.abbr,
@@ -209,17 +169,18 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       .single();
 
     if (error) throw error;
-    return json(request, {
+    return jsonResponse({
       success: true,
       boardId: data.id,
       shareCode: data.share_code,
       revision: data.revision,
       poolId: data.id,
-    }, 201, env.PUBLIC_SITE_URL);
+    }, 201);
   } catch (error: any) {
     const message = error?.message || 'Unable to create the board.';
     const validationError = error instanceof PayoutDescriptionsValidationError
       || /board name|100 squares|invalid request|scheduled NFL game|invalid number mode or quarter axis shape/i.test(message);
-    return json(request, { error: message }, validationError ? 400 : 500, env.PUBLIC_SITE_URL);
+    if (validationError) return jsonResponse({ error: message }, 400);
+    return maskedError('Board creation failed', error, 'Unable to create the board. Please try again.');
   }
 };

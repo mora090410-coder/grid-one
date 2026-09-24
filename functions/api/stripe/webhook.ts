@@ -1,8 +1,6 @@
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 import { configuredTierForPrice } from '../../_lib/pricingTiers';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { adminClient, type PagesFunction } from '../../_lib/http';
 
 const text = (body: string, status = 200) => new Response(body, { status });
 
@@ -99,9 +97,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     if (entitlementTypes.has(event.type)) {
       const object = event.data.object as any;
       const isDispute = event.type.startsWith('charge.dispute.');
-      const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
+      const admin = adminClient(env);
       const { error } = await admin.rpc('gridone_apply_entitlement_payment_event', {
         p_event_id: event.id,
         p_event_type: event.type,
@@ -123,9 +119,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     if (!orderId) return text('Ignored invalid order metadata.');
 
     if (event.type === 'checkout.session.completed' && session.payment_status === 'unpaid') {
-      const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
+      const admin = adminClient(env);
       const { error } = await admin.rpc('gridone_record_checkout_session_event', {
         p_event_id: event.id,
         p_event_type: event.type,
@@ -139,9 +133,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     }
 
     if (event.type === 'checkout.session.async_payment_failed' || event.type === 'checkout.session.expired') {
-      const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
+      const admin = adminClient(env);
       const failed = event.type === 'checkout.session.async_payment_failed';
       const { error } = await admin.rpc('gridone_record_checkout_session_event', {
         p_event_id: event.id,
@@ -162,7 +154,13 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     }
 
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
-    if (lineItems.data.length !== 1) return text('Ignored unexpected checkout line items.');
+    if (lineItems.data.length !== 1) {
+      // A paid session that fulfills nothing needs a human; make it visible in logs.
+      console.error('Paid checkout ignored: unexpected line items.', {
+        eventId: event.id, sessionId: session.id, orderId, lineItemCount: lineItems.data.length,
+      });
+      return text('Ignored unexpected checkout line items.');
+    }
     const line = lineItems.data[0];
     const priceId = stripeId(line.price);
     const configuredTier = configuredTierForPrice(priceId, env);
@@ -172,12 +170,21 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       || line.currency !== 'usd'
       || session.metadata?.tier !== configuredTier.tier
     ) {
+      // No existing RPC records a mismatch without changing the order's state,
+      // so the paid session is logged for manual review instead.
+      console.error('Paid checkout ignored: price mismatch.', {
+        eventId: event.id,
+        sessionId: session.id,
+        orderId,
+        priceId,
+        amountTotal: line.amount_total,
+        currency: line.currency,
+        metadataTier: session.metadata?.tier ?? null,
+      });
       return text('Ignored checkout price mismatch.');
     }
 
-    const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const admin = adminClient(env);
     const { data, error } = await admin.rpc('gridone_fulfill_checkout_v2', {
       p_event_id: event.id,
       p_event_type: event.type,

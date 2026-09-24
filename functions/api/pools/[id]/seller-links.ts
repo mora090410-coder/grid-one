@@ -1,3 +1,4 @@
+import { authenticate, authUnavailableBody } from '../../../_lib/http';
 import { createAuthClient, readSellerBody, sellerAdmin, sellerFailure, sellerLinkUrl, sellerResponse, type SellerEnv } from '../../../_lib/sellerLinks';
 
 type Link = { label: string; code: string };
@@ -10,8 +11,12 @@ export const onRequestPost = async ({ request, env, params }: { request: Request
   const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
   if (!bearer) return sellerResponse({ error: 'Sign in to manage seller links.' }, 401);
   try {
-    const { data: auth, error: authError } = await createAuthClient(env).auth.getUser(bearer);
-    if (authError || !auth.user) return sellerResponse({ error: 'Sign in to manage seller links.' }, 401);
+    const auth = await authenticate(createAuthClient(env), bearer);
+    if (!('user' in auth)) {
+      return auth.failure === 'unavailable'
+        ? sellerResponse(authUnavailableBody(), 503)
+        : sellerResponse({ error: 'Sign in to manage seller links.' }, 401);
+    }
     let body: Record<string, unknown> | null;
     try { body = await readSellerBody(request); } catch { body = null; }
     const label = typeof body?.label === 'string' ? body.label.trim() : '';

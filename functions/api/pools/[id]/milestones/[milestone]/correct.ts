@@ -1,6 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { adminClient, isUuid, maskedError, readJsonObject, requireUser, type PagesFunction } from '../../../../../_lib/http';
 
 const milestones = new Set(['Q1', 'Q2', 'Q3', 'FINAL']);
 const json = (body: unknown, status = 200) => Response.json(body, {
@@ -13,20 +11,18 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     return json({ error: 'Milestone correction is not configured.' }, 503);
   }
   const contestId = String(params.id || '');
+  if (!isUuid(contestId)) return json({ error: 'Invalid board ID.' }, 400);
   const milestone = String(params.milestone || '').toUpperCase();
   if (!milestones.has(milestone)) {
     return json({ error: 'Choose Q1, Q2, Q3, or FINAL.' }, 400);
   }
 
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return json({ error: 'Sign in before correcting a result.' }, 401);
-  const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: authData } = await auth.auth.getUser(token);
-  if (!authData.user) return json({ error: 'Your session has expired.' }, 401);
+  const user = await requireUser(request, env, { missing: 'Sign in before correcting a result.', expired: 'Your session has expired.' });
+  if (user instanceof Response) return user;
 
-  const body = await request.json() as {
+  const parsed = await readJsonObject(request, 16_384);
+  if (parsed instanceof Response) return parsed;
+  const body = parsed as {
     expectedVersion?: number;
     sideScore?: number;
     topScore?: number;
@@ -51,12 +47,9 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     return json({ error: 'Enter the current version, corrected scores, and a public reason.' }, 400);
   }
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data, error } = await admin.rpc('gridone_correct_milestone', {
+  const { data, error } = await adminClient(env).rpc('gridone_correct_milestone', {
     p_contest_id: contestId,
-    p_owner_id: authData.user.id,
+    p_owner_id: user.id,
     p_milestone: milestone,
     p_expected_version: expectedVersion,
     p_side_score: sideScore,
@@ -64,10 +57,15 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     p_reason: reason,
   });
   if (error) {
-    const conflict = /version|stale|already corrected/i.test(error.message || '');
-    return json({ error: conflict
-      ? 'This result changed before your correction was saved. Reload and review the latest version.'
-      : error.message }, conflict ? 409 : 500);
+    if (/version|stale|already corrected/i.test(error.message || '')) {
+      return json({ error: 'This result changed before your correction was saved. Reload and review the latest version.' }, 409);
+    }
+    // Domain refusals raised by gridone_correct_milestone stay readable.
+    if (/Milestone has not been confirmed/i.test(error.message || '')) {
+      return json({ error: 'This result has not been confirmed yet, so it cannot be corrected.' }, 409);
+    }
+    if (/Published board not found/i.test(error.message || '')) return json({ error: 'Board not found.' }, 404);
+    return maskedError('Milestone correction failed', error, 'The correction could not be saved. Please try again.');
   }
   const result = Array.isArray(data) ? data[0] : data;
   return json({

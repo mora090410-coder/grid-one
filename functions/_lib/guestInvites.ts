@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { readFamilyBody } from './familyAccess';
+import { adminClient, anonClient, authenticate } from './http';
 import { claimCodeFor, codePattern, hashGuestCredential, keyedGuestHash, randomGuestToken, sessionPattern, signInvite, uuid, validPayment, verifyInvite } from './guestInviteCredentials';
 import type { GuestInvite, GuestReceipt, GuestSnapshot, OrganizerInvites } from '../../src/features/guest/guestInviteTypes';
 
@@ -21,7 +21,7 @@ export function guestEnabled(env: GuestEnv, id: string): boolean {
     (env.GUEST_INVITE_POOL_IDS ?? '').split(',').map(item => item.trim().toLowerCase()).includes(id.toLowerCase());
 }
 function admin(env: GuestEnv) {
-  return createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  return adminClient(env);
 }
 function errorResponse(error: unknown): Response {
   const message = record(error) && typeof error.message === 'string' ? error.message : '';
@@ -103,9 +103,13 @@ export async function ownerInvites(context: GuestContext, mutate: boolean): Prom
     }
     const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') ?? '';
     if (!bearer) return fail('SIGN_IN_REQUIRED', 'Sign in to manage guest links.', 401);
-    const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: user, error: authError } = await auth.auth.getUser(bearer);
-    if (authError || !user.user) return fail('SIGN_IN_REQUIRED', 'Sign in to manage guest links.', 401);
+    const auth = anonClient(env);
+    const user = await authenticate(auth, bearer);
+    if (!('user' in user)) {
+      return user.failure === 'unavailable'
+        ? fail('AUTH_UNAVAILABLE', 'Sign-in is temporarily unavailable. Try again.', 503)
+        : fail('SIGN_IN_REQUIRED', 'Sign in to manage guest links.', 401);
+    }
     const db = admin(env);
     const action = !mutate ? 'owner_list' : body.action === 'regenerate' ? 'owner_rotate' : `owner_${body.action}`;
     const payload: RecordValue = { ...body }; delete payload.action; delete payload.inviteId;

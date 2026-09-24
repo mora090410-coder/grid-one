@@ -1,12 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import {
   normalizeOpenSquareCells,
   OpenSquaresValidationError,
 } from '../../../_lib/openSquares';
+import { adminClient, isUuid, maskedError, requireUser, type PagesFunction } from '../../../_lib/http';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ASSIGN_FAILED = 'The open squares could not be assigned. Please try again.';
 
 export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -14,18 +12,12 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   }
 
   const contestId = String(params.id || '');
-  if (!uuidPattern.test(contestId)) {
+  if (!isUuid(contestId)) {
     return Response.json({ error: 'Invalid board ID.' }, { status: 400 });
   }
 
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return Response.json({ error: 'Sign in before assigning squares.' }, { status: 401 });
-
-  const auth = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: authData } = await auth.auth.getUser(token);
-  if (!authData.user) return Response.json({ error: 'Your session has expired.' }, { status: 401 });
+  const user = await requireUser(request, env, { missing: 'Sign in before assigning squares.', expired: 'Your session has expired.' });
+  if (user instanceof Response) return user;
 
   let parsedBody: unknown;
   try {
@@ -51,16 +43,14 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     });
   }
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
   const { data: contest, error: contestError } = await admin
     .from('contests')
     .select('id, revision')
     .eq('id', contestId)
-    .eq('owner_id', authData.user.id)
+    .eq('owner_id', user.id)
     .maybeSingle();
-  if (contestError) return Response.json({ error: contestError.message }, { status: 500 });
+  if (contestError) return maskedError('Open-square contest lookup failed', contestError, ASSIGN_FAILED);
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
   if (contest.revision !== body.revision) {
     return Response.json({
@@ -72,7 +62,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
 
   const { data, error } = await admin.rpc('gridone_fill_open_squares', {
     p_contest_id: contestId,
-    p_owner_id: authData.user.id,
+    p_owner_id: user.id,
     p_expected_revision: body.revision,
     p_normalized_names: normalizedNames,
   });
@@ -87,7 +77,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     if (/100 squares|purchaser name/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });
     }
-    return Response.json({ error: message }, { status: 500 });
+    return maskedError('Open-square assignment failed', error, ASSIGN_FAILED);
   }
 
   const updated = Array.isArray(data) ? data[0] : data;

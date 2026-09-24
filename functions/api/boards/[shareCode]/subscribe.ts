@@ -1,27 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../../_lib/publicBoardVisibility';
+import { escapeHtml, hmacSha256Hex, sha256Hex } from '../../../_lib/crypto';
+import { adminClient, type PagesFunction } from '../../../_lib/http';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
-
-const hashToken = async (token: string) => {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-};
-
-const hmacHex = async (secret: string, value: string) => {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(signature), byte => byte.toString(16).padStart(2, '0')).join('');
-};
+const EMAIL_PROVIDER_TIMEOUT_MS = 10_000;
 
 const isValidIpv4 = (value: string) => {
   const parts = value.split('.');
@@ -52,13 +36,6 @@ const isValidIpv6 = (value: string) => {
 
 const isValidClientIp = (value: string | null): value is string =>
   Boolean(value && (isValidIpv4(value) || isValidIpv6(value)));
-
-const escapeHtml = (value: unknown) => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
 
 const acceptedResponse = () => Response.json({
   accepted: true,
@@ -93,9 +70,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     .test(body.participantId)
     ? body.participantId
     : '00000000-0000-4000-8000-000000000000';
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
   let contest: Record<string, any> | null = null;
   try {
     const visibleBoard = await findVisiblePublicBoard(admin, shareCode, {
@@ -110,9 +85,9 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
 
   const verificationToken = crypto.randomUUID() + crypto.randomUUID();
   const unsubscribeToken = crypto.randomUUID() + crypto.randomUUID();
-  const verificationHash = await hashToken(verificationToken);
-  const unsubscribeHash = await hashToken(unsubscribeToken);
-  const addressHash = await hmacHex(env.NOTIFICATION_TOKEN_SECRET, `address:${email}`);
+  const verificationHash = await sha256Hex(verificationToken);
+  const unsubscribeHash = await sha256Hex(unsubscribeToken);
+  const addressHash = await hmacSha256Hex(env.NOTIFICATION_TOKEN_SECRET, `address:${email}`);
   const { data: claimData, error: claimError } = await admin.rpc('gridone_claim_notification_send', {
     p_contest_id: contest.contest_id,
     p_requested_participant_id: participantId,
@@ -164,6 +139,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
         subject: `Verify winner emails for ${contest.board_title}`,
         html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#0E0F12"><h1 style="font-size:28px">Verify winner emails</h1><p>${escapeHtml(claim.participant_name)}, confirm this address to receive one email if this board name wins Q1, halftime, Q3, or Final.</p><p><a href="${verifyUrl}" style="display:inline-block;background:#FFC72C;color:#0E0F12;padding:14px 20px;text-decoration:none;font-weight:700">Verify email</a></p><p style="color:#5f6368">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p></div>`,
       }),
+      signal: AbortSignal.timeout(EMAIL_PROVIDER_TIMEOUT_MS),
     });
     providerStatus = emailResponse.status;
     const providerBody = await emailResponse.json().catch(() => ({})) as any;
@@ -173,7 +149,11 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
       : String(providerBody?.message || emailResponse.statusText || 'Email provider rejected the request');
     providerOutcome = emailResponse.ok ? 'sent' : 'provider_failed';
   } catch (error) {
-    providerError = error instanceof Error ? error.message : String(error);
+    // Same wording as the retry worker, so both paths record comparable failures.
+    const name = (error as { name?: unknown } | null)?.name;
+    providerError = name === 'TimeoutError' || name === 'AbortError'
+      ? 'Email provider request timed out'
+      : error instanceof Error ? error.message : String(error);
   }
   const { error: completionError } = await admin.rpc('gridone_complete_notification_send', {
     p_claim_id: claim.claim_id,
