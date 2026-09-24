@@ -13,10 +13,16 @@ import type {
   PendingMilestone,
 } from '../../../../types';
 import { evaluateOrganizerLifecycle } from '../lifecycle/organizerLifecycle';
+import {
+  blockerMessage,
+  canEnterDraw as drawGateOpen,
+  draftPrimaryAction,
+  gameDayPrimaryAction,
+  lifecycleCells,
+  publishBlocked as publishGateBlocked,
+} from '../lifecycle/workspaceGates';
 import { hasValidAxes } from '../../../../utils/boardValidation';
-import { getAxisForQuarter } from '../../../../utils/winnerLogic';
-import { QUARTER_KEYS, type QuarterAxisKey } from '../../../../utils/quarterAxes';
-import type { QuarterAxes } from '../../../../types';
+import type { QuarterAxisKey } from '../../../../utils/quarterAxes';
 import NumberSetsEditor from './NumberSetsEditor';
 import { compressImage } from '../../../../utils/image';
 import { parseBoardImage } from '../../../../services/boardImportService';
@@ -26,24 +32,25 @@ import { useSharedBoardRefresh } from './useSharedBoardRefresh';
 import { applyScheduledGame } from './applyScheduledGame';
 import { saveEntryMeta, saveEntryMetaBatch, savePaymentStatuses, clearEntryMeta } from './entryMetaService';
 import { assignable, type Selection } from './selection';
-import { secureShuffleDigits } from './secureDraw';
+import {
+  availabilityNote,
+  boardForPeriod,
+  buildDrawPreview,
+  drawPreviewForPeriod,
+  nextOpenAfter,
+  openCountOf,
+  rangeEntryMeta,
+  withAvailability,
+  withCommittedDraw,
+  withRangeAssigned,
+  withSquareName,
+  type DrawPreview,
+} from './workspaceBoardModel';
+import { usePayoutDraft } from './usePayoutDraft';
 import { publishBoard, type PublishResult } from './publishBoard';
 import { renamePublishedSquare } from './renamePublishedSquare';
-import {
-  EMPTY_MANUAL_SCORES,
-  manualPeriodForState,
-  seedManualScoreFromSnapshot,
-  type ManualGameState,
-  type ManualQuarterKey,
-  type ManualScoreSide,
-} from '../game-day/manualScoringModel';
-import {
-  enableManualScoringOnServer,
-  returnAutomaticScoringOnServer,
-  saveManualScoreToServer,
-} from '../services/game-day/manualScoreService';
+import { useGameDayScoring } from '../game-day/useGameDayScoring';
 import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishedOpenSquares';
-import { publishMilestoneCorrectionToServer, type MilestoneCorrectionDraft } from '../services/corrections/milestoneCorrectionService';
 import WorkspaceHeader from './WorkspaceHeader';
 import BoardEditor from './BoardEditor';
 import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
@@ -58,7 +65,7 @@ import { buildPaymentModel } from '../payments/paymentModel';
 import { buildViewerScoreModel } from '../../viewer/score/viewerScoreModel';
 import DrawControl from './DrawControl';
 import ReconcileCard from './ReconcileCard';
-import PayoutRulesCard, { type PayoutRulesStatus } from './PayoutRulesCard';
+import PayoutRulesCard from './PayoutRulesCard';
 import BoardToolsCard from './BoardToolsCard';
 import PreviewSheet from './PreviewSheet';
 import PublishSheet from './PublishSheet';
@@ -113,72 +120,6 @@ const SQUARE_META_FAILED = 'Square details were not saved. The name is on the bo
 const RANGE_ASSIGN_FAILED = 'Could not assign those squares. Nothing changed.';
 const RANGE_META_FAILED = 'Squares assigned. Payment notes were not saved.';
 const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
-const PAYOUT_FAILED = 'Prize notes were not saved. Try again.';
-
-/** The draw gate ignores the acknowledgement: DrawControl asks that question inline. */
-const ACKNOWLEDGEMENT_BLOCKER = 'open_square_acknowledgement_required';
-
-const openCountOf = (board: BoardData) => board.squares.filter((names) => !names.length).length;
-
-const blockerNote: Record<string, string> = {
-  missing_owner: 'The board owner could not be verified. Reload and try again.',
-  missing_board_identity: 'Add a board name before publishing.',
-  missing_scheduled_game: 'Choose the scheduled game before publishing.',
-  invalid_board_shape: 'This board could not be checked. Reload and try again.',
-  duplicate_or_ambiguous_public_identity: 'Make each public name unique so families can find the right squares.',
-  open_square_acknowledgement_required: 'Confirm that the remaining open squares should stay open.',
-  invalid_committed_axes: 'Draw one complete set of numbers before publishing.',
-  dynamic_axes_not_supported: 'This older board uses changing number sets and cannot be published in this version.',
-  save_dirty: 'Save the latest changes before publishing.',
-  save_saving: 'Wait for the board to finish saving.',
-  save_save_failed: 'The latest changes did not save. Reload or try again.',
-  save_conflicted: 'This board changed in another session. Reload the latest version.',
-  save_recovered: 'Review and save the recovered draft before publishing.',
-};
-
-/**
- * Collapse a display label to the identity a viewer would search by, so one
- * person holding several squares reads as one participant.
- */
-const normalizedIdentity = (label: string) => label
-  .trim()
-  .toLowerCase()
-  .normalize('NFKD')
-  .replace(/[\u0300-\u036f]/g, '');
-
-/**
- * Lifecycle cells carry the real private notes so the checklist can speak to
- * payment and seller gaps, and a durable participant id for every assigned
- * cell. Drafts routinely have no `participants` array yet, so an id is
- * synthesized from the normalized label: same person -> one id, different
- * people -> different ids. Two *different* labels that collapse to the same
- * identity (`Jose` / `Jose\u0301`) cannot be told apart, so their id is dropped and
- * the lifecycle reports them as ambiguous.
- */
-const lifecycleCells = (board: BoardData, entryMeta: Record<number, EntryMeta>) => {
-  const labelsById = new Map<string, Set<string>>();
-  const cells = board.squares.map((names, index) => {
-    const label = names[0]?.trim();
-    if (!label) return null;
-    const participant = board.participants?.find((item) => item.displayName === label || item.publicLabel === label);
-    const participantId = participant?.id ?? `label:${normalizedIdentity(label)}`;
-    const byId = labelsById.get(participantId) ?? new Set<string>();
-    byId.add(label.toLocaleLowerCase());
-    labelsById.set(participantId, byId);
-    const meta = entryMeta[index];
-    return {
-      publicLabel: label,
-      participantId,
-      paidStatus: meta?.paid_status ?? 'unknown',
-      sellerLabel: meta?.seller_label ?? undefined,
-    };
-  });
-  return cells.map((cell) => (
-    cell && (labelsById.get(cell.participantId)?.size ?? 0) > 1
-      ? { ...cell, participantId: undefined }
-      : cell
-  ));
-};
 
 /**
  * The organizer workspace. Before publishing it composes the status island,
@@ -229,7 +170,7 @@ export default function OrganizerWorkspace({
   const [sharePending, setSharePending] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [drawRequested, setDrawRequested] = useState(false);
-  const [drawPreview, setDrawPreview] = useState<{ top: number[]; left: number[]; topSets?: QuarterAxes; leftSets?: QuarterAxes } | null>(null);
+  const [drawPreview, setDrawPreview] = useState<DrawPreview | null>(null);
   const [numberPeriod, setNumberPeriod] = useState<QuarterAxisKey>('Q1');
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [highlightOpen, setHighlightOpen] = useState(false);
@@ -277,23 +218,9 @@ export default function OrganizerWorkspace({
   const [organizationName, setOrganizationName] = useState('');
   const [published, setPublished] = useState<PublishedBoard | null>(null);
   const [publishedOpen, setPublishedOpen] = useState(false);
-  const [payoutStatus, setPayoutStatus] = useState<PayoutRulesStatus>('idle');
-  const [payoutDraft, setPayoutDraft] = useState<PayoutDescriptions | null>(null);
-  useEffect(() => {
-    if (payoutDraft === null) return;
-    const guard = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', guard);
-    return () => window.removeEventListener('beforeunload', guard);
-  }, [payoutDraft]);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [scoreSaveStatus, setScoreSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [correctionHistory, setCorrectionHistory] = useState(winnerHistory);
-  const [correctionDraft, setCorrectionDraft] = useState<MilestoneCorrectionDraft | null>(null);
   // Late fill closes at kickoff, so the gate has to re-evaluate while the
   // organizer sits on the page rather than only on the next render.
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -301,9 +228,24 @@ export default function OrganizerWorkspace({
   // a stale failure never outlives the next successful action.
   const [alert, setAlert] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCorrectionHistory(winnerHistory);
-  }, [winnerHistory]);
+  const payouts = usePayoutDraft({
+    activePoolId,
+    saved: game.payoutDescriptions,
+    saveExternalGame,
+    onSavePayoutDescriptions,
+    onNote: setNote,
+    onAlert: setAlert,
+  });
+  const gameDay = useGameDayScoring({
+    activePoolId,
+    game,
+    setGame,
+    liveData,
+    winnerHistory,
+    onReload,
+    onNote: setNote,
+    onAlert: setAlert,
+  });
 
   useEffect(() => {
     if (!isPublished) return;
@@ -338,6 +280,11 @@ export default function OrganizerWorkspace({
     save: saveState,
   }), [activePoolId, board, entryMeta, game, isPublished, saveState]);
 
+  // Stable between renders so the 100-square editor only redraws when the board
+  // or the period on screen actually changes, not on every keystroke elsewhere.
+  const editorBoard = useMemo(() => boardForPeriod(board, numberPeriod), [board, numberPeriod]);
+  const editorDrawPreview = useMemo(() => drawPreviewForPeriod(drawPreview, numberPeriod), [drawPreview, numberPeriod]);
+
   const viewerPath = published ? published.viewerUrl : shareCode ? `/b/${shareCode}` : null;
   const shareUrl = viewerPath ? `${window.location.origin}${viewerPath}` : '';
 
@@ -349,18 +296,11 @@ export default function OrganizerWorkspace({
   }) && !conflicted;
   const finalRecord = isPublished && liveData?.state === 'post';
 
-  // Everything except the acknowledgement, which the draw itself collects.
-  const DRAW_TOLERATED = new Set<string>([ACKNOWLEDGEMENT_BLOCKER, 'save_dirty', 'save_saving', 'invalid_committed_axes']);
-  const canEnterDraw = !conflicted
-    && model.hardBlockers.every((blocker) => DRAW_TOLERATED.has(blocker));
-  const publishBlocked = model.hardBlockers.some((blocker) => !String(blocker).startsWith('save_'));
+  const canEnterDraw = drawGateOpen(model, conflicted);
+  const publishBlocked = publishGateBlocked(model);
 
   const startPreview = useCallback(() => {
-    if (board.isDynamic) {
-      const topSets = Object.fromEntries(QUARTER_KEYS.map(key => [key, secureShuffleDigits()])) as unknown as QuarterAxes;
-      const leftSets = Object.fromEntries(QUARTER_KEYS.map(key => [key, secureShuffleDigits()])) as unknown as QuarterAxes;
-      setDrawPreview({ top: topSets.Q1 as number[], left: leftSets.Q1 as number[], topSets, leftSets });
-    } else setDrawPreview({ top: secureShuffleDigits(), left: secureShuffleDigits() });
+    setDrawPreview(buildDrawPreview(board.isDynamic === true));
   }, [board.isDynamic]);
 
   const requestDraw = () => {
@@ -390,16 +330,8 @@ export default function OrganizerWorkspace({
 
   const commitDraw = async () => {
     if (!drawPreview) return;
-    const { top, left } = drawPreview;
-    setBoard((current) => ({
-      ...current,
-      topAxis: current.isDynamic ? current.topAxis : top,
-      leftAxis: current.isDynamic ? current.leftAxis : left,
-      isDynamic: current.isDynamic === true,
-      allowOpenSquares: openCount > 0,
-      leftAxisByQuarter: drawPreview.leftSets ?? current.leftAxisByQuarter,
-      topAxisByQuarter: drawPreview.topSets ?? current.topAxisByQuarter,
-    }));
+    const staged = drawPreview;
+    setBoard((current) => withCommittedDraw(current, staged, openCount));
     setDrawPreview(null);
     setDrawRequested(false);
     await openPreview();
@@ -409,26 +341,14 @@ export default function OrganizerWorkspace({
   // squares gets the acknowledgement question instead of a silent redraw.
   const replaceDraw = requestDraw;
 
-  // Deliberately does not wrap: past the last open square there is nowhere
-  // forward to go, so the sheet closes instead of looping to the top.
-  const nextOpenAfter = (squares: string[][], index: number) => {
-    for (let cursor = index + 1; cursor < squares.length; cursor += 1) {
-      if (!squares[cursor]?.length) return cursor;
-    }
-    return null;
-  };
-
   const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null, availability?: SquareAvailability) => {
     const trimmed = name.trim();
     if (trimmed.length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
     let nextSquares: string[][] = board.squares;
     setBoard((current) => {
-      const squares = [...current.squares];
-      squares[index] = trimmed ? [trimmed] : [];
-      nextSquares = squares;
-      return { ...current, squares, ...(availability ? { availability: Array.from({ length: 100 }, (_, cell) => cell === index ? availability : current.availability?.[cell] ?? 'unspecified') } : {}), allocationLabels: Array.from({ length: 100 }, (_, cell) => cell === index
-        ? current.allocationLabels?.[cell] || current.squares[cell]?.[0] || allocationLabel || trimmed || null
-        : current.allocationLabels?.[cell] ?? null) };
+      const next = withSquareName(current, index, trimmed, allocationLabel, availability);
+      nextSquares = next.squares;
+      return next;
     });
     setSelectedSquare(advance ? nextOpenAfter(nextSquares, index) : null);
 
@@ -445,19 +365,27 @@ export default function OrganizerWorkspace({
 
   // Leaving select mode drops the selection: a stale set of squares would be
   // applied to the wrong board state next time the mode is entered.
-  const toggleSelectMode = () => {
+  const toggleSelectMode = useCallback(() => {
     setRangeFocusSignal(current => current + 1);
     setAvailabilityMode(false);
     setSelectMode((current) => {
       if (current) setSelection(new Set<number>());
       return !current;
     });
-  };
+  }, []);
+  const selectSquare = useCallback((index: number) => { setOrganizerTask('board'); setSelectedSquare(index); }, []);
+  const offerAvailability = useCallback(() => {
+    setAvailabilityMode(true);
+    setSelectMode(true);
+    setSelection(new Set());
+    setOrganizerTask('board');
+    setRangeFocusSignal(current => current + 1);
+  }, []);
 
   const clearSelection = () => setSelection(new Set<number>());
   const enableSharing = async () => {
     if (!onShareBoard || sharePending || saveState.status !== 'clean') return;
-    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
+    if (!await payouts.saveIfPending()) return;
     setSharePending(true);
     setShareError(null);
     try {
@@ -500,24 +428,8 @@ export default function OrganizerWorkspace({
     const name = input.name.trim();
     if (!name || name.length > 80) { setAlert('Enter a name of 1–80 characters.'); return; }
     const previousSquares = board.squares;
-    const okSet = new Set(ok);
-    const nextSquares = board.squares.map((names, index) => (okSet.has(index) ? [name] : names));
-    const nextAllocations = Array.from({ length: 100 }, (_, index) => okSet.has(index)
-      ? board.allocationLabels?.[index] || board.squares[index]?.[0] || name
-      : board.allocationLabels?.[index] ?? null);
-    const metas: EntryMeta[] = ok.map((index) => {
-      const existing = entryMeta[index];
-      return {
-        cell_index: index,
-        // `unknown` is the untouched default of the radio group, not a
-        // decision: it must never erase a payment record already on file.
-        paid_status: input.paid === 'unknown' ? existing?.paid_status ?? 'unknown' : input.paid,
-        notify_opt_in: existing?.notify_opt_in ?? false,
-        contact_type: existing?.contact_type ?? null,
-        contact_value: existing?.contact_value ?? null,
-        seller_label: input.seller.trim() || existing?.seller_label || null,
-      };
-    });
+    const { squares: nextSquares, allocationLabels: nextAllocations } = withRangeAssigned(board, ok, name);
+    const metas = rangeEntryMeta(ok, entryMeta, input);
 
     const replaced = ok.filter((index) => (previousSquares[index]?.length ?? 0) > 0).length;
     const successNote = replaced === 0
@@ -625,33 +537,8 @@ export default function OrganizerWorkspace({
     }
   };
 
-  const updatePayoutDescription = (field: keyof PayoutDescriptions, value: string) => {
-    setPayoutStatus('dirty');
-    setPayoutDraft((current) => ({ ...(current ?? game.payoutDescriptions), [field]: value }));
-  };
-
-  const savePayoutDescriptions = async (): Promise<boolean> => {
-    if (!activePoolId || payoutStatus === 'saving') return false;
-    setPayoutStatus('saving');
-    try {
-      // Canonical payouts use PATCH, serialized with the draft revision.
-      await saveExternalGame(async () => ({
-        payoutDescriptions: await onSavePayoutDescriptions(payoutDraft ?? game.payoutDescriptions ?? {}),
-      }));
-      setPayoutDraft(null);
-      setPayoutStatus('saved');
-      setNote(null);
-      setAlert(null);
-      return true;
-    } catch {
-      setPayoutStatus('error');
-      setAlert(PAYOUT_FAILED);
-      return false;
-    }
-  };
-
   const openPreview = async () => {
-    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
+    if (!await payouts.saveIfPending()) return;
     setPublishError(null);
     setAlert(null);
     await flush();
@@ -660,7 +547,7 @@ export default function OrganizerWorkspace({
 
   const publish = async () => {
     if (!activePoolId) return;
-    if (payoutDraft !== null && !await savePayoutDescriptions()) return;
+    if (!await payouts.saveIfPending()) return;
     setPublishError(null);
     setPublishPending(true);
     try {
@@ -796,91 +683,6 @@ export default function OrganizerWorkspace({
     }
   };
 
-  const enableManualScoring = async () => {
-    if (!activePoolId || game.useManualScores) return;
-    setScoreSaveStatus('saving');
-    setAlert(null);
-    try {
-      await enableManualScoringOnServer(activePoolId);
-      setGame((current) => {
-        const seed = seedManualScoreFromSnapshot(current.scoreSnapshot ?? liveData);
-        return { ...current, useManualScores: true, scoreSnapshot: null, manualQuarterScores: seed.manualQuarterScores, manualPeriod: seed.manualPeriod, manualGameState: seed.manualGameState };
-      });
-      // Deliberately no reload: the seeded quarters live only in the local
-      // draft until they are published, and a published board never goes
-      // dirty, so re-adopting the server game here would wipe them back to 0.
-      setScoreSaveStatus('idle');
-      setNote('Manual scoring is on. Enter the score, then publish it.');
-    } catch (error: any) {
-      setScoreSaveStatus('error');
-      setAlert(error?.message || 'Manual scoring could not be enabled.');
-    }
-  };
-
-  const saveManualScore = async () => {
-    if (!activePoolId) return;
-    setScoreSaveStatus('saving');
-    setAlert(null);
-    try {
-      const result = await saveManualScoreToServer(activePoolId, game);
-      setGame((current) => ({ ...current, useManualScores: true, scoreSnapshot: result.score }));
-      await onReload?.();
-      setScoreSaveStatus('saved');
-      setNote('Manual score is live. Winners for completed quarters were updated once.');
-    } catch (error: any) {
-      setScoreSaveStatus('error');
-      setAlert(error?.message || 'Unable to save the score.');
-    }
-  };
-
-  const enableAutomaticScoring = async () => {
-    if (!activePoolId) return;
-    setScoreSaveStatus('saving');
-    setAlert(null);
-    try {
-      await returnAutomaticScoringOnServer(activePoolId);
-      setGame((current) => ({ ...current, useManualScores: false, scoreSnapshot: null }));
-      await onReload?.();
-      setScoreSaveStatus('idle');
-      setNote('Automatic score checks are enabled.');
-    } catch (error: any) {
-      setScoreSaveStatus('error');
-      setAlert(error?.message || 'Automatic scoring could not be enabled.');
-    }
-  };
-
-  const updateManualQuarter = (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => {
-    setGame((current) => {
-      const base = current.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
-      return { ...current, manualQuarterScores: { ...base, [quarter]: { ...base[quarter], [side]: Math.max(0, value) } } };
-    });
-  };
-
-  const updateManualGameState = (state: ManualGameState) => {
-    setGame((current) => ({
-      ...current,
-      manualGameState: state,
-      manualPeriod: manualPeriodForState(state, current.manualPeriod, current.manualQuarterScores),
-    }));
-  };
-
-  const publishCorrection = async () => {
-    if (!activePoolId || !correctionDraft) return;
-    setScoreSaveStatus('saving');
-    setAlert(null);
-    try {
-      const result = await publishMilestoneCorrectionToServer(activePoolId, correctionDraft);
-      if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
-      setCorrectionDraft(null);
-      await onReload?.();
-      setScoreSaveStatus('saved');
-      setNote('Correction published. Both correction notices were queued for verified recipients.');
-    } catch (error: any) {
-      setScoreSaveStatus('error');
-      setAlert(error?.message || 'The correction could not be published.');
-    }
-  };
-
   const copyViewerLink = async () => {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
@@ -897,7 +699,7 @@ export default function OrganizerWorkspace({
   };
 
   const firstBlocker = model.hardBlockers[0];
-  const islandNote = firstBlocker ? blockerNote[firstBlocker] || 'Review this board before publishing.' : paymentIssue || note || undefined;
+  const islandNote = blockerMessage(firstBlocker) ?? (paymentIssue || note || undefined);
   const openPayments = () => { setOrganizerTask('payments'); setPaymentsOpen(true); };
   const savePayments = async (indices: number[], status: EntryMeta['paid_status']) => {
     if (!activePoolId || familyBusy || privateWritesPending > 0 || paymentWriteRef.current || conflicted) {
@@ -928,7 +730,7 @@ export default function OrganizerWorkspace({
     enabled: Boolean(activePoolId && isShared && !isPublished && onReload),
     canRefresh: () => saveState.status === 'clean'
       && !familyBusy && !paymentBusy && !paymentsOpen && !rangeBusy && privateWritesPending === 0 && !privateNotesUncertain
-      && payoutDraft === null && selectedSquare === null && !drawRequested && !drawPreview
+      && !payouts.pending && selectedSquare === null && !drawRequested && !drawPreview
       && !previewOpen && !publishOpen && !shareOpen && upgradeTier === null,
     refresh: async () => { await onReload?.({ background: true }); },
   });
@@ -955,7 +757,7 @@ export default function OrganizerWorkspace({
     liveSummary: liveData && liveScoreModel ? `${game.leftAbbr} ${liveData.leftScore} · ${game.topAbbr} ${liveData.topScore} · ${liveScoreModel.periodLabel}` : undefined,
     liveTrust: liveScoreModel ? `${liveScoreModel.authority.label} · ${liveScoreModel.authority.detail}${liveScoreModel.freshness ? ` · ${liveScoreModel.freshness}` : ''}` : undefined,
     isFinal: finalRecord,
-    winnerHistory: correctionHistory, pendingMilestones,
+    winnerHistory: gameDay.correctionHistory, pendingMilestones,
     leftLabel: game.leftAbbr, topLabel: game.topAbbr,
     onGame: () => visitNotchDestination('organizer-score'),
     onResults: () => visitNotchDestination('organizer-corrections'),
@@ -976,13 +778,18 @@ export default function OrganizerWorkspace({
   };
 
 
-  const primary = published
-    ? { label: 'Copy link', onClick: () => void copyShareLink() }
-    : assignedCount === 0
-      ? { label: 'Fill the board', onClick: scrollToBoard }
-      : axesCommitted
-        ? { label: isShared ? 'Review game numbers' : 'Preview and publish', onClick: () => void openPreview() }
-        : { label: 'Prepare to publish', onClick: requestDraw, disabled: !canEnterDraw };
+  const nextStep = draftPrimaryAction({ justPublished: Boolean(published), assignedCount, axesCommitted, isShared, drawAllowed: canEnterDraw });
+  const nextStepHandlers = {
+    copy_link: () => void copyShareLink(),
+    fill_board: scrollToBoard,
+    preview: () => void openPreview(),
+    draw: requestDraw,
+  } as const;
+  const primary = {
+    label: nextStep.label,
+    onClick: nextStepHandlers[nextStep.id],
+    ...(nextStep.id === 'draw' ? { disabled: nextStep.disabled } : {}),
+  };
 
   const secondary = axesCommitted && !published && !isPublished
     ? [{ label: 'Replace draft draw', onClick: replaceDraw, disabled: conflicted }]
@@ -1069,7 +876,7 @@ export default function OrganizerWorkspace({
         board={board}
         allowance={billing}
         pending={publishPending}
-        error={publishError ?? (publishBlocked && firstBlocker ? (blockerNote[firstBlocker] || 'Review this board before publishing.') : null)}
+        error={publishError ?? (publishBlocked ? blockerMessage(firstBlocker) ?? null : null)}
         disabled={!axesCommitted || conflicted || publishPending || publishBlocked}
         onPublish={() => void publish()}
       />
@@ -1103,12 +910,11 @@ export default function OrganizerWorkspace({
       target?.scrollIntoView({ block: 'center' });
       target?.focus({ preventScroll: true });
     };
-    const scoreNeedsReview = liveData && ['stale', 'offline', 'rejected'].includes(liveData.freshness ?? '');
-    const gameDayPrimary = scoreNeedsReview
-      ? { label: 'Review score', onClick: () => focusGameSection('organizer-score') }
-      : notificationDeliveryIssues.length > 0
-        ? { label: 'Review delivery issue', onClick: () => focusGameSection('organizer-delivery') }
-        : null;
+    const attention = gameDayPrimaryAction({ scoreFreshness: liveData?.freshness, deliveryIssueCount: notificationDeliveryIssues.length });
+    const gameDayPrimary = attention && {
+      label: attention.label,
+      onClick: () => focusGameSection(attention.id === 'review_score' ? 'organizer-score' : 'organizer-delivery'),
+    };
 
     return (
       <Base kind="cream">
@@ -1130,24 +936,23 @@ export default function OrganizerWorkspace({
           {note ? <p role="status" className="mt-4 font-ui text-[15px] text-fg-2">{note}</p> : null}
           <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] [&>*]:min-w-0">
             <section id="workspace-board" aria-label="Board" style={{ scrollMarginTop: 100 }} className="flex min-w-0 max-w-full flex-col gap-6">
-              {finalRecord && <div id="organizer-results" tabIndex={-1}><FinalRecordCard winnerHistory={correctionHistory} onCreateAnotherBoard={runAnotherBoard} /></div>}
+              {finalRecord && <div id="organizer-results" tabIndex={-1}><FinalRecordCard winnerHistory={gameDay.correctionHistory} onCreateAnotherBoard={runAnotherBoard} /></div>}
               <div id="organizer-share" tabIndex={-1}><SharePanel shareUrl={shareUrl} onOpenViewer={() => onOpenViewer?.()} /></div>
               <div id="organizer-score" tabIndex={-1}><ScoreAuthorityCard
                 game={game}
                 liveData={liveData}
-                scoreSaveStatus={scoreSaveStatus}
+                scoreSaveStatus={gameDay.scoreSaveStatus}
                 isActivated={isActivated}
-                onEnableAutomaticScoring={() => void enableAutomaticScoring()}
-                onEnableManualScoring={() => void enableManualScoring()}
-                onUpdateManualGameState={updateManualGameState}
-                onUpdateManualPeriod={(period) => setGame((current) => ({ ...current, manualPeriod: period }))}
-                onUpdateManualQuarter={updateManualQuarter}
-                onSaveManualScore={() => void saveManualScore()}
+                onEnableAutomaticScoring={() => void gameDay.enableAutomaticScoring()}
+                onEnableManualScoring={() => void gameDay.enableManualScoring()}
+                onUpdateManualGameState={gameDay.updateManualGameState}
+                onUpdateManualPeriod={gameDay.updateManualPeriod}
+                onUpdateManualQuarter={gameDay.updateManualQuarter}
+                onSaveManualScore={() => void gameDay.saveManualScore()}
               /></div>
               <NumberSetsEditor board={board} game={game} selected={numberPeriod} onSelect={setNumberPeriod} />
               <BoardEditor
-                board={{ ...board, topAxis: getAxisForQuarter(board, 'top', numberPeriod), leftAxis: getAxisForQuarter(board, 'left', numberPeriod) }}
-                game={game}
+                board={editorBoard}
                 entryMeta={entryMeta}
                 drawPreview={null}
                 highlightOpen={false}
@@ -1157,7 +962,7 @@ export default function OrganizerWorkspace({
                 selection={selection}
                 onSelectionChange={setSelection}
                 onToggleSelectMode={toggleSelectMode}
-                onSelectSquare={index => { setOrganizerTask('board'); setSelectedSquare(index); }}
+                onSelectSquare={selectSquare}
                 focusToggleSignal={rangeFocusSignal}
               />
               {selectMode && selection.size > 0 && (
@@ -1174,18 +979,18 @@ export default function OrganizerWorkspace({
             </section>
             <aside className="flex flex-col gap-6">
               <PayoutRulesCard
-                descriptions={payoutDraft ?? game.payoutDescriptions ?? {}}
-                status={payoutStatus}
-                disabled={!activePoolId || payoutStatus === 'saving'}
-                onChange={updatePayoutDescription}
-                onSavePayoutDescriptions={() => void savePayoutDescriptions()}
+                descriptions={payouts.descriptions}
+                status={payouts.status}
+                disabled={!activePoolId || payouts.status === 'saving'}
+                onChange={payouts.update}
+                onSavePayoutDescriptions={() => void payouts.save()}
               />
               <div id="organizer-corrections" tabIndex={-1}><CorrectionsCard
-                winnerHistory={correctionHistory}
-                draft={correctionDraft}
-                pending={scoreSaveStatus === 'saving'}
-                onDraftChange={setCorrectionDraft}
-                onPublishCorrection={() => void publishCorrection()}
+                winnerHistory={gameDay.correctionHistory}
+                draft={gameDay.correctionDraft}
+                pending={gameDay.scoreSaveStatus === 'saving'}
+                onDraftChange={gameDay.setCorrectionDraft}
+                onPublishCorrection={() => void gameDay.publishCorrection()}
               /></div>
               <div id="organizer-delivery" tabIndex={-1}><DeliveryIssuesCard issues={notificationDeliveryIssues} /></div>
               <BoardToolsCard
@@ -1267,11 +1072,10 @@ export default function OrganizerWorkspace({
             )}
             <BoardEditor
               availabilityMode={availabilityMode}
-              onOfferAvailability={() => { setAvailabilityMode(true); setSelectMode(true); setSelection(new Set()); setOrganizerTask('board'); setRangeFocusSignal(current => current + 1); }}
-              board={{ ...board, topAxis: getAxisForQuarter(board, 'top', numberPeriod), leftAxis: getAxisForQuarter(board, 'left', numberPeriod) }}
-              game={game}
+              onOfferAvailability={offerAvailability}
+              board={editorBoard}
               entryMeta={entryMeta}
-              drawPreview={drawPreview?.topSets ? { top: drawPreview.topSets[numberPeriod] as number[], left: drawPreview.leftSets![numberPeriod] as number[] } : drawPreview}
+              drawPreview={editorDrawPreview}
               highlightOpen={highlightOpen}
               isPublished={false}
               canAssignOpenSquares={false}
@@ -1279,7 +1083,7 @@ export default function OrganizerWorkspace({
               selection={selection}
               onSelectionChange={setSelection}
               onToggleSelectMode={toggleSelectMode}
-              onSelectSquare={index => { setOrganizerTask('board'); setSelectedSquare(index); }}
+              onSelectSquare={selectSquare}
               focusToggleSignal={rangeFocusSignal}
             />
           </section>
@@ -1287,8 +1091,8 @@ export default function OrganizerWorkspace({
             <div className="lg:sticky lg:top-6">
             {availabilityMode && <div id="availability-editor" tabIndex={-1}><AvailabilityControl selectedCount={selection.size} disabled={conflicted || familyBusy} onClose={toggleSelectMode} onChange={status => {
               if (conflicted || selection.size === 0) return;
-              setBoard(current => ({ ...current, availability: Array.from({ length: 100 }, (_, index) => selection.has(index) ? status : current.availability?.[index] ?? 'unspecified') }));
-              setNote(`${selection.size} ${selection.size === 1 ? 'square' : 'squares'} ${status === 'available' ? 'offered as available' : status === 'unavailable' ? 'marked unavailable' : 'with availability label removed'}.`);
+              setBoard(current => withAvailability(current, selection, status));
+              setNote(availabilityNote(selection.size, status));
               setSelection(new Set());
             }} /></div>}
             {selectMode && !availabilityMode && selection.size > 0 && (
@@ -1305,7 +1109,7 @@ export default function OrganizerWorkspace({
             </div>
             {privateWritesPending > 0 && <p role="status" className="text-sm text-fg-2">Saving private square notes. Family access will resume when this finishes.</p>}
             {privateNotesUncertain && <div role="status" className="text-sm text-fg-2"><p>Refresh private notes before changing family access.</p><CapsuleButton variant="quiet" disabled={privateWritesPending > 0} onClick={() => void reloadFamilyState().catch(() => setAlert('Private notes could not be refreshed. Try again.'))}>Refresh private notes</CapsuleButton></div>}
-            {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && payoutDraft === null && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
+            {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && !payouts.pending && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
             <ParticipationCard details={board.participation ?? {}} onChange={(participation) => setBoard(current => ({ ...current, participation }))} />
             <div id="organizer-review"><ReconcileCard
               model={model}
@@ -1315,11 +1119,11 @@ export default function OrganizerWorkspace({
               onToggleHighlightOpen={() => setHighlightOpen((current) => !current)}
             /></div>
             <PayoutRulesCard
-              descriptions={payoutDraft ?? game.payoutDescriptions ?? {}}
-              status={payoutStatus}
-              disabled={!activePoolId || payoutStatus === 'saving'}
-              onChange={updatePayoutDescription}
-              onSavePayoutDescriptions={() => void savePayoutDescriptions()}
+              descriptions={payouts.descriptions}
+              status={payouts.status}
+              disabled={!activePoolId || payouts.status === 'saving'}
+              onChange={payouts.update}
+              onSavePayoutDescriptions={() => void payouts.save()}
             />
             <BoardToolsCard
               isPublished={false}

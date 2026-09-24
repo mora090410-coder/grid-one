@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Glass, CapsuleTag, CapsuleButton, DigitFlow } from '../../../design/primitives';
-import type { BoardData, EntryMeta, GameState } from '../../../../types';
+import type { BoardData, EntryMeta } from '../../../../types';
 import { assignable, rangeBetween, toggle, type Selection } from './selection';
 
 export interface BoardEditorProps {
   board: BoardData;
-  game: GameState;
   entryMeta: Record<number, EntryMeta>;
   /** Digits animating into the axes for a draft draw preview. */
   drawPreview: { top: number[]; left: number[] } | null;
@@ -31,7 +30,7 @@ export interface BoardEditorProps {
 const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
 
 /** Organizer board editor: 11x11 grid with square assignment and a draft draw preview. */
-export default function BoardEditor({
+function BoardEditor({
   board,
   entryMeta,
   drawPreview,
@@ -287,3 +286,7 @@ export default function BoardEditor({
     </div>
   );
 }
+
+// Memoized: the workspace re-renders on every keystroke and save transition, and
+// redrawing 100 squares for changes that do not touch the board is wasted work on phones.
+export default React.memo(BoardEditor);

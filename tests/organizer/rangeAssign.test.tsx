@@ -33,7 +33,6 @@ function Harness({ isPublished = false, canAssignOpenSquares, filled = [], onApp
     <>
       <BoardEditor
         board={board(filled)}
-        game={game}
         entryMeta={{}}
         drawPreview={null}
         highlightOpen={false}
@@ -66,7 +65,6 @@ function GridOnlyHarness() {
   return (
     <BoardEditor
       board={board()}
-      game={game}
       entryMeta={{}}
       drawPreview={null}
       highlightOpen={false}

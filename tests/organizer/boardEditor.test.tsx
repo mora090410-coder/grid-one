@@ -11,20 +11,20 @@ const board: BoardData = { topAxis: Array(10).fill(null), leftAxis: Array(10).fi
 describe('BoardEditor', () => {
   it('names cells accessibly and opens the selected square', () => {
     const onSelectSquare = vi.fn();
-    render(<BoardEditor board={{...board, allocationLabels:Array.from({length:100},(_,i)=>i===1?'Mora':null)}} game={game} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
+    render(<BoardEditor board={{...board, allocationLabels:Array.from({length:100},(_,i)=>i===1?'Mora':null)}} entryMeta={{ 0: { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null } }} drawPreview={null} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
     fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Ann' }));
     expect(onSelectSquare).toHaveBeenCalledWith(0);
     expect(screen.getByRole('button', { name: 'Square 2, unassigned, allocated to Mora, blank' })).toHaveTextContent('Blank');
     expect(screen.getByText('paid')).toBeInTheDocument();
   });
   it('shows draw preview digits in the axes with the draft tag', () => {
-    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={{ top: [3,1,4,1,5,9,2,6,5,3], left: [0,1,2,3,4,5,6,7,8,9] }} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={vi.fn()} />);
+    render(<BoardEditor board={board} entryMeta={{}} drawPreview={{ top: [3,1,4,1,5,9,2,6,5,3], left: [0,1,2,3,4,5,6,7,8,9] }} highlightOpen={false} isPublished={false} canAssignOpenSquares={false} selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={vi.fn()} />);
     expect(screen.getByText('Draft draw')).toBeInTheDocument();
     expect(screen.getAllByText('3').length).toBeGreaterThan(0);
   });
   it('published: only open cells are selectable when late fill is allowed', () => {
     const onSelectSquare = vi.fn();
-    render(<BoardEditor board={board} game={game} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished canAssignOpenSquares selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
+    render(<BoardEditor board={board} entryMeta={{}} drawPreview={null} highlightOpen={false} isPublished canAssignOpenSquares selectMode={false} selection={new Set<number>()} onSelectionChange={vi.fn()} onToggleSelectMode={vi.fn()} onSelectSquare={onSelectSquare} />);
     expect(screen.getByRole('button', { name: 'Square 1, assigned to Ann' })).not.toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Square 2, unassigned' }));
     expect(onSelectSquare).toHaveBeenCalledWith(1);
