@@ -10,7 +10,7 @@ This file describes the current production architecture, not an immutable topolo
   - `workers/score-refresh-scheduler.ts` (`wrangler.score-scheduler.toml`) calls `POST /api/scores/refresh`.
   - `workers/notification-retry-scheduler.ts` (`wrangler.retry-scheduler.toml`) calls `POST /api/notifications/retry`.
   Both authenticate with `CRON_SECRET`; the endpoints do the work, the workers only wake them.
-- **Data:** Supabase Postgres with Row Level Security. Schema and policies live in `supabase/migrations/` (`000`–`025`). The browser client is `services/supabase.ts`.
+- **Data:** Supabase Postgres with Row Level Security. Schema and policies live in `supabase/migrations/` (`000`–`032`; `004` was deliberately removed, see `tests/fixtures/migrationSequence.ts`). The browser client is `services/supabase.ts`.
 - **Payments:** Stripe Checkout — session creation and webhook activation in `functions/api/stripe/`.
 - **NFL schedule and live score:** ESPN, server-side only, through `functions/_lib/espnNfl.ts`. `functions/api/nfl/games.ts` lists scheduled games; `functions/api/scores/refresh.ts` fetches the live scoreboard **once per cron tick for the whole slate** and promotes canonical snapshots.
 - **Paper-board import:** Gemini OCR runs only inside `functions/api/boards/scan.ts`. It never runs in the browser.
@@ -25,6 +25,7 @@ This file describes the current production architecture, not an immutable topolo
 | `/` | `src/features/homepage/Homepage` (lazy). With `?poolId=` it renders `BoardView` instead. |
 | `/demo` | `BoardView` in demo mode |
 | `/b/:shareCode` | `BoardView` — the public viewer link |
+| `/p/:poolId` | `GuestPoolPage` — guest claim page for a public invite |
 | `/boards/:boardId` | `BoardView` behind `RequireAuth` — the organizer workspace |
 | `/family` | Scoped private family editor; fragment credential, no organizer account |
 | `/s/:code` | Public seller link: pick a seller's unsold squares and claim them by name; no account |
@@ -36,6 +37,10 @@ This file describes the current production architecture, not an immutable topolo
 | `/privacy`, `/terms` | `pages/Privacy`, `pages/Terms` |
 | `*` | `pages/NotFound` |
 
+## Loading
+
+Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current route's chunk (and the organizer workspace on `/boards/*`) in parallel with the sign-in check. Inside `BoardView`, the organizer workspace, the seller sale view and the QR share sheet load on demand; Find my squares stays eager so it can return focus in the same tick. `public/_headers` caches content-hashed `/assets/*` for a year.
+
 ## Frontend structure
 
 ### `src/design/` — the design system
@@ -43,24 +48,24 @@ This file describes the current production architecture, not an immutable topolo
 - `tokens.css` is the single source of current production token truth: the maintained palette, plus semantic tokens that flip on `[data-base="dark"]` (viewer, homepage, site) and `[data-base="cream"]` (organizer). Keep its normative values until a replacement is intentionally adopted.
 - `src/index.css` re-exposes those variables to Tailwind v4 through `@theme inline`, and holds the deliberately unlayered cascade guards (button fill re-assertion, focus rule, dialog and organizer-header elevation, square board corners).
 - `Base.tsx` sets `data-base` and the page ground.
-- `primitives/`: `Glass`, `Island`, `Sheet`, `Capsule`, `Ring`, `Numeral`, `Eyebrow`, `Spotlight`, and `motion.ts` (durations, easings, `useReducedMotion()`). These are current shared building blocks, not a requirement to reproduce Broadcast Glass in every proposal.
+- `primitives/`: `Glass`, `Sheet`, `Capsule`, `Numeral`, `Eyebrow`, `Grain`, `ContextNotch`, and `motion.ts`. `Island`, `Ring`, `SectionTone` and `Spotlight` are kept and tested but no shipped surface renders them today; (durations, easings, `useReducedMotion()`). These are current shared building blocks, not a requirement to reproduce Broadcast Glass in every proposal.
 - Mapping reference: `docs/DESIGN_TOKENS.md`. Normative current-implementation meaning and intentional adoption contract: root `DESIGN.md`.
 
 ### `src/features/` — the shipped surfaces
 
 - `homepage/` — `Homepage.tsx` composes the static hero, ivory organizer chapter, score explanation, pricing/FAQ and local grouped footer. Sample data remains in `demoData.ts` and `renders/organizerDemoData.ts`; `pricing.ts` is the price ladder. `atmosphere/useScoreExplanation.ts` imports GSAP only when the score explanation enters view, owns one local timeline/observer, and reverts on unmount. The former fill, parallax, reveal and device-preview implementations have been retired from the homepage. Shared motion primitives remain available to other surfaces.
-- `viewer/` — composed by `shell/ViewerShell.tsx`: `shell/ViewerIsland`, `score/ScoreInstrument`, `identity/FindSquaresEntry`, `personal/YourSquaresSummary`, `scenarios/ScenarioDisclosure`, `notifications/WinnerEmailDisclosure`, `details/BoardDetailsDisclosure`, `board/ViewerBoardGrid`. Pure logic sits beside each: `viewerScoreModel`, `viewerIdentityModel`, `scenarioModel`, `milestoneViewModel`, `boardGridModel`.
-- `organizer/` — `workspace/OrganizerWorkspace.tsx` composes `WorkspaceHeader`, `OrganizerIsland`, `BoardEditor`, `RangeAssignBar`, `SquareSheet`, `DrawControl`, `ReconcileCard`, `PayoutRulesCard`, `BoardToolsCard`, the `PreviewSheet` → `PublishSheet` → `PublishedSheet` sequence, `UpgradeSheet`, and `gameday/` (`SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard`). Behavior lives in `lifecycle/organizerLifecycle.ts`, `draft/draftSaveModel.ts`, `game-day/manualScoringModel.ts`, and the workspace's own `useWorkspaceDraft`, `selection`, `secureDraw`, `publishBoard`, `applyScheduledGame`, `entryMetaService`, `renamePublishedSquare`.
+- `viewer/` — composed by `shell/ViewerShell.tsx`: `shell/ViewerIsland`, `score/ScoreInstrument`, `identity/FindSquaresEntry`, `personal/YourSquaresSummary`, `scenarios/ScenarioDisclosure`, `notifications/WinnerEmailDisclosure`, `details/BoardDetailsDisclosure`, `board/ViewerBoardGrid`. Pure logic sits beside each: `viewerScoreModel`, `scenarioModel` (including `currentSquareIndex`, the one current-square rule), `milestoneViewModel`, `boardGridModel`. `identity/viewerIdentityModel.ts` (participant-id selection) is tested but not yet wired: `BoardView` still restores the saved selection by display name (storage `version: 1`).
+- `organizer/` — `workspace/OrganizerWorkspace.tsx` composes `WorkspaceHeader`, `OrganizerIsland`, `BoardEditor`, `RangeAssignBar`, `SquareSheet`, `DrawControl`, `ReconcileCard`, `PayoutRulesCard`, `BoardToolsCard`, the `PreviewSheet` → `PublishSheet` → `PublishedSheet` sequence, `UpgradeSheet`, and `gameday/` (`SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard`). Behavior lives in `lifecycle/organizerLifecycle.ts`, `lifecycle/workspaceGates.ts` (blocker copy, draw/publish gates, next step), `workspace/workspaceBoardModel.ts` (square, range, availability and draw rules), `game-day/useGameDayScoring.ts`, `workspace/usePayoutDraft.ts`, `draft/draftSaveModel.ts`, `game-day/manualScoringModel.ts`, and the workspace's own `useWorkspaceDraft`, `selection`, `secureDraw`, `publishBoard`, `applyScheduledGame`, `entryMetaService`, `renamePublishedSquare`.
 - `site/` — the chrome shared by every non-product route: `SiteHeader`, `SiteFooter`, `SitePage`, `ArticleShell`.
-- `instrumentation/` — `eventSchema.ts` (the closed event union) and `clientEvents.ts`.
+- `instrumentation/` — `eventSchema.ts` (the closed event union) and `clientEvents.ts`. Tested, but no shipped surface emits events yet.
 
 ### Shared app code
 
 - `pages/` — route-level orchestration only.
 - `components/` — `BoardView` (the viewer/organizer host), auth guards, error boundary, loading.
-- `hooks/` — `usePoolData` (board read/write), `useContestEntries` (participants and assignments), `useLiveScoring` (score polling and freshness), `useBoardActions` (publish/join), `useAuth`, `useDialogFocus`.
-- `services/` — `supabase.ts`, `scoreService.ts`, `stripe.ts`, `boardImportService.ts`. All external SDK/API calls live here.
-- `utils/` — pure logic with unit tests: winner logic, retry/backoff, player-name matching, board image.
+- `hooks/` — `usePoolData` (board read/write; every revision-carrying write runs through one queue, and a load older than an acknowledged save is dropped), `useContestEntries` (private notes; `background` reloads never lock the editor), `useLiveScoring` (score polling and freshness; one read at a time, newest answer wins), `useBoardActions` (publish/join), `useAuth`.
+- `services/` — `supabase.ts`, `scoreService.ts`, `stripe.ts`, `boardImportService.ts`. Feature services (`src/features/*/services`, `entryMetaService`, `publishBoard`, `sellerLinkService`, and others) also call `/api` directly; there is no single browser API client yet.
+- `utils/` — pure logic with unit tests, shared by browser and server: winner logic, quarter axes, board validation, `scheduledGame.ts` (away team = side axis, home = top), retry/backoff, board image.
 - `context/AuthContext` — Supabase session.
 
 ## SEO prerender
@@ -80,16 +85,25 @@ Viewers never authenticate. A published board is readable through its share code
 
 ## API surface
 
+Shared handler plumbing lives in `functions/_lib/http.ts` (clients, `requireUser` — 401 only for a rejected token, 503 when the auth service cannot answer — bounded `readJsonObject`, id checks, masked 500s, `currentSeason`) and `functions/_lib/crypto.ts`. Unsubscribe tokens are signed and verified by one implementation in `_lib/winnerNotifications.ts`.
+
 ```
 functions/api/health.ts
 functions/api/pools.ts                                  create
 functions/api/pools/[id].ts                             read / update
 functions/api/pools/[id]/publish.ts
+functions/api/pools/[id]/share.ts                       pre-game sharing
 functions/api/pools/[id]/score.ts                       viewer score projection
 functions/api/pools/[id]/score/manual.ts                organizer manual authority
 functions/api/pools/[id]/open-squares.ts
 functions/api/pools/[id]/milestones/[milestone]/correct.ts
-functions/api/pools/activate.ts
+functions/api/pools/[id]/family.ts                      family access (organizer)
+functions/api/pools/[id]/seller-links.ts                seller links (organizer)
+functions/api/pools/[id]/guest.ts, guest-state.ts, invites.ts   guest invites
+functions/api/pools/activate.ts                         410 tombstone
+functions/api/family.ts                                 family editor (bearer capability)
+functions/api/family/guest-link.ts
+functions/api/sellers/[code].ts                         seller link read / claim
 functions/api/scores/refresh.ts                         cron-driven slate refresh
 functions/api/nfl/games.ts                              scheduled-game picker
 functions/api/boards/scan.ts                            paper-board OCR
