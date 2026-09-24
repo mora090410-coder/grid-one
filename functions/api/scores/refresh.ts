@@ -8,7 +8,6 @@
  * Off-day cost is one indexed Postgres query: when no boards are inside their
  * game window the handler exits before touching ESPN.
  */
-import { createClient } from '@supabase/supabase-js';
 import { fetchLiveScoreboard } from '../../_lib/espnNfl';
 import { createScoreProviderRecovery } from '../../_lib/scoreProviderRecovery';
 import {
@@ -18,28 +17,20 @@ import {
   refreshContestScore,
   scorePollSeconds,
 } from '../../_lib/scoreRefresh';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { timingSafeEqual } from '../../_lib/crypto';
+import { adminClient, runBounded, type PagesFunction } from '../../_lib/http';
 
 // Refresh boards from shortly before kickoff until the game window is over.
 const WINDOW_BEFORE_KICKOFF_MS = 30 * 60_000;
 const WINDOW_AFTER_KICKOFF_MS = 12 * 60 * 60_000;
+// Boards refresh a few at a time so a busy slate does not scale linearly,
+// without flooding Postgres. Each board keeps its own lease and error.
+const CONTEST_REFRESH_CONCURRENCY = 4;
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
-
-const timingSafeEqual = (left: string, right: string) => {
-  const leftBytes = new TextEncoder().encode(left);
-  const rightBytes = new TextEncoder().encode(right);
-  let mismatch = leftBytes.length ^ rightBytes.length;
-  const length = Math.max(leftBytes.length, rightBytes.length);
-  for (let index = 0; index < length; index += 1) {
-    mismatch |= (leftBytes[index] || 0) ^ (rightBytes[index] || 0);
-  }
-  return mismatch === 0;
-};
 
 const embeddedScoreState = (contest: any) => {
   const state = contest?.contest_score_state;
@@ -58,9 +49,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     return json({ disabled: true, active: 0, refreshed: 0 });
   }
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
 
   // Honor SCORE_POLL_SECONDS even though the cron fires every minute: the slot
   // claim is atomic in Postgres, so overlapping ticks skip instead of racing.
@@ -105,7 +94,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   let refreshed = 0;
   const recoverScore = createScoreProviderRecovery(env);
   const errors: Array<{ contestId: string; error: string }> = [];
-  for (const contest of active) {
+  await runBounded(active, CONTEST_REFRESH_CONCURRENCY, async (contest: any) => {
     try {
       const entry = scoreboard?.games.get(String(contest.game_external_id));
       const provider = await recoverScore(contest, async () => {
@@ -121,7 +110,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     } catch (error: any) {
       errors.push({ contestId: contest.id, error: error?.message || 'Refresh failed.' });
     }
-  }
+  });
 
   // Opportunistic storage hygiene; failures are logged, never fatal.
   const { error: pruneError } = await admin.rpc('gridone_prune_score_provider_payloads', {

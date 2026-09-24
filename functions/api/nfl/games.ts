@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
 import { fetchScheduledGames } from '../../_lib/espnNfl';
 import { scoreTestModeAllowed } from '../../_lib/scoreTestMode';
+import { authenticate, bearerToken, userClient, type PagesFunction } from '../../_lib/http';
 
-type PagesFunction = (context: any) => Promise<Response> | Response;
+const PUBLIC_SCHEDULE_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=900';
 
 const json = (body: unknown, status = 200, cacheControl = 'no-store') => new Response(
   JSON.stringify(body),
@@ -15,7 +15,8 @@ const json = (body: unknown, status = 200, cacheControl = 'no-store') => new Res
   },
 );
 
-export const onRequestGet: PagesFunction = async ({ request, env }) => {
+export const onRequestGet: PagesFunction = async (context) => {
+  const { request, env } = context;
   const url = new URL(request.url);
   const requestedScope = url.searchParams.get('scope') || 'upcoming';
   const rawLimit = url.searchParams.get('limit');
@@ -30,30 +31,34 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   try {
     let completedAccess = false;
     if (requestedScope === 'completed' && env.SCORE_TEST_MODE_ENABLED === 'true') {
-      const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+      const bearer = bearerToken(request);
       if (bearer) {
-        const client = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
-          global: { headers: { Authorization: `Bearer ${bearer}` } },
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        const { data } = await client.auth.getUser(bearer);
-        completedAccess = Boolean(
-          data.user?.id && scoreTestModeAllowed(env, data.user.id),
-        );
+        const auth = await authenticate(userClient(env, bearer), bearer);
+        completedAccess = 'user' in auth && scoreTestModeAllowed(env, auth.user.id);
       }
     }
     const scope = completedAccess ? 'completed' : 'upcoming';
+
+    // Pages Functions do not cache on Cache-Control alone (see pools/[id]/score.ts),
+    // so the public schedule consults the Cache API explicitly. The key is the
+    // RESOLVED scope and limit, so an unauthorized `scope=completed` request
+    // shares the upcoming entry and cannot bypass the cache.
+    const edgeCache = !completedAccess && typeof (globalThis as any).caches?.default?.match === 'function'
+      ? (globalThis as any).caches.default
+      : null;
+    const cacheKey = `${url.origin}${url.pathname}?scope=upcoming&limit=${limit}`;
+    if (edgeCache) {
+      const cached = await edgeCache.match(cacheKey).catch(() => null);
+      if (cached) return cached;
+    }
+
     const games = await fetchScheduledGames({ scope, limit });
-    // Derive cacheability from the RESOLVED scope: an unauthorized
-    // `scope=completed` request is served upcoming data and must stay
-    // edge-cacheable, or it becomes an uncached ESPN amplification vector.
-    return json(
-      completedAccess ? { games, scoreTestMode: true } : { games },
-      200,
-      completedAccess
-        ? 'private, no-store'
-        : 'public, max-age=300, stale-while-revalidate=900',
-    );
+    if (completedAccess) return json({ games, scoreTestMode: true }, 200, 'private, no-store');
+    const response = json({ games }, 200, PUBLIC_SCHEDULE_CACHE_CONTROL);
+    if (edgeCache && typeof context.waitUntil === 'function') {
+      context.waitUntil(edgeCache.put(cacheKey, response.clone()).catch(() => undefined));
+    }
+    return response;
   } catch (error) {
     console.error('NFL schedule request failed:', error);
     return json({ error: 'NFL games are temporarily unavailable. Please retry.' }, 502);
