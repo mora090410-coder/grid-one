@@ -109,11 +109,11 @@ describe('copy-link failures', () => {
 describe('organizer phases', () => {
   it('tracks publish completion only after the server confirms it', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ error: 'Choose a plan', upgradeTo: 'gameday' }, 402)));
-    await publishBoard('pool-1', { allowOpenSquares: false });
+    await publishBoard('pool-1', { allowOpenSquares: false, revision: 3 });
     expect(track).not.toHaveBeenCalled();
 
     vi.stubGlobal('fetch', vi.fn(async () => json({ shareCode: 'ABCDEFGH', viewerUrl: '/p/ABCDEFGH', revision: 2, tier: 'free', used: 1, allowance: 1 })));
-    await publishBoard('pool-1', { allowOpenSquares: false });
+    await publishBoard('pool-1', { allowOpenSquares: false, revision: 3 });
     expect(track).toHaveBeenCalledWith({ name: 'organizer_phase_completed', phase: 'publish' });
   });
 

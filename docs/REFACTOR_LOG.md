@@ -935,3 +935,15 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - **Left for a decision (not changed):** `viewerIdentityModel` (tested, not wired; wiring changes saved-selection storage); `instrumentation/` (tested, emits nothing); `scrollcraft/` (design-build record, not shipped); email unsubscribe/verify act on GET (mail scanners can trigger them); publish does not require the revision the organizer saw; the AuthProvider still waits for Supabase before any route renders (removing that would briefly show the signed-out header); fonts load from Google (self-hosting would save a connection).
 - **Independent pre-ship review fixes:** a tab left open across a deploy now reloads once when a lazily loaded file is gone (`utils/staleChunkReload.ts`), the Gemini scan timeout is 90 s (30 s could cut off large photos), an empty NFL schedule is never pinned in the edge cache, and a board save that collides with guest claims returns a clear 409 instead of a generic failure.
 - **Gates:** `npx tsc --noEmit` pass; unit 1077 pass; integration 116 pass, 1 skipped (pre-existing); `npm run build` pass; `npm run design:lint` 0 errors, 5 pre-existing warnings; Playwright chromium 151/151.
+
+## 2026-09-24 — Follow-ups left open by the refactor
+
+- **Approval:** Anthony asked to improve every item the refactor left for a decision.
+- **Email links:** GET on verify/unsubscribe links only shows a one-button confirm page; POST acts. Winner and correction emails carry RFC 8058 one-click `List-Unsubscribe` headers. The verification email does not.
+- **Publish:** the browser sends the revision the organizer saw; the server refuses (409 `REVISION_CONFLICT`) when a family, guest or seller-link edit moved the board since, and the publish sheet offers Reload latest board.
+- **Find my squares:** saved as `version: 2` by participant id (`viewerIdentityModel`), with v1 selections migrated on read so no returning viewer loses theirs.
+- **First paint:** public pages no longer wait for the sign-in check; Supabase loads in the background. Guarded routes, Login and Create still wait. The header keeps a same-size invisible slot while auth resolves (no wrong label, no shift). Homepage h1 with a slow auth chunk: about 2.0 s → 0.2 s.
+- **Fonts:** self-hosted latin-first woff2 with Google's exact unicode ranges, two hero faces preloaded, `/fonts/*` cached immutably. Screenshots pixel-identical.
+- **Analytics:** migration `033_client_events.sql` (applied to production 2026-09-24; service_role INSERT/SELECT only, no identity columns), `POST /api/events` validated by the closed schema, `track()` via sendBeacon honoring Do Not Track / Global Privacy Control, production builds only. Wired: homepage CTAs, Find my squares, winner-email form, publish/share completed, clipboard and image-export failures.
+- **Open:** event retention period and a Cloudflare rate-limit rule on `/api/events` need product decisions.
+- **Gates:** tsc pass; unit 1159; integration 119 + 1 pre-existing skip; build; design lint 0 errors; Playwright chromium 155/155.
