@@ -68,11 +68,17 @@ export function useLiveScoring(
     const [lastUpdated, setLastUpdated] = useState('');
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>(initialWinnerHistory);
     const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>(initialPendingMilestones);
-    const pollRef = useRef<NodeJS.Timeout | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Each network read gets a number. Only the newest may write, so a slow
+    // older answer (or one for the board we just left) never overwrites a newer one.
+    const requestSeqRef = useRef(0);
+    const inFlightRef = useRef<string | null>(null);
     const isFinalRef = useRef(false);
     // Server-driven cadence: the score endpoint reports nextPollSeconds from
     // the SCORE_POLL_SECONDS env var, so the rate is tunable without a deploy.
     const [pollIntervalMs, setPollIntervalMs] = useState(180_000);
+    const pollIntervalRef = useRef(pollIntervalMs);
+    pollIntervalRef.current = pollIntervalMs;
     const clearPoll = useCallback(() => {
         if (!pollRef.current) return;
         clearInterval(pollRef.current);
@@ -205,10 +211,16 @@ export function useLiveScoring(
             return;
         }
 
+        // One read at a time per board: a tab refocus during a slow read would
+        // otherwise start a second, overlapping request.
+        if (inFlightRef.current === boardRef) return;
+        const request = ++requestSeqRef.current;
+        inFlightRef.current = boardRef;
         setIsRefreshing(true);
 
         try {
             const result = await fetchLiveScore(boardRef);
+            if (request !== requestSeqRef.current) return;
             const data = result.score;
 
             if (!data && result.scoreState === 'awaiting_organizer_entry') {
@@ -239,13 +251,17 @@ export function useLiveScoring(
             setIsSynced(data.isManual ? data.freshness !== 'offline' && data.freshness !== 'rejected' : !hasUntrustedFreshness(data));
             setLastUpdated(data.retrievedAt ? new Date(data.retrievedAt).toLocaleTimeString() : new Date().toLocaleTimeString());
         } catch (err: unknown) {
+            if (request !== requestSeqRef.current) return;
             console.error("Live Scoring Error:", err);
             const message = err instanceof Error ? err.message : 'The score service is unavailable.';
             setLiveData((current) => current ? { ...current, freshness: 'offline', warning: message } : current);
             setLiveStatus('OFFLINE · LAST KNOWN');
             setIsSynced(false);
         } finally {
-            setIsRefreshing(false);
+            if (request === requestSeqRef.current) {
+                inFlightRef.current = null;
+                setIsRefreshing(false);
+            }
         }
     }, [
         boardRef,
@@ -256,6 +272,12 @@ export function useLiveScoring(
         loadingPool,
         manualScoringEnabled,
     ]);
+
+    useEffect(() => () => {
+        // Leaving a board, switching score authority, or unmounting retires any read still in flight.
+        requestSeqRef.current += 1;
+        inFlightRef.current = null;
+    }, [boardRef, manualScoringEnabled]);
 
     useEffect(() => {
         if (!manualScoringEnabled || !dataReady || loadingPool || !enabled) return;
@@ -282,7 +304,7 @@ export function useLiveScoring(
                 || isFinalRef.current
             ) return;
             void fetchLive();
-            if (externalEventId) pollRef.current = setInterval(fetchLive, pollIntervalMs);
+            if (externalEventId) pollRef.current = setInterval(fetchLive, pollIntervalRef.current);
         };
         const handleVisibility = () => {
             if (document.hidden) clearPoll();
@@ -302,8 +324,15 @@ export function useLiveScoring(
         externalEventId,
         fetchLive,
         manualScoringEnabled,
-        pollIntervalMs,
     ]);
+
+    // A new server cadence re-arms the running timer. It does not fetch again
+    // right away: the answer that carried the cadence is already fresh.
+    useEffect(() => {
+        if (!pollRef.current) return;
+        clearInterval(pollRef.current);
+        pollRef.current = setInterval(fetchLive, pollIntervalMs);
+    }, [fetchLive, pollIntervalMs]);
 
     return {
         liveData,

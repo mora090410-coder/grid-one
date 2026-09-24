@@ -93,6 +93,19 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(cells.filter((cell) => cell.getAttribute('tabindex') === '0')).toHaveLength(1);
   });
 
+  it('keeps the keyboard position when a score poll returns the same score', () => {
+    const props = { board, game, highlights: { quarterWinners: { Q3: '4-7' }, currentLabel: 'NOW' }, winnerHistory, pendingMilestones: [], selectedPlayer: 'Ann Lee', highlightedCoords: { top: 4, left: 7 }, showOpenSquares: true };
+    const view = render(<ViewerBoardGrid {...props} live={live} />);
+    const grid = screen.getByRole('grid', { name: /football squares board/i });
+    const first = within(grid).getAllByRole('gridcell')[0];
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    const moved = within(grid).getByRole('gridcell', { name: /coordinate row 1 column 2,/i });
+    expect(moved).toHaveAttribute('tabindex', '0');
+    view.rerender(<ViewerBoardGrid {...props} live={{ ...live }} />);
+    expect(within(grid).getByRole('gridcell', { name: /coordinate row 1 column 2,/i })).toHaveAttribute('tabindex', '0');
+  });
+
   it('exposes assignment/OPEN coordinate digits and distinct state attributes', () => {
     renderGrid();
     const grid = screen.getByRole('grid', { name: /football squares board/i });

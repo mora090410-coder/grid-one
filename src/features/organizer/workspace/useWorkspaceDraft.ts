@@ -51,8 +51,13 @@ export function useWorkspaceDraft({
   const inFlightRef = useRef<Promise<void> | null>(null);
   const editedDuringSaveRef = useRef(false);
 
+  // The newest server props. reloadLatest adopts these after its await,
+  // because the adoption effect skips them while a conflict is still showing.
+  const serverPropsRef = useRef({ game, board, revision });
+
   saveStateRef.current = saveState;
   revisionRef.current = revision;
+  serverPropsRef.current = { game, board, revision };
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -261,8 +266,14 @@ export function useWorkspaceDraft({
   const reloadLatest = useCallback(async () => {
     clearTimer();
     await onReload?.();
-    updateSaveState(() => clean(revisionRef.current));
-  }, [clearTimer, onReload]);
+    // Take the server copy explicitly. Marking the old local draft clean at
+    // the new revision would let the next edit save it over the newer board.
+    const server = serverPropsRef.current;
+    setLocalGame(server.game);
+    setLocalBoard(server.board);
+    latestData.current = { game: server.game, board: server.board };
+    updateSaveState(() => clean(server.revision));
+  }, [clearTimer, onReload, updateSaveState]);
 
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {

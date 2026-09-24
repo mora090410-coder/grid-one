@@ -197,3 +197,23 @@ it('keeps an external revision conflict blocked before the new revision prop ren
   await act(async () => { await expect(result.current.saveExternalGame(retryPatch)).rejects.toThrow(); });
   expect(retryPatch).not.toHaveBeenCalled();
 });
+
+it('reload after a conflict adopts the server board even when it lands mid-reload', async () => {
+  const onSave = vi.fn(async () => { throw new Error('conflict'); });
+  let release!: () => void; let entered!: () => void;
+  const enteredReload = new Promise<void>((resolve) => { entered = resolve; });
+  const onReload = () => new Promise<void>((resolve) => { release = resolve; entered(); });
+  type Props = { game: GameState; board: BoardData; revision: number };
+  const { result, rerender } = renderHook((props: Props) => useWorkspaceDraft({ ...props, isPublished: false, onSave, onReload, debounceMs: 1 }), { initialProps: { game: { ...game, title: 'Server v1' }, board, revision: 1 } });
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Local edit' })));
+  rerender({ game: { ...game, title: 'Server v1' }, board, revision: 2 });
+  await act(async () => { await result.current.flush(); });
+  expect(result.current.saveState.status).toBe('conflicted');
+  let reloading!: Promise<void>;
+  act(() => { reloading = result.current.reloadLatest(); });
+  await enteredReload;
+  // The fresh board renders while the reload's second step (private notes) is still pending.
+  rerender({ game: { ...game, title: 'Server v2' }, board: { ...board }, revision: 3 });
+  await act(async () => { release(); await reloading; });
+  expect([result.current.saveState.status, result.current.game.title, result.current.saveState.revision]).toEqual(['clean', 'Server v2', 3]);
+});

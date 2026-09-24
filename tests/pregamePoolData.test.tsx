@@ -83,3 +83,24 @@ it('recovers from an unavailable response when the same link becomes available a
   await act(async () => { await result.current.loadPoolData('ABCDEFGH', { background: true }); });
   expect(result.current.error).toBe(null);
 });
+it('ignores a background load that answers with an older revision than a save already acknowledged', async () => {
+  getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+  let releaseLoad!: (value: Response) => void;
+  let loads = 0;
+  vi.stubGlobal('fetch', vi.fn((_url, init) => {
+    if (init?.method === 'PUT') return Promise.resolve(response({ revision: 4 }));
+    loads += 1;
+    if (loads === 1) return Promise.resolve(response(stored));
+    return new Promise<Response>((resolve) => { releaseLoad = resolve; });
+  }));
+  const { result } = renderHook(() => usePoolData());
+  await act(async () => { await result.current.loadPoolData(id); });
+  let late!: Promise<void>;
+  act(() => { late = result.current.loadPoolData(id, { background: true }); });
+  await act(async () => { await result.current.updatePool(id, { game: result.current.game, board }); });
+  expect(result.current.revision).toBe(4);
+  await act(async () => { releaseLoad(response({ ...stored, title: 'Older copy', revision: 3 })); await late; });
+  expect(result.current.revision).toBe(4);
+  expect(result.current.game.title).toBe('Team board');
+  expect(result.current.refreshing).toBe(false);
+});

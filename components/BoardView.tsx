@@ -96,8 +96,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const [guestSnapshot, setGuestSnapshot] = useState<GuestSnapshot | null>(null);
     const guestSnapshotRef = useRef<GuestSnapshot | null>(null);
 
-    const [isPreviewMode, setIsPreviewMode] = useState(() => localStorage.getItem('gridone_preview_mode') === 'true');
-    useEffect(() => { try { localStorage.removeItem('gridone_preview_mode'); } catch {} setIsPreviewMode(false); }, []);
 
     const publicSelectionShareCode = routeShareCode || (!requiresAuthForRoute ? shareCode : null);
     const selectionStorageKey = publicSelectionShareCode
@@ -115,7 +113,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     });
 
     // 4. Derived State
-    const isCommissionerMode = Boolean(isOwner && !isPreviewMode);
+    const isCommissionerMode = Boolean(isOwner);
 
     // Owner-only data never loads on a public viewer route.
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
@@ -233,14 +231,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [demoMode, setBoard, setGame]);
 
     useEffect(() => {
-        if (urlPoolId) {
-            if (forceAdmin || routeBoardId) {
-                setIsPreviewMode(false);
-                localStorage.setItem('gridone_preview_mode', 'false');
-            }
-            void loadPoolData(urlPoolId);
-        }
-    }, [forceAdmin, loadPoolData, routeBoardId, urlPoolId]);
+        if (urlPoolId) void loadPoolData(urlPoolId);
+    }, [loadPoolData, urlPoolId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -268,13 +260,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         });
         return () => { cancelled = true; };
     }, [ownerDataPoolId]);
-
-    useEffect(() => {
-        if (urlPoolId) return;
-        if (!dataReady || loadingPool) return;
-        localStorage.setItem('squares_game', JSON.stringify(game));
-        localStorage.setItem('squares_board', JSON.stringify(board));
-    }, [game, board, dataReady, loadingPool, urlPoolId]);
 
     useEffect(() => {
         if (!selectionStorageKey || !dataReady || loadingPool || poolError) return;
@@ -326,8 +311,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setActivePoolId(null);
-        setIsPreviewMode(false);
-        localStorage.removeItem('gridone_preview_mode');
         setBoard(SAMPLE_BOARD);
         navigate('/');
     };

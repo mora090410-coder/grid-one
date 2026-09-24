@@ -288,29 +288,50 @@ describe('legacy manual live scoring', () => {
     await act(async () => {
       await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(1));
     });
-    // Let the fetch promise resolve so nextPollSeconds re-arms the interval,
-    // which triggers one immediate fetch.
+    // The answer that carried the new cadence is already fresh, so the timer
+    // is re-armed without an extra immediate read.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
-    await act(async () => {
-      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
-    });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
 
     // No poll should fire before the server-specified 90s interval.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
     });
-    expect(fetchLiveScore).toHaveBeenCalledTimes(2);
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
     await act(async () => {
-      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(3));
+      await vi.waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(2));
     });
 
     unmount();
     vi.useRealTimers();
+  });
+
+  it('never lets a slow read overlap a newer one or write a score for the board it left', async () => {
+    const liveSnapshot: LiveGameData = { ...manualSnapshot, state: 'in', period: 2, isManual: false };
+    let releaseFirst!: (value: { score: LiveGameData }) => void;
+    vi.mocked(fetchLiveScore)
+      .mockImplementationOnce(() => new Promise((resolve) => { releaseFirst = resolve; }))
+      .mockResolvedValue({ score: { ...liveSnapshot, leftScore: 21 } });
+    const game = { ...legacyGame, gameExternalId: '401772988', scoreSnapshot: liveSnapshot };
+    const { result, rerender, unmount } = renderHook(
+      ({ boardRef }: { boardRef: string }) => useLiveScoring(game, true, false, boardRef),
+      { initialProps: { boardRef: 'board-a' } },
+    );
+    await waitFor(() => expect(fetchLiveScore).toHaveBeenCalledTimes(1));
+    await act(async () => { await result.current.fetchLive(); });
+    expect(fetchLiveScore).toHaveBeenCalledTimes(1);
+
+    rerender({ boardRef: 'board-b' });
+    await waitFor(() => expect(fetchLiveScore).toHaveBeenCalledWith('board-b'));
+    await waitFor(() => expect(result.current.liveData?.leftScore).toBe(21));
+    await act(async () => { releaseFirst({ score: { ...liveSnapshot, leftScore: 3 } }); });
+    expect(result.current.liveData?.leftScore).toBe(21);
+    unmount();
   });
 });

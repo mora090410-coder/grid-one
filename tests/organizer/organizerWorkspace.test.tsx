@@ -699,6 +699,9 @@ describe('OrganizerWorkspace published boards', () => {
 
     expect(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` })).toBeInTheDocument();
     expect(await screen.findByRole('alert')).toHaveTextContent('rpc down');
+    // Private notes belong to the name that is actually on the board; a failed
+    // rename must not record them.
+    expect(saveEntryMeta).not.toHaveBeenCalled();
   });
 
   it('switches score authority to manual through the service', async () => {

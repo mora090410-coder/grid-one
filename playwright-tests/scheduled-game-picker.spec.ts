@@ -156,7 +156,6 @@ for (const width of [390, 1440]) {
         expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600,
         token_type: 'bearer', user,
       }));
-      localStorage.setItem('gridone_preview_mode', 'false');
     }, { user });
     await page.route('https://illqymckwqiawdwxhwcy.supabase.co/**', route => route.fulfill({ json: user }));
     await page.route('**/api/nfl/games?**', route => route.fulfill({ json: { games } }));

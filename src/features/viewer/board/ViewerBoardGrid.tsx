@@ -92,7 +92,10 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     setPulsing(added.join('|'));
   }, [emphasisIds, reducedMotion]);
 
-  React.useEffect(() => setFocus(initialFocus), [initialFocus]);
+  // Follow the current or selected square only when it actually moves. A score
+  // poll rebuilds the model with the same square; that must not yank the
+  // keyboard position back.
+  React.useEffect(() => setFocus({ row: initialFocus.row, col: initialFocus.col }), [initialFocus.row, initialFocus.col]);
 
   const focusCell = React.useCallback((row: number, col: number, center = false) => {
     const next = { row: clamp(row, 0, 9), col: clamp(col, 0, 9) };

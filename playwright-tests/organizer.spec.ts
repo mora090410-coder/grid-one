@@ -34,7 +34,6 @@ const scheduledGame = {
 const installOrganizerSession = async (page: Page) => {
   await page.addInitScript(({ key, value }) => {
     window.localStorage.setItem(key, value);
-    window.localStorage.setItem('gridone_preview_mode', 'false');
   }, { key: authStorageKey, value: sessionValue() });
 };
 

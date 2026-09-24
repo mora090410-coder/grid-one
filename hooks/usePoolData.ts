@@ -94,6 +94,9 @@ export function usePoolData(): UsePoolDataReturn {
     const [refreshing, setRefreshing] = useState(false);
     const [refreshError, setRefreshError] = useState<string | null>(null);
     const loadSequence = useRef(0);
+    // Board id the current revisionRef belongs to, so a stale load of the same
+    // board can be told apart from a load of a different board.
+    const loadedPoolIdRef = useRef<string | null>(null);
     const [winnerHistory, setWinnerHistory] = useState<WinnerResolution[]>([]);
     const [pendingMilestones, setPendingMilestones] = useState<PendingMilestone[]>([]);
     const [notificationDeliveryIssues, setNotificationDeliveryIssues] = useState<NotificationDeliveryIssue[]>([]);
@@ -101,6 +104,14 @@ export function usePoolData(): UsePoolDataReturn {
     useEffect(() => {
         revisionRef.current = revision;
     }, [revision]);
+
+    // Every revision-carrying write runs one at a time, so each request sends
+    // the revision the previous write returned.
+    const enqueueWrite = useCallback(<T,>(run: () => Promise<T>): Promise<T> => {
+        const queued = updateQueueRef.current.then(run, run);
+        updateQueueRef.current = queued.then(() => undefined, () => undefined);
+        return queued;
+    }, []);
 
 
     // Load pool data through the API so unpaid boards can be masked for non-owners.
@@ -121,6 +132,17 @@ export function usePoolData(): UsePoolDataReturn {
 
             if (sequence !== loadSequence.current) return;
             if (!response.ok) throw Object.assign(new Error(data.error || 'Board not found'), { status: response.status });
+            // A load that started before a save can answer after the save was
+            // acknowledged. Its older board would roll the organizer back and
+            // turn the next save into a false conflict, so drop it.
+            const loadedId = data.id || poolId;
+            if (
+                loadedId === loadedPoolIdRef.current
+                && Number.isInteger(data.revision)
+                && revisionRef.current !== null
+                && data.revision < revisionRef.current
+            ) return;
+            loadedPoolIdRef.current = loadedId;
             setError(null);
 
             setActivePoolId(data.id || poolId);
@@ -200,10 +222,8 @@ export function usePoolData(): UsePoolDataReturn {
             setIsActivated(true);
             setUpdatedAt(result.sharedAt || null);
         };
-        const queued = updateQueueRef.current.then(run, run);
-        updateQueueRef.current = queued.then(() => undefined, () => undefined);
-        return queued;
-    }, []);
+        return enqueueWrite(run);
+    }, [enqueueWrite]);
 
     // Create a board through the authenticated API.
     const publishPool = useCallback(async (
@@ -236,6 +256,7 @@ export function usePoolData(): UsePoolDataReturn {
             if (!poolId) throw new Error('No pool ID returned from server');
 
             setActivePoolId(poolId);
+            loadedPoolIdRef.current = poolId;
             setShareCode(data.shareCode || null);
             const nextRevision = Number.isInteger(data.revision) ? data.revision : null;
             setRevision(nextRevision);
@@ -284,10 +305,8 @@ export function usePoolData(): UsePoolDataReturn {
                 return false;
             }
         };
-        const queued = updateQueueRef.current.then(run, run);
-        updateQueueRef.current = queued.then(() => undefined, () => undefined);
-        return queued;
-    }, []);
+        return enqueueWrite(run);
+    }, [enqueueWrite]);
 
     const updatePayoutDescriptions = useCallback((
         poolId: string,
@@ -325,15 +344,13 @@ export function usePoolData(): UsePoolDataReturn {
             setGame((current) => ({ ...current, payoutDescriptions: normalized }));
             return normalized;
         };
-        const queued = updateQueueRef.current.then(run, run);
-        updateQueueRef.current = queued.then(() => undefined, () => undefined);
-        return queued;
-    }, []);
+        return enqueueWrite(run);
+    }, [enqueueWrite]);
 
-    const updatePublishedOpenSquares = useCallback(async (
+    const updatePublishedOpenSquares = useCallback((
         poolId: string,
         squares: string[][],
-    ): Promise<void> => {
+    ): Promise<void> => enqueueWrite(async () => {
         const currentRevision = revisionRef.current;
         if (!currentRevision) throw new Error('Reload this board before assigning open squares.');
         const { data: sessionData } = await supabase.auth.getSession();
@@ -362,7 +379,7 @@ export function usePoolData(): UsePoolDataReturn {
         }
         revisionRef.current = result.revision;
         setRevision(result.revision);
-    }, []);
+    }), [enqueueWrite]);
 
     // Migrate guest board to Supabase
     const migrateGuestBoard = useCallback(async (

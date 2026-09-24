@@ -721,16 +721,17 @@ export default function OrganizerWorkspace({
    * on an assigned cell. Clearing or overwriting an assignment any other way
    * is refused — the published board is the record families are reading.
    */
-  const lateFillOpenSquare = async (index: number, name: string) => {
+  /** Resolves true only when the name actually landed on the board. */
+  const lateFillOpenSquare = async (index: number, name: string): Promise<boolean> => {
     const squares = [...board.squares];
     // Never let a late fill touch an occupied cell, whatever route got here.
     if (squares[index]?.length) {
       setAlert(PUBLISHED_IMMUTABLE);
-      return;
+      return false;
     }
     if (!canAssignOpenSquares) {
       setAlert(LATE_FILL_CLOSED);
-      return;
+      return false;
     }
     squares[index] = [name];
     try {
@@ -738,13 +739,16 @@ export default function OrganizerWorkspace({
       await onAssignOpenSquares(squares);
       setAlert(null);
       setNote(`Square ${index + 1} assigned before kickoff.`);
+      return true;
     } catch (error: any) {
       setAlert(error?.message || LATE_FILL_FAILED);
+      return false;
     }
   };
 
-  const renameSquare = async (index: number, previous: string, next: string) => {
-    if (!activePoolId) return;
+  /** Resolves true only when the audited rename was accepted. */
+  const renameSquare = async (index: number, previous: string, next: string): Promise<boolean> => {
+    if (!activePoolId) return false;
     setBoard((current) => {
       const squares = [...current.squares];
       squares[index] = [next];
@@ -754,6 +758,7 @@ export default function OrganizerWorkspace({
       await renamePublishedSquare(activePoolId, index, next);
       setAlert(null);
       setNote(`Square ${index + 1} changed from ${previous} to ${next}. The change is in the board history.`);
+      return true;
     } catch (error: any) {
       setBoard((current) => {
         const squares = [...current.squares];
@@ -761,6 +766,7 @@ export default function OrganizerWorkspace({
         return { ...current, squares };
       });
       setAlert(error?.message || RENAME_FAILED);
+      return false;
     }
   };
 
@@ -770,13 +776,15 @@ export default function OrganizerWorkspace({
     const next = name.trim();
     setSelectedSquare(null);
 
+    // Private notes follow the name on the board, so they are saved only when
+    // the name change (if any) actually landed.
     if (!previous) {
-      if (next) await lateFillOpenSquare(index, next);
+      if (next && !(await lateFillOpenSquare(index, next))) return;
     } else if (!next) {
       setAlert(PUBLISHED_IMMUTABLE);
       return;
     } else if (next !== previous) {
-      await renameSquare(index, previous, next);
+      if (!(await renameSquare(index, previous, next))) return;
     }
 
     if (!activePoolId) return;
