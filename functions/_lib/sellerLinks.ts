@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { anonClient } from './http';
 import { familyAdmin, familyResponse, isRecord, readFamilyBody, type FamilyEnv } from './familyAccess';
 
 // Seller links reuse the family helpers' bounded body reader, no-store
@@ -7,8 +7,7 @@ export type SellerEnv = FamilyEnv;
 export const sellerResponse = familyResponse;
 export const sellerAdmin = familyAdmin;
 export const readSellerBody = readFamilyBody;
-export const createAuthClient = (env: SellerEnv) =>
-  createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+export const createAuthClient = (env: SellerEnv) => anonClient(env);
 
 export const MAX_CLAIM_SQUARES = 10;
 export const validSellerCode = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{16}$/.test(value);

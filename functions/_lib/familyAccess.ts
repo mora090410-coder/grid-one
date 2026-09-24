@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { sha256Hex } from './crypto';
+import { adminClient } from './http';
 
 export interface FamilyEnv {
  VITE_SUPABASE_URL: string;
@@ -11,9 +12,9 @@ export const familyResponse = (body: unknown, status = 200) => new Response(JSON
 });
 export const familyAdmin = (env: FamilyEnv) => {
  if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('family_unavailable');
- return createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
+ return adminClient(env);
 };
-export const hashFamilyToken = async (token: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token))),byte=>byte.toString(16).padStart(2,'0')).join('');
+export const hashFamilyToken = sha256Hex;
 export const newFamilyToken = () => Array.from(crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,'0')).join('');
 export const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value==='object' && !Array.isArray(value);
 export const validCells = (cells: unknown): cells is number[] => Array.isArray(cells) && cells.length>0 && cells.length<=100 && new Set(cells).size===cells.length && cells.every(index=>Number.isInteger(index)&&index>=0&&index<100);

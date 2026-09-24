@@ -1,7 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { verifyUnsubscribeToken } from '../../_lib/winnerNotifications';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { adminClient, type PagesFunction } from '../../_lib/http';
 
 export const onRequestGet: PagesFunction = async ({ request, env }) => {
   const site = new URL(env.PUBLIC_SITE_URL || 'https://www.getgridone.com').origin;
@@ -14,9 +12,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   }
   const valid = await verifyUnsubscribeToken(env.NOTIFICATION_TOKEN_SECRET, subscriptionId, token);
   if (!valid) return Response.redirect(`${site}/b/${encodeURIComponent(board)}?email=unsubscribe-invalid`, 302);
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient(env);
   const { data } = await admin
     .from('notification_subscriptions')
     .update({

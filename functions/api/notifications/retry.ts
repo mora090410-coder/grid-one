@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import { escapeHtml, timingSafeEqual } from '../../_lib/crypto';
+import { adminClient, runBounded, type PagesFunction } from '../../_lib/http';
+// The unsubscribe verifier lives beside this signer; one implementation keeps them in step.
+import { signUnsubscribe } from '../../_lib/winnerNotifications';
 
 type RetryEnv = {
   CRON_SECRET?: string;
@@ -43,42 +44,6 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
     'Cache-Control': 'no-store',
   },
 });
-
-const timingSafeEqual = (left: string, right: string) => {
-  const leftBytes = new TextEncoder().encode(left);
-  const rightBytes = new TextEncoder().encode(right);
-  let mismatch = leftBytes.length ^ rightBytes.length;
-  const length = Math.max(leftBytes.length, rightBytes.length);
-  for (let index = 0; index < length; index += 1) {
-    mismatch |= (leftBytes[index] || 0) ^ (rightBytes[index] || 0);
-  }
-  return mismatch === 0;
-};
-
-const escapeHtml = (value: unknown) => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
-
-const encodeHex = (bytes: ArrayBuffer) =>
-  Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
-
-const signUnsubscribe = async (secret: string, subscriptionId: string) => {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  return encodeHex(await crypto.subtle.sign(
-    'HMAC',
-    key,
-    new TextEncoder().encode(subscriptionId),
-  ));
-};
 
 const providerError = (body: any, fallback: string) =>
   String(body?.message || body?.error?.message || fallback || 'Email delivery failed').slice(0, 1000);
@@ -169,25 +134,6 @@ const sendClaimedDelivery = async (
   }
 };
 
-const runBounded = async <T>(
-  values: T[],
-  concurrency: number,
-  operation: (value: T) => Promise<void>,
-) => {
-  let cursor = 0;
-  const workers = Array.from(
-    { length: Math.min(concurrency, values.length) },
-    async () => {
-      while (cursor < values.length) {
-        const value = values[cursor];
-        cursor += 1;
-        await operation(value);
-      }
-    },
-  );
-  await Promise.all(workers);
-};
-
 const handleRetry: PagesFunction = async ({ request, env: rawEnv }) => {
   const env = rawEnv as RetryEnv;
   if (!env.CRON_SECRET) return json({ error: 'Retry worker is not configured.' }, 503);
@@ -206,9 +152,7 @@ const handleRetry: PagesFunction = async ({ request, env: rawEnv }) => {
     return json({ error: 'Retry worker dependencies are not configured.' }, 503);
   }
 
-  const admin = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = adminClient({ VITE_SUPABASE_URL: env.VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY });
   const { data, error } = await admin.rpc('gridone_claim_notification_deliveries', {
     p_limit: 20,
     p_lease_seconds: 120,

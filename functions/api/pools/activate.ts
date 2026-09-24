@@ -1,4 +1,4 @@
-type PagesFunction = (context: any) => Promise<Response> | Response;
+import type { PagesFunction } from '../../_lib/http';
 
 export const onRequestPost: PagesFunction = async () => Response.json({
   code: 'PUBLISH_IS_ALLOWANCE_BOUNDARY',

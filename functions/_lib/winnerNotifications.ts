@@ -1,3 +1,5 @@
+import { hmacSha256Hex, timingSafeEqual } from './crypto';
+
 type SupabaseAdmin = any;
 
 interface WinnerNotificationEnv {
@@ -9,19 +11,8 @@ interface WinnerNotificationEnv {
 
 type Milestone = 'Q1' | 'Q2' | 'Q3' | 'FINAL';
 
-const encodeHex = (bytes: ArrayBuffer) =>
-  Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
-
-const signUnsubscribe = async (secret: string, subscriptionId: string) => {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  return encodeHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(subscriptionId)));
-};
+/** The only unsubscribe-token signer. The retry worker signs with it; verifyUnsubscribeToken checks it. */
+export const signUnsubscribe = (secret: string, subscriptionId: string) => hmacSha256Hex(secret, subscriptionId);
 
 export const milestoneScores = (snapshot: any): Array<{ milestone: Milestone; side: number; top: number }> => {
   const scores = snapshot.quarter_scores || {};
@@ -108,10 +99,5 @@ export const resolveMilestonesAndNotify = async (
 
 export const verifyUnsubscribeToken = async (secret: string, subscriptionId: string, token: string) => {
   const expected = await signUnsubscribe(secret, subscriptionId);
-  if (expected.length !== token.length) return false;
-  let mismatch = 0;
-  for (let index = 0; index < expected.length; index += 1) {
-    mismatch |= expected.charCodeAt(index) ^ token.charCodeAt(index);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(expected, token);
 };

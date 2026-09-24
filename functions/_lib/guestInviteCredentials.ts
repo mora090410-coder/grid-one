@@ -1,4 +1,5 @@
 import { guestClaimWords } from './guestClaimWords';
+import { sha256Hex } from './crypto';
 import type { GuestPayment } from '../../src/features/guest/guestInviteTypes';
 
 export const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -6,7 +7,7 @@ export const sessionPattern = /^[a-f0-9]{64}$/;
 export const codePattern = /^[a-z]{2,16}(?:-[a-z]{2,16}){3}$/;
 const bytes = (value: string) => new TextEncoder().encode(value);
 const hex = (value: ArrayBuffer) => Array.from(new Uint8Array(value), byte => byte.toString(16).padStart(2, '0')).join('');
-export const hashGuestCredential = async (value: string) => hex(await crypto.subtle.digest('SHA-256', bytes(value)));
+export const hashGuestCredential = sha256Hex;
 export const randomGuestToken = () => hex(crypto.getRandomValues(new Uint8Array(32)).buffer as ArrayBuffer);
 
 async function hmac(secret: string, value: string): Promise<ArrayBuffer> {
