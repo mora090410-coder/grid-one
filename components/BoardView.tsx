@@ -9,7 +9,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { BoardData, WinnerHighlights } from '../types';
-import { SAMPLE_BOARD } from '../constants';
+import { SAMPLE_BOARD } from '../fixtures/sampleBoard.fixture';
 import { demoBoard, demoGame, demoLive } from '../src/features/homepage/demoData';
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';

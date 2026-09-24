@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
 import { parseBoardImage } from '../services/boardImportService';
 import { GameState, BoardData, ScheduledGame } from '../types';
+import { matchupFromScheduledGame } from '../utils/scheduledGame';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';
 import { Base, CapsuleButton, CrossfadeText, Eyebrow, Glass, CapsuleInput } from '../src/design/primitives';
@@ -71,18 +72,7 @@ const CreateContest: React.FC = () => {
     }, [requestedScoreTestMode, session?.access_token]);
 
     const handleGameChange = (scheduledGame: ScheduledGame) => {
-        setGame(prev => ({
-            ...prev,
-            gameExternalId: scheduledGame.id,
-            kickoffAt: scheduledGame.kickoffAt,
-            // ESPN's away team is the board's left axis; home is the top axis.
-            leftAbbr: scheduledGame.awayTeam.abbr,
-            leftName: scheduledGame.awayTeam.name,
-            topAbbr: scheduledGame.homeTeam.abbr,
-            topName: scheduledGame.homeTeam.name,
-            // Legacy read compatibility only. The provider kickoff remains canonical.
-            dates: scheduledGame.kickoffAt.slice(0, 10),
-        }));
+        setGame(prev => ({ ...prev, ...matchupFromScheduledGame(scheduledGame) }));
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

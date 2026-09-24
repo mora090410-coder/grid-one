@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// @ts-ignore
 import { QRCodeSVG } from 'qrcode.react';
 import { Eyebrow, CapsuleButton, Glass } from '../../../../design/primitives';
 

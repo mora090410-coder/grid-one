@@ -4,7 +4,7 @@ import { hasValidAxes } from '../utils/boardValidation';
 import { readCreateDraft, writeCreateDraft } from '../src/features/organizer/create/createDraft';
 import { INITIAL_GAME } from '../hooks/usePoolData';
 import { buildBoardGridModel } from '../src/features/viewer/board/boardGridModel';
-import { calculateCurrentWinner } from '../utils/winnerLogic';
+import { currentSquareIndex } from '../src/features/viewer/scenarios/scenarioModel';
 import { projectSalesBoard } from '../functions/_lib/pregameBoard';
 import { projectQuarterAxes } from '../utils/quarterAxes';
 import type { BoardData, LiveGameData, WinnerResolution } from '../types';
@@ -40,9 +40,9 @@ describe('quarter feature contracts — deterministic, not real-image OCR', () =
     const indices = [0,99,88,99];
     for (const [index, period] of [1,2,3,5].entries()) {
       const live = {topScore:0,leftScore:0,period,state:'in'} as LiveGameData;
-      expect(calculateCurrentWinner(live,value)?.squareIndex).toBe(indices[index]);
+      expect(currentSquareIndex(live,value)).toBe(indices[index]);
     }
-    expect(calculateCurrentWinner({topScore:0,leftScore:0,period:5,state:'post'} as LiveGameData,value)?.squareIndex).toBe(99);
+    expect(currentSquareIndex({topScore:0,leftScore:0,period:5,state:'post'} as LiveGameData,value)).toBe(99);
   });
   it('does not paint Q1 history onto the wrong Q2 owner and permits Q1 inspection', () => {
     const value = make();

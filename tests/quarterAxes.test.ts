@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hasValidAxes } from '../utils/boardValidation';
-import { getAxisForQuarter, calculateCurrentWinner } from '../utils/winnerLogic';
+import { getAxisForQuarter } from '../utils/winnerLogic';
+import { currentSquareIndex } from '../src/features/viewer/scenarios/scenarioModel';
 import { axisIssues, quarterAxisKey } from '../utils/quarterAxes';
 import type { BoardData, LiveGameData } from '../types';
 
@@ -29,7 +30,7 @@ describe('quarter-specific axes — literal review and single-square settlement'
   it('does not award the first occurrence of a duplicate digit', () => {
     const value = board();
     value.topAxisByQuarter!.Q1 = [9,2,6,0,7,4,5,8,0,9];
-    expect(calculateCurrentWinner({ topScore: 9, leftScore: 0, period: 1, state: 'in' } as LiveGameData, value)).toBeNull();
+    expect(currentSquareIndex({ topScore: 9, leftScore: 0, period: 1, state: 'in' } as LiveGameData, value)).toBe(-1);
   });
   it('keeps fixed boards unchanged', () => {
     const value = {...board(), isDynamic: false};

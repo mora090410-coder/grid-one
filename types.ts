@@ -189,20 +189,3 @@ export interface EntryMeta {
    */
   seller_label?: string | null;
 }
-
-/** One entry in the append-only rename log kept for published boards. */
-export interface SquareEdit {
-  id: string;
-  cell_index: number;
-  previous_name: string | null;
-  new_name: string | null;
-  changed_at: string;
-}
-
-export interface PoolDataWrapper {
-  id: string;
-  game: GameState;
-  board: BoardData;
-  is_paid: boolean;
-  is_owner: boolean;
-}

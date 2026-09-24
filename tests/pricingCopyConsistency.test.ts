@@ -23,7 +23,29 @@ const currentPricingCopyFiles = [
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 
+// Surfaces that quote GridOne's own prices. The server charges from PAID_TIERS;
+// every price a customer reads must be one of those amounts (or the $0 free tier).
+const gridOnePriceSurfaces = [
+  ...currentPricingCopyFiles.filter((path) => !path.endsWith('.md')),
+  'src/features/organizer/workspace/UpgradeSheet.tsx',
+];
+
 describe('launch pricing copy', () => {
+  it('quotes only the prices the server actually charges', async () => {
+    const { PAID_TIERS } = await import('../functions/_lib/pricingTiers');
+    const charged = new Set(Object.values(PAID_TIERS).map((tier) => {
+      const dollars = tier.amountCents / 100;
+      return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+    }));
+    expect([...charged].sort()).toEqual(['$79', '$9.99']);
+    for (const path of gridOnePriceSurfaces) {
+      const quoted = read(path).match(/\$\d+(?:\.\d{2})?/g) ?? [];
+      for (const price of quoted) {
+        expect({ path, price, known: price === '$0' || charged.has(price) }).toEqual({ path, price, known: true });
+      }
+    }
+  });
+
   it('keeps current customer copy on the approved three-tier ladder', () => {
     const corpus = currentPricingCopyFiles
       .map((path) => `${path}\n${read(path)}`)

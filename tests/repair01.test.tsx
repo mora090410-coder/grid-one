@@ -3,7 +3,7 @@ import { fireEvent,render,screen,within } from '@testing-library/react';
 import { describe,it,expect,vi } from 'vitest';
 import { parseScannedBoard } from '../functions/_lib/scanBoard';
 import { resolvePhotoOrientation,photoOrientationResolved } from '../utils/photoOrientation';
-import { calculateCurrentWinner } from '../utils/winnerLogic';
+import { currentSquareIndex } from '../src/features/viewer/scenarios/scenarioModel';
 import { hasValidAxes } from '../utils/boardValidation';
 import { readCreateDraft,writeCreateDraft } from '../src/features/organizer/create/createDraft';
 import { INITIAL_GAME } from '../hooks/usePoolData';
@@ -39,8 +39,8 @@ describe('repair01 deterministic photo contracts, NOT real OCR',()=>{
   expect(loaded).toEqual(resolved);
   for(const [i,key] of (['Q1','Q2','Q3','Q4'] as const).entries()){
    const topScore=isDynamic?sets[key][1]:1, leftScore=isDynamic?sets[key][2]:2;
-   const winner=calculateCurrentWinner({topScore,leftScore,period:i+1,state:'in'} as LiveGameData,loaded);
-   expect(winner?.squareIndex).toBe(21);expect(loaded.squares[winner!.squareIndex]).toEqual(['Paper row 1 column 2']);
+   const winner=currentSquareIndex({topScore,leftScore,period:i+1,state:'in'} as LiveGameData,loaded);
+   expect(winner).toBe(21);expect(loaded.squares[winner]).toEqual(['Paper row 1 column 2']);
   }
   view.unmount();
  });

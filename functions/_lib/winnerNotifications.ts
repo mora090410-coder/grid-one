@@ -14,27 +14,6 @@ type Milestone = 'Q1' | 'Q2' | 'Q3' | 'FINAL';
 /** The only unsubscribe-token signer. The retry worker signs with it; verifyUnsubscribeToken checks it. */
 export const signUnsubscribe = (secret: string, subscriptionId: string) => hmacSha256Hex(secret, subscriptionId);
 
-export const milestoneScores = (snapshot: any): Array<{ milestone: Milestone; side: number; top: number }> => {
-  const scores = snapshot.quarter_scores || {};
-  const q = (key: string, side: 'left' | 'top') => Number(scores[key]?.[side] || 0);
-  const cumulative = (through: number, side: 'left' | 'top') =>
-    ['Q1', 'Q2', 'Q3', 'Q4'].slice(0, through).reduce((sum, key) => sum + q(key, side), 0);
-  const resolved: Array<{ milestone: Milestone; side: number; top: number }> = [];
-  if (snapshot.period > 1 || snapshot.game_state === 'post') {
-    resolved.push({ milestone: 'Q1', side: cumulative(1, 'left'), top: cumulative(1, 'top') });
-  }
-  if (snapshot.period > 2 || snapshot.game_state === 'post') {
-    resolved.push({ milestone: 'Q2', side: cumulative(2, 'left'), top: cumulative(2, 'top') });
-  }
-  if (snapshot.period > 3 || snapshot.game_state === 'post') {
-    resolved.push({ milestone: 'Q3', side: cumulative(3, 'left'), top: cumulative(3, 'top') });
-  }
-  if (snapshot.game_state === 'post') {
-    resolved.push({ milestone: 'FINAL', side: Number(snapshot.side_score), top: Number(snapshot.top_score) });
-  }
-  return resolved;
-};
-
 export const toPublicWinnerHistory = (resolutions: any[]) => resolutions.map((resolution: any) => {
   const participant = Array.isArray(resolution.contest_participants)
     ? resolution.contest_participants[0]

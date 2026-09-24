@@ -9,7 +9,7 @@ vi.mock('../functions/_lib/espnNfl', () => ({fetchScheduledGameById:mocks.game,f
 import { onRequestPost } from '../functions/api/pools';
 import { parseScannedBoard } from '../functions/_lib/scanBoard';
 import { resolvePhotoOrientation } from '../utils/photoOrientation';
-import { calculateCurrentWinner } from '../utils/winnerLogic';
+import { currentSquareIndex } from '../src/features/viewer/scenarios/scenarioModel';
 import type { LiveGameData } from '../types';
 const container=`gridone-repair01-${process.pid}-${randomUUID().slice(0,8)}`;
 const owner='50000000-0000-4000-8000-000000000001';
@@ -113,7 +113,7 @@ it('asymmetric reversed fixed/dynamic photos survive actual create, SQL reload, 
   sql(`UPDATE contests SET board_data=${q(loaded)} WHERE id='${boardId}'`);
   const rev=sql(`SELECT revision FROM contests WHERE id='${boardId}'`);
   const side=photoTop[2],top=digits[1];
-  expect(calculateCurrentWinner({state:'in',period:1,leftScore:side,topScore:top} as LiveGameData,loaded)?.squareIndex).toBe(21);
+  expect(currentSquareIndex({state:'in',period:1,leftScore:side,topScore:top} as LiveGameData,loaded)).toBe(21);
   const quarters={Q1:{left:side,top},Q2:{left:0,top:0},Q3:{left:0,top:0},Q4:{left:0,top:0},OT:{left:0,top:0}};
   const output=sql(`BEGIN; SET ROLE service_role; SELECT published FROM gridone_publish_board('${boardId}','${owner}',${rev},ARRAY[${photoTop}]::smallint[],ARRAY[${digits}]::smallint[],${q(loaded.squares)},${q(loaded)},'{}',false); SELECT id FROM gridone_commit_manual_score('${boardId}','${owner}','in',2::smallint,${side}::smallint,${top}::smallint,${q(quarters)},'15:00',now()); SELECT json_build_object('cell',a.cell_index,'name',p.display_name) FROM milestone_resolutions r JOIN square_assignments a ON a.id=r.assignment_id JOIN contest_participants p ON p.id=a.participant_id WHERE r.contest_id='${boardId}' AND r.milestone='Q1'; ROLLBACK;`);
   expect(JSON.parse(output.split('\n').at(-1)!)).toEqual({cell:21,name:'Paper row 1 column 2'});

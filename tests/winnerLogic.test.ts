@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BoardData, LiveGameData } from '../types';
-import { calculateCurrentWinner, calculateWinnerHighlights, getAxisForQuarter } from '../utils/winnerLogic';
+import { calculateWinnerHighlights, getAxisForQuarter } from '../utils/winnerLogic';
+import { currentSquareIndex } from '../src/features/viewer/scenarios/scenarioModel';
 
 const makeBaseBoard = (): BoardData => ({
   leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -64,6 +65,14 @@ describe('winnerLogic', () => {
     expect(result.quarterWinners.Final).toBe('4-7');
   });
 
+  it('marks the Q2 result at explicit halftime, the same moment the server confirms it', () => {
+    const halftime = calculateWinnerHighlights(makeLiveData({ period: 2, state: 'in', detail: ' Halftime ', clock: '0:00' }));
+    expect(halftime.quarterWinners.Q2).toBe('7-0');
+    // A zero clock without the halftime label is not halftime.
+    const endOfQ2 = calculateWinnerHighlights(makeLiveData({ period: 2, state: 'in', detail: '2nd Quarter', clock: '0:00' }));
+    expect(endOfQ2.quarterWinners.Q2).toBeUndefined();
+  });
+
   it('computes quarter winners from manual scores like live data', () => {
     const liveData = makeLiveData({ isManual: true, state: 'in', period: 2 });
     const result = calculateWinnerHighlights(liveData);
@@ -79,9 +88,8 @@ describe('winnerLogic', () => {
     const index = row * 10 + col;
     board.squares[index] = ['Alice'];
 
-    const current = calculateCurrentWinner(makeLiveData(), board);
-    expect(current?.key).toBe('4-7');
-    expect(current?.owners).toEqual(['Alice']);
-    expect(current?.squareIndex).toBe(index);
+    const current = currentSquareIndex(makeLiveData(), board);
+    expect(current).toBe(index);
+    expect(board.squares[current]).toEqual(['Alice']);
   });
 });

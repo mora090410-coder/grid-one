@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import SalesBoardViewer from '../../src/features/viewer/sales/SalesBoardViewer';
-import { SAMPLE_BOARD } from '../../constants';
+import { SAMPLE_BOARD } from '../../fixtures/sampleBoard.fixture';
 import type { BoardData, GameState } from '../../types';
 
 const INITIAL_GAME: GameState = { title: 'Team fundraiser', meta: '', leftName: 'Bears', leftAbbr: 'CHI', topName: 'Packers', topAbbr: 'GB', dates: 'September 6', lockTitle: false, lockMeta: false };

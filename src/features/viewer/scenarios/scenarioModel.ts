@@ -38,19 +38,32 @@ export const quarterForLive = (live: LiveGameData | null): ViewerQuarter => {
   return 'Final';
 };
 
+/** Board position (0–99) holding these digits in this quarter's numbers, or -1. */
+export const squareIndexForDigits = (
+  board: BoardData,
+  topDigit: number,
+  leftDigit: number,
+  quarter: ViewerQuarter,
+): number => {
+  if (!hasValidAxes(board)) return -1;
+  const col = getAxisForQuarter(board, 'top', quarter).indexOf(topDigit);
+  const row = getAxisForQuarter(board, 'left', quarter).indexOf(leftDigit);
+  return col < 0 || row < 0 ? -1 : row * 10 + col;
+};
+
 export const playersForDigits = (
   board: BoardData,
   topDigit: number,
   leftDigit: number,
   quarter: ViewerQuarter,
 ): string[] => {
-  if (!hasValidAxes(board)) return [];
-  const topAxis = getAxisForQuarter(board, 'top', quarter);
-  const leftAxis = getAxisForQuarter(board, 'left', quarter);
-  const col = topAxis.indexOf(topDigit);
-  const row = leftAxis.indexOf(leftDigit);
-  return col < 0 || row < 0 ? [] : (board.squares[row * 10 + col] || []);
+  const index = squareIndexForDigits(board, topDigit, leftDigit, quarter);
+  return index < 0 ? [] : (board.squares[index] || []);
 };
+
+/** The square the live score points at right now, or -1. */
+export const currentSquareIndex = (live: LiveGameData | null, board: BoardData): number =>
+  live ? squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarterForLive(live)) : -1;
 
 const scenarioStatus = (live: LiveGameData | null): ScenarioStatus => {
   if (!live) return 'no-score';
