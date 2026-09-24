@@ -28,7 +28,7 @@ const ShareModal = React.lazy(() => import('./board/ShareModal'));
 // tick as the tap so it can return focus to the control that opened it.
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
-import { distinctAssignedNames } from '../utils/playerNameMatching';
+import { restoreViewerIdentitySelection, selectViewerIdentity, serializeViewerIdentitySelection } from '../src/features/viewer/identity/viewerIdentityModel';
 import { createCheckoutSession } from '../services/stripe';
 import { Base, CapsuleButton, Eyebrow } from '../src/design/primitives';
 
@@ -106,7 +106,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         ? `gridone:find-squares:${publicSelectionShareCode.toUpperCase()}`
         : null;
     const selectionScope = selectionStorageKey || (demoMode ? 'demo' : `board:${urlPoolId || 'local'}`);
-    const [playerSelection, setPlayerSelection] = useState({ scope: selectionScope, displayName: '' });
+    const [playerSelection, setPlayerSelection] = useState<{ scope: string; displayName: string; participantId: string | null }>({ scope: selectionScope, displayName: '', participantId: null });
     const hydratedSelectionKey = useRef<string | null>(null);
     const selectedPlayer = playerSelection.scope === selectionScope ? playerSelection.displayName : '';
     const [highlightedCoords, setHighlightedCoords] = useState<{ left: number, top: number } | null>(null);
@@ -271,27 +271,20 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         if (!selectionStorageKey || !dataReady || loadingPool || poolError) return;
         if (hydratedSelectionKey.current === selectionStorageKey) return;
 
-        let displayName = '';
+        // Stored by participant id (version 2); a version 1 display-name
+        // selection is migrated so returning viewers stay personalized.
+        let restored = { participantId: null as string | null, displayName: '' };
         try {
-            const raw = localStorage.getItem(selectionStorageKey);
-            const saved = raw ? JSON.parse(raw) : null;
-            const assignedNames = distinctAssignedNames(board.squares);
-            if (
-                saved?.version === 1
-                && typeof saved.displayName === 'string'
-                && assignedNames.includes(saved.displayName)
-            ) {
-                displayName = saved.displayName;
-            } else if (raw) {
-                localStorage.removeItem(selectionStorageKey);
-            }
+            const outcome = restoreViewerIdentitySelection(board, localStorage.getItem(selectionStorageKey));
+            if (outcome.action === 'restore') restored = { participantId: outcome.participantId, displayName: outcome.displayName };
+            else if (outcome.action === 'clear') localStorage.removeItem(selectionStorageKey);
         } catch {
-            // Storage may be unavailable or contain malformed data; selection still works for this visit.
+            // Storage may be unavailable; selection still works for this visit.
         }
 
         hydratedSelectionKey.current = selectionStorageKey;
-        setPlayerSelection({ scope: selectionScope, displayName });
-    }, [board.squares, dataReady, loadingPool, poolError, selectionScope, selectionStorageKey]);
+        setPlayerSelection({ scope: selectionScope, ...restored });
+    }, [board, dataReady, loadingPool, poolError, selectionScope, selectionStorageKey]);
 
     useEffect(() => {
         if (
@@ -301,10 +294,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
         ) return;
         try {
             if (playerSelection.displayName) {
-                localStorage.setItem(selectionStorageKey, JSON.stringify({
-                    version: 1,
-                    displayName: playerSelection.displayName,
-                }));
+                localStorage.setItem(selectionStorageKey, serializeViewerIdentitySelection(playerSelection));
             } else {
                 localStorage.removeItem(selectionStorageKey);
             }
@@ -351,7 +341,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         winnerHistory={liveWinnerHistory}
                         pendingMilestones={livePendingMilestones}
                         selectedPlayer={selectedPlayer}
-                        onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '' })}
+                        onClearPlayer={() => setPlayerSelection({ scope: selectionScope, displayName: '', participantId: null })}
                         onFindSquares={() => setShowFindSquaresModal(true)}
                         highlightedCoords={highlightedCoords}
                         onScenarioFocus={setHighlightedCoords}
@@ -411,7 +401,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                     <FindSquaresModal
                         board={board}
                         selectedPlayer={selectedPlayer}
-                        onSelectPlayer={(displayName) => setPlayerSelection({ scope: selectionScope, displayName })}
+                        onSelectPlayer={(displayName) => setPlayerSelection((current) => ({
+                            scope: selectionScope,
+                            ...selectViewerIdentity(board, displayName, current.scope === selectionScope ? current : null),
+                        }))}
                         onClose={() => setShowFindSquaresModal(false)}
                     />
                 )}

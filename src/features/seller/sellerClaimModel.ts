@@ -1,4 +1,6 @@
 /** Pure rules for the public seller-link page. Components render; this decides. */
+import { serializeViewerIdentitySelection } from '../viewer/identity/viewerIdentityModel';
+
 export interface SellerCell { index: number; available: boolean }
 export interface SellerView {
   title: string;
@@ -57,10 +59,14 @@ export const claimedSquaresText = (indexes: number[]): string => {
 
 export const cleanName = (value: string) => value.trim().replace(/\s+/g, ' ');
 
-/** Same key and shape the board viewer reads, so game day opens on "your squares". */
+/**
+ * Same key and shape the board viewer reads, so game day opens on "your
+ * squares". The seller page knows only the name; the viewer resolves it to
+ * a participant when the board lists one.
+ */
 export const rememberBuyer = (shareCode: string, displayName: string) => {
   try {
-    localStorage.setItem(`gridone:find-squares:${shareCode.toUpperCase()}`, JSON.stringify({ version: 1, displayName }));
+    localStorage.setItem(`gridone:find-squares:${shareCode.toUpperCase()}`, serializeViewerIdentitySelection({ participantId: null, displayName }));
   } catch {
     // Storage is a convenience; the claim already succeeded.
   }

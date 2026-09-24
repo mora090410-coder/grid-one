@@ -80,7 +80,7 @@ describe('SellerClaimPage', () => {
     expect(screen.getByRole('link', { name: 'See the whole board' })).toHaveAttribute('href', '/b/ABCDEFGH');
     expect(fetcher.mock.calls[1][0]).toBe(`/api/sellers/${code}`);
     expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({ cells: [61, 62], name: 'Maria Lopez' });
-    expect(JSON.parse(localStorage.getItem('gridone:find-squares:ABCDEFGH')!)).toEqual({ version: 1, displayName: 'Maria Lopez' });
+    expect(JSON.parse(localStorage.getItem('gridone:find-squares:ABCDEFGH')!)).toEqual({ version: 2, participantId: null, displayName: 'Maria Lopez' });
   });
 
   it('keeps the name and refreshes squares when someone else got there first', async () => {

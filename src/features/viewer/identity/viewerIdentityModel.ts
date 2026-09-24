@@ -1,4 +1,5 @@
 import type { BoardData } from '../../../../types';
+import { distinctAssignedNames } from '../../../../utils/playerNameMatching';
 
 export interface ViewerIdentity {
   status: 'none' | 'resolved' | 'ambiguous' | 'missing';
@@ -9,9 +10,25 @@ export interface ViewerIdentity {
   explanation?: string;
 }
 
+/**
+ * Saved "Find my squares" selection, keyed by share code in localStorage.
+ * `participantId` is null on boards without participants and when two
+ * participants share the chosen display name.
+ */
 export interface StoredViewerIdentitySelection {
   version: 2;
-  participantId: string;
+  participantId: string | null;
+  displayName: string;
+}
+
+/** The selection before participant ids existed: display name only. */
+interface LegacyStoredViewerIdentitySelection {
+  version: 1;
+  displayName: string;
+}
+
+export interface ViewerIdentitySelection {
+  participantId: string | null;
   displayName: string;
 }
 
@@ -94,10 +111,66 @@ export const resolveViewerIdentity = (
 export const serializeViewerIdentitySelection = ({
   participantId,
   displayName,
-}: {
-  participantId: string;
-  displayName: string;
-}): string => JSON.stringify({ version: 2, participantId, displayName } satisfies StoredViewerIdentitySelection);
+}: ViewerIdentitySelection): string => JSON.stringify({ version: 2, participantId, displayName } satisfies StoredViewerIdentitySelection);
+
+/**
+ * The selection a viewer makes by picking a display name. A unique
+ * participant is recorded by id; a shared name (or a board without
+ * participants) stays a display-name selection so no one is silently
+ * picked. Choosing the same name again keeps an already-resolved person.
+ */
+export const selectViewerIdentity = (
+  board: BoardData,
+  displayName: string,
+  previous?: ViewerIdentitySelection | null,
+): ViewerIdentitySelection => {
+  if (!displayName) return { participantId: null, displayName: '' };
+  if (previous?.participantId && previous.displayName === displayName) {
+    const kept = resolveViewerIdentity(board, displayName, previous.participantId);
+    if (kept.status === 'resolved') return { participantId: kept.participantId, displayName };
+  }
+  const identity = resolveViewerIdentity(board, displayName);
+  return { participantId: identity.status === 'resolved' ? identity.participantId : null, displayName };
+};
+
+const CLEARED: RestoredViewerIdentitySelection = {
+  action: 'clear',
+  participantId: null,
+  displayName: '',
+  explanation: 'Saved viewer selection no longer matches this board.',
+};
+
+/**
+ * Restores a display-name selection: a unique participant upgrades to its
+ * id, a shared participant name or a board without participants keeps the
+ * display name when it is still assigned, anything else clears.
+ */
+const restoreByDisplayName = (board: BoardData, displayName: string): RestoredViewerIdentitySelection => {
+  const identity = resolveViewerIdentity(board, displayName);
+  if (identity.status === 'resolved') {
+    return { action: 'restore', participantId: identity.participantId, displayName: identity.displayName };
+  }
+  if (identity.status === 'ambiguous' || distinctAssignedNames(board.squares).includes(displayName)) {
+    return { action: 'restore', participantId: null, displayName };
+  }
+  return CLEARED;
+};
+
+const isLegacySelection = (saved: unknown): saved is LegacyStoredViewerIdentitySelection => (
+  Boolean(saved) && typeof saved === 'object'
+  && (saved as { version?: unknown }).version === 1
+  && typeof (saved as { displayName?: unknown }).displayName === 'string'
+  && (saved as { displayName: string }).displayName !== ''
+);
+
+const isCurrentSelection = (saved: unknown): saved is StoredViewerIdentitySelection => {
+  if (!saved || typeof saved !== 'object') return false;
+  const value = saved as Partial<Record<keyof StoredViewerIdentitySelection, unknown>>;
+  return value.version === 2
+    && typeof value.displayName === 'string'
+    && value.displayName !== ''
+    && (value.participantId === null || typeof value.participantId === 'string');
+};
 
 export const restoreViewerIdentitySelection = (
   board: BoardData,
@@ -105,33 +178,25 @@ export const restoreViewerIdentitySelection = (
 ): RestoredViewerIdentitySelection => {
   if (!raw) return { action: 'empty', participantId: null, displayName: '' };
 
+  let saved: unknown;
   try {
-    const saved = JSON.parse(raw) as Partial<StoredViewerIdentitySelection> & { version?: unknown };
-    if (saved.version !== 2 || typeof saved.participantId !== 'string' || typeof saved.displayName !== 'string') {
-      return {
-        action: 'clear',
-        participantId: null,
-        displayName: '',
-        explanation: 'Saved viewer selection no longer matches this board.',
-      };
-    }
-
-    const identity = resolveViewerIdentity(board, saved.displayName, saved.participantId);
-    if (identity.status === 'resolved') {
-      return {
-        action: 'restore',
-        participantId: identity.participantId,
-        displayName: identity.displayName,
-      };
-    }
+    saved = JSON.parse(raw);
   } catch {
     // Malformed storage must be cleared rather than guessed through.
+    return CLEARED;
   }
 
-  return {
-    action: 'clear',
-    participantId: null,
-    displayName: '',
-    explanation: 'Saved viewer selection no longer matches this board.',
-  };
+  // Version 1 predates participant ids; migrate so returning viewers keep
+  // their selection.
+  if (isLegacySelection(saved)) return restoreByDisplayName(board, saved.displayName);
+  if (!isCurrentSelection(saved)) return CLEARED;
+
+  if (saved.participantId === null || !board.participants?.length) {
+    return restoreByDisplayName(board, saved.displayName);
+  }
+  const identity = resolveViewerIdentity(board, saved.displayName, saved.participantId);
+  if (identity.status === 'resolved') {
+    return { action: 'restore', participantId: identity.participantId, displayName: identity.displayName };
+  }
+  return CLEARED;
 };

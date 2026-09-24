@@ -49,7 +49,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByText('Squares 61 and 62 are yours.')).toBeVisible();
     await expect(page.getByText('Venmo @anthony-m')).toBeVisible();
     expect(claims).toEqual([{ cells: [60, 61], name: 'Maria Lopez' }]);
-    expect(await page.evaluate(() => localStorage.getItem('gridone:find-squares:ABCDEFGH'))).toBe(JSON.stringify({ version: 1, displayName: 'Maria Lopez' }));
+    expect(await page.evaluate(() => localStorage.getItem('gridone:find-squares:ABCDEFGH'))).toBe(JSON.stringify({ version: 2, participantId: null, displayName: 'Maria Lopez' }));
     await capture(page, `seller-link-claimed-${width}`, testInfo);
   });
 
