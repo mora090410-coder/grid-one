@@ -82,7 +82,8 @@ export interface OrganizerWorkspaceProps {
   onPublish: (currentData: { game: GameState; board: BoardData }) => Promise<string | void>;
   onSavePayoutDescriptions: (descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
   onAssignOpenSquares: (squares: string[][]) => Promise<void>;
-  onReload?: () => Promise<void> | void;
+  /** `background` asks for a quiet refresh that must not lock or re-render the editor as loading. */
+  onReload?: (options?: { background?: boolean }) => Promise<void> | void;
   onOpenViewer?: () => void;
   onRunAnotherBoard?: (template: BoardTemplate) => void;
   onLogout: () => void;
@@ -921,7 +922,7 @@ export default function OrganizerWorkspace({
       && !familyBusy && !paymentBusy && !paymentsOpen && !rangeBusy && privateWritesPending === 0 && !privateNotesUncertain
       && payoutDraft === null && selectedSquare === null && !drawRequested && !drawPreview
       && !previewOpen && !publishOpen && !shareOpen && upgradeTier === null,
-    refresh: async () => { await onReload?.(); },
+    refresh: async () => { await onReload?.({ background: true }); },
   });
 
   const paymentsPanel = <PaymentsPanel open={paymentsOpen} onClose={() => { if (!paymentWriteRef.current) { setPaymentsOpen(false); setOrganizerTask('board'); } }} model={paymentModel} busy={paymentBusy} disabled={!activePoolId || familyBusy || (privateWritesPending > 0 && !paymentBusy) || conflicted} onSave={savePayments} onViewSquare={index => {

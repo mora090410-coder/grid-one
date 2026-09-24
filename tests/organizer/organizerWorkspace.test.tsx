@@ -183,6 +183,7 @@ describe('OrganizerWorkspace island', () => {
       const shared = renderWorkspace({ isShared: true, shareCode: 'shared-board' });
       await act(async () => { vi.advanceTimersByTime(20_000); });
       expect(shared.onReload).toHaveBeenCalledTimes(1);
+      expect(shared.onReload).toHaveBeenCalledWith({ background: true });
       shared.unmount();
 
       for (const overrides of [{ isShared: false }, { isShared: true, isPublished: true }]) {

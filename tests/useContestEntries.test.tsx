@@ -21,3 +21,20 @@ it('keeps a newly opened board unready until its private notes load',async()=>{
  await act(async()=>resolve({data:[],error:null}));
  expect(result.current.hasLoadedEntries).toBe(true);
 });
+it('refreshes quietly in the background without locking the editor or flagging a passing failure',async()=>{
+ query.mockResolvedValueOnce({data:[{cell_index:3,paid_status:'paid',seller_label:null}],error:null});
+ const {result}=renderHook(()=>useContestEntries('board'));
+ await waitFor(()=>expect(result.current.hasLoadedEntries).toBe(true));
+ let resolve!: (value:unknown)=>void;
+ query.mockReturnValueOnce(new Promise(done=>{resolve=done;}));
+ let pending!: Promise<void>;
+ act(()=>{pending=result.current.reloadEntries({background:true});});
+ expect(result.current.isLoading).toBe(false);
+ await act(async()=>{resolve({data:[{cell_index:3,paid_status:'unknown',seller_label:null}],error:null});await pending;});
+ expect(result.current.entryMetaByIndex[3].paid_status).toBe('unknown');
+ query.mockResolvedValueOnce({data:null,error:{message:'offline'}});
+ await act(async()=>{await result.current.reloadEntries({background:true}).catch(()=>undefined);});
+ expect(result.current.error).toBeNull();
+ expect(result.current.isLoading).toBe(false);
+ expect(result.current.entryMetaByIndex[3].paid_status).toBe('unknown');
+});

@@ -461,10 +461,10 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         await updatePublishedOpenSquares(activePoolId, squares);
                         await loadPoolData(activePoolId);
                     }}
-                    onReload={async () => {
+                    onReload={async (options) => {
                         if (!activePoolId) return;
                         await loadPoolData(activePoolId, { background: true });
-                        await reloadEntries();
+                        await reloadEntries(options);
                     }}
                     onRunAnotherBoard={(template) => navigate('/create', { state: { boardTemplate: template } })}
                     onOpenViewer={() => {

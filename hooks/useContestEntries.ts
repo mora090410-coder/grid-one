@@ -10,10 +10,15 @@ export const useContestEntries = (activePoolId: string | null) => {
     const sequence = useRef(0);
     const activeId = useRef(activePoolId);
     activeId.current = activePoolId;
-    const reloadEntries = useCallback(async () => {
+    /**
+     * `background` is the quiet refresh used while the organizer keeps working:
+     * it never locks the editor with the loading state, and a failure keeps the
+     * notes already on screen instead of raising the blocking error.
+     */
+    const reloadEntries = useCallback(async ({ background = false }: { background?: boolean } = {}) => {
         const request = ++sequence.current;
         if (!activePoolId) { setEntryMetaByIndex({}); setError(null); setIsLoading(false); return; }
-        setIsLoading(true); setError(null);
+        if (!background) { setIsLoading(true); setError(null); }
         try {
             const { data, error: failure } = await supabase.from('contest_entries')
                 .select('cell_index, paid_status, notify_opt_in, contact_type, contact_value, seller_label')
@@ -24,8 +29,9 @@ export const useContestEntries = (activePoolId: string | null) => {
             data?.forEach((row: EntryMeta) => { map[row.cell_index] = row; });
             setEntryMetaByIndex(map);
             setLoadedPoolId(activePoolId);
+            setError(null);
         } catch (failure) {
-            if (request === sequence.current && activeId.current === activePoolId) {
+            if (!background && request === sequence.current && activeId.current === activePoolId) {
                 setError('Private square notes could not be refreshed. Reload them before editing.');
             }
             throw failure;
