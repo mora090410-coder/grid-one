@@ -358,6 +358,11 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     );
 
     // 7. Render
+    // Organizer routes wait for the sign-in check: before it settles the
+    // owner would briefly see the public viewer of their own board.
+    if (requiresAuthForRoute && auth.loading) {
+        return <FullScreenLoading />;
+    }
     if (requiresAuthForRoute && !auth.loading && !auth.user) {
         return <FullScreenLoading message="Sign in to view your boards..." />;
     }

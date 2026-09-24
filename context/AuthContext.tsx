@@ -1,17 +1,23 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
-import { Session, User } from '@supabase/supabase-js';
-import FullScreenLoading from '../components/loading/FullScreenLoading';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
     session: Session | null;
     user: User | null;
+    /**
+     * True until the first sign-in check settles. Children render right away
+     * (public pages paint without the Supabase chunk); anything that depends on
+     * the user — route guards, redirects, signed-in/out labels — must wait on it.
+     */
     loading: boolean;
     signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// The auth client lives in its own chunk. Loading it here, not at module
+// scope, keeps it off the homepage's critical path.
+const loadSupabase = () => import('../services/supabase').then((module) => module.supabase);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
@@ -20,35 +26,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Remove credentials left by the retired board-password flow.
-        localStorage.removeItem('sbx_adminToken');
-        localStorage.removeItem('sbx_poolId');
+        try {
+            localStorage.removeItem('sbx_adminToken');
+            localStorage.removeItem('sbx_poolId');
+        } catch {
+            // Blocked storage has nothing to clean up.
+        }
 
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+        let active = true;
+        let unsubscribe: (() => void) | null = null;
+
+        void loadSupabase().then((supabase) => {
+            if (!active) return;
+
+            // Check active session
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!active) return;
+                setSession(session);
+                setUser(session?.user ?? null);
+                setLoading(false);
+            }).catch(() => {
+                if (active) setLoading(false);
+            });
+
+            // Listen for changes
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (!active) return;
+                setSession(session);
+                setUser(session?.user ?? null);
+                setLoading(false);
+            });
+            unsubscribe = () => subscription.unsubscribe();
         }).catch(() => {
-            setLoading(false);
+            // The auth chunk failed to load: public pages keep working signed out.
+            if (active) setLoading(false);
         });
 
-        // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
-
-        return () => subscription.unsubscribe();
+        return () => {
+            active = false;
+            unsubscribe?.();
+        };
     }, []);
 
     const signOut = async () => {
+        const supabase = await loadSupabase();
         await supabase.auth.signOut();
     };
 
     return (
         <AuthContext.Provider value={{ session, user, loading, signOut }}>
-            {loading ? <FullScreenLoading /> : children}
+            {children}
         </AuthContext.Provider>
     );
 };

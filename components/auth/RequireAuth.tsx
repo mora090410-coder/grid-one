@@ -7,7 +7,8 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
-    // Although AuthProvider handles initial loading, we keep this check for safety
+    // AuthProvider renders public pages before the sign-in check settles;
+    // protected routes wait here so nothing redirects to /login too early.
     if (loading) {
         return <FullScreenLoading />;
     }

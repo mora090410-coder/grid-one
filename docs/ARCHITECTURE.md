@@ -39,7 +39,7 @@ This file describes the current production architecture, not an immutable topolo
 
 ## Loading
 
-Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current route's chunk (and the organizer workspace on `/boards/*`) in parallel with the sign-in check. Inside `BoardView`, the organizer workspace, the seller sale view and the QR share sheet load on demand; Find my squares stays eager so it can return focus in the same tick. `public/_headers` caches content-hashed `/assets/*` for a year.
+Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current route's chunk (and the organizer workspace on `/boards/*`). `AuthProvider` renders routes immediately and runs the sign-in check in the background, loading the Supabase client with a dynamic import, so the homepage and articles paint without the Supabase chunk (it is not modulepreloaded). Anything that depends on the user waits on `useAuth().loading`: `RequireAuth`, `Login`, `CreateContest`, and `BoardView`'s organizer routes show the full-screen loader, and `SiteHeader` holds its auth slot invisible at the signed-out link's size until the check settles. Inside `BoardView`, the organizer workspace, the seller sale view and the QR share sheet load on demand; Find my squares stays eager so it can return focus in the same tick. `public/_headers` caches content-hashed `/assets/*` for a year.
 
 ## Frontend structure
 
@@ -66,7 +66,7 @@ Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current r
 - `hooks/` — `usePoolData` (board read/write; every revision-carrying write runs through one queue, and a load older than an acknowledged save is dropped), `useContestEntries` (private notes; `background` reloads never lock the editor), `useLiveScoring` (score polling and freshness; one read at a time, newest answer wins), `useBoardActions` (publish/join), `useAuth`.
 - `services/` — `supabase.ts`, `scoreService.ts`, `stripe.ts`, `boardImportService.ts`. Feature services (`src/features/*/services`, `entryMetaService`, `publishBoard`, `sellerLinkService`, and others) also call `/api` directly; there is no single browser API client yet.
 - `utils/` — pure logic with unit tests, shared by browser and server: winner logic, quarter axes, board validation, `scheduledGame.ts` (away team = side axis, home = top), retry/backoff, board image.
-- `context/AuthContext` — Supabase session.
+- `context/AuthContext` — Supabase session; `loading` stays true until the first sign-in check settles.
 
 ## SEO prerender
 

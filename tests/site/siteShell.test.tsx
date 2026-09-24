@@ -3,16 +3,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const signOut = vi.fn().mockResolvedValue({ error: null });
+const signOut = vi.fn().mockResolvedValue(undefined);
 const navigate = vi.fn();
 let currentUser: { id: string } | null = null;
+let authLoading = false;
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ user: currentUser, session: null, loading: false, signOut: vi.fn() }),
-}));
-
-vi.mock('../../services/supabase', () => ({
-  supabase: { auth: { signOut: () => signOut() } },
+  useAuth: () => ({ user: currentUser, session: null, loading: authLoading, signOut }),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -26,6 +23,7 @@ const renderAt = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRo
 
 beforeEach(() => {
   currentUser = null;
+  authLoading = false;
   signOut.mockClear();
   navigate.mockClear();
 });
@@ -47,6 +45,30 @@ describe('SiteHeader', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
     await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/'));
+  });
+
+  it('holds the auth slot, unlabeled and the same size, while the sign-in check runs', () => {
+    authLoading = true;
+    const { container } = renderAt(<SiteHeader />);
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Your boards' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Log out' })).toBeNull();
+    const slot = container.querySelector('[data-auth-slot="pending"]');
+    expect(slot).not.toBeNull();
+    expect(slot).toHaveAttribute('aria-hidden', 'true');
+    expect(slot!.className).toContain('invisible');
+    // Same box as the signed-out link, so the signed-out result does not shift.
+    authLoading = false;
+    const settled = renderAt(<SiteHeader />);
+    const link = settled.container.querySelector('a[href="/login?mode=signin"]');
+    expect(slot!.className.replace(/\s*invisible\s*/, ' ').trim()).toBe(link!.className.trim());
+    expect(slot!.textContent).toBe(link!.textContent);
+  });
+
+  it('keeps the sign-in page free of the pending placeholder', () => {
+    authLoading = true;
+    const { container } = renderAt(<SiteHeader hideSignIn />);
+    expect(container.querySelector('[data-auth-slot]')).toBeNull();
   });
 });
 

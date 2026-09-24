@@ -7,6 +7,7 @@ import { GameState, BoardData, ScheduledGame } from '../types';
 import { matchupFromScheduledGame } from '../utils/scheduledGame';
 import { INITIAL_GAME, EMPTY_BOARD } from '../hooks/usePoolData';
 import ScheduledGamePicker from '../components/ScheduledGamePicker';
+import FullScreenLoading from '../components/loading/FullScreenLoading';
 import { Base, CapsuleButton, CrossfadeText, Eyebrow, Glass, CapsuleInput } from '../src/design/primitives';
 
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
@@ -17,7 +18,7 @@ import NumberSetsEditor from '../src/features/organizer/workspace/NumberSetsEdit
 const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-panel border border-hairline px-5 h-11 font-ui text-[15px] font-semibold leading-none text-fg transition-[color,background-color,border-color,scale] hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
 
 const CreateContest: React.FC = () => {
-    const { user, session, signOut } = useAuth();
+    const { user, session, signOut, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const requestedScoreTestMode = new URLSearchParams(window.location.search).get('scoreTest') === '1';
     const [scoreTestMode, setScoreTestMode] = useState(false);
@@ -159,6 +160,11 @@ const CreateContest: React.FC = () => {
     };
 
     const canCreate = Boolean(game.title?.trim()) && Boolean(game.gameExternalId);
+
+    // Signed-in and signed-out creation take different paths (API create vs.
+    // save and sign up). Wait for the sign-in check so an organizer is never
+    // sent to sign-up.
+    if (authLoading) return <FullScreenLoading />;
 
     return (
         <Base kind="cream">

@@ -6,6 +6,7 @@ import { supabase } from '../services/supabase';
 import { CapsuleButton, CapsuleInput, Eyebrow, Glass } from '../src/design/primitives';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import { SitePage } from '../src/features/site';
+import FullScreenLoading from '../components/loading/FullScreenLoading';
 
 export const safeReturnTo = (value: string | null): string | null => {
     if (!value) return null;
@@ -33,7 +34,7 @@ const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const Login: React.FC = () => {
-    const { session } = useAuth();
+    const { session, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -134,6 +135,10 @@ const Login: React.FC = () => {
             if (!successMessage) setLoading(false);
         }
     };
+
+    // A signed-in organizer is redirected once the sign-in check settles;
+    // until then, never show them the sign-in form.
+    if (authLoading) return <FullScreenLoading />;
 
     if (successMessage) {
         return (

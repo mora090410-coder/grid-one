@@ -8,13 +8,14 @@ const mocks = vi.hoisted(() => ({
   compressImage: vi.fn(async (image: string) => image),
   signOut: vi.fn(),
   signedIn: true,
+  authLoading: false,
 }));
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
     user: mocks.signedIn ? { id: 'user-1' } : null,
     session: { access_token: 'access-token' },
-    loading: false,
+    loading: mocks.authLoading,
     signOut: mocks.signOut,
   }),
 }));
@@ -65,6 +66,7 @@ const renderPage = () => render(
 
 beforeEach(() => {
   mocks.signedIn = true;
+  mocks.authLoading = false;
   vi.restoreAllMocks();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
@@ -72,6 +74,15 @@ beforeEach(() => {
 });
 
 describe('CreateContest one-screen creation', () => {
+  it('waits for the sign-in check before offering the signed-out save path', () => {
+    mocks.signedIn = false;
+    mocks.authLoading = true;
+    renderPage();
+    expect(screen.queryByRole('button', { name: 'Save and continue' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Sign up' })).toBeNull();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
   it('keeps Create board disabled until both the name and the game are set', () => {
     renderPage();
 

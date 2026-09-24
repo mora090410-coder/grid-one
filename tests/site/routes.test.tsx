@@ -7,6 +7,7 @@ const navigate = vi.fn();
 const mocks = vi.hoisted(() => ({
   session: null as Record<string, unknown> | null,
   user: null as { id: string } | null,
+  loading: false,
   signUp: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn().mockResolvedValue({ error: null }),
@@ -14,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ session: mocks.session, user: mocks.user, loading: false, signOut: vi.fn() }),
+  useAuth: () => ({ session: mocks.session, user: mocks.user, loading: mocks.loading, signOut: vi.fn() }),
 }));
 
 vi.mock('../../services/supabase', () => ({
@@ -46,6 +47,7 @@ beforeEach(() => {
   navigate.mockClear();
   mocks.session = null;
   mocks.user = null;
+  mocks.loading = false;
   mocks.signUp.mockReset();
   mocks.signInWithPassword.mockReset();
   mocks.getSession.mockReset();
@@ -53,6 +55,14 @@ beforeEach(() => {
 });
 
 describe('Login', () => {
+  it('waits for the sign-in check instead of showing the form to a signed-in organizer', () => {
+    mocks.loading = true;
+    renderAt(<Login />, '/login?returnTo=%2Fdashboard');
+    expect(screen.queryByLabelText('Email Address')).toBeNull();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('labels the sign-in fields and enables submit until a request is in flight', () => {
     renderAt(<Login />, '/login');
     expect(screen.getByLabelText('Email Address')).toHaveAttribute('type', 'email');
