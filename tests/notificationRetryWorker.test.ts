@@ -217,3 +217,34 @@ describe.sequential('notification retry worker', () => {
     expect(payload.html).toContain('The corrected winner is Winner One.');
   });
 });
+
+describe('analytics retention on the retry cron', () => {
+  const runAt = async (iso: string, pruneResult: unknown = { data: 3, error: null }) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(iso));
+    try {
+      const rpc = vi.fn(async (name: string) => name === 'gridone_claim_notification_deliveries'
+        ? { data: [], error: null }
+        : pruneResult);
+      mocks.createClient.mockReturnValue({ rpc });
+      const response = await onRequestPost({ request: request(), env });
+      return { response, rpc };
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('prunes events older than 13 months once an hour', async () => {
+    const top = await runAt('2026-10-04T18:00:20Z');
+    expect(top.rpc).toHaveBeenCalledWith('gridone_prune_client_events');
+    const mid = await runAt('2026-10-04T18:17:20Z');
+    expect(mid.rpc).not.toHaveBeenCalledWith('gridone_prune_client_events');
+  });
+
+  it('never lets a failed prune change the delivery result', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { response } = await runAt('2026-10-04T18:00:20Z', { data: null, error: { message: 'down' } });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ claimed: 0, sent: 0, retrying: 0, terminal: 0, completionErrors: 0 });
+  });
+});

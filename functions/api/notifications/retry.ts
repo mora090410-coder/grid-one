@@ -140,6 +140,9 @@ const sendClaimedDelivery = async (
   }
 };
 
+/** The retry cron runs every minute; retention only needs to run at the top of each hour. */
+export const shouldPruneClientEvents = (now: Date) => now.getUTCMinutes() === 0;
+
 const handleRetry: PagesFunction = async ({ request, env: rawEnv }) => {
   const env = rawEnv as RetryEnv;
   if (!env.CRON_SECRET) return json({ error: 'Retry worker is not configured.' }, 503);
@@ -189,6 +192,17 @@ const handleRetry: PagesFunction = async ({ request, env: rawEnv }) => {
     else if (completed[0].status === 'failed') counts.retrying += 1;
     else counts.terminal += 1;
   });
+
+  // Analytics retention (13 months) rides on this once-a-minute cron, once an
+  // hour. It is housekeeping: a failure is logged and never affects delivery.
+  if (shouldPruneClientEvents(new Date())) {
+    try {
+      const pruned = await admin.rpc('gridone_prune_client_events');
+      if (pruned?.error) console.error('Client event retention prune failed:', pruned.error.message);
+    } catch (pruneError) {
+      console.error('Client event retention prune failed:', pruneError);
+    }
+  }
 
   return json(counts, counts.completionErrors > 0 ? 502 : 200);
 };

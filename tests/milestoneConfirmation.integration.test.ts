@@ -195,7 +195,7 @@ const applyMigrations = async () => {
     .sort();
 
   expect(migrationFiles.map(file => Number(file.slice(0, 3)))).toEqual(
-    expectedMigrationNumbers(33),
+    expectedMigrationNumbers(34),
   );
 
   for (const migrationFile of migrationFiles) {

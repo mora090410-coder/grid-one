@@ -68,7 +68,7 @@ const applyMigration = (file: string) => executeSql(readFileSync(resolve(process
 const insertAs = (role: string, payload = `'{"surface":"viewer"}'::jsonb`) =>
   queryScalar(`SET ROLE ${role}; INSERT INTO public.client_events(name,payload) VALUES('find_my_squares_opened',${payload}) RETURNING id;`);
 
-describe.sequential('client events sink (migration 033)', () => {
+describe.sequential('client events sink (migrations 033-034)', () => {
   beforeAll(async () => {
     await docker(['run', '--rm', '--detach', '--name', containerName, '--env', `POSTGRES_PASSWORD=${DATABASE_PASSWORD}`,
       '--env', `POSTGRES_DB=${DATABASE_NAME}`, POSTGRES_IMAGE]);
@@ -76,11 +76,12 @@ describe.sequential('client events sink (migration 033)', () => {
     await waitForPostgres();
     await bootstrap();
     const files = migrationFiles();
-    expect(files.map(file => Number(file.slice(0, 3)))).toEqual(expectedMigrationNumbers(33));
+    expect(files.map(file => Number(file.slice(0, 3)))).toEqual(expectedMigrationNumbers(34));
     for (const file of files.filter(name => name < '033')) await applyMigration(file);
     // Mirror Supabase: every new public table is granted to all API roles by default.
     await executeSql('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;');
     await applyMigration('033_client_events.sql');
+    await applyMigration('034_client_events_retention.sql');
   }, 300_000);
   afterAll(async () => { if (containerStarted) await docker(['rm', '--force', containerName]).catch(() => undefined); }, 60_000);
 
@@ -107,5 +108,18 @@ describe.sequential('client events sink (migration 033)', () => {
     await expect(insertAs('service_role', `'[]'::jsonb`)).rejects.toThrow(/check constraint/);
     await expect(insertAs('service_role', `'"text"'::jsonb`)).rejects.toThrow(/check constraint/);
     await expect(insertAs('service_role', `jsonb_build_object('pad', (SELECT string_agg(md5(i::text), '') FROM generate_series(1, 200) i))`)).rejects.toThrow(/check constraint/);
+  });
+
+  it('keeps 13 months of events and only the service role can prune', async () => {
+    await executeSql(`INSERT INTO public.client_events(name,payload,received_at) VALUES
+      ('find_my_squares_opened','{"surface":"viewer"}', now() - interval '14 months'),
+      ('find_my_squares_opened','{"surface":"viewer"}', now() - interval '12 months');`);
+    const before = Number(await queryScalar('SELECT count(*) FROM public.client_events'));
+    for (const role of ['anon', 'authenticated']) {
+      await expect(queryScalar(`SET ROLE ${role}; SELECT public.gridone_prune_client_events();`)).rejects.toThrow(/permission denied/);
+    }
+    expect(await queryScalar('SET ROLE service_role; SELECT public.gridone_prune_client_events();')).toBe('1');
+    expect(Number(await queryScalar('SELECT count(*) FROM public.client_events'))).toBe(before - 1);
+    expect(await queryScalar(`SELECT count(*) FROM public.client_events WHERE received_at < now() - interval '13 months'`)).toBe('0');
   });
 });

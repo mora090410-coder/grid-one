@@ -945,5 +945,6 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - **First paint:** public pages no longer wait for the sign-in check; Supabase loads in the background. Guarded routes, Login and Create still wait. The header keeps a same-size invisible slot while auth resolves (no wrong label, no shift). Homepage h1 with a slow auth chunk: about 2.0 s → 0.2 s.
 - **Fonts:** self-hosted latin-first woff2 with Google's exact unicode ranges, two hero faces preloaded, `/fonts/*` cached immutably. Screenshots pixel-identical.
 - **Analytics:** migration `033_client_events.sql` (applied to production 2026-09-24; service_role INSERT/SELECT only, no identity columns), `POST /api/events` validated by the closed schema, `track()` via sendBeacon honoring Do Not Track / Global Privacy Control, production builds only. Wired: homepage CTAs, Find my squares, winner-email form, publish/share completed, clipboard and image-export failures.
-- **Open:** event retention period and a Cloudflare rate-limit rule on `/api/events` need product decisions.
+- **Retention:** 13 months (Anthony, 2026-09-24). Migration `034_client_events_retention.sql` adds `gridone_prune_client_events()` (service role only); the notification retry cron calls it at the top of each hour, and a failure never affects delivery.
+- **Open:** a Cloudflare rate-limit rule on `/api/events`.
 - **Gates:** tsc pass; unit 1159; integration 119 + 1 pre-existing skip; build; design lint 0 errors; Playwright chromium 155/155.

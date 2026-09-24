@@ -88,7 +88,7 @@ Viewers never authenticate. A published board is readable through its share code
 Shared handler plumbing lives in `functions/_lib/http.ts` (clients, `requireUser` — 401 only for a rejected token, 503 when the auth service cannot answer — bounded `readJsonObject`, id checks, masked 500s, `currentSeason`) and `functions/_lib/crypto.ts`. Unsubscribe tokens are signed and verified by one implementation in `_lib/winnerNotifications.ts`.
 
 ```
-functions/api/events.ts                                 client events → service-only `client_events` (033); 2 KB, same schema, 204/400/413/503
+functions/api/events.ts                                 client events → service-only `client_events` (033), kept 13 months (034, pruned hourly by the retry cron); 2 KB, same schema, 204/400/413/503
 functions/api/health.ts
 functions/api/pools.ts                                  create
 functions/api/pools/[id].ts                             read / update
