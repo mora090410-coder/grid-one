@@ -67,7 +67,11 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
     contentType: 'application/json',
     body: JSON.stringify({ score: null, winnerHistory: [] }),
   }));
-  await page.route(`**/api/pools/${boardId}/publish`, (route) => route.fulfill({
+  await page.route(`**/api/pools/${boardId}/publish`, (route) => route.fulfill(!Number.isInteger(route.request().postDataJSON()?.revision) ? {
+    status: 409,
+    contentType: 'application/json',
+    body: JSON.stringify({ error: 'A current board revision is required.' }),
+  } : {
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ published: true, shareCode: 'SHARE123', viewerUrl: '/b/SHARE123', revision: 2, tier: 'free', used: 1, allowance: 1 }),

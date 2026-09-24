@@ -24,6 +24,7 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
     });
     await page.route('**/api/pools/QQQQQ234', route => route.fulfill({json:{...row(),owner_id:undefined,locked:false,score}}));
     await page.route(`**/api/pools/${boardId}/publish`, route => {
+      expect(route.request().postDataJSON()?.revision).toBe(revision);
       expect(board.isDynamic).toBe(true);
       for (const sets of [board.topAxisByQuarter,board.leftAxisByQuarter]) for (const key of ['Q1','Q2','Q3','Q4'] as const) expect(new Set(sets?.[key]).size).toBe(10);
       published = true;

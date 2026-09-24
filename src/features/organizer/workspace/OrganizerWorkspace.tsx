@@ -47,7 +47,7 @@ import {
   type DrawPreview,
 } from './workspaceBoardModel';
 import { usePayoutDraft } from './usePayoutDraft';
-import { publishBoard, type PublishResult } from './publishBoard';
+import { isPublishRevisionConflict, publishBoard, type PublishResult } from './publishBoard';
 import { renamePublishedSquare } from './renamePublishedSquare';
 import { useGameDayScoring } from '../game-day/useGameDayScoring';
 import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishedOpenSquares';
@@ -213,6 +213,9 @@ export default function OrganizerWorkspace({
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishPending, setPublishPending] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  // The server refused to lock names the organizer has not seen. Only a
+  // reload clears it; publishing again would hit the same conflict.
+  const [publishConflict, setPublishConflict] = useState(false);
   const [upgradeTier, setUpgradeTier] = useState<'gameday' | 'org' | null>(null);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState('');
@@ -540,6 +543,7 @@ export default function OrganizerWorkspace({
   const openPreview = async () => {
     if (!await payouts.saveIfPending()) return;
     setPublishError(null);
+    setPublishConflict(false);
     setAlert(null);
     await flush();
     setPreviewOpen(true);
@@ -560,6 +564,7 @@ export default function OrganizerWorkspace({
       }
       const result = await publishBoard(activePoolId, {
         allowOpenSquares: board.allowOpenSquares === true && openCount > 0,
+        revision: flushed.revision,
       });
       if (!result.published) {
         setPublishOpen(false);
@@ -575,10 +580,23 @@ export default function OrganizerWorkspace({
       // surface underneath, which would tear the success sheet off the screen.
     } catch (error: any) {
       const message = error?.message || 'The board could not be published.';
+      if (isPublishRevisionConflict(error)) setPublishConflict(true);
       setPublishError(message);
       setAlert(message);
     } finally {
       setPublishPending(false);
+    }
+  };
+
+  const reloadAfterPublishConflict = async () => {
+    setPublishOpen(false);
+    try {
+      await reloadLatest();
+      setPublishConflict(false);
+      setPublishError(null);
+      setAlert(null);
+    } catch {
+      setAlert('The board could not be reloaded. Try again.');
     }
   };
 
@@ -877,8 +895,9 @@ export default function OrganizerWorkspace({
         allowance={billing}
         pending={publishPending}
         error={publishError ?? (publishBlocked ? blockerMessage(firstBlocker) ?? null : null)}
-        disabled={!axesCommitted || conflicted || publishPending || publishBlocked}
+        disabled={!axesCommitted || conflicted || publishPending || publishBlocked || publishConflict}
         onPublish={() => void publish()}
+        onReload={publishConflict ? () => void reloadAfterPublishConflict() : undefined}
       />
 
       <UpgradeSheet

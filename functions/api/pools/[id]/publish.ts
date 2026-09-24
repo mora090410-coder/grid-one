@@ -17,9 +17,11 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   if (!user.email || !user.email_confirmed_at) {
     return Response.json({ error: 'Verify your email before publishing your free board.' }, { status: 403 });
   }
-  // An empty body means "no open-square opt-in"; a JSON null or array does too.
+  // Missing allowOpenSquares means "no open-square opt-in". The revision the
+  // organizer last loaded is required so publication never locks names
+  // (family, guest, or seller-link edits) the organizer has not seen.
   const parsed: unknown = await request.json().catch(() => ({}));
-  const body = (parsed && typeof parsed === 'object' ? parsed : {}) as { allowOpenSquares?: unknown };
+  const body = (parsed && typeof parsed === 'object' ? parsed : {}) as { allowOpenSquares?: unknown; revision?: unknown };
   if (
     Object.prototype.hasOwnProperty.call(body, 'allowOpenSquares')
     && typeof body.allowOpenSquares !== 'boolean'
@@ -27,6 +29,10 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     return Response.json({ error: 'Open-square confirmation must be true or false.' }, { status: 400 });
   }
   const allowOpenSquares = body.allowOpenSquares === true;
+  const expectedRevision = body.revision;
+  if (typeof expectedRevision !== 'number' || !Number.isInteger(expectedRevision) || expectedRevision < 1) {
+    return Response.json({ error: 'A current board revision is required.' }, { status: 409 });
+  }
 
   const admin = adminClient(env);
   const { data: contest, error } = await admin
@@ -37,6 +43,13 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     .maybeSingle();
   if (error) return maskedError('Publish contest lookup failed', error, PUBLISH_FAILED);
   if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
+  if (Number(contest.revision) !== expectedRevision) {
+    return Response.json({
+      code: 'REVISION_CONFLICT',
+      error: 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.',
+      currentRevision: Number(contest.revision),
+    }, { status: 409 });
+  }
   const storedBoard = contest.board_data || {};
   if (!photoOrientationResolved(storedBoard, {topAbbr:contest.top_team_abbr || contest.settings?.topAbbr, leftAbbr:contest.side_team_abbr || contest.settings?.leftAbbr})) {
     return Response.json({error:'Review and resolve the photo team orientation before publishing.'},{status:409});
@@ -95,7 +108,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   const { data: publishedRows, error: publishError } = await admin.rpc('gridone_publish_board', {
     p_contest_id: contest.id,
     p_owner_id: user.id,
-    p_expected_revision: contest.revision,
+    p_expected_revision: expectedRevision,
     p_side_axis: sideAxis,
     p_top_axis: topAxis,
     p_normalized_names: normalizedNames,

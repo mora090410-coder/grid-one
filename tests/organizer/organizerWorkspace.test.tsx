@@ -413,12 +413,43 @@ describe('OrganizerWorkspace publish', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Publish viewer link' }));
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST' }));
+    // The organizer's loaded revision travels with the request, so the server
+    // never locks names the organizer has not seen.
+    expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST', body: JSON.stringify({ revision: 2 }) }));
     expect(await screen.findByRole('heading', { name: 'Published' })).toBeInTheDocument();
     expect(screen.getByText(`${window.location.origin}/b/abc123`)).toBeInTheDocument();
     // The reload is deferred until the organizer leaves the published sheet, so the
     // success surface cannot be torn out from under them by a re-render.
     expect(onReload).not.toHaveBeenCalled();
+  });
+
+  it('stops at a revision conflict and offers a reload instead of locking unseen names', async () => {
+    const conflict = 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.';
+    (global.fetch as any).mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({ code: 'REVISION_CONFLICT', error: conflict, currentRevision: 3 }),
+    });
+    const { onReload } = renderWorkspace({ board: drawnBoard(100) });
+
+    await openPublishSheet();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Publish viewer link' }));
+    });
+
+    const sheet = screen.getByRole('dialog', { name: 'Publish viewer link' });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent(conflict);
+    // Publishing again would lock the same unseen names; only a reload moves on.
+    expect(within(sheet).getByRole('button', { name: 'Publish viewer link' })).toBeDisabled();
+    expect(screen.queryByRole('heading', { name: 'Published' })).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Reload latest board' }));
+    });
+
+    expect(onReload).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Publish viewer link' })).not.toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('opens the plan sheet when the account is out of published boards', async () => {
@@ -489,7 +520,8 @@ describe('OrganizerWorkspace publish', () => {
 
     await act(async () => { releaseSave?.(); });
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST' })));
+    // The flush saved revision 2 → 3; publish carries the revision it left behind.
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({ method: 'POST', body: JSON.stringify({ revision: 3 }) })));
     expect(screen.queryByText('Publish blocked. Reload or save the latest clean draft before publishing.')).not.toBeInTheDocument();
   });
 

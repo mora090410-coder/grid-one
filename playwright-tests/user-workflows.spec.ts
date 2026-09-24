@@ -422,8 +422,10 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
     contentType: 'application/json',
     body: JSON.stringify({ score, winnerHistory: [] }),
   }));
+  let publishedRevision: unknown = null;
   await page.route(`**/api/pools/${boardId}/publish`, (route) => {
     requestOrder.push('publish');
+    publishedRevision = route.request().postDataJSON()?.revision;
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -445,4 +447,6 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
 
   await expect.poll(() => requestOrder).toEqual(['save', 'publish']);
   expect(savedTitle).toBe('Latest title');
+  // Publish carries the revision the flushed save left behind.
+  expect(publishedRevision).toBe(2);
 });

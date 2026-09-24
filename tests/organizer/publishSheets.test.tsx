@@ -50,28 +50,47 @@ describe('publishBoard', () => {
       json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 3, tier: 'gameday', used: 2, allowance: 5 }),
     });
 
-    const result = await publishBoard('pool-1', { allowOpenSquares: true });
+    const result = await publishBoard('pool-1', { allowOpenSquares: true, revision: 7 });
 
     expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-1/publish', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ allowOpenSquares: true }),
+      body: JSON.stringify({ revision: 7, allowOpenSquares: true }),
     }));
     expect(result).toEqual({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 3, tier: 'gameday', used: 2, allowance: 5 });
   });
 
-  it('posts an empty body when allowOpenSquares is false', async () => {
+  it('posts only the revision the organizer saw when allowOpenSquares is false', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ published: true, shareCode: 'x', viewerUrl: '/b/x', revision: 1, tier: 'free', used: 1, allowance: 1 }),
     });
 
-    await publishBoard('pool-2', { allowOpenSquares: false });
+    await publishBoard('pool-2', { allowOpenSquares: false, revision: 3 });
 
     expect(global.fetch).toHaveBeenCalledWith('/api/pools/pool-2/publish', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ revision: 3 }),
     }));
+  });
+
+  it('marks a revision conflict so the organizer can reload the latest names', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        code: 'REVISION_CONFLICT',
+        error: 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.',
+        currentRevision: 9,
+      }),
+    });
+
+    const failure = await publishBoard('pool-6', { allowOpenSquares: false, revision: 8 }).catch((error) => error);
+
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure.message).toBe('This board changed since you last loaded it. Reload to review the latest names before locking numbers.');
+    expect(failure.code).toBe('REVISION_CONFLICT');
+    expect(failure.currentRevision).toBe(9);
   });
 
   it('returns published:false with upgradeTo on a 402', async () => {
@@ -81,7 +100,7 @@ describe('publishBoard', () => {
       json: async () => ({ upgradeTo: 'gameday', error: 'Choose a plan to publish another board.' }),
     });
 
-    const result = await publishBoard('pool-3', { allowOpenSquares: false });
+    const result = await publishBoard('pool-3', { allowOpenSquares: false, revision: 1 });
 
     expect(result).toEqual({ published: false, upgradeTo: 'gameday', message: 'Choose a plan to publish another board.' });
   });
@@ -93,12 +112,12 @@ describe('publishBoard', () => {
       json: async () => ({ error: 'The board has changed since you last saved.' }),
     });
 
-    await expect(publishBoard('pool-4', { allowOpenSquares: false })).rejects.toThrow('The board has changed since you last saved.');
+    await expect(publishBoard('pool-4', { allowOpenSquares: false, revision: 1 })).rejects.toThrow('The board has changed since you last saved.');
   });
 
   it('throws a fallback message when the server sends no error text', async () => {
     (global.fetch as any).mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
-    await expect(publishBoard('pool-5', { allowOpenSquares: false })).rejects.toThrow('The board could not be published.');
+    await expect(publishBoard('pool-5', { allowOpenSquares: false, revision: 1 })).rejects.toThrow('The board could not be published.');
   });
 });
 

@@ -15,6 +15,8 @@ export interface PublishSheetProps {
   error: string | null;
   disabled: boolean;
   onPublish: () => void;
+  /** Present when the board changed since the organizer loaded it. */
+  onReload?: () => void;
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -34,7 +36,7 @@ const formatKickoff = (game: GameState): string => {
 };
 
 /** Confirmation summary shown before a board's viewer link goes live. */
-export default function PublishSheet({ open, isShared = false, onClose, game, board, allowance, pending, error, disabled, onPublish }: PublishSheetProps) {
+export default function PublishSheet({ open, isShared = false, onClose, game, board, allowance, pending, error, disabled, onPublish, onReload }: PublishSheetProps) {
   const assigned = board.squares.filter((s) => s.length).length;
   const open_ = 100 - assigned;
 
@@ -82,6 +84,11 @@ export default function PublishSheet({ open, isShared = false, onClose, game, bo
 
         {error && (
           <p role="alert" className="font-ui text-[14px] text-tone-cardinal">{error}</p>
+        )}
+        {onReload && (
+          <CapsuleButton type="button" variant="quiet" disabled={pending} onClick={onReload} className="self-start">
+            Reload latest board
+          </CapsuleButton>
         )}
 
         <div className="flex justify-end">

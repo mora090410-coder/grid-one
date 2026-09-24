@@ -49,6 +49,11 @@ function sellingFixture() {
       await route.fulfill({ json: { shared: true, shareCode: row.share_code, viewerUrl: '/b/ABCDEFGH', revision: row.revision, sharedAt: row.shared_at } });
     });
     await page.route(`**/api/pools/${boardId}/publish`, async route => {
+      // Like the server: never lock names the organizer has not loaded.
+      if (route.request().postDataJSON()?.revision !== row.revision) {
+        await route.fulfill({ status: 409, json: { code: 'REVISION_CONFLICT', error: 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.', currentRevision: row.revision } });
+        return;
+      }
       row.published_at = new Date().toISOString(); row.revision++;
       await route.fulfill({ json: { published: true, shareCode: row.share_code, viewerUrl: '/b/ABCDEFGH', revision: row.revision, tier: 'free', used: 1, allowance: 1 } });
     });

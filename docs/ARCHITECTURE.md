@@ -91,7 +91,7 @@ Shared handler plumbing lives in `functions/_lib/http.ts` (clients, `requireUser
 functions/api/health.ts
 functions/api/pools.ts                                  create
 functions/api/pools/[id].ts                             read / update
-functions/api/pools/[id]/publish.ts
+functions/api/pools/[id]/publish.ts                     lock numbers; requires the organizer's revision
 functions/api/pools/[id]/share.ts                       pre-game sharing
 functions/api/pools/[id]/score.ts                       viewer score projection
 functions/api/pools/[id]/score/manual.ts                organizer manual authority
@@ -122,7 +122,7 @@ functions/api/stripe/webhook.ts
 - Email links are scanner-safe: a GET of `/api/notifications/verify` or `/unsubscribe` only renders a no-store, no-referrer, noindex confirmation form; the state change happens on POST (the form button, or RFC 8058 one-click via the `List-Unsubscribe`/`List-Unsubscribe-Post` headers on winner emails).
 - Every contest table is under RLS; the anon key alone grants nothing an unauthenticated viewer should not see.
 - Manual score authority is canonical until the organizer returns to automatic. A late or stale automatic result can never overwrite manual or newer state (`014_score_promotion_ordering.sql`).
-- Publication is atomic (`010_atomic_board_publish.sql`); so is manual scoring (`011_atomic_manual_scoring.sql`).
+- Publication is atomic (`010_atomic_board_publish.sql`); so is manual scoring (`011_atomic_manual_scoring.sql`). `POST /api/pools/:id/publish` requires the integer `revision` the organizer last loaded or saved and answers `409 REVISION_CONFLICT` (with `currentRevision`) when a family, guest, or seller-link edit moved the board past it, so publication never locks names the organizer has not seen; the workspace then offers `Reload latest board`.
 - Network calls that matter use the retry utility in `utils/retry.ts` with explicit non-retry conditions. Schedule failures keep the organizer in the picker with a retry; score failures keep the last accepted snapshot and the manual path open.
 
 ## Engineering rules

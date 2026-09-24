@@ -119,7 +119,7 @@ describe('allowance errors share one copy table', () => {
       side_team_abbr: 'CHI', top_team_abbr: 'GB',
     }, error: null }], [{ data: null, error: { message } }]);
     mocks.clients.push(authClient(), admin);
-    return publishBoard({ request: post(`https://example.test/api/pools/${ID}/publish`, '{}'), env, params: { id: ID } });
+    return publishBoard({ request: post(`https://example.test/api/pools/${ID}/publish`, JSON.stringify({ revision: 4 })), env, params: { id: ID } });
   };
   const shareWith = async (message: string) => {
     mocks.clients.push(authClient(), scriptedAdmin([], [{ data: null, error: { message } }]));
@@ -270,7 +270,7 @@ describe('server failures are masked', () => {
   it('does not return raw Postgres text from a failed publish lookup', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mocks.clients.push(authClient(), scriptedAdmin([{ data: null, error: { message: 'invalid input syntax for type uuid' } }]));
-    const response = await publishBoard({ request: post('https://x.test/x', '{}'), env, params: { id: ID } });
+    const response = await publishBoard({ request: post('https://x.test/x', JSON.stringify({ revision: 4 })), env, params: { id: ID } });
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain('syntax');
   });
@@ -282,7 +282,7 @@ describe('server failures are masked', () => {
         id: ID, revision: 4, settings: {}, side_team_abbr: 'CHI', top_team_abbr: 'GB',
         board_data: { leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0], squares: Array.from({ length: 100 }, (_, i) => [`B${i}`]) },
       }, error: null }], [{ data: null, error: { message } }]));
-      return publishBoard({ request: post('https://x.test/x', '{}'), env, params: { id: ID } });
+      return publishBoard({ request: post('https://x.test/x', JSON.stringify({ revision: 4 })), env, params: { id: ID } });
     };
     const conflict = await run('Link a scheduled NFL game before publishing.');
     expect(conflict.status).toBe(409);

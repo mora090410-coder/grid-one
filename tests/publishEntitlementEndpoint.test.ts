@@ -21,7 +21,7 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: 'service-key',
 };
 
-const request = (body?: unknown) => new Request(
+const request = (body: unknown = { revision: 4 }) => new Request(
   'https://example.test/api/pools/33333333-3333-4333-8333-333333333333/publish',
   {
     method: 'POST',
@@ -118,6 +118,48 @@ beforeEach(() => {
 });
 
 describe.sequential('publish entitlement boundary', () => {
+  it.each([
+    ['no body', undefined],
+    ['an empty body', {}],
+    ['a string revision', { revision: '4' }],
+    ['a fractional revision', { revision: 4.5 }],
+    ['a zero revision', { revision: 0 }],
+  ])('requires the revision the organizer saw (%s)', async (_label, body) => {
+    const admin = adminClient();
+    mocks.clients.push(authClient(), admin);
+    const response = await publishBoard({
+      request: new Request('https://example.test/api/pools/33333333-3333-4333-8333-333333333333/publish', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer access-token' },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      }),
+      env,
+      params: { id: '33333333-3333-4333-8333-333333333333' },
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: 'A current board revision is required.' });
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('refuses to lock names the organizer has not seen', async () => {
+    // A family, guest, or seller-link edit advanced the board to revision 4
+    // after the organizer last loaded revision 3.
+    const admin = adminClient();
+    mocks.clients.push(authClient(), admin);
+    const response = await publishBoard({
+      request: request({ revision: 3 }),
+      env,
+      params: { id: '33333333-3333-4333-8333-333333333333' },
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: 'REVISION_CONFLICT',
+      error: 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.',
+      currentRevision: 4,
+    });
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
   it('keeps finalization recoverable while guest holds are active', async () => {
     mocks.clients.push(authClient(), adminClient({ rpcError: { message: 'guest_holds_active' } }));
     const response = await publishBoard({ request: request(), env, params: { id: '33333333-3333-4333-8333-333333333333' } });
@@ -255,7 +297,7 @@ describe.sequential('publish entitlement boundary', () => {
     mocks.clients.push(authClient(), admin);
 
     const response = await publishBoard({
-      request: request({ allowOpenSquares: true }),
+      request: request({ revision: 4, allowOpenSquares: true }),
       env,
       params: { id: '33333333-3333-4333-8333-333333333333' },
     });
@@ -280,7 +322,7 @@ describe.sequential('publish entitlement boundary', () => {
     mocks.clients.push(authClient(), admin);
 
     const response = await publishBoard({
-      request: request({ allowOpenSquares: true }),
+      request: request({ revision: 4, allowOpenSquares: true }),
       env,
       params: { id: '33333333-3333-4333-8333-333333333333' },
     });
