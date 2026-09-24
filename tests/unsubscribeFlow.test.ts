@@ -4,7 +4,7 @@ import {
   observeMilestones,
   verifyUnsubscribeToken,
 } from '../functions/_lib/winnerNotifications';
-import { onRequestGet as unsubscribe } from '../functions/api/notifications/unsubscribe';
+import { onRequestPost as unsubscribe } from '../functions/api/notifications/unsubscribe';
 
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
@@ -97,11 +97,12 @@ describe('winner notification outbox and unsubscribe flow', () => {
     const response = await unsubscribe({
       request: new Request(
         `https://www.getgridone.com/api/notifications/unsubscribe?subscription=${subscriptionId}&token=${token}&board=ABCDEFGH`,
+        { method: 'POST', body: '' },
       ),
       env,
     });
 
-    expect(response.status).toBe(302);
+    expect(response.status).toBe(303);
     expect(response.headers.get('location')).toBe(
       'https://www.getgridone.com/b/ABCDEFGH?email=unsubscribed',
     );
@@ -125,11 +126,12 @@ describe('winner notification outbox and unsubscribe flow', () => {
     const response = await unsubscribe({
       request: new Request(
         `https://www.getgridone.com/api/notifications/unsubscribe?subscription=${subscriptionId}&token=bad&board=ABCDEFGH`,
+        { method: 'POST', body: '' },
       ),
       env,
     });
 
-    expect(response.status).toBe(302);
+    expect(response.status).toBe(303);
     expect(response.headers.get('location')).toBe(
       'https://www.getgridone.com/b/ABCDEFGH?email=unsubscribe-invalid',
     );

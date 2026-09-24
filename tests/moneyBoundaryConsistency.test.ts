@@ -16,6 +16,7 @@ const surfaces = [
   'components/NotificationOptIn.tsx',
   'functions/api/notifications/retry.ts',
   'functions/api/notifications/verify.ts',
+  'functions/_lib/emailLinkPages.ts',
   'functions/api/boards/[shareCode]/subscribe.ts',
   'pages/Terms.tsx',
 ];

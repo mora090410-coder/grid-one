@@ -119,6 +119,7 @@ functions/api/stripe/webhook.ts
 ## Security boundaries
 
 - Browser and server are separate security boundaries. Service-role, Stripe secret, Gemini, email, and cron secrets exist only in Pages Functions and Workers.
+- Email links are scanner-safe: a GET of `/api/notifications/verify` or `/unsubscribe` only renders a no-store, no-referrer, noindex confirmation form; the state change happens on POST (the form button, or RFC 8058 one-click via the `List-Unsubscribe`/`List-Unsubscribe-Post` headers on winner emails).
 - Every contest table is under RLS; the anon key alone grants nothing an unauthenticated viewer should not see.
 - Manual score authority is canonical until the organizer returns to automatic. A late or stale automatic result can never overwrite manual or newer state (`014_score_promotion_ordering.sql`).
 - Publication is atomic (`010_atomic_board_publish.sql`); so is manual scoring (`011_atomic_manual_scoring.sql`).

@@ -1,8 +1,11 @@
 import { webcrypto } from 'node:crypto';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { onRequestPost as subscribe } from '../functions/api/boards/[shareCode]/subscribe';
-import { onRequestGet as verifyEmail } from '../functions/api/notifications/verify';
-import { onRequestGet as unsubscribe } from '../functions/api/notifications/unsubscribe';
+import {
+  onRequestGet as verifyEmail,
+  onRequestPost as confirmVerifyEmail,
+} from '../functions/api/notifications/verify';
+import { onRequestPost as unsubscribe } from '../functions/api/notifications/unsubscribe';
 
 const mocks = vi.hoisted(() => {
   const clients: any[] = [];
@@ -256,6 +259,7 @@ describe.sequential('winner email verification endpoint', () => {
   const verifyRequest = (token: string) => new Request(
     `https://example.test/api/notifications/verify?subscription=subscription-1&token=${encodeURIComponent(token)}&board=ABCDEFGH`,
   );
+  const verifyPost = (token: string) => new Request(verifyRequest(token).url, { method: 'POST', body: '' });
 
   it('returns a configuration error to the board when its share code is available', async () => {
     const token = 'configuration-token';
@@ -290,11 +294,11 @@ describe.sequential('winner email verification endpoint', () => {
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
 
-  it('redirects a valid, unexpired token to the verified board state', async () => {
+  it('redirects a valid, unexpired token to the verified board state after the confirming POST', async () => {
     const admin = scriptedAdmin([{ data: true, error: null }]);
     mocks.clients.push(admin);
-    const response = await verifyEmail({ request: verifyRequest('valid-token'), env });
-    expect(response.status).toBe(302);
+    const response = await confirmVerifyEmail({ request: verifyPost('valid-token'), env });
+    expect(response.status).toBe(303);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=verified');
     expect(redirectLocation(response)).not.toContain('valid-token');
     expect(admin.operations).toContainEqual(expect.objectContaining({
@@ -308,8 +312,8 @@ describe.sequential('winner email verification endpoint', () => {
     ['invalid', 'invalid-token'],
   ])('redirects an %s token without exposing it', async (_label, token) => {
     mocks.clients.push(scriptedAdmin([{ data: false, error: null }]));
-    const response = await verifyEmail({ request: verifyRequest(token), env });
-    expect(response.status).toBe(302);
+    const response = await confirmVerifyEmail({ request: verifyPost(token), env });
+    expect(response.status).toBe(303);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=invalid');
     expect(redirectLocation(response)).not.toContain(token);
   });
@@ -318,13 +322,14 @@ describe.sequential('winner email verification endpoint', () => {
 describe.sequential('winner email unsubscribe endpoint', () => {
   const unsubscribeRequest = (token: string) => new Request(
     `https://example.test/api/notifications/unsubscribe?subscription=subscription-1&token=${encodeURIComponent(token)}&board=ABCDEFGH`,
+    { method: 'POST', body: 'List-Unsubscribe=One-Click' },
   );
 
   it('accepts a valid signature and redirects without leaking it', async () => {
     const token = await hmacToken(env.NOTIFICATION_TOKEN_SECRET, 'subscription-1');
     mocks.clients.push(scriptedAdmin([{ data: { id: 'subscription-1' } }]));
     const response = await unsubscribe({ request: unsubscribeRequest(token), env });
-    expect(response.status).toBe(302);
+    expect(response.status).toBe(303);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=unsubscribed');
     expect(redirectLocation(response)).not.toContain(token);
   });
@@ -332,7 +337,7 @@ describe.sequential('winner email unsubscribe endpoint', () => {
   it('rejects an invalid signature without touching storage or exposing it', async () => {
     const token = 'invalid-signature';
     const response = await unsubscribe({ request: unsubscribeRequest(token), env });
-    expect(response.status).toBe(302);
+    expect(response.status).toBe(303);
     expect(redirectLocation(response)).toBe('https://www.getgridone.com/b/ABCDEFGH?email=unsubscribe-invalid');
     expect(redirectLocation(response)).not.toContain(token);
     expect(mocks.createClient).not.toHaveBeenCalled();
