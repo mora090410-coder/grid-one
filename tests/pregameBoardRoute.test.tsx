@@ -21,9 +21,10 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 const show = () => render(<MemoryRouter initialEntries={['/b/ABCDEFGH']}><Routes><Route path="/b/:shareCode" element={<BoardView />} /></Routes></MemoryRouter>);
-it('routes a shared unfinalized board to selling view without score services', () => {
+it('routes a shared unfinalized board to selling view without score services', async () => {
   show();
-  expect(screen.getByRole('main', { name: 'Team board selling board' })).toBeInTheDocument();
+  // The selling view is its own code chunk, so it appears once that loads.
+  expect(await screen.findByRole('main', { name: 'Team board selling board' })).toBeInTheDocument();
   expect(screen.queryByText('Finalized game viewer')).not.toBeInTheDocument();
   expect(m.scoring.mock.lastCall?.[5]).toBe(false);
 });

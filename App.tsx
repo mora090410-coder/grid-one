@@ -1,20 +1,42 @@
-import FamilyWorkspace from './src/features/family/FamilyWorkspace';
-import GuestPoolPage from './src/features/guest/GuestPoolPage';
-import SellerClaimPage from './src/features/seller/SellerClaimPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequireAuth from './components/auth/RequireAuth';
-import BoardView from './components/BoardView';
-import CreateContest from './pages/CreateContest';
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import NotFound from './pages/NotFound';
-import Paid from './pages/Paid';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
+
+// Every route is its own chunk, so a phone opening a viewer link never
+// downloads the organizer workspace, and the homepage never downloads either.
+const loadBoardView = () => import('./components/BoardView');
+const loadOrganizerWorkspace = () => import('./src/features/organizer/workspace/OrganizerWorkspace');
+const loadHomepage = () => import('./src/features/homepage/Homepage');
+
+const BoardView = React.lazy(loadBoardView);
+const CreateContest = React.lazy(() => import('./pages/CreateContest'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Login = React.lazy(() => import('./pages/Login'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+const Paid = React.lazy(() => import('./pages/Paid'));
+const Privacy = React.lazy(() => import('./pages/Privacy'));
+const Terms = React.lazy(() => import('./pages/Terms'));
+const FamilyWorkspace = React.lazy(() => import('./src/features/family/FamilyWorkspace'));
+const GuestPoolPage = React.lazy(() => import('./src/features/guest/GuestPoolPage'));
+const SellerClaimPage = React.lazy(() => import('./src/features/seller/SellerClaimPage'));
+
+/**
+ * Start downloading the current route's code right away, in parallel with the
+ * sign-in check, instead of after it. The browser caches each module, so the
+ * lazy route below reuses this same download.
+ */
+const prefetchCurrentRoute = () => {
+  if (typeof window === 'undefined') return;
+  const { pathname, search } = window.location;
+  const hasPoolId = new URLSearchParams(search).has('poolId');
+  if (pathname === '/' && !hasPoolId) void loadHomepage();
+  else if (pathname === '/' || pathname === '/demo' || pathname.startsWith('/b/')) void loadBoardView();
+  else if (pathname.startsWith('/boards/')) { void loadBoardView(); void loadOrganizerWorkspace(); }
+};
+prefetchCurrentRoute();
 
 const ArticlesHub = React.lazy(() => import('./pages/ArticlesHub').then((module) => ({ default: module.ArticlesHub })));
 const RunYourPoolAlternative = React.lazy(() => import('./pages/RunYourPoolAlternative').then((module) => ({ default: module.RunYourPoolAlternative })));
@@ -29,7 +51,7 @@ const BoosterClubFootballSquares = React.lazy(() => import('./pages/BoosterClubF
 const ChurchSchoolFundraiserSquares = React.lazy(() => import('./pages/ChurchSchoolFundraiserSquares').then((module) => ({ default: module.ChurchSchoolFundraiserSquares })));
 const NFLOpeningWeekSquares = React.lazy(() => import('./pages/NFLOpeningWeekSquares').then((module) => ({ default: module.NFLOpeningWeekSquares })));
 const FootballSquaresApp = React.lazy(() => import('./pages/FootballSquaresApp').then((module) => ({ default: module.FootballSquaresApp })));
-const Homepage = React.lazy(() => import('./src/features/homepage/Homepage'));
+const Homepage = React.lazy(loadHomepage);
 const GuestInvitePrototype = import.meta.env.DEV
   ? React.lazy(() => import('./src/features/guest/GuestInvitePrototype'))
   : null;

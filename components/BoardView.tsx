@@ -14,14 +14,18 @@ import { demoBoard, demoGame, demoLive } from '../src/features/homepage/demoData
 
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import '../src/features/viewer/shell/demoStage.css';
-import SalesBoardViewer from '../src/features/viewer/sales/SalesBoardViewer';
-import OrganizerWorkspace from '../src/features/organizer/workspace/OrganizerWorkspace';
+// Loaded only when needed: the public viewer never downloads organizer or seller-sale code.
+const SalesBoardViewer = React.lazy(() => import('../src/features/viewer/sales/SalesBoardViewer'));
+const loadOrganizerWorkspace = () => import('../src/features/organizer/workspace/OrganizerWorkspace');
+const OrganizerWorkspace = React.lazy(loadOrganizerWorkspace);
 import ErrorBoundary from './ErrorBoundary';
 import FullScreenLoading from './loading/FullScreenLoading';
 import SyntheticScoreTestBanner from './SyntheticScoreTestBanner';
 
 // Board sub-components
-import ShareModal from './board/ShareModal';
+const ShareModal = React.lazy(() => import('./board/ShareModal'));
+// Eager on purpose: it is the viewer's main action, and it must mount in the same
+// tick as the tap so it can return focus to the control that opened it.
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
 import { distinctAssignedNames } from '../utils/playerNameMatching';
@@ -114,6 +118,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     // 4. Derived State
     const isCommissionerMode = Boolean(isOwner);
+    // Fetch the workspace code as soon as ownership is known, while private notes still load.
+    useEffect(() => { if (isCommissionerMode) void loadOrganizerWorkspace(); }, [isCommissionerMode]);
 
     // Owner-only data never loads on a public viewer route.
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
@@ -322,12 +328,12 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const renderMainContent = (previewMode = false) => (
         <div className="flex-1 min-h-0">
             {isShared && !isPublished && !previewMode ? (
-                <SalesBoardViewer game={game} board={publicSalesBoard} updatedAt={currentGuestSnapshot?.serverTime ?? updatedAt}
+                <React.Suspense fallback={<FullScreenLoading />}><SalesBoardViewer game={game} board={publicSalesBoard} updatedAt={currentGuestSnapshot?.serverTime ?? updatedAt}
                     onRefresh={() => guestFeatureAvailable === true ? guestSync.invalidate() : urlPoolId ? void loadPoolData(urlPoolId, { background: true }) : undefined}
                     refreshing={refreshing} error={refreshError ? `Showing the last saved board. ${refreshError}` : null}
                     organizerHref={ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined}
                     guestOccupancy={guestFeatureAvailable === true && currentGuestSnapshot ? { holds: currentGuestSnapshot.holds, claimedCells: currentGuestSnapshot.claimedCells } : null}
-                    guestConnection={guestFeatureAvailable === true ? guestSync.connection : undefined} />
+                    guestConnection={guestFeatureAvailable === true ? guestSync.connection : undefined} /></React.Suspense>
             ) : isLocked && !previewMode ? (
                 <Base kind="dark"><main className="mx-auto max-w-[640px] px-6 py-20 flex flex-col gap-4" role="status">
                     <Eyebrow>Viewer link unavailable</Eyebrow>
@@ -396,24 +402,27 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 </div>
             )}
 
-            {showShareModal && (
-                <ShareModal shareUrl={shareUrl} onClose={() => setShowShareModal(false)} />
-            )}
+            <React.Suspense fallback={null}>
+                {showShareModal && (
+                    <ShareModal shareUrl={shareUrl} onClose={() => setShowShareModal(false)} />
+                )}
 
-            {showFindSquaresModal && (
-                <FindSquaresModal
-                    board={board}
-                    selectedPlayer={selectedPlayer}
-                    onSelectPlayer={(displayName) => setPlayerSelection({ scope: selectionScope, displayName })}
-                    onClose={() => setShowFindSquaresModal(false)}
-                />
-            )}
+                {showFindSquaresModal && (
+                    <FindSquaresModal
+                        board={board}
+                        selectedPlayer={selectedPlayer}
+                        onSelectPlayer={(displayName) => setPlayerSelection({ scope: selectionScope, displayName })}
+                        onClose={() => setShowFindSquaresModal(false)}
+                    />
+                )}
+            </React.Suspense>
 
             {isCommissionerMode && (
                 <>
                 {(entriesLoading || (!hasLoadedEntries && !entriesError)) && <p role="status" className="px-5 py-3 text-sm text-fg-2">Refreshing private square notes…</p>}
                 {entriesError && <div role="alert" className="px-5 py-3 text-sm text-fg"><p>{entriesError}</p><CapsuleButton onClick={() => void reloadEntries().catch(() => undefined)}>Reload private notes</CapsuleButton></div>}
                 <div inert={entriesLoading || Boolean(entriesError)}>
+                <React.Suspense fallback={<FullScreenLoading />}>
                 {hasLoadedEntries && <OrganizerWorkspace
                     game={game}
                     board={board}
@@ -465,6 +474,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         </div>
                     )}
                 />}
+                </React.Suspense>
                 </div>
                 </>
             )}
