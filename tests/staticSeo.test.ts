@@ -157,6 +157,17 @@ describe('build-time public route metadata', () => {
     }
   });
 
+  it('keeps the self-hosted font preloads on every prerendered page', async () => {
+    const template = await readFile(resolve(projectRoot, 'index.html'), 'utf8');
+    const preloads = template.match(/<link rel="preload" as="font"[^>]*>/g) ?? [];
+    expect(preloads.length).toBeGreaterThan(0);
+    for (const route of PUBLIC_ROUTE_METADATA) {
+      const html = await readFile(outputPathForRoute(outputDirectory, route.path), 'utf8');
+      for (const preload of preloads) expect(html, route.path).toContain(preload);
+      expect(html, route.path).not.toContain('fonts.googleapis.com');
+    }
+  });
+
   it('publishes a valid robots sitemap declaration and a 1200 by 630 OG image', () => {
     const robots = readFileSync(resolve(projectRoot, 'public/robots.txt'), 'utf8');
     expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);

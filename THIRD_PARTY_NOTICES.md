@@ -34,3 +34,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Web fonts: Geist, Geist Mono, Instrument Serif
+
+GridOne self-hosts the WOFF2 subset files that Google Fonts serves for these families, in `public/fonts/`, unmodified. All three are licensed under the SIL Open Font License, Version 1.1; the full license text ships beside the files.
+
+- Geist and Geist Mono: Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font). License: `public/fonts/OFL-Geist.txt`.
+- Instrument Serif: Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif). License: `public/fonts/OFL-InstrumentSerif.txt`.

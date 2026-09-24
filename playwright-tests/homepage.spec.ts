@@ -205,8 +205,7 @@ for (const rootFontPercent of [100, 200]) {
 
 
 test('phone hero remains readable when web fonts are unavailable', async ({ page }) => {
-  await page.route('https://fonts.googleapis.com/**', route => route.abort());
-  await page.route('https://fonts.gstatic.com/**', route => route.abort());
+  await page.route('**/fonts/*.woff2', route => route.abort());
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const hero = page.getByTestId('homepage-first-viewport');

@@ -110,7 +110,7 @@ test('disabled link mid-selection is explained and preserves the entered name',a
 
 test('disconnected prototype completes a simulated claim without app API or service requests',async({page},info)=>{
   const apiRequests:string[]=[];const remoteRequests:string[]=[];
-  page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))apiRequests.push(url.pathname);if(!['127.0.0.1','localhost','fonts.googleapis.com','fonts.gstatic.com'].includes(url.hostname))remoteRequests.push(request.url());});
+  page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))apiRequests.push(url.pathname);if(!['127.0.0.1','localhost'].includes(url.hostname))remoteRequests.push(request.url());});
   await page.goto('/dev/guest-invites');
   await page.getByRole('button',{name:'Create guest link',exact:true}).click();
   await page.getByRole('button',{name:/^Square 1, available/}).click();

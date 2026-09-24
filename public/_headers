@@ -7,3 +7,10 @@
 # them without asking the server again.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted web fonts. Each file name carries the font version and a content
+# hash, so it is cached for a year without revalidation. If a font file ever
+# changes, give it a new file name (and update src/design/tokens.css and the
+# preload links in index.html) — never overwrite a file under an existing name.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
