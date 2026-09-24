@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { supabase } from '../../../../services/supabase';
 import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
+import { track } from '../../instrumentation/track';
 import { allLinksMessage, parseSellerLinks, sellerShareText, summarizeSellers, type SellerLink } from './sellerLinksModel';
 
 type Props = {
@@ -55,7 +56,10 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
       if (!navigator.clipboard) throw new Error('no clipboard');
       await navigator.clipboard.writeText(text);
       setMessage(done);
-    } catch { setMessage('Couldn’t copy. Press and hold the link to copy it.'); }
+    } catch {
+      track({ name: 'recoverable_ui_failure_code', code: 'clipboard_denied', surface: 'organizer' });
+      setMessage('Couldn’t copy. Press and hold the link to copy it.');
+    }
   };
 
   const share = async (link: SellerLink) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Eyebrow, CapsuleButton, Glass } from '../../../../design/primitives';
+import { track } from '../../../instrumentation/track';
 
 export interface SharePanelProps {
   shareUrl: string;
@@ -20,6 +21,7 @@ export default function SharePanel({ shareUrl, onOpenViewer }: SharePanelProps) 
       window.setTimeout(() => setCopyStatus('idle'), 2000);
     } catch {
       setCopyStatus('error');
+      track({ name: 'recoverable_ui_failure_code', code: 'clipboard_denied', surface: 'organizer' });
     }
   };
 

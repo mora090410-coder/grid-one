@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Reveal } from '../../../design/primitives';
 import { MONEY_BOUNDARY, PRICING, PRICING_SENTENCE } from '../pricing';
-import { quietLink } from './cta';
+import { quietLink, trackViewDemo } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
 
 const faq = [
@@ -25,7 +25,7 @@ export function PriceAndClose() {
         <Reveal keepVisible className="editorial-faq-list">
           {faq.map(item => <details key={item.q}><summary className="min-h-11"><span>{item.q}</span><span aria-hidden="true" className="editorial-faq-marker"><span>+</span><span>−</span></span></summary><p>{item.a}</p></details>)}
         </Reveal>
-        <div className="editorial-close"><h2>Ready to build the board?</h2><div className="editorial-close-actions"><PrimaryCtaLink to="/create">Create your free board</PrimaryCtaLink><Link to="/demo" className={quietLink}>Explore a sample board</Link></div></div>
+        <div className="editorial-close"><h2>Ready to build the board?</h2><div className="editorial-close-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Explore a sample board</Link></div></div>
       </section>
     </>
   );

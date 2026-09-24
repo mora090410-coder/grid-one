@@ -5,7 +5,7 @@ import { MONEY_LINE } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
 import { Enter, Grain } from '../../../design/primitives';
 import { SiteHeader } from '../../site/SiteHeader';
-import { quietLink } from './cta';
+import { quietLink, trackViewDemo } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
 import './hero-studio.css';
 
@@ -72,8 +72,8 @@ export function Hero() {
             <Enter delay={80}><p className="studio-hero-description">Build your football squares board, share one link, and give your group a clear view of game day.</p></Enter>
             <Enter delay={120}>
               <div className="studio-hero-actions">
-                <PrimaryCtaLink to="/create">Create your free board</PrimaryCtaLink>
-                <Link to="/demo" className={quietLink}>Explore a sample board</Link>
+                <PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink>
+                <Link to="/demo" onClick={trackViewDemo} className={quietLink}>Explore a sample board</Link>
               </div>
             </Enter>
             <Enter delay={120}>

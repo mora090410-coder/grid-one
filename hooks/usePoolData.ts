@@ -12,6 +12,7 @@ import {
     WinnerResolution,
 } from '../types';
 import { supabase } from '../services/supabase';
+import { track } from '../src/features/instrumentation/track';
 
 const INITIAL_GAME: GameState = {
     title: '',
@@ -221,6 +222,7 @@ export function usePoolData(): UsePoolDataReturn {
             setIsShared(true);
             setIsActivated(true);
             setUpdatedAt(result.sharedAt || null);
+            track({ name: 'organizer_phase_completed', phase: 'share' });
         };
         return enqueueWrite(run);
     }, [enqueueWrite]);

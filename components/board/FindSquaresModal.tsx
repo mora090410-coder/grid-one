@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BoardData } from '../../types';
 import { distinctAssignedNames, matchPlayerNames } from '../../utils/playerNameMatching';
 import { CapsuleButton, CapsuleInput, Eyebrow, Sheet } from '../../src/design/primitives';
+import { track } from '../../src/features/instrumentation/track';
 
 interface FindSquaresModalProps {
     board: BoardData;
@@ -9,6 +10,16 @@ interface FindSquaresModalProps {
     onSelectPlayer: (player: string) => void;
     onClose: () => void;
 }
+
+/** Coarse query-length bucket: the search text itself never leaves the browser. */
+const queryLengthBucket = (query: string) => {
+    const length = query.trim().length;
+    if (length === 0) return '0' as const;
+    if (length <= 2) return '1_2' as const;
+    if (length <= 5) return '3_5' as const;
+    if (length <= 10) return '6_10' as const;
+    return '11_plus' as const;
+};
 
 const rowClass = 'w-full min-h-11 px-3 text-left font-ui text-[16px] text-fg rounded-control hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action';
 
@@ -20,8 +31,18 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
     const hasQuery = query.trim().length > 0;
     const showBrowseList = !hasQuery || result.tier === 'none';
 
+    useEffect(() => { track({ name: 'find_my_squares_opened', surface: 'viewer' }); }, []);
+
     const selectPlayer = (player: string) => {
+        const single = Boolean(result.autoSelect) || (!showBrowseList && result.candidates.length === 1);
+        track({ name: 'find_my_squares_resolved', matchBucket: single ? 'one' : 'multiple' });
         onSelectPlayer(player);
+        onClose();
+    };
+
+    // Closing after a search that matched nobody is the no-match outcome.
+    const dismiss = () => {
+        if (hasQuery && result.tier === 'none') track({ name: 'find_my_squares_no_match', queryLengthBucket: queryLengthBucket(query) });
         onClose();
     };
 
@@ -32,7 +53,7 @@ const FindSquaresModal: React.FC<FindSquaresModalProps> = ({ board, selectedPlay
 
     return (
         <div data-base="dark">
-            <Sheet open onClose={onClose} title="Find my squares" layer="raised">
+            <Sheet open onClose={dismiss} title="Find my squares" layer="raised">
                 <form onSubmit={submit} className="flex items-end gap-2">
                     <CapsuleInput
                         id="viewer-player-search"

@@ -1,3 +1,5 @@
+import { track } from '../../instrumentation/track';
+
 // Shared control feel. Every focus-visible ring here is load-bearing: `[data-base]`
 // strips the global outline, so these rings are the only focus affordance.
 // The lift and press are wrapped in `motion-safe:` so they never run under
@@ -19,3 +21,6 @@ export const quietLink = `${geometry} g-chip bg-panel border border-hairline tex
 // Forced-colors mode (Windows High Contrast) drops background images entirely, which
 // would erase the affordance, so a real `text-decoration` underline takes over there.
 export const ghostLink = 'inline-flex items-center h-11 px-2 font-ui text-[15px] text-fg-2 hover:text-fg bg-[linear-gradient(currentColor,currentColor)] bg-no-repeat bg-[length:0%_1px] bg-[position:0_calc(100%-12px)] hover:bg-[length:100%_1px] forced-colors:hover:underline transition-[background-size,color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action rounded-control';
+
+/** Homepage secondary action: opening the sample board. */
+export const trackViewDemo = () => track({ name: 'homepage_secondary_action', action: 'view_demo', surface: 'homepage' });

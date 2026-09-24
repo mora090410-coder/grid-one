@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import NotificationOptIn from '../../../../components/NotificationOptIn';
+import { track } from '../../instrumentation/track';
 
 export interface WinnerEmailDisclosureProps {
   shareCode?: string | null;
@@ -9,7 +10,13 @@ export interface WinnerEmailDisclosureProps {
 }
 
 const WinnerEmailDisclosure: React.FC<WinnerEmailDisclosureProps> = ({ shareCode, participantId, displayName, enabled }) => {
-  if (!enabled || !shareCode || !participantId || !displayName || displayName.trim().toUpperCase() === 'OPEN') return null;
+  const visible = Boolean(enabled && shareCode && participantId && displayName && displayName.trim().toUpperCase() !== 'OPEN');
+
+  useEffect(() => {
+    if (visible) track({ name: 'notification_form_opened', surface: 'viewer', notificationIntent: 'winner_updates' });
+  }, [visible, participantId]);
+
+  if (!visible) return null;
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="winner-email-title">

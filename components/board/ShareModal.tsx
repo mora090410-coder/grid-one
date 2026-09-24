@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { CapsuleButton, Sheet } from '../../src/design/primitives';
+import { track } from '../../src/features/instrumentation/track';
 
 interface ShareModalProps {
     shareUrl: string;
@@ -19,6 +20,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ shareUrl, onClose }) => {
             window.setTimeout(() => setCopyStatus('idle'), 2000);
         } catch {
             setCopyStatus('error');
+            track({ name: 'recoverable_ui_failure_code', code: 'clipboard_denied', surface: 'viewer' });
         }
     };
 

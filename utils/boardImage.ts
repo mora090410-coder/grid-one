@@ -1,6 +1,7 @@
 import { BoardData, GameState } from '../types';
 import { getAxisForQuarter } from './winnerLogic';
 import { QUARTER_LABELS, type QuarterAxisKey } from './quarterAxes';
+import { track } from '../src/features/instrumentation/track';
 
 // Canvas-rendered board export.
 //
@@ -277,8 +278,18 @@ const drawFooter = (ctx: CanvasRenderingContext2D, shareUrl?: string) => {
 
 /** Renders the board to a PNG blob at 2x for retina-sharp text in a message thread. */
 export const renderBoardPng = async (options: BoardImageOptions): Promise<Blob> => {
+  if (options.board.isDynamic && !options.quarter) throw new Error('Choose the quarter before exporting its numbers.');
+  try {
+    return await drawBoardPng(options);
+  } catch (error) {
+    // A browser that cannot draw or encode the canvas is a recoverable UI failure; report its code only.
+    track({ name: 'recoverable_ui_failure_code', code: 'image_export_failed', surface: 'organizer' });
+    throw error;
+  }
+};
+
+const drawBoardPng = async (options: BoardImageOptions): Promise<Blob> => {
   const { board, game, sellersByIndex = {}, mode = 'owners', shareUrl } = options;
-  if (board.isDynamic && !options.quarter) throw new Error('Choose the quarter before exporting its numbers.');
 
   const scale = 2;
   const canvas = document.createElement('canvas');

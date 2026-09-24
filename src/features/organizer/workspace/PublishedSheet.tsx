@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Sheet, CapsuleButton, Glass } from '../../../design/primitives';
+import { track } from '../../instrumentation/track';
 
 export interface PublishedSheetProps {
   open: boolean;
@@ -23,6 +24,7 @@ export default function PublishedSheet({ open, shareUrl, onClose, onOpenViewer, 
       window.setTimeout(() => setCopyStatus('idle'), 2000);
     } catch {
       setCopyStatus('error');
+      track({ name: 'recoverable_ui_failure_code', code: 'clipboard_denied', surface: 'organizer' });
     }
   };
 

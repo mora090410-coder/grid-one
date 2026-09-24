@@ -1,4 +1,5 @@
 import { supabase } from '../../../../services/supabase';
+import { track } from '../../instrumentation/track';
 
 export type PublishResult =
   | { published: true; shareCode: string; viewerUrl: string; revision: number; tier: string; used: number; allowance: number }
@@ -46,6 +47,8 @@ export async function publishBoard(poolId: string, options: { allowOpenSquares: 
     );
   }
   if (!response.ok) throw new Error(result.error || 'The board could not be published.');
+
+  track({ name: 'organizer_phase_completed', phase: 'publish' });
 
   return {
     published: true,

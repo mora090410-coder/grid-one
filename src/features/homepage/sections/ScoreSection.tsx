@@ -4,7 +4,7 @@ import { buildScenarioModel } from '../../viewer/scenarios/scenarioModel';
 import { useScoreExplanation } from '../atmosphere/useScoreExplanation';
 import { demoBoard, demoGame, demoLive, demoWinnerNow, demoWinnerSquares } from '../demoData';
 import { Reveal } from '../../../design/primitives';
-import { quietLink } from './cta';
+import { quietLink, trackViewDemo } from './cta';
 
 const scenarios = buildScenarioModel({ board: demoBoard, game: demoGame, live: demoLive });
 const next = scenarios.scenarios.find(scenario => scenario.team === demoGame.leftAbbr && scenario.points === 3)!;
@@ -31,7 +31,7 @@ export function ScoreSection() {
           <section><h3>Find your name. See your squares.</h3><p>Tap your name. See every square you have and if you’re winning.</p><dl className="editorial-personal"><dt>Sample selection · {demoWinnerNow}</dt><dd>{demoWinnerSquares.length} squares: {demoWinnerSquares.map(s => `KC ${s.left} × PHI ${s.top}`).join(' · ')}</dd></dl><p>Winners can get an email when their quarter ends.</p></section>
           <section><h3>What could match next?</h3><p>If Kansas City adds a field goal (+{next.points}), the score becomes {demoLive.leftScore + next.points}–{demoLive.topScore}.</p><dl className="editorial-personal"><dt>KC {next.left} × PHI {next.top}</dt><dd>{next.names.join(', ') || 'OPEN'} would match.</dd></dl><p>{scenarios.disclaimer}</p></section>
         </div>
-        <Link to="/demo" className={`${quietLink} editorial-sample-link`}>Explore a sample board</Link>
+        <Link to="/demo" onClick={trackViewDemo} className={`${quietLink} editorial-sample-link`}>Explore a sample board</Link>
       </div>
     </section>
   );
