@@ -948,3 +948,11 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - **Retention:** 13 months (Anthony, 2026-09-24). Migration `034_client_events_retention.sql` adds `gridone_prune_client_events()` (service role only); the notification retry cron calls it at the top of each hour, and a failure never affects delivery.
 - **Open:** a Cloudflare rate-limit rule on `/api/events`.
 - **Gates:** tsc pass; unit 1159; integration 119 + 1 pre-existing skip; build; design lint 0 errors; Playwright chromium 155/155.
+
+## 2026-09-25 — Corner Square rebrand (visual only)
+
+- **Approval:** Anthony handed over the `gridone-brand` kit and brief: rebrand, visual only, no functional change.
+- **Scope:** head icons and share card; kit tokens in `src/styles/tokens.css` feeding the `--g-*` tokens; Archivo type; `Logo` and `SquareOne` primitives; board cell and winner styling (`gridone-winner`, solid gold, the only gold); gold removed from text, actions, focus rings, glows, tints, and tags (tags use turf). DESIGN.md and DESIGN_TOKENS.md updated.
+- **Not changed:** pricing, permissions, schema, scoring, deploy config, product copy (except the loading label "GRIDONE" → "Loading GridOne").
+- **Report and screenshots:** `docs/rebrand/`.
+- **Gates:** tsc pass; unit 1200; build; design lint 0 errors, 5 warnings; Playwright chromium all pass (preinstalled Chromium; `guest-invites` needs `PLAYWRIGHT_PORT`). Integration not run (no Docker).

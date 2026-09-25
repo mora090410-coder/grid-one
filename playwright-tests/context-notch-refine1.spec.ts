@@ -69,7 +69,7 @@ for (const width of [320, 390, 1280]) test(`medallions and measured selected-car
   expect(geometry.circle.width).toBe(geometry.circle.height);
   expect(geometry.circle.width).toBeGreaterThanOrEqual(44);
   expect(geometry.circle.radius).toBe('50%');
-  expect(geometry.background).toBe('rgb(14, 15, 18)');
+  expect(geometry.background).toBe('rgb(19, 33, 46)');
   expect(geometry.card.x).toBeGreaterThanOrEqual(geometry.surface.x);
   expect(geometry.card.x + geometry.card.width).toBeLessThanOrEqual(geometry.surface.x + geometry.surface.width);
   if (width === 1280) expect(geometry.card.x - firstBox!.x).toBeGreaterThan(20);

@@ -12,7 +12,7 @@ const focusRing = (page: Page) => page.evaluate(() => {
   if (!active) return null;
   const style = getComputedStyle(active);
   return {
-    name: active.textContent?.trim() || '',
+    name: active.getAttribute('aria-label') || active.querySelector('img[alt]')?.getAttribute('alt') || active.textContent?.trim() || '',
     tag: active.tagName,
     boxShadow: style.boxShadow,
     outlineStyle: style.outlineStyle,

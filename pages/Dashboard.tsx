@@ -308,7 +308,7 @@ const Dashboard: React.FC = () => {
                 <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                     <div className="flex flex-col gap-3">
                         <Eyebrow>Organizer</Eyebrow>
-                        <h1 className="font-display text-[40px] leading-[1] tracking-[-0.01em] text-fg md:text-[52px]">Your boards</h1>
+                        <h1 className="font-display text-[40px] leading-[1] text-fg md:text-[52px]">Your boards</h1>
                         {billingSummary && (
                             <CapsuleTag className="self-start">
                                 {billingSummary.used} of {billingSummary.allowance} published · {tierLabel(billingSummary)}

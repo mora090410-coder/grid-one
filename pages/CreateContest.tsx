@@ -196,7 +196,7 @@ const CreateContest: React.FC = () => {
 
                 <div className="flex flex-col gap-3">
                     <Eyebrow>New board</Eyebrow>
-                    <h1 className="font-display text-[40px] leading-[1] tracking-[-0.01em] text-fg md:text-[52px]">Your next great game day.</h1>
+                    <h1 className="font-display text-[40px] leading-[1] text-fg md:text-[52px]">Your next great game day.</h1>
                     <p className="font-ui text-[15px] text-fg-2">Name your board and see it take shape. Nothing is shared until you choose to share it.</p>
                 </div>
 

@@ -49,21 +49,10 @@
 .board-stage-frame td[data-open="true"] {
   background-color: var(--g-ground);
 }
-.board-stage-frame td[data-current="true"]:not([data-corrected="true"]) {
-  background-color: var(--g-white);
-  color: var(--g-ink);
-}
-.board-stage-frame td[data-current="true"]:not([data-corrected="true"])::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 14px var(--g-stage-light);
-}
+/* The matching square keeps the board's solid gold winner fill: gold means
+   winner on the demo stage too. */
 @media (prefers-reduced-motion: reduce) {
-  .demo-board-light,
-  .board-stage-frame td[data-current="true"]::after {
+  .demo-board-light {
     animation: none;
   }
 }

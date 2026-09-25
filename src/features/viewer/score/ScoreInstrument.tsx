@@ -38,7 +38,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
     <section className="flex flex-col gap-4" aria-labelledby="viewer-score-title">
       <div className="flex flex-col gap-2">
         <Eyebrow>{game.dates || 'Game date pending'}</Eyebrow>
-        <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] tracking-[-0.01em] text-fg">{game.title || 'Football squares'}</Heading>
+        <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] text-fg">{game.title || 'Football squares'}</Heading>
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 
