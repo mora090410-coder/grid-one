@@ -22,7 +22,7 @@ export const DigitalFootballSquaresBoardVsPaper: React.FC = () => {
         description,
         mainEntityOfPage: 'https://www.getgridone.com/articles/digital-football-squares-board-vs-paper',
         author: { '@type': 'Organization', name: 'GridOne' },
-        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icon-512.png' } },
       }}
       aside={
         <ArticleCTA

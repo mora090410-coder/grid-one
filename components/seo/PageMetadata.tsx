@@ -52,6 +52,10 @@ export function PageMetadata({
     upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title });
     upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });
     upsertMeta('meta[property="og:image"]', { property: 'og:image', content: image });
+    if (image === DEFAULT_OG_IMAGE) {
+      upsertMeta('meta[property="og:image:width"]', { property: 'og:image:width', content: '1200' });
+      upsertMeta('meta[property="og:image:height"]', { property: 'og:image:height', content: '630' });
+    }
 
     upsertMeta('meta[name="twitter:card"], meta[property="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
     upsertMeta('meta[name="twitter:url"], meta[property="twitter:url"]', { name: 'twitter:url', content: canonicalUrl });

@@ -48,30 +48,11 @@ const filesUnder = (directory: string): string[] => (
   })
 );
 
-const jpegDimensions = (contents: Buffer): { width: number; height: number } => {
-  let offset = 2;
-  while (offset + 8 < contents.length) {
-    if (contents[offset] !== 0xff) {
-      offset += 1;
-      continue;
-    }
-
-    const marker = contents[offset + 1];
-    const segmentLength = contents.readUInt16BE(offset + 2);
-    const isStartOfFrame = (
-      marker >= 0xc0
-      && marker <= 0xcf
-      && ![0xc4, 0xc8, 0xcc].includes(marker)
-    );
-    if (isStartOfFrame) {
-      return {
-        height: contents.readUInt16BE(offset + 5),
-        width: contents.readUInt16BE(offset + 7),
-      };
-    }
-    offset += 2 + segmentLength;
+const pngDimensions = (contents: Buffer): { width: number; height: number } => {
+  if (contents.subarray(1, 4).toString('ascii') !== 'PNG') {
+    throw new Error('The OG image is not a PNG.');
   }
-  throw new Error('JPEG dimensions were not found.');
+  return { width: contents.readUInt32BE(16), height: contents.readUInt32BE(20) };
 };
 
 beforeAll(async () => {
@@ -172,8 +153,8 @@ describe('build-time public route metadata', () => {
     const robots = readFileSync(resolve(projectRoot, 'public/robots.txt'), 'utf8');
     expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
 
-    const image = readFileSync(resolve(projectRoot, 'public/og-image.jpg'));
-    expect(jpegDimensions(image)).toEqual({ width: 1200, height: 630 });
+    const image = readFileSync(resolve(projectRoot, 'public/og-image.png'));
+    expect(pngDimensions(image)).toEqual({ width: 1200, height: 630 });
   });
 
   it('contains no truncated how-to article route references', () => {

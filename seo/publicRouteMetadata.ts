@@ -2,7 +2,7 @@ import { PRICING } from '../src/features/homepage/pricing';
 
 export const SITE_NAME = 'GridOne';
 export const SITE_URL = 'https://www.getgridone.com';
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export type PublicRouteMetadata = {
   path: string;
@@ -17,7 +17,7 @@ const organization = {
   '@type': 'Organization',
   name: SITE_NAME,
   url: `${SITE_URL}/`,
-  logo: `${SITE_URL}/icons/gridone-icon-256.png`,
+  logo: `${SITE_URL}/icon-512.png`,
 };
 
 const websiteRoute = (

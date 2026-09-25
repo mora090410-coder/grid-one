@@ -34,7 +34,7 @@ export const ChurchSchoolFundraiserSquares: React.FC = () => {
           description,
           mainEntityOfPage: 'https://www.getgridone.com/articles/church-school-football-squares-fundraiser',
           author: { '@type': 'Organization', name: 'GridOne' },
-          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+          publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icon-512.png' } },
         },
         faqPageSchema(faqs),
       ]}

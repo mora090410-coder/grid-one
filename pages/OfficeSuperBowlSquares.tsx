@@ -24,7 +24,7 @@ export const OfficeSuperBowlSquares: React.FC = () => {
         description,
         mainEntityOfPage: 'https://www.getgridone.com/articles/office-super-bowl-squares',
         author: { '@type': 'Organization', name: 'GridOne' },
-        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icons/gridone-icon-256.png' } },
+        publisher: { '@type': 'Organization', name: 'GridOne', logo: { '@type': 'ImageObject', url: 'https://www.getgridone.com/icon-512.png' } },
       }}
       aside={
         <>
