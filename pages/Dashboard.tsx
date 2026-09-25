@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData';
 import { BoardData, GameState, PayoutDescriptions } from '../types';
-import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings } from '../src/design/primitives';
+import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings, Logo } from '../src/design/primitives';
 import { hasBoardActivation } from '../utils/boardActivation';
 import { hasValidAxes } from '../utils/boardValidation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
@@ -251,6 +251,9 @@ const Dashboard: React.FC = () => {
     return (
         <Base kind="cream">
             <main aria-label="Your boards" className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
+                <a href="/" className="inline-flex min-h-11 w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+                    <Logo variant="horizontal" size={28} />
+                </a>
 
                 {dashboardMessage && (
                     <Glass role="alert" className="font-ui text-[15px] text-tone-cardinal">

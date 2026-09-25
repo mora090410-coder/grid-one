@@ -40,15 +40,15 @@ export const emailLinkConfirmPage = ({ title, heading, message, buttonLabel, req
     <meta name="referrer" content="no-referrer">
     <title>${escapeHtml(title)}</title>
   </head>
-  <body style="margin:0;background:#EFF0F1;color:#0E0F12;font-family:Arial,sans-serif">
-    <main style="max-width:560px;margin:64px auto;padding:32px;border:1px solid #DEE0E1;background:#EFF0F1">
-      <p style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8F1D2C">GridOne</p>
+  <body style="margin:0;background:#F6F7F5;color:#13212E;font-family:Arial,sans-serif">
+    <main style="max-width:560px;margin:64px auto;padding:32px;border:1px solid #D9DDD8;background:#FFFFFF">
+      <p style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#13212E;letter-spacing:-.03em;text-transform:none;font-size:18px;font-weight:800">GridOne</p>
       <h1 style="font-size:30px;line-height:1.1">${escapeHtml(heading)}</h1>
       <p>${escapeHtml(message)}</p>
       <form method="post" action="${escapeHtml(action)}">
-        <button type="submit" style="display:inline-block;min-height:44px;border:0;background:#FFC72C;color:#0E0F12;padding:14px 20px;font:inherit;font-size:16px;font-weight:700;cursor:pointer">${escapeHtml(buttonLabel)}</button>
+        <button type="submit" style="display:inline-block;min-height:44px;border:0;background:#13212E;color:#F6F7F5;padding:14px 20px;font:inherit;font-size:16px;font-weight:700;cursor:pointer">${escapeHtml(buttonLabel)}</button>
       </form>
-      <p style="color:#16181D;font-size:13px">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
+      <p style="color:#5B6670;font-size:13px">GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
     </main>
   </body>
 </html>`, {

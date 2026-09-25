@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -76,7 +76,8 @@ describe('Login', () => {
     renderAt(<Login />, '/login');
     const banner = screen.getByRole('banner');
     expect(banner).toBeInTheDocument();
-    expect(banner.querySelector('a[href="/"]')).toHaveTextContent('GridOne');
+    expect(within(banner).getByRole('link', { name: 'GridOne' })).toHaveAttribute('href', '/');
+    expect(within(banner).getByRole('img', { name: 'GridOne' })).toHaveAttribute('aria-label', 'GridOne');
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
     expect(screen.queryByRole('contentinfo')).toBeNull();

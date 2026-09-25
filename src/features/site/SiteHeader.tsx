@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CapsuleButton } from '../../design/primitives';
+import { CapsuleButton, Logo } from '../../design/primitives';
 import { ghostLink } from '../homepage/sections/cta';
 import { useAuth } from '../../../context/AuthContext';
 
 const wordmark =
-  'inline-flex items-center h-11 font-display text-[22px] text-fg rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action';
+  'inline-flex items-center h-11 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action';
 
 const signedOutAuth = { user: null, loading: false, signOut: async () => undefined };
 
@@ -40,7 +40,7 @@ export function SiteHeader({ className = '', hideSignIn = false }: SiteHeaderPro
 
   return (
     <header className={`flex items-center justify-between h-11 ${className}`.trim()}>
-      <Link to="/" className={wordmark}>GridOne</Link>
+      <Link to="/" className={wordmark}><Logo variant="horizontal" tone="reversed" size={30} /></Link>
       {loading ? (
         // The sign-in check is still running. Hold the signed-out link's box,
         // unlabeled, so neither a wrong "Sign in" nor a layout shift appears.

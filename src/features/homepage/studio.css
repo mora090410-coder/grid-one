@@ -94,7 +94,7 @@
 .editorial-close-actions a, .editorial-sample-link { height: auto; min-height: 44px; padding-block: 12px; text-align: center; }
 .editorial-footer { border-top: 1px solid var(--g-hairline); padding-block: 48px 24px; }
 .editorial-footer-guides { display: grid; grid-template-columns: .8fr 1fr 1fr; gap: 48px; }
-.editorial-footer-brand { font: 400 2rem/1.2 var(--g-font-display); margin-bottom: 16px; }
+.editorial-footer-brand { margin-bottom: 16px; }
 .editorial-footer h2 { font-size: 1rem; font-weight: 500; margin-bottom: 12px; }
 .editorial-footer a { height: auto; min-height: 44px; padding-block: 10px; padding-inline: 0; line-height: 1.5; }
 .editorial-footer-legal { display: flex; flex-wrap: wrap; gap: 24px; border-top: 1px solid var(--g-hairline); padding-top: 20px; margin-top: 32px; }

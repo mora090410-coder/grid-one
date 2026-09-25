@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eyebrow } from '../../design/primitives';
+import { Eyebrow, Logo } from '../../design/primitives';
 import { ghostLink } from '../homepage/sections/cta';
 
 const guides: Array<{ path: string; label: string }> = [
@@ -31,7 +31,7 @@ export function SiteFooter() {
         </ul>
       </div>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <span className="font-display text-[18px] text-fg">GridOne</span>
+        <Logo variant="horizontal" tone="reversed" size={24} />
         <Link to="/login?mode=signin" className={ghostLink}>Sign in</Link>
         <Link to="/privacy" className={ghostLink}>Privacy</Link>
         <Link to="/terms" className={ghostLink}>Terms</Link>

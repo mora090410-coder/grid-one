@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-r
 import { AuthProvider } from './context/AuthContext';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Logo } from './src/design/primitives';
 import RequireAuth from './components/auth/RequireAuth';
 
 // Every route is its own chunk, so a phone opening a viewer link never
@@ -59,7 +60,7 @@ const guestInvitePrototypePath = '/dev/guest-invites';
 
 const HomepageProductFallback = () => (
   <main className="min-h-[100dvh] bg-ink px-4 py-8 text-broadcast-white">
-    <p className="text-gold">GridOne</p>
+    <Logo variant="horizontal" tone="reversed" size={32} />
     <h1 className="mt-3 text-4xl font-black">Football-squares fundraiser boards</h1>
     <p className="mt-4">Build the board, share one link, and let GridOne track game day.</p>
     <p className="mt-4">First published board free. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
