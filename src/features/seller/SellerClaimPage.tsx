@@ -110,7 +110,7 @@ export default function SellerClaimPage() {
                 aria-pressed={cell.available ? isSelected : undefined}
                 aria-label={`Square ${cell.index + 1}, ${cell.available ? 'open' : 'taken'}`}
                 onClick={() => setSelected((current) => toggleSquare(current, cell.index))}
-                className={`flex min-h-14 flex-col items-center justify-center rounded-control border font-mono tabular-nums transition-[background-color,border-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${isSelected ? 'border-action bg-action text-action-text' : cell.available ? 'border-hairline bg-panel text-fg hover:bg-panel-hover' : 'border-hairline bg-transparent text-fg-3'}`}>
+                className={`flex min-h-14 flex-col items-center justify-center rounded-control border font-mono tabular-nums transition-[background-color,border-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${isSelected ? 'border-action bg-action text-action-text' : cell.available ? 'border-cell-edge bg-panel text-fg hover:bg-panel-hover' : 'border-cell-edge bg-transparent text-fg-3'}`}>
                 <span aria-hidden="true" className="text-[18px]">{cell.index + 1}</span>
                 <span aria-hidden="true" className="font-ui text-[12px]">{cell.available ? (isSelected ? 'Picked' : 'Open') : 'Taken'}</span>
               </button>;

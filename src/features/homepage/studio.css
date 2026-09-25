@@ -25,8 +25,8 @@
 .editorial-square-list li { padding: 12px; min-height: 90px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--g-hairline); border-radius: var(--g-radius-cell); background: var(--g-stage); }
 .editorial-square-list span { color: var(--g-text-2); font-size: .875rem; }
 .editorial-square-list strong { font-weight: 500; font-size: 1rem; }
-.editorial-square-list .is-selected { border-color: var(--g-tone-cardinal); }
-.editorial-square-list .is-selected span:last-child { color: var(--g-tone-cardinal); }
+.editorial-square-list .is-selected { border-color: var(--g-text); box-shadow: inset 0 0 0 1px var(--g-text); }
+.editorial-square-list .is-selected span:last-child { color: var(--g-text); }
 .editorial-square-detail { border-left: 1px solid var(--g-hairline); padding-left: 20px; }
 .editorial-square-detail h4 { font-size: 1.125rem; font-weight: 500; }
 .editorial-square-detail dt { font-size: .875rem; color: var(--g-text-2); margin-top: 24px; }

@@ -140,7 +140,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
                   onFocus={() => setFocused(cell.index)}
                   onClick={() => { setFocused(cell.index); refs.current[cell.index]?.focus(); }}
                   onKeyDown={event => moveFocus(event, cell.index)}
-                  className={`relative flex aspect-square min-w-0 cursor-pointer flex-col items-center justify-center gap-1 border-b border-r border-hairline p-0.5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gold md:aspect-auto md:min-h-28 md:items-stretch md:justify-start md:p-2 ${held.has(cell.index) ? 'bg-panel-hover ring-1 ring-inset ring-gold' : claimed.has(cell.index) ? 'bg-panel-hover' : matches(cell) && filtered ? 'bg-panel-hover ring-1 ring-inset ring-gold' : 'bg-panel'} ${!matches(cell) ? 'text-fg-3' : 'text-fg'}`}
+                  className={`relative flex aspect-square min-w-0 cursor-pointer flex-col items-center justify-center gap-1 border-b border-r border-cell-edge p-0.5 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-action md:aspect-auto md:min-h-28 md:items-stretch md:justify-start md:p-2 ${held.has(cell.index) ? 'bg-panel-hover ring-2 ring-inset ring-fg' : claimed.has(cell.index) ? 'bg-panel-hover' : matches(cell) && filtered ? 'bg-panel-hover ring-1 ring-inset ring-fg' : 'bg-panel'} ${!matches(cell) ? 'text-fg-3' : 'text-fg'}`}
                 >
                   <span className="font-mono text-xs md:text-fg-3">{cell.number}</span>
                   {!cell.blank && <span aria-hidden="true" className="absolute right-0.5 top-0 font-ui text-[9px] md:hidden">✓</span>}

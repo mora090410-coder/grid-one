@@ -27,7 +27,7 @@ export interface BoardEditorProps {
   onOfferAvailability?: () => void;
 }
 
-const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-gold font-mono text-[13px] rounded-cell';
+const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text-broadcast-white font-mono text-[13px] rounded-cell';
 
 /** Organizer board editor: 11x11 grid with square assignment and a draft draw preview. */
 function BoardEditor({
@@ -249,12 +249,12 @@ function BoardEditor({
                     const family = board.allocationLabels?.[index];
                     const baseLabel = isOpen ? `Square ${index + 1}, unassigned` : `Square ${index + 1}, assigned to ${name}`;
                     const label = family ? `${baseLabel}, allocated to ${family}${isOpen ? ', blank' : ''}` : baseLabel;
-                    const openClasses = 'bg-transparent border border-dashed border-hairline text-fg-3';
-                    const assignedClasses = 'bg-panel text-fg';
-                    const highlightClasses = highlightOpen && isOpen ? 'ring-2 ring-tone-cardinal' : '';
+                    const openClasses = 'bg-cell border border-cell-edge text-fg-3';
+                    const assignedClasses = 'bg-panel border border-cell-edge text-fg';
+                    const highlightClasses = highlightOpen && isOpen ? 'ring-2 ring-action' : '';
                     // The offset ring reads as "picked by me", distinct from the
                     // flush highlight-open ring on the same colour.
-                    const selectedClasses = selected ? 'ring-2 ring-tone-cardinal ring-offset-2 ring-offset-ground bg-tone-cardinal/10' : '';
+                    const selectedClasses = selected ? 'ring-2 ring-action ring-offset-2 ring-offset-ground bg-action/10' : '';
                     return (
                       <button
                         key={index}

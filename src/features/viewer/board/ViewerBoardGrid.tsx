@@ -22,16 +22,24 @@ interface ViewerBoardGridProps {
 
 const controlStyle = { minHeight: 44, minWidth: 44 };
 
+const isWinner = (cell: ViewerBoardCellModel) => cell.states.includes('current') || cell.states.includes('resolved');
+
+/**
+ * Gold means winner: the current match and every published winner are solid
+ * gold with ink text, and nothing else on the board is gold. NOW, C, and the
+ * accessible name carry the difference between them, never color alone.
+ */
 const stateClass = (cell: ViewerBoardCellModel) => {
   const states = cell.states;
-  if (states.includes('corrected') && states.includes('current')) return 'bg-cardinal text-broadcast-white ring-2 ring-inset ring-gold';
-  if (states.includes('corrected')) return 'bg-cardinal text-broadcast-white';
-  if (states.includes('current')) return 'bg-gold text-ink font-medium';
-  if (states.includes('selected') && states.includes('resolved')) return 'bg-panel text-fg border border-gold ring-2 ring-inset ring-tone-cardinal';
-  if (states.includes('selected')) return 'bg-panel-hover text-fg ring-2 ring-inset ring-tone-cardinal';
-  if (states.includes('resolved')) return 'bg-panel text-fg border border-gold';
-  if (states.includes('open')) return 'bg-transparent text-fg-3';
-  return 'bg-panel text-fg';
+  const selected = states.includes('selected') ? ' ring-2 ring-inset ring-fg' : '';
+  if (isWinner(cell)) {
+    const now = states.includes('current') ? (selected ? ' ring-ink' : ' ring-2 ring-inset ring-ink') : '';
+    return `gridone-winner bg-gold text-ink font-medium border border-ink/20${selected}${now}`;
+  }
+  if (states.includes('corrected')) return `bg-chyron text-broadcast-white border border-cell-edge${selected}`;
+  if (states.includes('selected')) return 'bg-panel-hover text-fg border border-cell-edge ring-2 ring-inset ring-fg';
+  if (states.includes('open')) return 'bg-cell text-fg-3 border border-cell-edge';
+  return 'bg-panel text-fg border border-cell-edge';
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -194,7 +202,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
             <tr aria-rowindex={1}>
               <th className="sticky left-0 top-0 z-40 bg-chyron text-broadcast-white rounded-cell font-mono text-[12px] uppercase tracking-[0.08em] p-2" style={{ width: 88, minWidth: 88 }} colSpan={2}>Top · {topLabel}</th>
               {model.topAxis.map((digit, index) => (
-                <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 3} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="sticky top-0 z-30 bg-chyron text-gold font-mono tabular-nums text-[15px] rounded-cell p-2">
+                <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 3} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="sticky top-0 z-30 bg-chyron text-broadcast-white font-mono tabular-nums text-[15px] rounded-cell p-2">
                   {digit}
                 </th>
               ))}
@@ -208,7 +216,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     <div className="flex h-[578px] items-center justify-center px-2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Side · {sideLabel}</div>
                   </th>
                 )}
-                <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-11 z-20 w-11 min-w-11 bg-chyron text-gold font-mono tabular-nums text-[15px] rounded-cell p-2">
+                <th role="rowheader" scope="row" aria-colindex={2} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-11 z-20 w-11 min-w-11 bg-chyron text-broadcast-white font-mono tabular-nums text-[15px] rounded-cell p-2">
                   {model.sideAxis[rowIndex]}
                 </th>
                 {row.map((cell) => (
@@ -238,8 +246,8 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                   >
                     <span className="flex h-full min-h-11 items-center justify-center font-medium">{cell.displayText}</span>
                     <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] group-hover:block group-focus-within:block">{(cell.names.length ? cell.names.join(', ') : 'OPEN')} · {topLabel} {cell.topDigit ?? '?'} across · {sideLabel} {cell.sideDigit ?? '?'} down</span>
-                    {cell.states.includes('current') && <span className={`absolute right-1 top-1 font-mono text-[10px] ${cell.states.includes('corrected') ? 'text-gold' : 'text-ink'}`} aria-hidden="true">NOW</span>}
-                    {cell.states.includes('corrected') && <span className="absolute bottom-1 right-1 font-mono text-[10px] text-broadcast-white" aria-hidden="true">C</span>}
+                    {cell.states.includes('current') && <span className="absolute right-1 top-1 font-mono text-[10px] text-ink" aria-hidden="true">NOW</span>}
+                    {cell.states.includes('corrected') && <span className={`absolute bottom-1 right-1 font-mono text-[10px] ${isWinner(cell) ? 'text-ink' : 'text-broadcast-white'}`} aria-hidden="true">C</span>}
                   </td>
                 ))}
               </tr>

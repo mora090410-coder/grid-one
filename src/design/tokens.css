@@ -259,6 +259,9 @@
   --g-action-text: var(--g-ink);
   --g-shadow: 0 24px 48px rgba(12, 21, 30, 0.45);
   --g-glow: color-mix(in srgb, var(--g-white) 14%, transparent);
+  /* Board squares: open fill and every square's edge. */
+  --g-cell: var(--g1-dark-cell);
+  --g-cell-edge: var(--g1-dark-line);
   --g-tone-turf: #8CCBA6;
   --g-tone-live: var(--g-live);
   --g-tone-cardinal: #F2B8C0;
@@ -280,6 +283,8 @@
   --g-action-text: var(--g-white);
   --g-shadow: 0 24px 48px rgba(19, 33, 46, 0.06);
   --g-glow: color-mix(in srgb, var(--g-ink) 6%, transparent);
+  --g-cell: var(--g1-cell);
+  --g-cell-edge: var(--g1-line);
   --g-tone-turf: var(--g-turf);
   --g-tone-live: #0F5A2A;
   --g-tone-cardinal: var(--g-cardinal);

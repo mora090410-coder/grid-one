@@ -75,7 +75,7 @@ export default function GuestClaimBoard({ snapshot, sellerLabel = 'this seller',
               onFocus={() => setFocused(index)}
               onKeyDown={event => move(event, index)}
               onClick={() => { if (selectable && pendingIndex === null) onToggle(index); }}
-              className={`flex min-h-20 w-full flex-col items-start justify-between gap-2 rounded-control border border-hairline p-3 text-left font-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${pressed ? 'bg-gold text-ink' : state === 'available' ? 'bg-panel-hover text-fg' : 'bg-panel text-fg-3'}`}
+              className={`flex min-h-20 w-full flex-col items-start justify-between gap-2 rounded-control border border-hairline p-3 text-left font-ui focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${pressed ? 'bg-action text-action-text' : state === 'available' ? 'bg-panel-hover text-fg' : 'bg-panel text-fg-3'}`}
             >
               <span className="font-mono text-sm">Square {index + 1}</span>
               <span title={occupiedName || undefined} className="w-full truncate text-xs">{occupiedName || (state === 'held-by-you' ? 'Held for you' : state === 'held' ? 'Temporarily held' : state === 'claimed' ? 'Claimed' : state === 'available' ? 'Available' : 'Unavailable')}</span>

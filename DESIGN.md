@@ -123,6 +123,7 @@ Normative current-production baseline. The Corner Square identity (adopted Septe
 - **Logo:** Corner Square. A G drawn in one heavy stroke, with its top right corner broken off as a gold square. One `Logo` component (`src/design/primitives/Logo.tsx`) renders the kit's SVG files unchanged, in mark, horizontal, and stacked variants and color, reversed, black, and white tones. Its accessible name is always "GridOne".
 - **Secondary pattern:** Square One. The 10 by 10 board with one gold square, for loading, empty states, and share images. Never the logo.
 - **The one rule: gold means winner.** Gold (`--g-gold`) is only for the logo corner and winning squares (the current match, a published past winner, and the matching-square emphasis). It is never text, a button, a link, a focus ring, a glow, a tint, or a status tag.
+- **Board:** open squares use the brand cell fill (`--g-cell`) with brand line edges (`--g-cell-edge`); claimed squares are text on surface with the same edges; axis digits are chalk on the raised chyron. Winning squares carry `gridone-winner` and a solid gold fill with ink text, and are the only gold on the board. A selected square takes an ink (chalk on the dark base) ring. NOW, C, and the accessible name separate the current match from past winners, never color alone.
 - **Name:** always GridOne. One word, capital G, capital O.
 
 ## Exploration and intentional adoption

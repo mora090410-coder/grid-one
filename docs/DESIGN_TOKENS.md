@@ -56,6 +56,8 @@
 | Action fill | `--g-action` | `bg-action` | chalk | ink |
 | Action hover | `--g-action-hover` | `bg-action-hover` | line | deepest ink |
 | Action text | `--g-action-text` | `text-action-text` | ink | chalk |
+| Open square fill | `--g-cell` | `bg-cell` | `--g1-dark-cell` | `--g1-cell` |
+| Square edge | `--g-cell-edge` | `border-cell-edge` | `--g1-dark-line` | `--g1-line` |
 | Settled tag | `--g-tone-turf` | `text-tone-turf` | `#8CCBA6` | turf |
 | Shadow | `--g-shadow` | `shadow-[var(--g-shadow)]` | 45% deep ink | 6% ink |
 | Spotlight | `--g-glow` | used by `Spotlight` | chalk 14% | ink 6% |

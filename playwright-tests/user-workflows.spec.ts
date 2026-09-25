@@ -246,8 +246,8 @@ test('published viewer renders the board and persists its canonical square selec
   await page.getByLabel('Name used on board').press('Enter');
 
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
-  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-fg(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-fg(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 
   // Stored by participant id so Ann and Anna (same public label) stay apart.
@@ -257,15 +257,15 @@ test('published viewer renders the board and persists its canonical square selec
 
   await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
-  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-fg(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Anna,/ })).not.toHaveClass(/(?:^|\s)ring-2 ring-inset ring-fg(?:\s|$)/);
   await expect(page.getByText(/Quarter-winner email for Ann/i)).toBeVisible();
 
   // A returning viewer saved before participant ids (version 1) keeps the selection.
   await page.evaluate(() => localStorage.setItem('gridone:find-squares:ABCDEFGH', JSON.stringify({ version: 1, displayName: 'Ann' })));
   await page.reload();
   await expect(page.getByText('1 square', { exact: true })).toBeVisible();
-  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-tone-cardinal(?:\s|$)/);
+  await expect(page.getByRole('gridcell', { name: /^Ann,/ })).toHaveClass(/(?:^|\s)ring-2 ring-inset ring-fg(?:\s|$)/);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('gridone:find-squares:ABCDEFGH') ?? 'null'))).toEqual({
     version: 2, participantId: 'participant-ann', displayName: 'Ann',
   });

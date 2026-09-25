@@ -8,6 +8,8 @@
   --color-panel: var(--g-panel);
   --color-panel-hover: var(--g-panel-hover);
   --color-hairline: var(--g-hairline);
+  --color-cell: var(--g-cell);
+  --color-cell-edge: var(--g-cell-edge);
   --color-fg: var(--g-text);
   --color-fg-2: var(--g-text-2);
   --color-fg-3: var(--g-text-3);

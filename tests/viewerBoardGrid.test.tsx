@@ -115,8 +115,7 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(ann).toHaveAttribute('data-resolved', 'true');
     expect(ann).toHaveAttribute('data-corrected', 'true');
     expect(ann).toHaveAttribute('data-open', 'false');
-    expect(ann).toHaveClass('ring-gold');
-    expect(ann).toHaveClass('text-broadcast-white');
+    expect(ann).toHaveClass('gridone-winner', 'bg-gold', 'text-ink', 'ring-ink');
     expect(within(ann).getByText('NOW')).toBeVisible();
     expect(within(ann).getByText('C')).toBeVisible();
 
@@ -127,8 +126,32 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(selectedResolved).toHaveAttribute('aria-selected', 'true');
     expect(selectedResolved).toHaveAttribute('data-current', 'false');
     expect(selectedResolved).toHaveAttribute('data-resolved', 'true');
-    expect(selectedResolved).toHaveClass('border-gold');
-    expect(selectedResolved).toHaveClass('ring-tone-cardinal');
+    expect(selectedResolved).toHaveClass('gridone-winner', 'bg-gold', 'ring-fg');
+  });
+
+  it('paints winning squares, and only winning squares, solid gold', () => {
+    renderGrid();
+    const cells = within(screen.getByRole('grid', { name: /football squares board/i })).getAllByRole('gridcell');
+    const winners = cells.filter((cell) => cell.getAttribute('data-current') === 'true' || cell.getAttribute('data-resolved') === 'true');
+    expect(winners.length).toBeGreaterThan(0);
+    for (const cell of cells) {
+      const winner = winners.includes(cell);
+      expect(cell.classList.contains('gridone-winner'), cell.getAttribute('aria-label')!).toBe(winner);
+      expect(cell.classList.contains('bg-gold'), cell.getAttribute('aria-label')!).toBe(winner);
+      // Gold is a fill, never an edge, ring, or text color on the board.
+      expect(cell.className).not.toMatch(/(?:border|ring|text)-gold\b/);
+      expect(cell.innerHTML).not.toMatch(/(?:border|ring|text)-gold\b/);
+    }
+  });
+
+  it('draws open squares as brand cells and claimed squares on surface', () => {
+    const claimedBoard = { ...board, squares: board.squares.map((names, index) => (index === 55 ? ['Bo Diaz'] : names)) };
+    render(<ViewerBoardGrid board={claimedBoard} game={game} live={live} highlights={{ quarterWinners: {}, currentLabel: 'NOW' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="" showOpenSquares />);
+    const grid = screen.getByRole('grid', { name: /football squares board/i });
+    const open = within(grid).getByRole('gridcell', { name: /OPEN.*coordinate row 1 column 2/i });
+    expect(open).toHaveClass('bg-cell', 'border-cell-edge');
+    const claimed = within(grid).getByRole('gridcell', { name: /Bo Diaz/ });
+    expect(claimed).toHaveClass('bg-panel', 'text-fg', 'border-cell-edge');
   });
 
   it('gives every cell a short reveal with its name and digits', () => {
