@@ -18,6 +18,14 @@ import { describe, expect, it } from 'vitest';
  */
 
 const css = readFileSync('src/design/tokens.css', 'utf8');
+const brandCss = readFileSync('src/styles/tokens.css', 'utf8');
+
+/** Resolve `var(--g1-x)` to the hex the brand tokens ship. */
+const brandHex = (value: string): string => {
+  const m = value.match(/^var\((--g1-[\w-]+)\)$/);
+  if (!m) return value;
+  return one(brandCss, m[1], new RegExp(`${m[1]}:\\s*(#[0-9A-Fa-f]{6})\\s*;`));
+};
 const designMd = readFileSync('DESIGN.md', 'utf8');
 const tokensMd = readFileSync('docs/DESIGN_TOKENS.md', 'utf8');
 
@@ -33,7 +41,7 @@ function one(source: string, label: string, re: RegExp): string {
 describe('design docs do not drift from the shipped tokens', () => {
   it('names the same dark ground hex in tokens.css, DESIGN.md, and DESIGN_TOKENS.md', () => {
     const dark = css.slice(css.indexOf('[data-base="dark"]'), css.indexOf('[data-base="cream"]'));
-    const shipped = one(dark, 'dark --g-ground', /--g-ground:\s*(#[0-9A-Fa-f]{6})\s*;/).toUpperCase();
+    const shipped = brandHex(one(dark, 'dark --g-ground', /--g-ground:\s*([^;]+);/).trim()).toUpperCase();
 
     // DESIGN.md carries it twice: once as design-system front matter, once in prose.
     const frontMatter = one(designMd, 'DESIGN.md ground-dark front matter', /ground-dark:\s*"(#[0-9A-Fa-f]{6})"/).toUpperCase();
@@ -47,7 +55,7 @@ describe('design docs do not drift from the shipped tokens', () => {
 
   it('names the same ambient-tint percentage everywhere', () => {
     // `transparent N%` in the mix, so the tint's own strength is 100 - N.
-    const tints = [...css.matchAll(/--g-tint-(cardinal|live|gold):\s*color-mix\(in srgb,\s*transparent\s*([\d.]+)%/g)];
+    const tints = [...css.matchAll(/--g-tint-(cardinal|live|turf):\s*color-mix\(in srgb,\s*transparent\s*([\d.]+)%/g)];
     expect(tints, 'three ambient tint tokens in tokens.css').toHaveLength(3);
     const strengths = new Set(tints.map(([, , transparent]) => 100 - Number(transparent)));
     expect(strengths.size, 'all three tints share one cap').toBe(1);
@@ -58,7 +66,7 @@ describe('design docs do not drift from the shipped tokens', () => {
 
     // The DESIGN_TOKENS table names the cap once per tone, and the paragraph
     // under it names the cap again as the contrast ceiling. All four must move.
-    for (const tone of ['cardinal', 'live', 'gold'] as const) {
+    for (const tone of ['cardinal', 'live', 'turf'] as const) {
       const row = Number(one(tokensMd, `DESIGN_TOKENS.md ${tone} tint row`, new RegExp(`\\|\\s*\`--g-tint-${tone}\`\\s*\\|[^|]*\\|\\s*${tone} ([\\d.]+)%\\s*\\|`)));
       expect(row, `docs/DESIGN_TOKENS.md ${tone} tint row`).toBe(shipped);
     }
@@ -75,15 +83,14 @@ describe('design docs do not drift from the shipped tokens', () => {
     expect(table, 'docs/DESIGN_TOKENS.md island-and-chyron row').toBe(shipped);
   });
 
-  it('names the same muted-text alpha on both bases', () => {
+  it('names the same muted-text token on both bases', () => {
     const dark = css.slice(css.indexOf('[data-base="dark"]'), css.indexOf('[data-base="cream"]'));
     const cream = css.slice(css.indexOf('[data-base="cream"]'));
-    const alpha = (source: string, label: string) =>
-      Math.round(Number(one(source, label, /--g-text-3:\s*rgba\([^)]*?,\s*([\d.]+)\s*\)/)) * 100);
+    const muted = (source: string, label: string) => one(source, label, /--g-text-3:\s*var\((--g1-[\w-]+)\)\s*;/);
 
-    const row = one(tokensMd, 'DESIGN_TOKENS.md text-muted row', /\|\s*Text muted\s*\|[^|]*\|[^|]*\|\s*(\d+% \| \d+%)\s*\|/);
-    expect(row, 'docs/DESIGN_TOKENS.md text-muted row').toBe(
-      `${alpha(dark, 'dark --g-text-3')}% | ${alpha(cream, 'cream --g-text-3')}%`,
-    );
+    const row = one(tokensMd, 'DESIGN_TOKENS.md text-muted row', /\|\s*Text muted\s*\|[^|]*\|[^|]*\|\s*(`[^`]+` \| `[^`]+`)\s*\|/);
+    const [darkDoc, creamDoc] = [...row.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+    expect(darkDoc, 'docs/DESIGN_TOKENS.md text-muted dark').toBe(muted(dark, 'dark --g-text-3'));
+    expect(creamDoc, 'docs/DESIGN_TOKENS.md text-muted cream').toBe(muted(cream, 'cream --g-text-3'));
   });
 });

@@ -13,7 +13,7 @@ const FindSquaresEntry: React.FC<FindSquaresEntryProps> = ({ selectedPlayer, onF
       <div className="flex flex-wrap items-center justify-between gap-3" aria-live="polite">
         <div className="flex flex-col gap-1">
           <Eyebrow>Selected name</Eyebrow>
-          <CapsuleTag tone="gold">{selectedPlayer}</CapsuleTag>
+          <CapsuleTag tone="turf">{selectedPlayer}</CapsuleTag>
         </div>
         <div className="flex items-center gap-2">
           <CapsuleButton variant="quiet" onClick={onFindSquares}>Choose another name</CapsuleButton>

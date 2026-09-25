@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const css = readFileSync('src/design/tokens.css', 'utf8');
+const brandCss = readFileSync('src/styles/tokens.css', 'utf8');
 
 /** Pull `--name: value;` out of a specific `selector { ... }` block. */
-function block(selector: string): string {
+function block(selector: string, source = css): string {
   const re = new RegExp(`^${selector}\\s*\\{([^}]*)\\}`, "m");
-  const match = css.match(re);
+  const match = source.match(re);
   if (!match) throw new Error(`Could not find block for ${selector}`);
   return match[1];
 }
@@ -18,15 +19,17 @@ function readVar(source: string, name: string): string {
   return match[1].trim();
 }
 
-const rootBlock = block(':root');
+// The semantic :root tokens are built from the brand :root tokens.
+const rootBlock = `${block(':root', brandCss)}\n${block(':root')}`;
 const darkBlock = block('\\[data-base="dark"\\]');
 const creamBlock = block('\\[data-base="cream"\\]');
 
-/** Resolve a value that may be `var(--x)` (one level of indirection, against :root). */
-function resolveVar(value: string): string {
+/** Resolve a value that may be `var(--x)`, through any number of indirections, against a base block then :root. */
+function resolveVar(value: string, scope = ''): string {
   const m = value.match(/^var\((--[\w-]+)\)$/);
   if (!m) return value;
-  return readVar(rootBlock, m[1]);
+  const inScope = scope.match(new RegExp(`${m[1]}:\\s*([^;]+);`));
+  return resolveVar(inScope ? inScope[1].trim() : readVar(rootBlock, m[1]), scope);
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -73,9 +76,9 @@ function composite(fg: [number, number, number], alpha: number, bg: [number, num
 }
 
 /** Contrast of a (possibly translucent) token value against a ground, both raw strings from tokens.css. */
-function contrastAgainstGround(rawValue: string, groundValue: string): number {
-  const ground = parseRgba(resolveVar(groundValue)).rgb;
-  const { rgb, alpha } = parseRgba(resolveVar(rawValue));
+function contrastAgainstGround(rawValue: string, groundValue: string, scope = ''): number {
+  const ground = parseRgba(resolveVar(groundValue, scope)).rgb;
+  const { rgb, alpha } = parseRgba(resolveVar(rawValue, scope));
   const composited = alpha < 1 ? composite(rgb, alpha, ground) : rgb;
   return contrastRatio(composited, ground);
 }
@@ -99,14 +102,14 @@ describe('token contrast (WCAG 2.x, ratio >= 4.5)', () => {
   });
 
   it('dark base tone colors pass on dark ground', () => {
-    for (const name of ['--g-tone-gold', '--g-tone-live', '--g-tone-cardinal']) {
+    for (const name of ['--g-tone-turf', '--g-tone-live', '--g-tone-cardinal']) {
       const c = contrastAgainstGround(readVar(darkBlock, name), darkGround);
       expect(c, `${name} on dark ground`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
   it('cream base tone colors pass on cream ground', () => {
-    for (const name of ['--g-tone-gold', '--g-tone-live', '--g-tone-cardinal']) {
+    for (const name of ['--g-tone-turf', '--g-tone-live', '--g-tone-cardinal']) {
       const c = contrastAgainstGround(readVar(creamBlock, name), creamGround);
       expect(c, `${name} on cream ground`).toBeGreaterThanOrEqual(4.5);
     }
@@ -120,21 +123,50 @@ function parseTint(value: string): { rgb: [number, number, number]; alpha: numbe
   return { rgb: parseRgba(resolveVar(readVar(rootBlock, m[2]))).rgb, alpha: (100 - Number(m[1])) / 100 };
 }
 
-describe('lifted dark ground', () => {
+describe('brand ink dark ground', () => {
   const ground = parseRgba(resolveVar(darkGround)).rgb;
 
-  it('is #14161D and clears AA for all three dark text tokens', () => {
-    expect(ground).toEqual([20, 22, 29]);
+  it('is brand ink #13212E and clears AA for all three dark text tokens', () => {
+    expect(ground).toEqual([19, 33, 46]);
     for (const name of ['--g-text', '--g-text-2', '--g-text-3']) {
       const c = contrastAgainstGround(readVar(darkBlock, name), darkGround);
-      expect(c, `${name} on the lifted dark ground`).toBeGreaterThanOrEqual(4.5);
+      expect(c, `${name} on the ink ground`).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('keeps the raised chyron visibly above the ink ground', () => {
+    expect(contrastAgainstGround(readVar(rootBlock, '--g-chyron'), darkGround)).toBeGreaterThanOrEqual(1.25);
+  });
+});
+
+describe('brand pairs (WCAG AA)', () => {
+  const rgb = (name: string) => parseRgba(resolveVar(`var(${name})`)).rgb;
+
+  it('ink on chalk and chalk on ink pass AA', () => {
+    expect(contrastRatio(rgb('--g1-ink'), rgb('--g1-chalk'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('action text passes AA on its action fill on both bases', () => {
+    for (const scope of [darkBlock, creamBlock]) {
+      const fill = parseRgba(resolveVar(readVar(scope, '--g-action'), scope)).rgb;
+      const text = parseRgba(resolveVar(readVar(scope, '--g-action-text'), scope)).rgb;
+      expect(contrastRatio(fill, text)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('ink text passes AA on a gold winning square', () => {
+    expect(contrastRatio(rgb('--g1-ink'), rgb('--g1-gold'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('secondary stone text passes AA on chalk and on white cards', () => {
+    expect(contrastRatio(rgb('--g1-stone'), rgb('--g1-chalk'))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(rgb('--g1-stone'), rgb('--g1-surface'))).toBeGreaterThanOrEqual(4.5);
   });
 });
 
 describe('ambient tints keep text at AA', () => {
   const ground = parseRgba(resolveVar(darkGround)).rgb;
-  const TINTS = ['--g-tint-cardinal', '--g-tint-live', '--g-tint-gold'] as const;
+  const TINTS = ['--g-tint-cardinal', '--g-tint-live', '--g-tint-turf'] as const;
 
   it('caps every tint so the smallest text token still passes over it', () => {
     for (const tintName of TINTS) {
@@ -147,14 +179,14 @@ describe('ambient tints keep text at AA', () => {
         const { rgb: textRgb, alpha: textAlpha } = parseRgba(resolveVar(readVar(darkBlock, textName)));
         const text = textAlpha < 1 ? composite(textRgb, textAlpha, tinted) : textRgb;
         const c = contrastRatio(text, tinted);
-        expect(c, `${textName} over ${tintName} over the lifted ground`).toBeGreaterThanOrEqual(4.5);
+        expect(c, `${textName} over ${tintName} over the ink ground`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
 
-  it('holds every tint at or below 22% of its brand color', () => {
+  it('holds every tint at or below 20% of its brand color', () => {
     for (const tintName of TINTS) {
-      expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.22);
+      expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.20);
     }
   });
 });

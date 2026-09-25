@@ -1,148 +1,38 @@
-/* Broadcast Glass tokens. Single source of truth. See DESIGN.md. */
+/* GridOne semantic tokens. Built from the brand tokens in src/styles/tokens.css.
+   See DESIGN.md. */
 
 /* Web fonts, self-hosted from public/fonts/ (SIL OFL 1.1, see OFL-*.txt there).
-   These rules mirror what fonts.googleapis.com served for
-   Instrument Serif (ital 0,1), Geist (400/500/600) and Geist Mono (400/500):
-   same families, weights, styles, files and unicode-range subsets, so the
-   page renders exactly as before without a cross-origin, render-blocking
-   stylesheet. Geist and Geist Mono are variable fonts, so every weight of a
-   subset points at one file. A subset file downloads only when the page
-   contains a character in its unicode-range (a typed name like "Łukasz" or
-   "Nguyễn" still renders in Geist). /fonts/* is cached as immutable, so a
-   changed font file must get a new file name. */
-/* Geist 400 normal, cyrillic-ext */
+   Archivo is the brand face for display and interface text. It is a variable
+   font, so one file per subset serves every weight from 100 to 900. Geist Mono
+   stays for tabular data and eyebrows. A subset file downloads only when the
+   page contains a character in its unicode-range. Archivo has no Cyrillic
+   subset; a typed Cyrillic name falls back to the system sans. /fonts/* is
+   cached as immutable, so a changed font file must get a new file name. */
+/* Archivo variable 100-900 normal, vietnamese */
 @font-face {
-  font-family: "Geist";
+  font-family: "Archivo";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-ext-2317fa4b.woff2") format("woff2");
-  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-}
-/* Geist 400 normal, cyrillic */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-68944396.woff2") format("woff2");
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-/* Geist 400 normal, vietnamese */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/geist-v5-vietnamese-8fa40e5d.woff2") format("woff2");
+  src: url("/fonts/archivo-v5-vietnamese-5a621c55.woff2") format("woff2");
   unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
 }
-/* Geist 400 normal, latin-ext */
+/* Archivo variable 100-900 normal, latin-ext */
 @font-face {
-  font-family: "Geist";
+  font-family: "Archivo";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/geist-v5-latin-ext-824f485b.woff2") format("woff2");
+  src: url("/fonts/archivo-v5-latin-ext-ff4f17d2.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
-/* Geist 400 normal, latin */
+/* Archivo variable 100-900 normal, latin */
 @font-face {
-  font-family: "Geist";
+  font-family: "Archivo";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/geist-v5-latin-19f9c925.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-/* Geist 500 normal, cyrillic-ext */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-ext-2317fa4b.woff2") format("woff2");
-  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-}
-/* Geist 500 normal, cyrillic */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-68944396.woff2") format("woff2");
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-/* Geist 500 normal, vietnamese */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/geist-v5-vietnamese-8fa40e5d.woff2") format("woff2");
-  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-}
-/* Geist 500 normal, latin-ext */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/geist-v5-latin-ext-824f485b.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Geist 500 normal, latin */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/geist-v5-latin-19f9c925.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-/* Geist 600 normal, cyrillic-ext */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-ext-2317fa4b.woff2") format("woff2");
-  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-}
-/* Geist 600 normal, cyrillic */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/geist-v5-cyrillic-68944396.woff2") format("woff2");
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-/* Geist 600 normal, vietnamese */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/geist-v5-vietnamese-8fa40e5d.woff2") format("woff2");
-  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-}
-/* Geist 600 normal, latin-ext */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/geist-v5-latin-ext-824f485b.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Geist 600 normal, latin */
-@font-face {
-  font-family: "Geist";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/geist-v5-latin-19f9c925.woff2") format("woff2");
+  src: url("/fonts/archivo-v5-latin-8f704806.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 /* Geist Mono 400 normal, cyrillic-ext */
@@ -253,64 +143,35 @@
   src: url("/fonts/geist-mono-v6-latin-684ad5b5.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-/* Instrument Serif 400 italic, latin-ext */
-@font-face {
-  font-family: "Instrument Serif";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/instrument-serif-v5-latin-ext-italic-d0014821.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Instrument Serif 400 italic, latin */
-@font-face {
-  font-family: "Instrument Serif";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/instrument-serif-v5-latin-italic-5a51946d.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-/* Instrument Serif 400 normal, latin-ext */
-@font-face {
-  font-family: "Instrument Serif";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/instrument-serif-v5-latin-ext-290e6267.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-/* Instrument Serif 400 normal, latin */
-@font-face {
-  font-family: "Instrument Serif";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/instrument-serif-v5-latin-5eb09b5a.woff2") format("woff2");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
 
 :root {
-  /* Locked palette */
+  /* Core palette, built from the brand tokens (src/styles/tokens.css).
+     Gold means winner: it is only for the logo corner and winning squares.
+     It is never text, a button, a link, a focus ring, a glow, or a tint. */
+  --g-ink: var(--g1-ink);
+  --g-white: var(--g1-chalk);
+  --g-gold: var(--g1-gold);
+  /* Pressed winner fill. Winner squares only. */
+  --g-gold-deep: #C08A0E;
+  /* Success and settled states (Drawn, Published, Paid). Sparingly. */
+  --g-turf: var(--g1-turf);
+  --g-newsprint: var(--g1-line);
+  /* Errors and destructive confirmations only, always with explicit text.
+     Not a brand color: the brand has no red, and actions are ink. */
   --g-cardinal: #8F1D2C;
   --g-cardinal-deep: #6E1622;
-  --g-gold: #FFC72C;
-  --g-gold-deep: #E0A600;
+  /* An in-progress NFL game and nothing else. */
   --g-live: #22C55E;
-  --g-ink: #0E0F12;
   /* Raised surface for the island, the chyron strip, and the board axis rails.
-     It has to sit visibly ABOVE --g-ground. When the dark ground was lifted to
-     #14161D this token was left at #16181D and the step collapsed to 1.02:1 —
-     the axis rails and the score island stopped reading as raised at all.
-     #282B32 restores the separation at 1.28:1. Text on it is unaffected:
-     broadcast white is 12.42:1 and gold 9.08:1, both far past AA. */
-  --g-chyron: #282B32;
-  --g-white: #EFF0F1;
-  --g-newsprint: #DEE0E1;
+     It has to sit visibly ABOVE the ink ground (--g-ground on the dark base).
+     #213549 is brand ink lifted in its own hue, 1.30:1 over the ground, the
+     same step the earlier palette needed so the axis rails and the score
+     island still read as raised. Chalk text on it is 11.7:1. */
+  --g-chyron: #213549;
 
   /* Shape */
-  --g-radius-control: 12px;
-  --g-radius-card: 20px;
+  --g-radius-control: var(--g1-radius);
+  --g-radius-card: var(--g1-radius-lg);
   --g-radius-capsule: 999px;
   --g-radius-cell: 4px;
   /* Shared top-attached board companion. Spring response/damping live in notchMotion.ts. */
@@ -321,10 +182,12 @@
   --g-notch-detail-width: 21rem;
   --g-notch-connector-height: 10px;
 
-  /* Type */
-  --g-font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
-  --g-font-ui: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif;
+  /* Type. One brand face, Archivo, for display and interface text. Display
+     headings and the wordmark take the brand's tight tracking. */
+  --g-font-display: var(--g1-font);
+  --g-font-ui: var(--g1-font);
   --g-font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --g-tracking-display: var(--g1-tracking-tight);
 
   /* Motion */
   --g-ease-state: cubic-bezier(0.2, 0, 0, 1);
@@ -335,90 +198,89 @@
   /* Glass */
   --g-blur: 20px;
 
-  /* Marketing stage. Near-black cinematic ground for the public home page,
-     the create preview, and the demo board chrome. Neutrals only — no new hue.
-     This does not replace --g-ground; viewer and article pages stay lifted. */
-  --g-stage: #07080B;
+  /* Marketing stage. Brand ink ground for the public home page, the create
+     preview, and the demo board chrome, so the reversed logo's ink tile sits
+     flush on it. Glass is ink lifted in its own hue. */
+  --g-stage: var(--g1-ink);
   --g-glass: rgba(255, 255, 255, 0.10);
-  --g-glass-fill: rgba(40, 42, 50, 0.94);
-  --g-glass-edge: rgba(255, 255, 255, 0.28);
-  --g-glass-sheen: rgba(255, 255, 255, 0.16);
-  --g-stage-light: rgba(255, 255, 255, 0.88);
+  --g-glass-fill: rgba(33, 53, 73, 0.94);
+  --g-glass-edge: rgba(255, 255, 255, 0.22);
+  --g-glass-sheen: rgba(255, 255, 255, 0.10);
+  --g-stage-light: rgba(255, 255, 255, 0.32);
   --g-shadow-float:
-    0 1px 0 rgba(255, 255, 255, 0.22) inset,
-    0 24px 48px rgba(0, 0, 0, 0.55),
-    0 0 72px rgba(255, 255, 255, 0.05);
-  /* Gold as light around a primary action. Static; never a pulse. */
-  --g-cta-glow: color-mix(in srgb, var(--g-gold) 55%, transparent);
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 24px 48px rgba(12, 21, 30, 0.55),
+    0 0 72px rgba(255, 255, 255, 0.04);
+  /* Soft chalk light around a primary action. Static; never a pulse. Never gold. */
+  --g-cta-glow: color-mix(in srgb, var(--g-white) 22%, transparent);
 
   /* Rim light. ONE hue — white — at three alphas, so the highlight is a
      specular edge and never a second color creeping into the palette. The
      fade stop is written as `rgba(255, 255, 255, 0)` and not `transparent`:
      `transparent` is transparent BLACK, and interpolating white to it in sRGB
-     walks through grey, which reads as a dirty smudge on the frame's edge.
-     These are base-agnostic on purpose — the only surface that uses them is
-     the homepage device frame, which is a dark-base artifact. */
+     walks through grey, which reads as a dirty smudge on the frame's edge. */
   --g-rim: rgba(255, 255, 255, 0.55);
   --g-rim-soft: rgba(255, 255, 255, 0.14);
   --g-rim-none: rgba(255, 255, 255, 0);
 
   /* Tone fallbacks for tags rendered outside a Base; each base overrides. */
-  --g-tone-gold: var(--g-gold);
+  --g-tone-turf: var(--g-turf);
   --g-tone-live: var(--g-live);
   --g-tone-cardinal: var(--g-cardinal);
 
-  /* Ambient ground tints. Derived from the locked palette, never new hues.
+  /* Ambient ground tints. Derived from the palette, never new hues, never gold.
      Used only by SectionTone as large, soft, low-alpha light behind content.
-     Capped at 22% so body text over a tint still clears WCAG AA: the tightest
-     pair is --g-text-2 over the gold tint at 4.53:1, measured at FULL token
-     alpha over the #14161D ground, which is stricter than anything that can
-     render (SectionTone additionally caps the layer at 0.75 opacity and the
-     radial falls off from its centre). Raising a tint past 22% breaks AA.
+     Capped at 20% so body text over a tint still clears WCAG AA, measured at
+     FULL token alpha over the ink ground, which is stricter than anything that
+     can render (SectionTone additionally caps the layer at 0.75 opacity and
+     the radial falls off from its centre). Raising a tint past 20% breaks AA.
 
      `transparent` is written FIRST on purpose. A build that downlevels
      color-mix for old engines substitutes the mix's first color, so the
      fallback is no tint at all rather than a full-strength brand blob. */
-  --g-tint-cardinal: color-mix(in srgb, transparent 78%, var(--g-cardinal));
-  --g-tint-live: color-mix(in srgb, transparent 78%, var(--g-live));
-  --g-tint-gold: color-mix(in srgb, transparent 78%, var(--g-gold));
+  --g-tint-cardinal: color-mix(in srgb, transparent 80%, var(--g-cardinal));
+  --g-tint-live: color-mix(in srgb, transparent 80%, var(--g-live));
+  --g-tint-turf: color-mix(in srgb, transparent 80%, var(--g-turf));
 }
 
-/* Dark base: viewer and homepage. Gold is the only action color. */
+/* Dark base: viewer and homepage. Brand ink ground. The ink action inverts to
+   chalk with ink text. */
 [data-base="dark"] {
   color-scheme: dark;
-  --g-ground: #14161D;
+  --g-ground: var(--g1-ink);
   --g-panel: rgba(255, 255, 255, 0.07);
   --g-panel-hover: rgba(255, 255, 255, 0.10);
   --g-hairline: rgba(255, 255, 255, 0.12);
-  --g-text: var(--g-white);
-  --g-text-2: rgba(239, 240, 241, 0.60);
-  --g-text-3: rgba(239, 240, 241, 0.64);
-  --g-action: var(--g-gold);
-  --g-action-hover: var(--g-gold-deep);
+  --g-text: var(--g1-dark-text);
+  --g-text-2: var(--g1-dark-stone);
+  --g-text-3: var(--g1-dark-stone);
+  --g-action: var(--g-white);
+  --g-action-hover: var(--g1-line);
   --g-action-text: var(--g-ink);
-  --g-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
-  --g-glow: color-mix(in srgb, var(--g-cardinal) 55%, transparent);
-  --g-tone-gold: var(--g-gold);
+  --g-shadow: 0 24px 48px rgba(12, 21, 30, 0.45);
+  --g-glow: color-mix(in srgb, var(--g-white) 14%, transparent);
+  --g-tone-turf: #8CCBA6;
   --g-tone-live: var(--g-live);
   --g-tone-cardinal: #F2B8C0;
 }
 
-/* Cream base: organizer. Cardinal is the action color. */
+/* Light base: organizer. Named "cream" for continuity; it renders brand chalk
+   with white cards and brand line edges. Ink is the action color. */
 [data-base="cream"] {
   color-scheme: light;
-  --g-ground: #F5F1EA;
-  --g-panel: rgba(255, 255, 255, 0.70);
-  --g-panel-hover: rgba(255, 255, 255, 0.85);
-  --g-hairline: rgba(14, 15, 18, 0.08);
+  --g-ground: var(--g1-chalk);
+  --g-panel: var(--g1-surface);
+  --g-panel-hover: color-mix(in srgb, var(--g1-ink) 4%, var(--g1-surface));
+  --g-hairline: var(--g1-line);
   --g-text: var(--g-ink);
-  --g-text-2: rgba(14, 15, 18, 0.60);
-  --g-text-3: rgba(14, 15, 18, 0.62);
-  --g-action: var(--g-cardinal);
-  --g-action-hover: var(--g-cardinal-deep);
-  --g-action-text: #FFFFFF;
-  --g-shadow: 0 24px 48px rgba(14, 15, 18, 0.06);
-  --g-glow: color-mix(in srgb, var(--g-gold) 30%, transparent);
-  --g-tone-gold: #6B5000;
+  --g-text-2: var(--g1-stone);
+  --g-text-3: var(--g1-stone);
+  --g-action: var(--g-ink);
+  --g-action-hover: var(--g1-dark-bg);
+  --g-action-text: var(--g-white);
+  --g-shadow: 0 24px 48px rgba(19, 33, 46, 0.06);
+  --g-glow: color-mix(in srgb, var(--g-ink) 6%, transparent);
+  --g-tone-turf: var(--g-turf);
   --g-tone-live: #0F5A2A;
   --g-tone-cardinal: var(--g-cardinal);
 }
@@ -458,7 +320,7 @@
 }
 .g-cta {
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--g-gold) 50%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--g-white) 50%, transparent),
     0 8px 24px -6px var(--g-cta-glow),
     0 0 32px var(--g-cta-glow);
 }
@@ -467,13 +329,13 @@
 [data-base="dark"] button.bg-action:hover,
 [data-base="dark"] button.bg-action:focus-visible {
   box-shadow:
-    0 0 0 1px var(--g-gold),
+    0 0 0 1px var(--g-white),
     0 12px 32px -6px var(--g-cta-glow),
     0 0 40px var(--g-cta-glow);
 }
 [data-base="dark"] button.bg-action {
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--g-gold) 50%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--g-white) 50%, transparent),
     0 8px 24px -6px var(--g-cta-glow),
     0 0 32px var(--g-cta-glow);
 }
@@ -551,7 +413,7 @@
 [data-match-emphasis="on"] {
   animation: match-emphasis var(--g-dur-spring) var(--g-ease-state);
 }
-[data-match-emphasis="on"][data-match-tone="gold"] { --match-ring: var(--g-gold); }
+[data-match-emphasis="on"][data-match-tone="turf"] { --match-ring: var(--g-gold); }
 @media (prefers-reduced-motion: no-preference) {
   .gridone-board-grid {
     transition: zoom var(--g-dur-spring) var(--g-ease-state);

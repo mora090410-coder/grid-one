@@ -26,7 +26,10 @@ describe('YourSquaresSummary', () => {
     const region = screen.getByRole('region', { name: 'Carrie Moss square summary' });
     expect(within(region).getByText('2 squares')).toBeInTheDocument();
     const winsNow = within(region).getByText('You’re winning right now.');
-    expect(winsNow.className).toContain('text-gold');
+    // Gold means winner, but never as text: the line is ink with a gold square.
+    expect(winsNow.className).toContain('text-fg');
+    expect(winsNow.className).not.toContain('text-gold');
+    expect(winsNow.querySelector('[data-winner-mark]')).toHaveClass('bg-gold');
     const list = within(region).getByRole('list', { name: 'Your squares' });
     expect(within(region).getAllByRole('list')).toHaveLength(1);
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);

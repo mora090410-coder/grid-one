@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type SectionToneName = 'cardinal' | 'live' | 'gold';
+export type SectionToneName = 'cardinal' | 'live' | 'turf';
 
 export interface SectionToneProps {
   tone: SectionToneName;
@@ -12,7 +12,7 @@ export interface SectionToneProps {
 const TINT: Record<SectionToneName, string> = {
   cardinal: 'var(--g-tint-cardinal)',
   live: 'var(--g-tint-live)',
-  gold: 'var(--g-tint-gold)',
+  turf: 'var(--g-tint-turf)',
 };
 
 /**

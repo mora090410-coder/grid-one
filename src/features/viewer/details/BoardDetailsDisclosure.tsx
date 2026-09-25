@@ -12,7 +12,7 @@ export interface BoardDetailsDisclosureProps {
 }
 
 const ResultRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameState; final?: boolean }> = ({ winnerHistory, game, final = false }) => (
-  <Glass as="section" padding="lg" className="flex flex-col gap-3 border-gold/40" role="region" aria-labelledby={final ? 'final-record-title' : 'completed-results-title'}>
+  <Glass as="section" padding="lg" className="flex flex-col gap-3" role="region" aria-labelledby={final ? 'final-record-title' : 'completed-results-title'}>
     <h2 id={final ? 'final-record-title' : 'completed-results-title'} className="font-display text-[26px] leading-[1.1] text-fg">{final ? 'Final record' : 'Completed results'}</h2>
     {winnerHistory.length ? (
       <ol className="flex flex-col gap-2">

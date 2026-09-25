@@ -148,7 +148,7 @@ export const ManualScoringPanel = ({
               </div>
             ))}
             <div className="grid grid-cols-[3rem_1fr_1fr] gap-2 items-center pt-1 border-t border-hairline">
-              <span className="font-ui text-xs font-bold text-gold">Total</span>
+              <span className="font-ui text-xs font-bold text-fg">Total</span>
               <span className="font-ui text-sm font-bold text-fg text-center">
                 {manualScoreTotal(game.manualQuarterScores, 'left')}
               </span>

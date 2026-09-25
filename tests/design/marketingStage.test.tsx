@@ -13,11 +13,11 @@ const create = readFileSync('pages/CreateContest.tsx', 'utf8');
 const cta = readFileSync('src/features/homepage/sections/cta.ts', 'utf8');
 
 describe('marketing stage tokens', () => {
-  it('adds a near-black stage and a gold-only action glow without replacing the grounds', () => {
-    expect(tokens).toMatch(/--g-stage:\s*#07080B/);
-    expect(tokens).toMatch(/--g-ground:\s*#14161D/);
-    expect(tokens).toMatch(/--g-ground:\s*#F5F1EA/);
-    expect(tokens).toMatch(/--g-cta-glow:\s*color-mix\(in srgb, var\(--g-gold\) 55%, transparent\)/);
+  it('adds a brand-ink stage and a chalk (never gold) action glow without replacing the grounds', () => {
+    expect(tokens).toMatch(/--g-stage:\s*var\(--g1-ink\)/);
+    expect(tokens).toMatch(/--g-ground:\s*var\(--g1-ink\)/);
+    expect(tokens).toMatch(/--g-ground:\s*var\(--g1-chalk\)/);
+    expect(tokens).toMatch(/--g-cta-glow:\s*color-mix\(in srgb, var\(--g-white\) 22%, transparent\)/);
     expect(tokens).toContain('.g-cta');
     expect(tokens).toContain('.g-float');
     expect(cta).toContain('g-cta');

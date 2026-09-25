@@ -343,7 +343,7 @@ const Dashboard: React.FC = () => {
                                                 <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-fg-3">
                                                     {contest.settings?.leftAbbr || 'TBD'} at {contest.settings?.topAbbr || 'TBD'}
                                                 </span>
-                                                <CapsuleTag tone={published ? 'gold' : 'neutral'}>
+                                                <CapsuleTag tone={published ? 'turf' : 'neutral'}>
                                                     {contest.shared_at && !contest.published_at ? 'Selling squares' : published ? 'Published' : 'Draft'}
                                                 </CapsuleTag>
                                             </div>
@@ -370,7 +370,7 @@ const Dashboard: React.FC = () => {
                                                         label: drawn
                                                             ? `Numbers drawn on ${boardName}`
                                                             : `Numbers not drawn on ${boardName}`,
-                                                        tone: 'gold',
+                                                        tone: 'turf',
                                                     },
                                                 ]}
                                             />

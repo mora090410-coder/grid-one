@@ -3,7 +3,7 @@ import { Eyebrow } from '../../design/primitives';
 import { PageMetadata } from '../../../components/seo/PageMetadata';
 import { SitePage } from './SitePage';
 
-export const proseClasses = '[&_h2]:font-display [&_h2]:text-[28px] [&_h2]:leading-[1.1] [&_h2]:text-fg [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:font-ui [&_h3]:text-[19px] [&_h3]:font-semibold [&_h3]:text-fg [&_h3]:mt-8 [&_h3]:mb-3 [&_p]:font-ui [&_p]:text-[17px] [&_p]:leading-[1.6] [&_p]:text-fg-2 [&_p]:mb-5 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5 [&_li]:text-fg-2 [&_li]:leading-[1.6] [&_li]:mb-2 [&_a]:text-tone-gold [&_a]:underline [&_a]:underline-offset-4 [&_strong]:text-fg';
+export const proseClasses = '[&_h2]:font-display [&_h2]:text-[28px] [&_h2]:leading-[1.1] [&_h2]:text-fg [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:font-ui [&_h3]:text-[19px] [&_h3]:font-semibold [&_h3]:text-fg [&_h3]:mt-8 [&_h3]:mb-3 [&_p]:font-ui [&_p]:text-[17px] [&_p]:leading-[1.6] [&_p]:text-fg-2 [&_p]:mb-5 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5 [&_li]:text-fg-2 [&_li]:leading-[1.6] [&_li]:mb-2 [&_a]:text-fg [&_a]:underline [&_a]:underline-offset-4 [&_strong]:text-fg';
 
 export interface ArticleShellProps {
   tag: string;

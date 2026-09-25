@@ -60,7 +60,8 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         <Eyebrow>Your squares · {selectedPlayer}</Eyebrow>
         <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
       </div>
-      <p className={`font-ui text-[17px] font-medium ${winsNow ? 'text-gold' : 'text-fg-2'}`}>
+      <p className={`flex items-center gap-2 font-ui text-[17px] font-medium ${winsNow ? 'text-fg' : 'text-fg-2'}`}>
+        {winsNow && <span aria-hidden="true" data-winner-mark className="inline-block size-2.5 shrink-0 bg-gold" />}
         {!hasValidAxes(board) ? 'Numbers need review before matching your squares.' : winsNow ? 'You’re winning right now.' : nextWin ? `Not winning right now. Next winning score: ${nextWin}.` : 'Not winning right now.'}
       </p>
       <ul id={listId} className="flex flex-col gap-2" aria-label="Your squares">

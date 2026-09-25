@@ -203,7 +203,7 @@ function BoardEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      {drawPreview && <CapsuleTag tone="gold">Draft draw</CapsuleTag>}
+      {drawPreview && <CapsuleTag tone="turf">Draft draw</CapsuleTag>}
       <div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
         <CapsuleButton
           variant="quiet"

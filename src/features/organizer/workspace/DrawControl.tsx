@@ -93,7 +93,7 @@ export default function DrawControl({
         )}
         <div className="flex flex-wrap items-center gap-3 px-1">
           <span className="font-mono text-[14px] text-fg">Numbers set</span>
-          <CapsuleTag tone="gold">Drawn</CapsuleTag>
+          <CapsuleTag tone="turf">Drawn</CapsuleTag>
           <CapsuleButton variant="ghost" onClick={onReplace} disabled={disabled}>Replace draft draw</CapsuleButton>
         </div>
       </>

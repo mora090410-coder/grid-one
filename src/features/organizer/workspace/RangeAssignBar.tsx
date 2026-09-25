@@ -22,10 +22,10 @@ export interface RangeAssignBarProps {
   onExitSelectMode?: () => void;
 }
 
-const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'cardinal' | 'gold' }[] = [
+const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'cardinal' | 'turf' }[] = [
   { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
   { value: 'unpaid', label: 'Unpaid', tone: 'cardinal' },
-  { value: 'paid', label: 'Paid', tone: 'gold' },
+  { value: 'paid', label: 'Paid', tone: 'turf' },
 ];
 
 const DRAFT_HELP = 'Tap squares to select them, or drag across a block.';

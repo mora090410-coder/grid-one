@@ -38,9 +38,9 @@ describe('self-hosted web fonts', () => {
   it('declares every family, weight and style the design uses, with swap', () => {
     const declared = new Set(faces.map((face) => `${face.family} ${face.weight} ${face.style}`));
     for (const expected of [
-      'Geist 400 normal', 'Geist 500 normal', 'Geist 600 normal',
+      // Archivo is a variable font: one face covers every weight the brand uses.
+      'Archivo 100 900 normal',
       'Geist Mono 400 normal', 'Geist Mono 500 normal',
-      'Instrument Serif 400 normal', 'Instrument Serif 400 italic',
     ]) {
       expect(declared, expected).toContain(expected);
     }
@@ -67,7 +67,9 @@ describe('self-hosted web fonts', () => {
 
   it('caches /fonts/* as immutable and ships the font licenses', () => {
     expect(headers).toMatch(/\/fonts\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/);
+    expect(existsSync('public/fonts/OFL-Archivo.txt')).toBe(true);
+    // Geist Mono stays for tabular data and is licensed under the Geist OFL.
     expect(existsSync('public/fonts/OFL-Geist.txt')).toBe(true);
-    expect(existsSync('public/fonts/OFL-InstrumentSerif.txt')).toBe(true);
+    expect(existsSync('public/fonts/OFL-InstrumentSerif.txt')).toBe(false);
   });
 });

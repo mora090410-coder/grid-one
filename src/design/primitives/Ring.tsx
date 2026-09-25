@@ -1,10 +1,10 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { useReducedMotion } from './motion';
 
-type Tone = 'fg' | 'gold' | 'live' | 'cardinal';
+type Tone = 'fg' | 'turf' | 'live' | 'cardinal';
 const STROKE: Record<Tone, string> = {
   fg: 'var(--g-text)',
-  gold: 'var(--g-gold)',
+  turf: 'var(--g-tone-turf)',
   live: 'var(--g-live)',
   cardinal: 'var(--g-cardinal)',
 };

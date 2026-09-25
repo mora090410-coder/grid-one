@@ -1,0 +1,41 @@
+/* GridOne brand tokens (Corner Square). Source of truth for brand color, type,
+   and shape. From the gridone-brand kit, mapped into this app two ways:
+
+   - Archivo is self-hosted (@font-face in src/design/tokens.css), so the kit's
+     remote font stylesheet is left out. Pages never wait on another origin.
+   - The kit's OS dark-mode values are named --g1-dark-* here.
+     This app chooses light or dark per surface with `data-base`, not from the
+     phone's setting, so the dark set is read by the dark base directly.
+
+   Components never read these. The --g-* semantic tokens in
+   src/design/tokens.css are built from them. See DESIGN.md. */
+:root {
+  /* Core */
+  --g1-ink: #13212E;        /* primary text, logo, dark surfaces */
+  --g1-chalk: #F6F7F5;      /* page background, text on ink */
+  --g1-gold: #E3A91C;       /* WINNER ONLY. Never text, buttons, or backgrounds */
+  --g1-turf: #1E5A3C;       /* optional accent, sparingly (success states) */
+
+  /* Support */
+  --g1-stone: #5B6670;      /* secondary text on chalk */
+  --g1-line: #D9DDD8;       /* borders, board cell edges */
+  --g1-cell: rgba(19, 33, 46, 0.08); /* empty square fill */
+  --g1-surface: #FFFFFF;    /* cards on chalk */
+
+  /* Dark (the kit's dark-mode set) */
+  --g1-dark-bg: #0C151E;
+  --g1-dark-surface: #13212E;
+  --g1-dark-text: #EEF1EE;
+  --g1-dark-stone: #9AA7B2;
+  --g1-dark-line: #24374A;
+  --g1-dark-cell: rgba(246, 247, 245, 0.10);
+
+  /* Type */
+  --g1-font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --g1-tracking-tight: -0.03em;  /* headings and the wordmark */
+
+  /* Shape */
+  --g1-radius-sm: 6px;
+  --g1-radius: 12px;
+  --g1-radius-lg: 18px;
+}

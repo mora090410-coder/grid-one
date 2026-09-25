@@ -99,7 +99,7 @@ export default function WorkspaceHeader({
       <div className="flex flex-wrap items-center justify-between gap-2">
       <a href="/dashboard" className="inline-flex min-h-11 w-fit items-center rounded-control font-ui text-[14px] text-fg-2 focus-visible:ring-2 focus-visible:ring-action">My boards</a>
       {isPublished
-        ? <div><CapsuleTag tone="gold">Published</CapsuleTag></div>
+        ? <div><CapsuleTag tone="turf">Published</CapsuleTag></div>
         : <SavePill saveState={saveState} onRetry={onRetry} onReload={onReload} />}
       </div>
       <div className="flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row [&>*:first-child]:min-w-0 [&>*:first-child]:w-full [&>*:first-child]:flex-1">

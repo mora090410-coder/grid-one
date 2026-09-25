@@ -1,34 +1,36 @@
 ---
 version: alpha
 name: GridOne
-description: Broadcast Glass — quiet, physical, few clicks. Dark spotlight for game day, warm cream for setup.
+description: Corner Square — premium, calm, instantly recognizable on a phone. Ink for game day, chalk for setup, gold only for the winner.
 colors:
-  primary: "#8F1D2C"
-  primary-deep: "#6E1622"
-  accent: "#FFC72C"
-  accent-deep: "#E0A600"
-  neutral: "#EFF0F1"
-  neutral-quiet: "#DEE0E1"
-  ink: "#0E0F12"
-  surface-dark: "#282B32"
-  ground-dark: "#14161D"
-  ground-cream: "#F5F1EA"
+  primary: "#13212E"
+  primary-deep: "#0C151E"
+  accent: "#E3A91C"
+  success: "#1E5A3C"
+  neutral: "#F6F7F5"
+  neutral-quiet: "#D9DDD8"
+  ink: "#13212E"
+  stone: "#5B6670"
+  surface-dark: "#213549"
+  ground-dark: "#13212E"
+  ground-cream: "#F6F7F5"
+  danger: "#8F1D2C"
   live: "#22C55E"
 typography:
   display:
-    fontFamily: Instrument Serif
+    fontFamily: Archivo
     fontSize: 3.5rem
-    fontWeight: 400
+    fontWeight: 800
     lineHeight: 1
-    letterSpacing: "-0.01em"
+    letterSpacing: "-0.03em"
   heading:
-    fontFamily: Geist
+    fontFamily: Archivo
     fontSize: 1.5rem
-    fontWeight: 500
+    fontWeight: 700
     lineHeight: 1.15
-    letterSpacing: "-0.01em"
+    letterSpacing: "-0.03em"
   body:
-    fontFamily: Geist
+    fontFamily: Archivo
     fontSize: 1.0625rem
     fontWeight: 400
     lineHeight: 1.5
@@ -47,7 +49,7 @@ typography:
     letterSpacing: 0em
 rounded:
   control: 12px
-  surface: 20px
+  surface: 18px
   capsule: 999px
   grid: 4px
 spacing:
@@ -59,7 +61,7 @@ spacing:
   2xl: 48px
 components:
   button-primary-dark:
-    backgroundColor: "{colors.accent}"
+    backgroundColor: "{colors.neutral}"
     textColor: "{colors.ink}"
     typography: "{typography.body}"
     rounded: "{rounded.capsule}"
@@ -70,6 +72,12 @@ components:
     typography: "{typography.body}"
     rounded: "{rounded.capsule}"
     padding: 14px
+  winning-square:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.ink}"
+    typography: "{typography.data}"
+    rounded: "{rounded.grid}"
+    padding: 4px
   glass-panel:
     backgroundColor: "{colors.surface-dark}"
     textColor: "{colors.neutral}"
@@ -80,6 +88,18 @@ components:
     textColor: "{colors.neutral}"
     rounded: "{rounded.capsule}"
     padding: 16px
+  status-settled:
+    backgroundColor: "{colors.success}"
+    textColor: "{colors.neutral}"
+    typography: "{typography.label}"
+    rounded: "{rounded.capsule}"
+    padding: 8px
+  destructive-confirm:
+    backgroundColor: "{colors.danger}"
+    textColor: "{colors.neutral}"
+    typography: "{typography.body}"
+    rounded: "{rounded.capsule}"
+    padding: 14px
   status-live:
     backgroundColor: "{colors.live}"
     textColor: "{colors.ink}"
@@ -94,9 +114,16 @@ components:
     padding: 14px
 ---
 
-# GridOne Design System — Broadcast Glass
+# GridOne Design System — Corner Square on Broadcast Glass
 
-Normative current-production baseline. Implementation lives in `src/design/tokens.css` and `src/design/primitives/`. Mapping in `docs/DESIGN_TOKENS.md`. Full rationale in `docs/superpowers/specs/2026-09-01-broadcast-glass-redesign-design.md`.
+Normative current-production baseline. The Corner Square identity (adopted September 25, see below) supplies the logo, palette, and type; the Broadcast Glass structure supplies the surfaces, motion, and notch. Brand tokens live in `src/styles/tokens.css`; the semantic tokens built from them live in `src/design/tokens.css`, with primitives in `src/design/primitives/`. Mapping in `docs/DESIGN_TOKENS.md`. Original Broadcast Glass rationale in `docs/superpowers/specs/2026-09-01-broadcast-glass-redesign-design.md`.
+
+## Corner Square identity — September 25
+
+- **Logo:** Corner Square. A G drawn in one heavy stroke, with its top right corner broken off as a gold square. One `Logo` component (`src/design/primitives/Logo.tsx`) renders the kit's SVG files unchanged, in mark, horizontal, and stacked variants and color, reversed, black, and white tones. Its accessible name is always "GridOne".
+- **Secondary pattern:** Square One. The 10 by 10 board with one gold square, for loading, empty states, and share images. Never the logo.
+- **The one rule: gold means winner.** Gold (`--g-gold`) is only for the logo corner and winning squares (the current match, a published past winner, and the matching-square emphasis). It is never text, a button, a link, a focus ring, a glow, a tint, or a status tag.
+- **Name:** always GridOne. One word, capital G, capital O.
 
 ## Exploration and intentional adoption
 
@@ -110,23 +137,25 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 ## Current bases and palette
 
-- **Dark** (viewer, homepage, article pages): ground `#14161D`, one spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). Gold is the only action color. Cardinal appears in the brand mark and destructive confirmations with explicit text. Marketing stages use the near-black `--g-stage` and a white stage light; see Marketing stage.
-- **Cream** (organizer workspace, dashboard): ground `#F5F1EA`, cards white 70% with ink hairline 8%. Cardinal is the action color. Gold marks committed and settled states only.
+- **Dark** (viewer, homepage, article pages): ground `#13212E`, brand ink, one spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). The primary action is chalk with ink text. Marketing stages use the same ink through `--g-stage`, so the reversed logo tile sits flush; see Marketing stage.
+- **Cream** (organizer workspace, dashboard; the attribute keeps its name): ground brand chalk `#F6F7F5`, white cards with brand line `#D9DDD8` edges. Ink is the action color. Secondary text is brand stone.
+- Gold means winner. See Corner Square identity.
+- Turf `#1E5A3C` marks settled and success states (Drawn, Published, Paid), sparingly. On the dark base the tag uses a light turf for contrast.
+- Cardinal `#8F1D2C` is kept for errors and destructive confirmations only, always with explicit text. It is not a brand or action color.
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
 
-**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from the same three brand colors, sitting on a section's vertical mid-edge. The public marketing homepage is one near-black stage with glass cards, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 22% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from cardinal, live, or turf (never gold), sitting on a section's vertical mid-edge. The public marketing homepage is one brand-ink stage with glass cards, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 20% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Current type
 
-- Display: Instrument Serif. Hero headlines and board names only.
-- Interface: Geist 400/500; 600 only for the single primary action.
+- Display and interface: Archivo, one brand face, self-hosted as a variable font. Display headings and board names are bold (700, 800 for the hero) with the brand's tight `-0.03em` tracking; headings `h1`–`h3` take the same tracking. Interface text is 400/500; 600 only for the single primary action.
 - Data and eyebrow: Geist Mono, tabular. Large numerals dim their secondary segment.
 - Essential text ≥ 14px. Grid-cell labels are the precision exception and carry accessible full labels.
 
 ## Current shape
 
-Controls 12px. Cards, sheets, glass 20px. Buttons, tags, chips, island: capsule. Grid cells 4px.
+Controls 12px. Cards, sheets, glass 18px. Buttons, tags, chips, island: capsule. Grid cells 4px.
 
 ## Current motion
 
@@ -169,7 +198,7 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 ## Marketing stage — September 22
 
-Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. Those surfaces use `--g-stage`, frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Gold appears on primary actions through `--g-cta-glow` and stays off status, prices, and matching squares on these surfaces. Matching emphasis there is white with a static outer glow. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
+Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. Those surfaces use `--g-stage` (brand ink since the Corner Square rebrand), frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Primary actions carry a soft static chalk glow through `--g-cta-glow`; gold stays off actions, status, and prices. Matching emphasis there is white with a static outer glow. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
 
 ## Truth, access, and integrity requirements
 
@@ -196,7 +225,7 @@ Motion uses sampled damped spring unit-step responses: unfold .42/.78, contents 
 
 ### Notch refinement 1
 
-The shell is explicitly near-black `--g-ink` with concave shoulders and a discreet rim. Module controls are circular medallions with original simple SVG symbols and readable labels beneath, not bordered rectangular tabs. Only Board assignment uses a measured progress ring. One attached detail card uses a visible connector aligned to the selected cell's measured center; wide layouts bound and move the card, narrow layouts use the available width. Both remain the same DOM objects during selection. Contents keep their destination layout while the shell unfolds; unchanged observer measurements do not restart motion. Interrupted geometry is sampled before cancellation, and a reduced-motion preference change cancels every active notch animation, including independent reading rings. Refinement evidence uses the `pass-refine1` files under `.hermes/notch-implementation/`; visual acceptance still belongs to review, not this specification alone.
+The shell is explicitly brand ink `--g-ink` with concave shoulders and a discreet rim. Module controls are circular medallions with original simple SVG symbols and readable labels beneath, not bordered rectangular tabs. Only Board assignment uses a measured progress ring. One attached detail card uses a visible connector aligned to the selected cell's measured center; wide layouts bound and move the card, narrow layouts use the available width. Both remain the same DOM objects during selection. Contents keep their destination layout while the shell unfolds; unchanged observer measurements do not restart motion. Interrupted geometry is sampled before cancellation, and a reduced-motion preference change cancels every active notch animation, including independent reading rings. Refinement evidence uses the `pass-refine1` files under `.hermes/notch-implementation/`; visual acceptance still belongs to review, not this specification alone.
 
 
 ## Inline notch quick views — September 21

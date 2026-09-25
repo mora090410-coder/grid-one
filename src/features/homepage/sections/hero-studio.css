@@ -6,7 +6,7 @@
 .studio-hero-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 52px; align-items: start; margin-top: 64px; }
 .studio-hero-copy { min-width: 0; padding-block: 48px; }
 .hero-category { font: 1rem/1.5 var(--g-font-ui); color: var(--g-text-2); }
-.studio-hero-title { margin-top: 22px; font: 400 clamp(3.5rem, 5.7vw, 5.125rem)/.98 var(--g-font-display); letter-spacing: -.025em; color: var(--g-text); }
+.studio-hero-title { margin-top: 22px; font: 800 clamp(3.25rem, 5.4vw, 4.75rem)/.98 var(--g-font-display); letter-spacing: var(--g-tracking-display); color: var(--g-text); }
 .studio-hero-title span { display: block; }
 .studio-hero-description { max-width: 410px; margin-top: 26px; font: 1.0625rem/1.6 var(--g-font-ui); color: var(--g-text-2); }
 .studio-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }

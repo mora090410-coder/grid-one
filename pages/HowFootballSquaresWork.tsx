@@ -35,7 +35,7 @@ export const HowFootballSquaresWork: React.FC = () => {
           />
 
           <p className="mt-6 font-ui text-[15px] leading-[1.6] text-fg-2">
-            Looking for fundraiser use cases? <Link to="/articles/football-squares-fundraiser" className="text-tone-gold underline underline-offset-4 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Start here.</Link>
+            Looking for fundraiser use cases? <Link to="/articles/football-squares-fundraiser" className="text-fg underline underline-offset-4 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Start here.</Link>
           </p>
         </>
       }

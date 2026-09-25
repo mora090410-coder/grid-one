@@ -30,10 +30,10 @@ describe('CapsuleButton', () => {
 
 describe('CapsuleTag', () => {
   it('renders tones', () => {
-    render(<><CapsuleTag>Draft</CapsuleTag><CapsuleTag tone="live">Live</CapsuleTag><CapsuleTag tone="gold">Final</CapsuleTag></>);
+    render(<><CapsuleTag>Draft</CapsuleTag><CapsuleTag tone="live">Live</CapsuleTag><CapsuleTag tone="turf">Final</CapsuleTag></>);
     expect(screen.getByText('Live').className).toContain('text-tone-live');
     expect(screen.getByText('Live').className).toContain('whitespace-nowrap');
-    expect(screen.getByText('Final').className).toContain('text-tone-gold');
+    expect(screen.getByText('Final').className).toContain('text-tone-turf');
     expect(screen.getByText('Draft').className).toContain('border-hairline');
   });
 });

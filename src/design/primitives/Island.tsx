@@ -76,7 +76,7 @@ export function Island({ label, collapsed, expanded, placement = 'top', defaultO
           aria-expanded={isOpen}
           aria-controls={regionId}
           onClick={() => { openedByHover.current = false; setOpen(!isOpen); }}
-          className="flex items-center gap-4 h-14 px-5 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-inset"
+          className="flex items-center gap-4 h-14 px-5 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-broadcast-white focus-visible:ring-inset"
         >
           <span className="sr-only">{label}</span>
           {collapsed}

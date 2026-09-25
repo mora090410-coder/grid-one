@@ -60,7 +60,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
         <p className="text-fg-2"><strong className="font-medium text-fg">{score.authority.label}</strong> · {score.authority.detail}</p>
         <p className="font-mono text-[13px] text-fg-3">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
         {score.phaseDetail && <p className="text-fg-3">{score.phaseDetail}</p>}
-        {live?.warning && <p className="text-gold">{live.warning}</p>}
+        {live?.warning && <p className="font-medium text-fg">{live.warning}</p>}
       </div>
     </section>
   );

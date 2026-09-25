@@ -12,7 +12,7 @@ export interface FinalRecordCardProps {
 export default function FinalRecordCard({ winnerHistory, onCreateAnotherBoard }: FinalRecordCardProps) {
   const rows = buildResolvedMilestoneRows(winnerHistory);
   return (
-    <Glass padding="lg" className="flex flex-col gap-4 border-gold/40">
+    <Glass padding="lg" className="flex flex-col gap-4">
       <Eyebrow>Final record</Eyebrow>
       <h2 className="font-display text-2xl text-fg">This board is locked as the Final record.</h2>
       <p className="font-ui text-[15px] text-fg-2">

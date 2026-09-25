@@ -33,11 +33,12 @@ export function CapsuleButton({ variant = 'primary', size = 'md', className = ''
   );
 }
 
-type Tone = 'neutral' | 'gold' | 'live' | 'cardinal';
+type Tone = 'neutral' | 'turf' | 'live' | 'cardinal';
 
 const TONE: Record<Tone, string> = {
   neutral: 'border border-hairline text-fg-2',
-  gold: 'bg-tone-gold/15 text-tone-gold',
+  /** Settled and success states (Drawn, Published, Paid). Never gold: gold means winner. */
+  turf: 'bg-tone-turf/15 text-tone-turf',
   /** Only for an in-progress NFL game. Never for generic emphasis. */
   live: 'bg-tone-live/15 text-tone-live',
   cardinal: 'bg-tone-cardinal/15 text-tone-cardinal',

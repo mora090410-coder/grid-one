@@ -1,7 +1,8 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 @import "./design/tokens.css";
 
-/* Broadcast Glass semantic utilities. Values resolve per data-base at runtime. */
+/* Semantic utilities. Values resolve per data-base at runtime. */
 @theme inline {
   --color-ground: var(--g-ground);
   --color-panel: var(--g-panel);
@@ -18,12 +19,13 @@
   --color-gold: var(--g-gold);
   --color-gold-deep: var(--g-gold-deep);
   --color-live: var(--g-live);
-  --color-tone-gold: var(--g-tone-gold);
+  --color-turf: var(--g-turf);
+  --color-tone-turf: var(--g-tone-turf);
   --color-tone-live: var(--g-tone-live);
   --color-tone-cardinal: var(--g-tone-cardinal);
   --color-tint-cardinal: var(--g-tint-cardinal);
   --color-tint-live: var(--g-tint-live);
-  --color-tint-gold: var(--g-tint-gold);
+  --color-tint-turf: var(--g-tint-turf);
   --color-ink: var(--g-ink);
   --color-chyron: var(--g-chyron);
   --color-broadcast-white: var(--g-white);
@@ -39,17 +41,17 @@
 
 @theme {
     /* Core design tokens */
-    --gridone-color-background: #0E0F12;
+    --gridone-color-background: var(--g1-ink);
 
     /* Deep cardinal fill for the button background re-assertion below. */
     --gridone-color-brand-primary-deep: #6E1622;
 
-    --gridone-color-text-primary: #EFF0F1;
+    --gridone-color-text-primary: var(--g1-chalk);
 
     --gridone-radius-surface: 12px;
     --gridone-radius-grid: 0px;
-    --gridone-elevation-raised: 0 2px 8px rgba(14, 15, 18, 0.10),
-                                0 1px 2px rgba(14, 15, 18, 0.06);
+    --gridone-elevation-raised: 0 2px 8px rgba(19, 33, 46, 0.10),
+                                0 1px 2px rgba(19, 33, 46, 0.06);
 
     /* App aliases so current styling stays visually stable */
     --color-background: var(--gridone-color-background);
@@ -59,11 +61,21 @@
 @layer base {
     body {
         @apply bg-background text-text-primary antialiased;
+        font-family: var(--g-font-ui);
+    }
+
+    /* Brand type: Archivo headings are bold with tight tracking. Base layer, so
+       an explicit weight or tracking utility on the element still wins. */
+    h1, h2, h3, .font-display {
+        letter-spacing: var(--g-tracking-display);
+    }
+    .font-display {
+        font-weight: 700;
     }
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Cascade guards for the Broadcast Glass surfaces. See DESIGN.md.
+   Cascade guards for the design-system surfaces. See DESIGN.md.
 
    Deliberately UNLAYERED. Tailwind's preflight (@layer base) resets
    headings to `font-size: inherit`, so layered component rules lose to it.
@@ -83,7 +95,7 @@
     button.bg-chyron { background-color: var(--color-chyron); }
 
     /* Focus is a system-wide 3px ink rule, not a per-component afterthought.
-       Inverts to gold on dark and cardinal grounds. */
+       Inverts to chalk on ink and cardinal grounds. Never gold: gold means winner. */
     a:focus-visible,
     button:focus-visible,
     summary:focus-visible,
@@ -100,10 +112,10 @@
     .bg-cardinal [tabindex]:focus-visible,
     .bg-chyron a:focus-visible,
     .bg-chyron button:focus-visible {
-        outline-color: var(--color-gold);
+        outline-color: var(--color-broadcast-white);
     }
 
-    /* Broadcast Glass surfaces manage their own focus rings (see src/design/primitives). */
+    /* Design-system surfaces manage their own focus rings (see src/design/primitives). */
     [data-base] a:focus-visible,
     [data-base] button:focus-visible,
     [data-base] input:focus-visible,

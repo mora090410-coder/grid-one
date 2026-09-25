@@ -119,7 +119,7 @@ export const ArticlesHub: React.FC = () => {
               <CapsuleTag>{article.tag}</CapsuleTag>
               <h2 className="font-display text-[22px] leading-[1.15] text-fg">{article.title}</h2>
               <p className="font-ui text-[15px] leading-[1.6] text-fg-2">{article.desc}</p>
-              <span className="mt-auto pt-2 font-ui text-[15px] text-tone-gold group-hover:underline underline-offset-4">Read guide</span>
+              <span className="mt-auto pt-2 font-ui text-[15px] font-medium text-fg group-hover:underline underline-offset-4">Read guide</span>
             </Glass>
           </Link>
         ))}
