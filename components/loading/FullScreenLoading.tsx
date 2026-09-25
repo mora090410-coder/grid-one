@@ -1,5 +1,5 @@
 import React from 'react';
-import { Base, Eyebrow } from '../../src/design/primitives';
+import { Base, Eyebrow, SquareOne } from '../../src/design/primitives';
 
 interface FullScreenLoadingProps {
     message?: string;
@@ -8,8 +8,9 @@ interface FullScreenLoadingProps {
 const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message }) => {
     return (
         <Base kind="dark" className="fixed inset-0 z-[9999] flex items-center justify-center px-6">
-            <div role="status" className="flex flex-col items-center gap-3 text-center">
-                <Eyebrow>{message || 'GRIDONE'}</Eyebrow>
+            <div role="status" className="flex flex-col items-center gap-5 text-center">
+                <SquareOne tone="reversed" size={88} />
+                <Eyebrow>{message || 'Loading GridOne'}</Eyebrow>
             </div>
         </Base>
     );

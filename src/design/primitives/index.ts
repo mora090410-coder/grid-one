@@ -24,3 +24,5 @@ export { Island, IslandRings } from './Island';
 export { EASE_STATE, DUR_STATE, DUR_SPRING, DUR_REDUCED, SPRING, useReducedMotion, durations, scrollBehavior } from './motion';
 export { Logo } from './Logo';
 export type { LogoProps, LogoTone, LogoVariant } from './Logo';
+export { SquareOne } from './SquareOne';
+export type { SquareOneProps } from './SquareOne';

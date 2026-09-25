@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData';
 import { BoardData, GameState, PayoutDescriptions } from '../types';
-import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings, Logo } from '../src/design/primitives';
+import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings, Logo, SquareOne } from '../src/design/primitives';
 import { hasBoardActivation } from '../utils/boardActivation';
 import { hasValidAxes } from '../utils/boardValidation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
@@ -234,7 +234,8 @@ const Dashboard: React.FC = () => {
 
     if (authLoading || loading) {
         return (
-            <Base kind="cream" className="flex items-center justify-center">
+            <Base kind="cream" className="flex flex-col items-center justify-center gap-5">
+                <SquareOne size={88} />
                 <p role="status" className="font-ui text-[15px] text-fg-2">Loading your boards…</p>
             </Base>
         );
@@ -242,7 +243,8 @@ const Dashboard: React.FC = () => {
 
     if (migrating) {
         return (
-            <Base kind="cream" className="flex items-center justify-center">
+            <Base kind="cream" className="flex flex-col items-center justify-center gap-5">
+                <SquareOne size={88} />
                 <p role="status" className="font-ui text-[15px] text-fg-2">Finalizing your board setup…</p>
             </Base>
         );
@@ -321,6 +323,7 @@ const Dashboard: React.FC = () => {
 
                 {contests.length === 0 ? (
                     <Glass padding="lg" className="flex flex-col items-start gap-4">
+                        <SquareOne size={72} />
                         <p className="font-display text-[26px] leading-[1.05] text-fg">No boards yet.</p>
                         <Link to="/create" className={CAPSULE_LINK}>New board</Link>
                     </Glass>
