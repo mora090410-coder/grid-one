@@ -22,9 +22,9 @@ export interface RangeAssignBarProps {
   onExitSelectMode?: () => void;
 }
 
-const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'cardinal' | 'turf' }[] = [
+const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'turf' }[] = [
   { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
-  { value: 'unpaid', label: 'Unpaid', tone: 'cardinal' },
+  { value: 'unpaid', label: 'Unpaid', tone: 'neutral' },
   { value: 'paid', label: 'Paid', tone: 'turf' },
 ];
 

@@ -63,14 +63,15 @@ loading, so both of its captures show the loading state.
 - **Cyrillic names.** Archivo has no Cyrillic subset, so those names fall
   back to the system font.
 
-## Needs a decision
+## Decisions — September 26
 
-- Should past quarter winners and the live "currently matching" square
-  both be solid gold? They are now, told apart by the NOW label.
-- The "Unpaid" payment tag is still red (cardinal). Keep, or make it
-  neutral?
-- Should emails carry an image logo? They now use a brand-colored text
-  wordmark, which needs no hosted image.
+- Keep past quarter winners and the live "currently matching" square
+  solid gold. The NOW label marks the live match.
+- Make the "Unpaid" payment tag neutral in the square editor and range
+  assignment controls. Paid stays turf green; red stays reserved for
+  errors and destructive actions. Payment behavior is unchanged.
+- Keep text branding in emails. It stays visible when images are blocked
+  and needs no hosted logo image.
 
 ## Checks run
 

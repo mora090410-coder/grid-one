@@ -956,3 +956,13 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - **Not changed:** pricing, permissions, schema, scoring, deploy config, product copy (except the loading label "GRIDONE" → "Loading GridOne").
 - **Report and screenshots:** `docs/rebrand/`.
 - **Gates:** tsc pass; unit 1200; build; design lint 0 errors, 5 warnings; Playwright chromium all pass (preinstalled Chromium; `guest-invites` needs `PLAYWRIGHT_PORT`). Integration not run (no Docker).
+
+## 2026-09-26 — Corner Square decisions and neutral Unpaid tags
+
+- **Approval:** Anthony approved keeping live matches and past winners gold with NOW marking the live match, making Unpaid neutral, and keeping text branding in emails, then asked to implement the plan.
+- **Change:** Unpaid uses the existing neutral tag style in SquareSheet and RangeAssignBar. Paid stays turf. Payment values, saving, keyboard controls, and public/private boundaries are unchanged. The rebrand report records all three decisions.
+- **Focused checks:** `npm run test:unit -- tests/organizer/boardEditor.test.tsx tests/organizer/organizerWorkspace.test.tsx`: 80 passed on the isolated rerun. The first run, overlapping the full checks, had one 5-second timeout; the full unit run and isolated rerun both passed that test.
+- **Gates:** `npx tsc --noEmit` passed; `npm run test:unit`: 159 files, 1200 tests passed; `npm run build` passed; `npm run design:lint`: 0 errors, 5 warnings; `PLAYWRIGHT_PORT=5173 npx playwright test --project=chromium`: 157 passed. The local pinned Chromium headless shell was available, so no executable-path wrapper was needed.
+- **Rendered verification:** a temporary mocked browser check passed for both payment controls at 390px and 1280px, checking neutral Unpaid styling, aria-checked selection, arrow-key movement to Paid and back, and focus. All four screenshots were inspected. Temporary spec removed; screenshots kept outside the repo in `/tmp/gridone-unpaid-{sheet,range}-{390,1280}.png`. Test-generated tracked screenshots under `.hermes/` and `.work/` restored.
+- **Integration:** `npm run test:integration` not run; the Docker integration layer remains unverified.
+- **Delivery:** local changes only. No commit, push, PR, merge, deployment, production change, or user contact.
