@@ -16,7 +16,7 @@ export function ScoreSection() {
   return (
     <section className="editorial-gameday" aria-labelledby="score-heading">
       <div className="editorial-section">
-        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">Your group on game day</p><h2 id="score-heading">Scores update themselves.</h2><p>At the end of each quarter, the last digit of each team’s score points to the winning square. GridOne marks it for you.</p><p>Winners for Q1, halftime, Q3, and the final score. Overtime counts toward the final.</p></Reveal>
+        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">On game day</p><h2 id="score-heading">Know what to root for.</h2><p>Find your squares, follow the live score, and see which next scores would make you win.</p><p>Quarter winners are tracked automatically. Final includes overtime.</p></Reveal>
         <div ref={explanation} data-score-explanation className="editorial-score-explanation" role="region" aria-label="How the score matches a square">
           <section className="editorial-score-card g-float" aria-label="Sample score">
             <h3>{demoGame.title}</h3><p className="editorial-small-label">Sample game · Q{demoLive.period} · {demoLive.clock}</p>
@@ -28,10 +28,10 @@ export function ScoreSection() {
         </div>
         <p className="editorial-result-note">Winners lock in at the end of each quarter.</p>
         <div className="editorial-viewer-answers">
-          <section><h3>Find your name. See your squares.</h3><p>Tap your name. See every square you have and if you’re winning.</p><dl className="editorial-personal"><dt>Sample selection · {demoWinnerNow}</dt><dd>{demoWinnerSquares.length} squares: {demoWinnerSquares.map(s => `KC ${s.left} × PHI ${s.top}`).join(' · ')}</dd></dl><p>Winners can get an email when their quarter ends.</p></section>
-          <section><h3>What could match next?</h3><p>If Kansas City adds a field goal (+{next.points}), the score becomes {demoLive.leftScore + next.points}–{demoLive.topScore}.</p><dl className="editorial-personal"><dt>KC {next.left} × PHI {next.top}</dt><dd>{next.names.join(', ') || 'OPEN'} would match.</dd></dl><p>{scenarios.disclaimer}</p></section>
+          <section><h3>Find your name. See your squares.</h3><p>Select your name to see your squares and whether they match.</p><dl className="editorial-personal"><dt>Sample selection · {demoWinnerNow}</dt><dd>{demoWinnerSquares.length} squares: {demoWinnerSquares.map(s => `KC ${s.left} × PHI ${s.top}`).join(' · ')}</dd></dl><p>Verify your email for quarter-winner notifications.</p></section>
+          <section><h3>See what makes you win next.</h3><p>If Kansas City adds a field goal (+{next.points}), the score becomes {demoLive.leftScore + next.points}–{demoLive.topScore}.</p><dl className="editorial-personal"><dt>KC {next.left} × PHI {next.top}</dt><dd>{next.names.join(', ') || 'OPEN'} would match.</dd></dl><p>{scenarios.disclaimer}</p></section>
         </div>
-        <Link to="/demo" onClick={trackViewDemo} className={`${quietLink} editorial-sample-link`}>Explore a sample board</Link>
+        <Link to="/demo" onClick={trackViewDemo} className={`${quietLink} editorial-sample-link`}>Try the demo</Link>
       </div>
     </section>
   );

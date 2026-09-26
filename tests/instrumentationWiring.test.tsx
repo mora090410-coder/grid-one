@@ -37,7 +37,7 @@ describe('homepage calls to action', () => {
     render(<MemoryRouter><Homepage /></MemoryRouter>);
     fireEvent.click(screen.getAllByRole('link', { name: /Create your free board/ })[0]);
     expect(track).toHaveBeenLastCalledWith({ name: 'homepage_primary_action', action: 'create_board', surface: 'homepage' });
-    fireEvent.click(screen.getAllByRole('link', { name: 'Explore a sample board' })[0]);
+    fireEvent.click(screen.getAllByRole('link', { name: 'Try the demo' })[0]);
     expect(track).toHaveBeenLastCalledWith({ name: 'homepage_secondary_action', action: 'view_demo', surface: 'homepage' });
   });
 });

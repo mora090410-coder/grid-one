@@ -18,7 +18,7 @@ GridOne is a tracking and communication tool. It may record purchaser names, sel
 
 ### Organizer
 
-A youth-sports or community volunteer running an NFL football-squares fundraiser. They are accountable to a group, usually work from a phone or laptop between other responsibilities, and care more about trust and reduced follow-up than software configurability.
+Anyone running an NFL football-squares board for friends, a watch party, an office pool, or a fundraiser. They coordinate a group, often work from a phone or laptop between other responsibilities, and want easy setup, less follow-up, and clear game-day results.
 
 One signed-in organizer owns each board. Before finalization, the organizer may grant a revocable, seven-day private family link that edits only the names and explicit availability of its assigned squares. Public viewer links never grant editing.
 

@@ -329,7 +329,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
   test('demo and published routes expose semantic headings and synthetic/demo identity', async ({ page }) => {
     await page.goto('/demo');
-    await expect(page.getByRole('heading', { level: 1, name: /Lincoln Softball Booster Board/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Sunday Football Board/i })).toBeVisible();
     await expect(page.getByText(/sample board/i).first()).toBeVisible();
 
     await installPublishedBoard(page);
@@ -348,7 +348,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await page.goto('/');
     for (const control of [
       page.getByRole('link', { name: 'Create your free board' }).first(),
-      page.getByRole('link', { name: 'Explore a sample board' }).first(),
+      page.getByRole('link', { name: 'Try the demo' }).first(),
     ]) {
       await expectTouchTarget(control);
       await control.focus();
@@ -776,7 +776,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('reduced-motion keeps public content and state reachable', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 2, name: 'Scores update themselves.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Know what to root for.' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
     await page.goto('/demo');
     await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();

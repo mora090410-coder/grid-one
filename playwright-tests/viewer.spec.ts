@@ -97,7 +97,7 @@ test.describe('viewer shell', () => {
     await page.goto('/demo');
 
     await expect(page.locator('[data-feature-flag]')).toHaveCount(0);
-    await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Lincoln Softball Booster Board/i })).toBeVisible();
+    await expect(page.getByTestId('viewer-first-viewport').getByRole('heading', { name: /Sunday Football Board/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport').getByRole('button', { name: /Find my squares/i })).toBeVisible();
     await expect(page.getByTestId('viewer-first-viewport')).not.toContainText(/Payouts|makes me win/i);
 

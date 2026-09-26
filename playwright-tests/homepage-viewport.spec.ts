@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// The money line must not depend on a third-party font arriving in time.
+// The hero reassurance must not depend on a third-party font arriving in time.
 for (const width of [1024, 1280, 1440]) {
   test(`desktop trust copy stays in the first viewport without web fonts at ${width}px`, async ({ page }, info) => {
     await page.route('**/*', route => {
@@ -15,10 +15,10 @@ for (const width of [1024, 1280, 1440]) {
     const required = [
       hero.getByRole('heading', { level: 1 }),
       hero.getByRole('link', { name: 'Create your free board' }),
-      hero.getByRole('link', { name: 'Explore a sample board' }),
-      hero.getByText('First published board free'),
-      hero.getByText('Viewers don’t need an account'),
-      hero.getByText('You collect the money your way. GridOne keeps the board.'),
+      hero.getByRole('link', { name: 'Try the demo' }),
+      hero.getByText('First published board free each season'),
+      hero.getByText('No account needed to view'),
+      hero.getByText('For watch parties, office pools, friends, and fundraisers.'),
     ];
     const boxes = await Promise.all(required.map(async locator => ({ text: await locator.innerText(), box: await locator.boundingBox() })));
     await info.attach('first-viewport-geometry', { body: JSON.stringify(boxes, null, 2), contentType: 'application/json' });

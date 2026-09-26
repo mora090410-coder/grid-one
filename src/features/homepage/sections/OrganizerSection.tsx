@@ -11,20 +11,9 @@ export function OrganizerSection() {
       <div className="editorial-section">
         <Reveal as="header" className="editorial-intro">
           <p className="editorial-kicker">Before kickoff</p>
-          <h2 id="organizer-heading">Less paper. Less chasing.</h2>
-          <p>Assign squares, share one link, draw numbers. That’s it.</p>
+          <h2 id="organizer-heading">Set up. Fill squares. Share.</h2>
+          <p>One board from setup to the final whistle.</p>
         </Reveal>
-        <div className="editorial-intro">
-          <h3 id="chaos-heading">The chaos</h3>
-          <ul aria-labelledby="chaos-heading" className="list-disc pl-5 font-ui text-base text-fg-2">
-            <li>Blurry board photos</li>
-            <li>Group chats full of "who won?"</li>
-            <li>Numbers get mixed up</li>
-            <li>Two people claiming the same square</li>
-            <li>Paying for a full party when half the squares are empty</li>
-            <li>Nobody knows where to look on game day</li>
-          </ul>
-        </div>
         <div className="editorial-organizer-layout">
 
           <section className="editorial-workspace g-float" aria-label="Sample organizer workspace">
@@ -36,15 +25,15 @@ export function OrganizerSection() {
               </ol></div>
               <aside className="editorial-square-detail" aria-label="Sample selected square details"><h4>Square 01</h4><dl><dt>Name on the board</dt><dd>{organizerDemoBoard.squares[0][0]}</dd><dt>Payment record · private</dt><dd>Paid</dd></dl><p>Only you see this.</p></aside>
             </div>
-            <p className="editorial-workspace-next">Next: draw numbers and share.</p>
+            <p className="editorial-workspace-next">Next: draw and lock numbers.</p>
           </section>
           <ol className="editorial-annotations" aria-label="The GridOne difference">
-            <li><span aria-hidden="true">01</span><div><h3>Keep names together.</h3><p>Assign one square or a whole block. Everyone has a place on the board.</p></div></li>
-            <li><span aria-hidden="true">02</span><div><h3>See what’s still open.</h3><p>See what’s still open before you draw numbers.</p></div></li>
-            <li><span aria-hidden="true">03</span><div><h3>Share when you’re ready.</h3><p>Share it while you sell. On game day, the same link shows the score.</p></div></li>
-            <li><span aria-hidden="true">04</span><div><h3>Bring your paper board.</h3><p>Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)</p><p>Sign in to import, then review every square before publishing.</p></div></li>
+            <li><span aria-hidden="true">01</span><div><h3>Set up your board.</h3><p>Choose an NFL game and name your board.</p></div></li>
+            <li><span aria-hidden="true">02</span><div><h3>Fill your squares.</h3><p>Add names and keep payment notes private.</p></div></li>
+            <li><span aria-hidden="true">03</span><div><h3>Share one link.</h3><p>Share before kickoff. Draw and lock numbers when you’re ready.</p></div></li>
           </ol>
         </div>
+        <details className="editorial-import"><summary className="min-h-11">Already have a paper board?</summary><p>Upload a photo to import it (Beta). Sign in, then review every square before publishing.</p></details>
       </div>
     </section>
   );

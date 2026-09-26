@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { DEMO_LABEL, demoGame, demoLive, demoWinnerNow } from '../demoData';
-import { MONEY_LINE } from '../pricing';
 import { ORGANIZER_FILLED, organizerDemoBoard } from '../renders/organizerDemoData';
 import { Enter, Grain } from '../../../design/primitives';
 import { SiteHeader } from '../../site/SiteHeader';
@@ -67,25 +66,24 @@ export function Hero() {
         <SiteHeader />
         <div className="studio-hero-layout">
           <div className="studio-hero-copy">
-            <Enter delay={0}><p className="hero-category">Football squares, together.</p></Enter>
-            <Enter as="h1" delay={40} className="studio-hero-title">Your fundraiser. <span>One clear board.</span></Enter>
-            <Enter delay={80}><p className="studio-hero-description">Build your football squares board, share one link, and give your group a clear view of game day.</p></Enter>
+            <Enter delay={0}><p className="hero-category">For your next NFL game.</p></Enter>
+            <Enter as="h1" delay={40} className="studio-hero-title">Football squares. <span>Made easy.</span></Enter>
+            <Enter delay={80}><p className="studio-hero-description">Create your board, share one link, and follow the scores and quarter winners.</p></Enter>
             <Enter delay={120}>
               <div className="studio-hero-actions">
                 <PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink>
-                <Link to="/demo" onClick={trackViewDemo} className={quietLink}>Explore a sample board</Link>
+                <Link to="/demo" onClick={trackViewDemo} className={quietLink}>Try the demo</Link>
               </div>
             </Enter>
             <Enter delay={120}>
-              <ul className="studio-hero-reassurance"><li>First published board free</li><li>Viewers don’t need an account</li></ul>
-              <p className="studio-hero-boundary">{MONEY_LINE}</p>
+              <ul className="studio-hero-reassurance"><li>First published board free each season</li><li>No account needed to view</li></ul>
+              <p className="studio-hero-boundary">For watch parties, office pools, friends, and fundraisers.</p>
             </Enter>
           </div>
           <Enter delay={80} className="studio-hero-stage">
             {/* Viewer first in reading order: the compact answer precedes setup on a phone. */}
             <GameDayExcerpt />
             <PreparationExcerpt />
-            <p className="hero-story-connection">Prepare it. Publish it.<br /><span>Everyone follows one link.</span></p>
             <p className="studio-hero-caption">{DEMO_LABEL}</p>
           </Enter>
         </div>

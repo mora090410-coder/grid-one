@@ -3,9 +3,9 @@ import type { BoardData, GameState, LiveGameData } from '../../../types';
 type DemoLiveGameData = LiveGameData & { retrievedAt: string };
 
 export const demoGame: GameState = {
-  title: 'Lincoln Softball Booster Board',
+  title: 'Sunday Football Board',
   meta: 'Chiefs at Eagles · Jan 18, 2026',
-  organizationDisplayName: 'Lincoln Softball Boosters',
+  organizationDisplayName: 'Sunday Football Crew',
   leftAbbr: 'KC',
   leftName: 'Kansas City',
   topAbbr: 'PHI',

@@ -68,8 +68,8 @@ describe('launch pricing copy', () => {
       .join('\n');
 
     // These are approved disclosures, not exceptions to a vocabulary blacklist.
-    expect(landing).toContain('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)');
-    expect(landing).toContain('Sign in to import, then review every square before publishing.');
+    expect(landing).toContain('Already have a paper board?');
+    expect(landing).toContain('Upload a photo to import it (Beta). Sign in, then review every square before publishing.');
     expect(landing).toContain('does not collect square money, hold funds, settle payments, or pay winners');
     expect(landing).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)/i);
   });

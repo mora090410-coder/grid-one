@@ -9,15 +9,15 @@ const expectTouchTarget = async (locator: Locator) => {
 
 test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your fundraiser. One clear board.');
-  await expect(page.getByText(/Build your football squares board, share one link/i)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
+  await expect(page.getByText(/Create your board, share one link/i)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
   await expect(page.getByText('First published board free')).toBeAttached();
 });
 
 test('demo board renders the sample game', async ({ page }) => {
   await page.goto('/demo');
-  await expect(page.getByText(/Lincoln Softball Booster Board/i).first()).toBeVisible();
+  await expect(page.getByText(/Sunday Football Board/i).first()).toBeVisible();
   await expect(page.getByText('Score updates about every three minutes')).toBeVisible();
   await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();
 });
@@ -26,10 +26,10 @@ test('representative landing controls expose names, touch geometry, and keyboard
   await page.goto('/');
 
   const build = page.getByRole('link', { name: 'Create your free board' }).first();
-  const demo = page.getByRole('link', { name: 'Explore a sample board' }).first();
+  const demo = page.getByRole('link', { name: 'Try the demo' }).first();
 
   await expect(build).toHaveAccessibleName('Create your free board');
-  await expect(demo).toHaveAccessibleName('Explore a sample board');
+  await expect(demo).toHaveAccessibleName('Try the demo');
   await expectTouchTarget(build);
   await expectTouchTarget(demo);
 

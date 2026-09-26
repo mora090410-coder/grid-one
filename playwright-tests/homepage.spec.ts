@@ -11,9 +11,9 @@ const firstViewport = async (page: import('@playwright/test').Page, height: numb
   const required: Array<[string, Locator]> = [
     ['heading', hero.getByRole('heading', { level: 1 })],
     ['create', hero.getByRole('link', { name: 'Create your free board' })],
-    ['demo', hero.getByRole('link', { name: 'Explore a sample board' })],
-    ['free', hero.getByText('First published board free')],
-    ['boundary', hero.getByText('You collect the money your way. GridOne keeps the board.')],
+    ['demo', hero.getByRole('link', { name: 'Try the demo' })],
+    ['free', hero.getByText('First published board free each season')],
+    ['boundary', hero.getByText('For watch parties, office pools, friends, and fundraisers.')],
   ];
   for (const [label, locator] of required) {
     const box = await locator.boundingBox();
@@ -52,14 +52,14 @@ const opacityOf = (locator: Locator) => locator.evaluate((element) => getCompute
  * fully opaque for a reduced-motion reader who never scrolls.
  */
 const SECTION_HEADINGS: Array<[string, RegExp]> = [
-  ['hero', /^Your fundraiser\.\s*One clear board\.$/],
-  ['score', /^Scores update themselves\.$/],
-  ['organizer', /^Less paper\. Less chasing\.$/],
-  ['pricing', /^Free to start\. Ready for your next board\.$/],
+  ['hero', /^Football squares\.\s*Made easy\.$/],
+  ['score', /^Know what to root for\.$/],
+  ['organizer', /^Set up\. Fill squares\. Share\.$/],
+  ['pricing', /^Your first board is free\.$/],
   ['close', /^Ready to build the board\?$/],
 ];
 
-test('phone first viewport holds identity, actions, and the money boundary', async ({ page }) => {
+test('phone first viewport holds identity, actions, and group examples', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await firstViewport(page, 844);
@@ -124,7 +124,7 @@ test('reduced motion shows every section finished, without scrolling', async ({ 
 
 test('demo handoff leads to a personal board preview', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Explore a sample board' }).first().click();
+  await page.getByRole('link', { name: 'Try the demo' }).first().click();
   await expect(page.getByText('Sample board — not a live game', { exact: true })).toBeVisible();
   await expect(page.getByText('This is a sample board. Ready to run yours?')).toBeVisible();
   await page.getByRole('button', { name: 'Create your own board' }).click();
@@ -136,7 +136,7 @@ test('no-JS fallback keeps the promise, the actions, and the boundary', async ({
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your fundraiser. One clear board.');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
   await expect(page.getByRole('link', { name: /Create your free board/i })).toBeVisible();
   await expect(page.getByText(/does not collect square money/i)).toBeVisible();
   await context.close();
@@ -146,11 +146,11 @@ test('no-JS fallback keeps the promise, the actions, and the boundary', async ({
 test('static hero connects preparation and game day with one fictional board', async ({ page }) => {
   await page.goto('/');
   const hero = page.getByTestId('homepage-first-viewport');
-  await expect(hero.getByRole('heading', { level: 1 })).toHaveText(/Your fundraiser\.\s*One clear board\./);
+  await expect(hero.getByRole('heading', { level: 1 })).toHaveText(/Football squares\.\s*Made easy\./);
   for (const name of ['Prepare your board', 'Your group on game day']) {
     const region = hero.getByRole('region', { name, exact: true });
     await expect(region).toBeVisible();
-    await expect(region.getByText('Lincoln Softball Booster Board', { exact: true })).toBeVisible();
+    await expect(region.getByText('Sunday Football Board', { exact: true })).toBeVisible();
     expect(await region.locator('a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])').count(), `${name} is a static preview`).toBe(0);
   }
   const viewer = hero.getByRole('region', { name: 'Your group on game day', exact: true });

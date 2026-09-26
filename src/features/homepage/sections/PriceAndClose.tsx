@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Reveal } from '../../../design/primitives';
-import { MONEY_BOUNDARY, PRICING, PRICING_SENTENCE } from '../pricing';
+import { MONEY_BOUNDARY, PRICING } from '../pricing';
 import { quietLink, trackViewDemo } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
 
@@ -16,7 +16,7 @@ export function PriceAndClose() {
   return (
     <>
       <section className="editorial-pricing editorial-section" aria-labelledby="pricing-heading">
-        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Free to start. Ready for your next board.</h2><p>{PRICING_SENTENCE}</p></Reveal>
+        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
         <Reveal as="section" aria-label="Plans" className="editorial-plans" delay={60}>
           {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
         </Reveal>
@@ -25,7 +25,7 @@ export function PriceAndClose() {
         <Reveal keepVisible className="editorial-faq-list">
           {faq.map(item => <details key={item.q}><summary className="min-h-11"><span>{item.q}</span><span aria-hidden="true" className="editorial-faq-marker"><span>+</span><span>−</span></span></summary><p>{item.a}</p></details>)}
         </Reveal>
-        <div className="editorial-close"><h2>Ready to build the board?</h2><div className="editorial-close-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Explore a sample board</Link></div></div>
+        <div className="editorial-close"><h2>Ready to build the board?</h2><div className="editorial-close-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Try the demo</Link></div></div>
       </section>
     </>
   );

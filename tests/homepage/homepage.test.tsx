@@ -7,29 +7,24 @@ import Homepage from '../../src/features/homepage/Homepage';
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
 describe('Homepage', () => {
-  it('lists exactly six distinct sources of organizer chaos', () => {
+  it('welcomes different groups and keeps setup to three steps', () => {
     renderPage();
-    const list = screen.getByRole('list', { name: 'The chaos' });
-    expect(within(list).getAllByRole('listitem').map(item => item.textContent)).toEqual([
-      'Blurry board photos',
-      'Group chats full of "who won?"',
-      'Numbers get mixed up',
-      'Two people claiming the same square',
-      'Paying for a full party when half the squares are empty',
-      'Nobody knows where to look on game day',
-    ]);
+    expect(screen.getByText('For watch parties, office pools, friends, and fundraisers.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'The chaos' })).not.toBeInTheDocument();
+    const steps = screen.getByRole('list', { name: 'The GridOne difference' });
+    expect(within(steps).getAllByRole('listitem')).toHaveLength(3);
   });
-  it('puts identity, promise, one primary action, and the money boundary in the first viewport', () => {
+  it('puts identity, promise, one primary action, and viewing reassurance in the hero', () => {
     renderPage();
     const hero = screen.getByTestId('homepage-first-viewport');
-    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Your fundraiser. One clear board.');
-    expect(within(hero).getByText(/Build your football squares board, share one link/)).toBeInTheDocument();
+    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Football squares. Made easy.');
+    expect(within(hero).getByText(/Create your board, share one link/)).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
-    expect(within(hero).getByRole('link', { name: 'Explore a sample board' })).toHaveAttribute('href', '/demo');
+    expect(within(hero).getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
-    expect(within(hero).getByText('First published board free')).toBeInTheDocument();
-    expect(within(hero).getByText('Viewers don’t need an account')).toBeInTheDocument();
-    expect(within(hero).getByText('You collect the money your way. GridOne keeps the board.')).toBeInTheDocument();
+    expect(within(hero).getByText('First published board free each season')).toBeInTheDocument();
+    expect(within(hero).getByText('No account needed to view')).toBeInTheDocument();
+    expect(within(hero).queryByText('You collect the money your way. GridOne keeps the board.')).not.toBeInTheDocument();
     expect(within(hero).queryByText(/does not collect square money/)).not.toBeInTheDocument();
     expect(within(hero).getByText('Sample board — not a live game')).toBeInTheDocument();
   });
@@ -39,7 +34,7 @@ describe('Homepage', () => {
     const hero = screen.getByTestId('homepage-first-viewport');
     for (const name of ['Prepare your board', 'Your group on game day']) {
       const excerpt = within(hero).getByRole('region', { name });
-      expect(within(excerpt).getByText('Lincoln Softball Booster Board')).toBeInTheDocument();
+      expect(within(excerpt).getByText('Sunday Football Board')).toBeInTheDocument();
       expect(excerpt.querySelector('a, button, input, select, textarea, [tabindex]')).toBeNull();
     }
     expect(within(hero).getByText('Numbers not drawn')).toBeInTheDocument();
@@ -50,8 +45,8 @@ describe('Homepage', () => {
 
   it('tells the organizer, game-day, then pricing story without retired demonstrations', () => {
     const { container } = renderPage();
-    const organizer = screen.getByRole('heading', { name: 'Less paper. Less chasing.' });
-    const score = screen.getByRole('heading', { name: 'Scores update themselves.' });
+    const organizer = screen.getByRole('heading', { name: 'Set up. Fill squares. Share.' });
+    const score = screen.getByRole('heading', { name: 'Know what to root for.' });
     const pricing = screen.getByRole('region', { name: 'Plans' });
     expect(organizer.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(score.compareDocumentPosition(pricing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -90,15 +85,15 @@ describe('Homepage', () => {
 
   it('explains automatic matching with an explicit Final and overtime qualification', () => {
     renderPage();
-    const explanation = screen.getByRole('region', { name: 'Scores update themselves.' });
-    expect(within(explanation).getByText('At the end of each quarter, the last digit of each team’s score points to the winning square. GridOne marks it for you.')).toBeInTheDocument();
-    expect(within(explanation).getByText(/Winners for Q1, halftime, Q3, and the final score. Overtime counts toward the final./)).toBeInTheDocument();
+    const explanation = screen.getByRole('region', { name: 'Know what to root for.' });
+    expect(within(explanation).getByText('Find your squares, follow the live score, and see which next scores would make you win.')).toBeInTheDocument();
+    expect(within(explanation).getByText(/Quarter winners are tracked automatically. Final includes overtime./)).toBeInTheDocument();
   });
 
   it('describes reviewed photo import without a speed or paid-plan promise', () => {
     renderPage();
-    expect(screen.getByText('Already have a paper board? Upload a photo and let GridOne help digitize it. (Beta)')).toBeInTheDocument();
-    expect(screen.getByText('Sign in to import, then review every square before publishing.')).toBeInTheDocument();
+    expect(screen.getByText('Already have a paper board?')).toBeInTheDocument();
+    expect(screen.getByText('Upload a photo to import it (Beta). Sign in, then review every square before publishing.')).toBeInTheDocument();
     expect(screen.queryByText(/digitizes it in seconds/i)).not.toBeInTheDocument();
   });
 

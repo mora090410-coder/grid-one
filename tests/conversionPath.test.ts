@@ -22,7 +22,7 @@ describe('public conversion path', () => {
   it('answers landing-page objections and closes with a second conversion point', () => {
     const homepage = homepageCorpus();
     for (const copy of [
-      'Build your football squares board, share one link, and give your group a clear view of game day.',
+      'Create your board, share one link, and follow the scores and quarter winners.',
       'Viewers open the link without creating an account',
       'Do viewers need an account?',
       'Does GridOne collect square money?',

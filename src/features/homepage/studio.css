@@ -146,3 +146,8 @@
   .editorial-single-match p, .editorial-single-match span { font-size: 1rem; line-height: 1.5; }
   .editorial-single-match strong { font-size: 1.25rem; font-weight: 500; }
 }
+
+/* Keep reviewed photo import available without interrupting the setup story. */
+.editorial-import { margin-top: 32px; border-top: 1px solid var(--g-hairline); color: var(--g-text-2); }
+.editorial-import summary { padding-block: 16px; cursor: pointer; color: var(--g-text); }
+.editorial-import p { max-width: 48rem; font-size: 1rem; line-height: 1.6; }

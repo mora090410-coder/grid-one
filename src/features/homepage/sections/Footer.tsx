@@ -10,7 +10,7 @@ const groups = [
     ['digital-football-squares-board-vs-paper', 'Digital board vs paper'],
     ['super-bowl-squares-ideas', 'Super Bowl squares ideas'],
   ] },
-  { title: 'Organize your fundraiser', links: [
+  { title: 'Run your board', links: [
     ['football-squares-fundraiser', 'Football squares fundraiser'],
     ['youth-sports-football-squares-fundraiser', 'Youth sports fundraiser squares'],
     ['run-your-pool-alternative', 'Run Your Pool alternative'],
