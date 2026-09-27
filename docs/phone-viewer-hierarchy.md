@@ -34,7 +34,7 @@ The composition, component boundaries, and disclosure mechanisms below are the c
 | 6 | `scenarios/ScenarioDisclosure` | region `Next scores that match your squares` |
 | 7 | `notifications/WinnerEmailDisclosure` | form `winner email` |
 | — | `board/ViewerBoardGrid` | grid `Football squares board, Top team {away}, Side team {home}`, in the board column under heading `Board` |
-| — | `details/BoardDetailsDisclosure` | `Board details` disclosure, after the grid |
+| — | `details/BoardDetailsDisclosure` | `Payouts` region after the grid, only when payouts or rules are published |
 
 The first column carries `data-testid="viewer-first-viewport"`, and the accessibility spec asserts that on a 390×844 phone the `Find my squares` button lands inside it.
 
@@ -93,14 +93,21 @@ Any stale-family state prefixes the timestamp line with `Last known · `. When n
 - **One tab stop.** Exactly one `gridcell` is in the page tab sequence at a time; `Tab` enters at the selected or first meaningful cell.
 - **Arrow keys** move one cell. `Home` / `End` move within the row.
 - **Cell names** carry assignment state, coordinate, and both digits: `Ann, coordinate row 1 column 1, top digit 0, side digit 0`, or `OPEN, coordinate row 1 column 2, top digit 1, side digit 0`.
-- **Controls** live in a group named `Board controls`: `Zoom in`, `Zoom out`, `Fit`, `Current zoom`, `Center selected square`, and `Center current result`. Centering moves the viewport on explicit activation only.
+- **Fit is the default.** At 100% the board fills its box, so a phone shows all 100 squares with readable labels (at least 10px) instead of a desktop board shrunk to fit. Zoom widens the board inside its scrolling box, from 100% to 250%. The size math lives in `boardGeometry` in `board/boardGridModel.ts`.
+- **Controls** live in one row, a group named `Board controls`: `Zoom out`, `Current zoom`, and `Zoom in` always; `Fit`, `Center current result`, and `Center selected square` only while zoomed in, where centering has somewhere to move. Centering moves the viewport on explicit activation only.
+- **Team key.** A line above the board reads `Top · {top abbr} →` and `Side · {side abbr} ↓`. The side team's digits are the first column; there is no separate rotated side label.
+- **Tapped square.** Tapping or arrowing to a square spells out, under the board, the full name(s), both digits, and `Winning now` or `Past winner` where true. Before any tap it reads `Tap a square to see the full name.`
 - **Axes are sticky.** Top and side digits stay oriented while the board pans.
 - **State is never color alone.** The current result is marked `NOW`; open squares read `OPEN`; resolved winners and corrections carry text.
 - The grid is read-only and never implies editability.
 
-## Board details and payouts
+## Payouts and rules
 
-`BoardDetailsDisclosure` sits **after** the grid: `Board details` (`Teams`, `Digits`, `Squares assigned`), `Payouts`, and `Board rules`, with `Top axis and side axis use organizer-published digits.` Where a payout is not published the viewer is pointed to `see board rules`. This block never rises above `Find my squares`.
+`BoardDetailsDisclosure` sits **after** the grid and shows `Payouts` and `Board rules` only when the organizer published them; otherwise it renders nothing. There is no `Board details` disclosure: teams, the assigned count, and the number mode already show above the board, and a fixed "drawn once" sentence was false on quarter-by-quarter boards. Where a payout is not published the viewer is pointed to `see board rules`. This block never rises above `Find my squares`.
+
+## Quarter-by-quarter numbers
+
+When a viewer picks an earlier quarter's numbers, the status line says `The live square shows only on the current numbers` and a `Back to live numbers` button returns to the live quarter. `View on board` always looks the square up in the live quarter's numbers.
 
 `FinalRecord` lists resolved milestones — `Halftime`, `Final`, and the rest — with `Open square` for an unassigned result and `No resolved winner records have been published yet.` when there are none.
 

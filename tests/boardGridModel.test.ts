@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBoardGridModel } from '../src/features/viewer/board/boardGridModel';
+import { boardFitWidth, boardGeometry, buildBoardGridModel } from '../src/features/viewer/board/boardGridModel';
 import type { BoardData, GameState, LiveGameData, WinnerResolution } from '../types';
 
 const game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'> = {
@@ -114,5 +114,24 @@ describe('Slice 7 boardGridModel', () => {
     expect(model.quarter).toBe('Final');
     expect(model.topAxis).toEqual([4,2,0,8,6,1,3,5,7,9]);
     expect(model.sideAxis).toEqual([7,5,3,1,9,6,4,2,0,8]);
+  });
+});
+
+describe('board geometry', () => {
+  it('fills a phone-width box at 100% with readable text instead of shrinking a desktop board', () => {
+    const phone = boardGeometry(boardFitWidth(340), 1);
+    expect(phone.width).toBe(340);
+    expect(phone.cell).toBeGreaterThan(28);
+    expect(phone.cellFont).toBeGreaterThanOrEqual(10);
+    expect(phone.axisFont).toBeGreaterThanOrEqual(12);
+  });
+
+  it('caps the fit width on wide screens and bounds zoom', () => {
+    expect(boardFitWidth(1200)).toBe(760);
+    expect(boardFitWidth(200)).toBe(300);
+    expect(boardFitWidth(0)).toBe(760);
+    expect(boardGeometry(340, 10).width).toBe(Math.floor(340 * 2.5));
+    expect(boardGeometry(340, 0.1).width).toBe(340);
+    expect(boardGeometry(760, 2.5).cellFont).toBeLessThanOrEqual(15);
   });
 });

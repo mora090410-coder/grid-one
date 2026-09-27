@@ -69,7 +69,7 @@ The 10×10 viewer and organizer boards are composite interactive grids, not 100 
 ### Viewer grid
 
 - Read-only. The grid never implies editability.
-- `Board controls` group: `Zoom in`, `Zoom out`, `Fit`, `Current zoom`, `Center selected square`, `Center current result`.
+- `Board controls` group: `Zoom out`, `Current zoom`, and `Zoom in` always (`Zoom out` is disabled at 100%, which already fits the board); `Fit`, `Center selected square`, and `Center current result` appear while zoomed in. The tapped-square line under the board is a polite live region with the full name and both digits.
 
 ### Organizer assignment grid
 

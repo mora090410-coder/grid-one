@@ -200,3 +200,43 @@ export const buildBoardGridModel = ({
 
   return { quarter, topTeamName, sideTeamName, topAxis, sideAxis, cells };
 };
+
+/**
+ * Board geometry. At 100% the board fills its box, so a phone shows every
+ * square at a readable size instead of a desktop board shrunk to fit. Zoom
+ * widens the board inside its scrolling box; text grows with the cells but
+ * stays within fixed bounds.
+ */
+export const BOARD_ZOOM = { min: 1, max: 2.5, step: 0.25 } as const;
+export const BOARD_FIT_WIDTH = { min: 300, max: 760 } as const;
+const BOARD_CELL_GAP = 2;
+const AXIS_TO_CELL = 0.8;
+
+export interface ViewerBoardGeometry {
+  width: number;
+  cell: number;
+  axis: number;
+  cellFont: number;
+  axisFont: number;
+  badgeFont: number;
+}
+
+const bound = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/** The board's fit width for a scrolling box whose inner width is `available`. */
+export const boardFitWidth = (available: number): number =>
+  available > 0 ? Math.floor(bound(available, BOARD_FIT_WIDTH.min, BOARD_FIT_WIDTH.max)) : BOARD_FIT_WIDTH.max;
+
+export const boardGeometry = (fitWidth: number, zoom: number): ViewerBoardGeometry => {
+  const width = Math.floor(fitWidth * bound(zoom, BOARD_ZOOM.min, BOARD_ZOOM.max));
+  // Eleven columns (side digits + ten squares) separated by twelve gaps.
+  const cell = (width - BOARD_CELL_GAP * 12) / (10 + AXIS_TO_CELL);
+  return {
+    width,
+    cell,
+    axis: cell * AXIS_TO_CELL,
+    cellFont: bound(cell * 0.36, 10, 15),
+    axisFont: bound(cell * 0.45, 12, 16),
+    badgeFont: bound(cell * 0.25, 8, 10),
+  };
+};

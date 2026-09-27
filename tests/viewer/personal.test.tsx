@@ -73,7 +73,9 @@ describe('BoardDetailsDisclosure', () => {
     render(<BoardDetailsDisclosure game={game} board={board} winnerHistory={history} final />);
     expect(screen.getByRole('heading', { name: 'Final record' })).toBeInTheDocument();
     expect(screen.getByText(/Halftime/)).toBeInTheDocument();
-    expect(screen.getByText('Board details')).toBeInTheDocument();
+    // Teams, assigned count and number mode already show above the board.
+    expect(screen.queryByText('Board details')).toBeNull();
+    expect(screen.queryByText(/Drawn once/)).toBeNull();
   });
 
   it('shows the correction reason for a corrected result', () => {

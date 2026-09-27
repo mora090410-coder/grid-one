@@ -4,6 +4,7 @@ import { DigitFlow, Eyebrow, Glass, Numeral } from '../../../design/primitives';
 import { buildViewerScoreModel } from './viewerScoreModel';
 import { playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
 import { hasValidAxes } from '../../../../utils/boardValidation';
+import TeamStripe from '../teams/TeamStripe';
 
 const shortName = (names: string[], empty = 'Unassigned') => {
   if (!names.length) return empty;
@@ -44,12 +45,12 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
 
       <Glass as="div" padding="lg" className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${surfaceClassName}`.trim()} aria-label="Score">
         <div className="flex flex-col gap-2 min-w-0">
-          <Eyebrow>{game.leftName || leftLabel}</Eyebrow>
+          <span className="flex items-center gap-1.5 min-w-0"><TeamStripe abbr={game.leftAbbr} /><span className="min-w-0 break-words"><Eyebrow>{game.leftName || leftLabel}</Eyebrow></span></span>
           {live ? <Numeral value={live.leftScore} size="lg" label={`${game.leftName || leftLabel} ${live.leftScore}`} /> : <span role="img" aria-label={`${game.leftName || leftLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}
         </div>
         <span className="font-mono text-[13px] text-fg-3 pb-2">{score.periodLabel}</span>
         <div className="flex flex-col items-end gap-2 min-w-0 text-right">
-          <Eyebrow>{game.topName || topLabel}</Eyebrow>
+          <span className="flex items-center justify-end gap-1.5 min-w-0"><span className="min-w-0 break-words"><Eyebrow>{game.topName || topLabel}</Eyebrow></span><TeamStripe abbr={game.topAbbr} /></span>
           {live ? <Numeral value={live.topScore} size="lg" label={`${game.topName || topLabel} ${live.topScore}`} /> : <span role="img" aria-label={`${game.topName || topLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}
         </div>
       </Glass>

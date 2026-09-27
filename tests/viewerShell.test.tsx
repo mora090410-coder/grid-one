@@ -190,3 +190,35 @@ it('shows the confirmed Q1 winner during Q2', () => {
   expect(screen.getByRole('region', { name: 'Completed results' })).toHaveTextContent('Q1 · Demo Family');
   expect(screen.queryByRole('region', { name: 'Final record' })).toBeNull();
 });
+
+describe('ViewerShell quarter-by-quarter numbers', () => {
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const reversed = [...digits].reverse();
+  const quarterBoard: BoardData = {
+    ...board,
+    isDynamic: true,
+    topAxisByQuarter: { Q1: digits, Q2: digits, Q3: reversed, Q4: digits },
+    leftAxisByQuarter: { Q1: digits, Q2: digits, Q3: reversed, Q4: digits },
+  };
+
+  it('says when an earlier quarter is on screen and returns to the live numbers in one tap', () => {
+    renderShell({ board: quarterBoard, live: live({ period: 4 }) });
+    const quarterGroup = screen.getByRole('group', { name: 'Quarter numbers' });
+    fireEvent.click(within(quarterGroup).getByRole('button', { name: '3rd' }));
+    expect(screen.getByText(/Showing 3rd numbers\. The live square shows only on the current numbers/)).toBeVisible();
+    expect(document.querySelector('[data-current="true"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to live numbers' }));
+    expect(screen.getByText(/Showing Final numbers \(now\)/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Back to live numbers' })).toBeNull();
+    expect(document.querySelector('[data-current="true"]')).not.toBeNull();
+  });
+
+  it('View on board finds the square in the live quarter numbers, not the first quarter', () => {
+    // Live in Q3, where both axes run 9..0: Carrie's square 34 (row 3, col 4) holds top 5, side 6.
+    renderShell({ board: quarterBoard, live: live({ period: 3, topScore: 5, leftScore: 6 }), selectedPlayer: 'Carrie Moss' });
+    const target = screen.getByRole('gridcell', { name: /Carrie Moss, coordinate row 4 column 5/ });
+    target.scrollIntoView = vi.fn();
+    fireEvent.click(screen.getByRole('button', { name: /View on board top 5 side 6/ }));
+    expect(target).toHaveFocus();
+  });
+});

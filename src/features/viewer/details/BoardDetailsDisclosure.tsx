@@ -5,7 +5,8 @@ import { milestoneLabel } from '../milestones/milestoneViewModel';
 
 export interface BoardDetailsDisclosureProps {
   game: GameState;
-  board: BoardData;
+  /** Kept for call-site compatibility; the board is summarized above the grid. */
+  board?: BoardData;
   winnerHistory: WinnerResolution[];
   final: boolean;
   pendingMilestones?: PendingMilestone[];
@@ -116,23 +117,17 @@ export const PayoutsAndRules: React.FC<{ game: GameState; winnerHistory?: Winner
   );
 };
 
-const BoardDetailsDisclosure: React.FC<BoardDetailsDisclosureProps> = ({ game, board, winnerHistory, final, pendingMilestones }) => (
-  <section className="flex flex-col gap-4" aria-labelledby="board-details-title">
+/**
+ * What sits after the board: the final record once the game ends, then
+ * payouts and board rules when the organizer published any. Teams, the
+ * assigned count, and the number mode already show above the board, so this
+ * block adds nothing when there is nothing to add.
+ */
+const BoardDetailsDisclosure: React.FC<BoardDetailsDisclosureProps> = ({ game, winnerHistory, final, pendingMilestones }) => (
+  <>
     {final && <FinalRecord winnerHistory={winnerHistory} game={game} />}
     <PayoutsAndRules game={game} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} />
-    <details className="group rounded-card border border-hairline p-3">
-      <summary id="board-details-title" className="min-h-11 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden font-ui text-[15px] text-fg">
-        <span>Board details</span>
-        <span aria-hidden="true" className="font-mono text-fg-3 group-open:hidden">+</span>
-        <span aria-hidden="true" className="font-mono text-fg-3 hidden group-open:inline">−</span>
-      </summary>
-      <dl className="mt-3 flex flex-col gap-3">
-        <div><dt><Eyebrow as="span">Teams</Eyebrow></dt><dd className="font-ui text-[15px] text-fg">{game.leftName || game.leftAbbr} at {game.topName || game.topAbbr}</dd></div>
-        <div><dt><Eyebrow as="span">Squares assigned</Eyebrow></dt><dd className="font-mono tabular-nums text-[15px] text-fg">{board.squares.filter((names) => names.length > 0).length} of 100</dd></div>
-        <div><dt><Eyebrow as="span">Digits</Eyebrow></dt><dd className="font-ui text-[15px] text-fg-2">Drawn once by the organizer and locked for the game.</dd></div>
-      </dl>
-    </details>
-  </section>
+  </>
 );
 
 export default BoardDetailsDisclosure;

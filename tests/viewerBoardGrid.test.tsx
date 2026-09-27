@@ -62,10 +62,11 @@ describe('ViewerBoardGrid Slice 7', () => {
     renderGrid();
     const grid = screen.getByRole('grid', { name: /football squares board/i });
     expect(grid).toHaveAttribute('aria-rowcount', '11');
-    expect(grid).toHaveAttribute('aria-colcount', '12');
-    expect(grid.querySelectorAll('col')).toHaveLength(12);
-    expect(within(grid).getByText('Top · WAS')).toBeVisible();
-    expect(within(grid).getByText('Side · DAL')).toBeVisible();
+    expect(grid).toHaveAttribute('aria-colcount', '11');
+    expect(grid.querySelectorAll('col')).toHaveLength(11);
+    const key = screen.getByTestId('board-team-key');
+    expect(within(key).getByText(/Top · WAS/)).toBeVisible();
+    expect(within(key).getByText(/Side · DAL/)).toBeVisible();
     expect(screen.getByText(/Columns: Washington Commanders — digit 4.*Rows: Dallas Cowboys — digit 7.*Current square: WAS 4 across × DAL 7 down/i)).toBeVisible();
     expect(within(grid).getByRole('columnheader', { name: /Washington Commanders top digit 4/i })).toHaveAttribute('data-sticky-axis', 'top');
     expect(within(grid).getByRole('rowheader', { name: /Dallas Cowboys side digit 7/i })).toHaveAttribute('data-sticky-axis', 'side');
@@ -165,12 +166,16 @@ describe('ViewerBoardGrid Slice 7', () => {
     });
   });
 
-  it('renders zoom/find/center controls as 44px targets', () => {
+  it('fits at 100% with one row of zoom controls and shows center controls only when zoomed', () => {
     const { container } = renderGrid();
-    for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /^Fit$/i, /Center selected square/i]) {
+    for (const name of [/Zoom out/i, /Zoom in/i]) {
       expect(screen.getByRole('button', { name })).toHaveStyle({ minHeight: '44px', minWidth: '44px' });
     }
     expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('100%');
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Fit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Center current result' })).toBeNull();
+
     const viewport = container.querySelector('.gridone-viewer-board-viewport') as HTMLDivElement;
     const scrollTo = vi.fn();
     Object.defineProperties(viewport, {
@@ -178,12 +183,28 @@ describe('ViewerBoardGrid Slice 7', () => {
       clientHeight: { value: 240, configurable: true },
       scrollTo: { value: scrollTo, configurable: true },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
-    expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('50%');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('125%');
+    for (const name of [/^Fit$/i, /Center current result/i, /Center selected square/i]) {
+      expect(screen.getByRole('button', { name })).toHaveStyle({ minHeight: '44px', minWidth: '44px' });
+    }
     fireEvent.click(screen.getByRole('button', { name: 'Center current result' }));
     fireEvent.click(screen.getByRole('button', { name: 'Center selected square' }));
     expect(scrollTo).toHaveBeenCalledTimes(2);
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
+    expect(screen.getByRole('status', { name: 'Current zoom' })).toHaveTextContent('100%');
+  });
+
+  it('spells out the full name and digits of a tapped square', () => {
+    renderGrid();
+    const detail = screen.getByTestId('board-square-detail');
+    expect(detail).toHaveTextContent('Tap a square to see the full name.');
+    const grid = screen.getByRole('grid', { name: /football squares board/i });
+    fireEvent.click(within(grid).getByRole('gridcell', { name: /Ann Lee, coordinate row 3 column 2/i }));
+    expect(detail).toHaveTextContent('Ann Lee · WAS 4 across · DAL 7 down · Winning now');
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
+    expect(detail).toHaveTextContent('OPEN · WAS 1 across · DAL 7 down');
   });
 
   it('emphasizes a newly matching square without moving the grid', () => {

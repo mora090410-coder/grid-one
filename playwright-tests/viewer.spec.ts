@@ -113,9 +113,10 @@ test.describe('viewer shell', () => {
     const boardInstrument = page.getByTestId('viewer-board-grid');
     const grid = boardInstrument.getByRole('grid', { name: /football squares board/i });
     await expect(grid).toBeVisible();
-    await expect(grid.getByText('Top · WAS')).toBeVisible();
-    await expect(grid.getByText('Side · DAL')).toBeVisible();
+    await expect(boardInstrument.getByTestId('board-team-key').getByText(/Top · WAS/)).toBeVisible();
+    await expect(boardInstrument.getByTestId('board-team-key').getByText(/Side · DAL/)).toBeVisible();
     await expect(boardInstrument.getByText(/Columns: Washington Commanders.*Rows: Dallas Cowboys/i)).toBeVisible();
+    await boardInstrument.getByRole('button', { name: 'Zoom in', exact: true }).click();
     for (const name of [/Zoom out/i, /Center current result/i, /Zoom in/i, /Fit/i]) {
       const box = await boardInstrument.getByRole('button', { name, exact: true }).boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
@@ -129,6 +130,23 @@ test.describe('viewer shell', () => {
     await expect(grid.getByRole('gridcell', { name: /OPEN.*coordinate row 1 column 2.*top digit 1.*side digit 0/i })).toBeFocused();
     await page.keyboard.press('Control+End');
     await expect(grid.getByRole('gridcell', { name: /coordinate row 10 column 10.*top digit 9.*side digit 9/i })).toBeFocused();
+  });
+
+  test('phone board fits its box at 100% with readable square labels', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/demo');
+    const boardInstrument = page.getByTestId('viewer-board-grid');
+    await boardInstrument.scrollIntoViewIfNeeded();
+    await expect(boardInstrument.getByRole('status', { name: 'Current zoom' })).toHaveText('100%');
+    const fit = await boardInstrument.locator('.gridone-viewer-board-viewport').evaluate((viewport) => ({
+      scrolls: viewport.scrollWidth > viewport.clientWidth + 1,
+      fontSize: parseFloat(getComputedStyle(viewport.querySelector('[role="gridcell"]') as Element).fontSize),
+      cellWidth: (viewport.querySelector('[role="gridcell"]') as HTMLElement).getBoundingClientRect().width,
+    }));
+    expect(fit.scrolls).toBe(false);
+    expect(fit.fontSize).toBeGreaterThanOrEqual(10);
+    expect(fit.cellWidth).toBeGreaterThanOrEqual(26);
+    await expect(page.getByText('Board details')).toHaveCount(0);
   });
 
   test('C1 first viewport, score island, and no horizontal overflow at 390x844', async ({ page }) => {

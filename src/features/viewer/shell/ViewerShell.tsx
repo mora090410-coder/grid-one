@@ -9,7 +9,7 @@ import YourSquaresSummary from '../personal/YourSquaresSummary';
 import ScenarioDisclosure from '../scenarios/ScenarioDisclosure';
 import WinnerEmailDisclosure from '../notifications/WinnerEmailDisclosure';
 import BoardDetailsDisclosure, { CompletedResults, FinalRecord } from '../details/BoardDetailsDisclosure';
-import { playersForDigits, quarterForLive, type ViewerQuarter } from '../scenarios/scenarioModel';
+import { playersForDigits, quarterForLive, squareIndexForDigits, type ViewerQuarter } from '../scenarios/scenarioModel';
 import { hasValidAxes } from '../../../../utils/boardValidation';
 
 const VIEWER_QUARTER_LABEL = { Q1: '1st', Q2: '2nd', Q3: '3rd', Final: 'Final' } as const;
@@ -93,9 +93,10 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const viewSquare = (coords: { left: number; top: number } | null) => {
     setFocus(coords);
     if (!coords) return;
-    const row = board.leftAxis.indexOf(coords.left);
-    const col = board.topAxis.indexOf(coords.top);
-    if (row >= 0 && col >= 0) setViewSquareRequest({ row, col });
+    // setFocus returns the board to the live quarter, so look the square up in
+    // that quarter's numbers. Another quarter's numbers would point elsewhere.
+    const index = squareIndexForDigits(board, coords.top, coords.left, activeQuarter);
+    if (index >= 0) setViewSquareRequest({ row: Math.floor(index / 10), col: index % 10 });
   };
 
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
@@ -150,7 +151,10 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
             <div role="group" aria-label="Quarter numbers" className="flex flex-wrap gap-2">
               {(['Q1', 'Q2', 'Q3', 'Final'] as const).map((quarter) => <CapsuleButton key={quarter} variant="quiet" aria-pressed={selectedQuarter === quarter} onClick={() => { setInspectedQuarter(quarter === activeQuarter ? null : quarter); setBoardFocus(null); }}>{VIEWER_QUARTER_LABEL[quarter]}</CapsuleButton>)}
             </div>
-            <p role="status" className="text-sm text-fg-2">New numbers each quarter. Showing {VIEWER_QUARTER_LABEL[selectedQuarter]} numbers{selectedQuarter === activeQuarter ? ' (now)' : ''}.</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p role="status" className="text-sm text-fg-2">New numbers each quarter. Showing {VIEWER_QUARTER_LABEL[selectedQuarter]} numbers{selectedQuarter === activeQuarter ? ' (now)' : '. The live square shows only on the current numbers'}.</p>
+              {selectedQuarter !== activeQuarter && <CapsuleButton variant="quiet" onClick={() => { setInspectedQuarter(null); setBoardFocus(null); }}>Back to live numbers</CapsuleButton>}
+            </div>
           </div>}
           {!hasValidAxes(board) && <p role="status" className="text-sm text-fg-2">The organizer is still checking the numbers.</p>}
           {isEmpty && !organizerPreview ? (
