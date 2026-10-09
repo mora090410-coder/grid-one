@@ -18,7 +18,7 @@ interface ManualScoringPanelProps {
   onEnableManualScoring: () => void;
   onUpdateManualGameState: (state: ManualGameState) => void;
   onUpdateManualPeriod: (period: number) => void;
-  onUpdateManualQuarter: (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => void;
+  onUpdateManualQuarter: (quarter: ManualQuarterKey, side: ManualScoreSide, value: number | null) => void;
   onSaveManualScore: () => void;
 }
 
@@ -51,6 +51,8 @@ export const ManualScoringPanel = ({
     game.manualPeriod,
     game.manualQuarterScores,
   );
+  const kickoffMs = game.kickoffAt ? Date.parse(game.kickoffAt) : Number.NaN;
+  const beforeKickoff = Number.isFinite(kickoffMs) && kickoffMs > Date.now();
 
   return (
     <>
@@ -134,15 +136,17 @@ export const ManualScoringPanel = ({
                 <input
                   type="number"
                   min={0}
-                  value={game.manualQuarterScores?.[q]?.left ?? 0}
-                  onChange={(e) => onUpdateManualQuarter(q, 'left', sanitizeManualScoreInput(parseInt(e.target.value) || 0))}
+                  aria-label={`${q} ${game.leftAbbr}`}
+                  value={game.manualQuarterScores?.[q]?.left ?? ''}
+                  onChange={(e) => onUpdateManualQuarter(q, 'left', e.target.value === '' ? null : sanitizeManualScoreInput(parseInt(e.target.value, 10)))}
                   className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
                 />
                 <input
                   type="number"
                   min={0}
-                  value={game.manualQuarterScores?.[q]?.top ?? 0}
-                  onChange={(e) => onUpdateManualQuarter(q, 'top', sanitizeManualScoreInput(parseInt(e.target.value) || 0))}
+                  aria-label={`${q} ${game.topAbbr}`}
+                  value={game.manualQuarterScores?.[q]?.top ?? ''}
+                  onChange={(e) => onUpdateManualQuarter(q, 'top', e.target.value === '' ? null : sanitizeManualScoreInput(parseInt(e.target.value, 10)))}
                   className="w-full rounded-control bg-panel border border-hairline h-11 px-4 font-ui text-[16px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
                 />
               </div>
@@ -158,14 +162,19 @@ export const ManualScoringPanel = ({
             </div>
           </div>
           <p className="font-ui text-[11px] text-fg-3 leading-relaxed">
-            Enter each quarter's points, not running totals. Publishing a completed period confirms its result and prepares winner emails.
+            Enter each quarter's points, not running totals. Leave a quarter blank if you don't know it yet; a blank quarter is not settled. Enter 0 when that quarter really scored nothing. Publishing after kickoff confirms the periods you entered and prepares winner emails.
           </p>
+          {beforeKickoff && (
+            <p className="font-ui text-[13px] text-fg-2" role="status">
+              Manual scores cannot be published before kickoff.
+            </p>
+          )}
           <CapsuleButton
             type="button"
             variant="primary"
             className="w-full"
             onClick={onSaveManualScore}
-            disabled={scoreSaveStatus === 'saving'}
+            disabled={scoreSaveStatus === 'saving' || beforeKickoff}
           >
             {scoreSaveStatus === 'saving' ? 'Publishing score…' : 'Publish manual score'}
           </CapsuleButton>

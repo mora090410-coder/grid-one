@@ -74,7 +74,7 @@ describe('ManualScoringPanel', () => {
     expect(screen.getByText('Live Scoring')).toBeVisible();
     expect(screen.getByLabelText('Game Status')).toHaveValue('in');
     expect(screen.getByLabelText('Current Period')).toHaveValue('2');
-    expect(screen.getByText("Enter each quarter's points, not running totals. Publishing a completed period confirms its result and prepares winner emails.")).toBeVisible();
+    expect(screen.getByText(/Leave a quarter blank if you don't know it yet/)).toBeVisible();
     expect(screen.getByText('29')).toBeVisible();
     expect(screen.getByText('13')).toBeVisible();
 
@@ -90,6 +90,35 @@ describe('ManualScoringPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Publish manual score' }));
     expect(onSaveManualScore).toHaveBeenCalledOnce();
+
+    fireEvent.change(inputs[0], { target: { value: '' } });
+    expect(onUpdateManualQuarter).toHaveBeenCalledWith('Q1', 'left', null);
+  });
+
+  it('keeps a manual score unpublished until kickoff', () => {
+    const onSaveManualScore = vi.fn();
+    render(
+      <ManualScoringPanel
+        isActivated
+        game={baseGame({
+          useManualScores: true,
+          kickoffAt: '2027-06-01T18:00:00.000Z',
+          manualQuarterScores: quarterScores,
+        })}
+        scoreSaveStatus="idle"
+        onEnableAutomaticScoring={vi.fn()}
+        onEnableManualScoring={vi.fn()}
+        onUpdateManualGameState={vi.fn()}
+        onUpdateManualPeriod={vi.fn()}
+        onUpdateManualQuarter={vi.fn()}
+        onSaveManualScore={onSaveManualScore}
+      />,
+    );
+
+    expect(screen.getByText('Manual scores cannot be published before kickoff.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Publish manual score' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Publish manual score' }));
+    expect(onSaveManualScore).not.toHaveBeenCalled();
   });
 
   it('preserves loading and scheduled/final disabled behavior', () => {

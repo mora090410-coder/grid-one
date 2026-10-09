@@ -1009,7 +1009,7 @@ export default function OrganizerWorkspace({
                 draft={gameDay.correctionDraft}
                 pending={gameDay.scoreSaveStatus === 'saving'}
                 onDraftChange={gameDay.setCorrectionDraft}
-                onPublishCorrection={() => void gameDay.publishCorrection()}
+                onPublishCorrection={(notify) => void gameDay.publishCorrection(notify)}
               /></div>
               <div id="organizer-delivery" tabIndex={-1}><DeliveryIssuesCard issues={notificationDeliveryIssues} /></div>
               <BoardToolsCard

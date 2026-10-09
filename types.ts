@@ -40,12 +40,13 @@ export interface GameState {
   useManualScores?: boolean;
   manualLeftScore?: number; // legacy single-total entry (pre-quarter UI boards)
   manualTopScore?: number;  // legacy single-total entry (pre-quarter UI boards)
+  /** Null on a side means the organizer has not entered that quarter. */
   manualQuarterScores?: {
-    Q1: QuarterScores;
-    Q2: QuarterScores;
-    Q3: QuarterScores;
-    Q4: QuarterScores;
-    OT: QuarterScores;
+    Q1: { left: number | null; top: number | null };
+    Q2: { left: number | null; top: number | null };
+    Q3: { left: number | null; top: number | null };
+    Q4: { left: number | null; top: number | null };
+    OT: { left: number | null; top: number | null };
   };
   manualPeriod?: number; // 0 = scheduled, 1-4 = quarter, 5 = OT
   manualGameState?: 'pre' | 'in' | 'post';
@@ -121,6 +122,11 @@ export interface LiveGameData {
   staleAfter?: string;
   freshness?: 'fresh' | 'stale' | 'refreshing' | 'rejected' | 'offline';
   warning?: string;
+  /**
+   * Quarters the organizer left blank. A blank quarter is not a 0-0 result.
+   * Automatic scores omit this.
+   */
+  unenteredQuarters?: Array<'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT'>;
 }
 
 export interface WinnerHighlights {

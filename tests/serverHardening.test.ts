@@ -239,8 +239,72 @@ describe('milestone correction success path', () => {
     });
     expect(admin.rpc).toHaveBeenCalledWith('gridone_correct_milestone', {
       p_contest_id: ID, p_owner_id: USER.id, p_milestone: 'Q1', p_expected_version: 2,
-      p_side_score: 7, p_top_score: 3, p_reason: 'Official correction',
+      p_side_score: 7, p_top_score: 3, p_reason: 'Official correction', p_notify: true,
     });
+  });
+
+  it('refuses a manual score before kickoff and keeps blank quarters null', async () => {
+    const admin = scriptedAdmin(
+      [{ data: { id: ID, status: 'live', published_at: '2026-09-01', game_external_id: '1' }, error: null }],
+      [{ data: null, error: { message: 'Manual scores cannot be published before kickoff' } }],
+    );
+    mocks.clients.push(authClient(), admin);
+    const response = await manualScore({
+      request: post('https://x.test/x', JSON.stringify({
+        state: 'post',
+        period: 4,
+        quarterScores: {
+          Q1: { left: null, top: null },
+          Q2: { left: null, top: null },
+          Q3: { left: null, top: null },
+          Q4: { left: 7, top: 3 },
+          OT: { left: null, top: null },
+        },
+      })),
+      env,
+      params: { id: ID },
+    });
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toMatch(/before kickoff/);
+    expect(admin.rpc).toHaveBeenCalledWith('gridone_commit_manual_score', expect.objectContaining({
+      p_side_score: 7,
+      p_top_score: 3,
+      p_quarter_scores: expect.objectContaining({
+        Q1: { left: null, top: null },
+        Q4: { left: 7, top: 3 },
+      }),
+    }));
+  });
+
+  it('rejects a quarter that has only one side', async () => {
+    const admin = scriptedAdmin(
+      [{ data: { id: ID, status: 'live', published_at: '2026-09-01', game_external_id: '1' }, error: null }],
+    );
+    mocks.clients.push(authClient(), admin);
+    const response = await manualScore({
+      request: post('https://x.test/x', JSON.stringify({
+        state: 'in',
+        period: 1,
+        quarterScores: { Q1: { left: 3, top: null } },
+      })),
+      env,
+      params: { id: ID },
+    });
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toMatch(/Q1/);
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('can correct a result without queueing winner email', async () => {
+    const admin = scriptedAdmin([], [{ data: [{ resolution: { milestone: 'Q1' }, winner_history: [], pending_milestones: [], delivery_ids: [] }], error: null }]);
+    mocks.clients.push(authClient(), admin);
+    const response = await correctMilestone({
+      request: post('https://x.test/x', JSON.stringify({ expectedVersion: 1, sideScore: 7, topScore: 3, reason: 'Quiet typo fix', notify: false })),
+      env, params: { id: ID, milestone: 'Q1' },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).correctionDeliveriesQueued).toBe(0);
+    expect(admin.rpc).toHaveBeenCalledWith('gridone_correct_milestone', expect.objectContaining({ p_notify: false, p_reason: 'Quiet typo fix' }));
   });
 
   it('keeps the unconfirmed-milestone refusal readable', async () => {

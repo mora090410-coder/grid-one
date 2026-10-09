@@ -209,7 +209,7 @@ describe('CorrectionsCard', () => {
     rerender(
       <CorrectionsCard winnerHistory={winnerHistory} draft={draft} pending={false} onDraftChange={onDraftChange} onPublishCorrection={onPublishCorrection} />,
     );
-    expect(screen.getByText('Current winner: Alex P..')).toBeVisible();
+    expect(screen.getByText(/Current winner: Alex P\./)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Publish correction and email both people' })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText('Why this changed (shown publicly)'), { target: { value: 'Scoreboard operator error' } });
@@ -219,7 +219,11 @@ describe('CorrectionsCard', () => {
     expect(screen.getByRole('button', { name: 'Publish correction and email both people' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Publish correction and email both people' }));
-    expect(onPublishCorrection).toHaveBeenCalledOnce();
+    expect(onPublishCorrection).toHaveBeenCalledWith(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Correct without notifying' }));
+    expect(onPublishCorrection).toHaveBeenLastCalledWith(false);
+    expect(screen.getByText(/sends no email/)).toBeVisible();
   });
 
   it('shows the milestone history using the milestone label', () => {
