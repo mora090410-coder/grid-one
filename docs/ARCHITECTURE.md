@@ -30,6 +30,8 @@ This file describes the current production architecture, not an immutable topolo
 | `/family` | Scoped private family editor; fragment credential, no organizer account |
 | `/s/:code` | Public seller link: pick a seller's unsold squares and claim them by name; no account |
 | `/login` | `pages/Login` |
+| `/forgot-password` | `pages/ForgotPassword` — asks Supabase to email a reset link; the confirmation does not say whether the account exists |
+| `/reset-password` | `pages/ResetPassword` — handles the recovery redirect and sets a new password |
 | `/dashboard` | `pages/Dashboard` behind `RequireAuth` |
 | `/create` | Public `pages/CreateContest` preview; API creation remains authenticated |
 | `/paid` | `pages/Paid` — checkout return |

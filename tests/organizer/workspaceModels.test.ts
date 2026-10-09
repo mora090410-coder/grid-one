@@ -12,6 +12,7 @@ import {
   withCommittedDraw,
   withRangeAssigned,
   withSquareName,
+  isBlankOpenSquareSave,
 } from '../../src/features/organizer/workspace/workspaceBoardModel';
 import {
   blockerMessage,
@@ -35,6 +36,16 @@ const sets = (offset: number): QuarterAxes => ({
   Q2: digits.map((d) => (d + offset + 1) % 10),
   Q3: digits.map((d) => (d + offset + 2) % 10),
   Q4: digits.map((d) => (d + offset + 3) % 10),
+});
+
+describe('blank open-square saves', () => {
+  it('treats a blank or whitespace name on an open square as a no-op', () => {
+    expect(isBlankOpenSquareSave('', '')).toBe(true);
+    expect(isBlankOpenSquareSave('   ', '  ')).toBe(true);
+    expect(isBlankOpenSquareSave(null, '')).toBe(true);
+    expect(isBlankOpenSquareSave('Ann', '')).toBe(false);
+    expect(isBlankOpenSquareSave('', 'Ann')).toBe(false);
+  });
 });
 
 describe('workspace board rules', () => {

@@ -16,6 +16,8 @@ const BoardView = React.lazy(loadBoardView);
 const CreateContest = React.lazy(() => import('./pages/CreateContest'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Login = React.lazy(() => import('./pages/Login'));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const Paid = React.lazy(() => import('./pages/Paid'));
 const Privacy = React.lazy(() => import('./pages/Privacy'));
@@ -102,6 +104,8 @@ const App: React.FC = () => {
                 path="/login"
                 element={<Login />}
               />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected Routes */}
               <Route

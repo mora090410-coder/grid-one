@@ -117,7 +117,7 @@ type Overrides = Partial<React.ComponentProps<typeof OrganizerWorkspace>>;
 
 function renderWorkspace(overrides: Overrides = {}) {
   const onApply = vi.fn();
-  const onPublish = vi.fn(async () => 'pool-1');
+  const onPublish = vi.fn(async (_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => 'pool-1');
   const onEntryMetaChange = vi.fn();
   const onReload = vi.fn(async () => undefined);
   const props = {
@@ -1243,4 +1243,47 @@ it('updates selected availability without changing names, allocations or private
   expect(updated.squares).toEqual(board.squares);
   expect(updated.allocationLabels).toEqual(board.allocationLabels);
   expect(saveEntryMeta).not.toHaveBeenCalled();
+});
+
+it('refuses a blank save on an open square and does not write a payment row', async () => {
+  renderWorkspace({ entryMeta: {} });
+  fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));
+  fireEvent.click(screen.getByRole('radio', { name: 'Paid' }));
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save' })); });
+  expect(screen.getByRole('alert')).toHaveTextContent('Enter a name before saving an open square.');
+  expect(saveEntryMeta).not.toHaveBeenCalled();
+  expect(screen.getByRole('dialog', { name: 'Square 1' })).toBeInTheDocument();
+});
+
+it('shows the newly opened square instead of the name saved on the previous one', () => {
+  const board = emptyBoard();
+  board.squares[0] = ['Emily C.'];
+  renderWorkspace({ board, entryMeta: { 0: paidMeta(0) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Square 1, assigned to Emily C.' }));
+  expect(screen.getByLabelText('Name on the board')).toHaveValue('Emily C.');
+  expect(screen.getByRole('radio', { name: 'Paid' })).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Square 2, unassigned' }));
+  expect(screen.getByRole('dialog', { name: 'Square 2' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Name on the board')).toHaveValue('');
+  expect(screen.getByRole('radio', { name: 'Not asked yet' })).toHaveAttribute('aria-checked', 'true');
+});
+
+it('flushes a square edit when the page hides within a second', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+  try {
+    const { onPublish } = renderWorkspace();
+    fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save' })); });
+    expect(onPublish).not.toHaveBeenCalled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(200); });
+    expect(onPublish).not.toHaveBeenCalled();
+    await act(async () => { window.dispatchEvent(new Event('pagehide')); });
+    expect(onPublish).toHaveBeenCalledTimes(1);
+    expect(onPublish.mock.calls[0][0].board.squares[0]).toEqual(['Dana P.']);
+    expect(onPublish.mock.calls[0][1]).toEqual({ keepalive: true });
+  } finally {
+    vi.useRealTimers();
+  }
 });

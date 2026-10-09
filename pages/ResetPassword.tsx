@@ -1,0 +1,175 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../services/supabase';
+import { CapsuleButton, CapsuleInput, Eyebrow, Glass } from '../src/design/primitives';
+import { ghostLink } from '../src/features/homepage/sections/cta';
+import {
+  hasRecoveryCredentials,
+  recoveryLinkProblem,
+  RESET_LINK_EXPIRED,
+  RESET_LINK_INVALID,
+  type RecoveryLinkProblem,
+} from '../src/features/site/passwordReset';
+import { AuthShell } from './AuthShell';
+
+type Phase = 'checking' | 'ready' | 'saved' | RecoveryLinkProblem;
+
+const problemCopy = (problem: RecoveryLinkProblem) =>
+  problem === 'expired' ? RESET_LINK_EXPIRED : RESET_LINK_INVALID;
+
+const ResetPassword: React.FC = () => {
+  const [href] = useState(() => window.location.href);
+  const initialProblem = recoveryLinkProblem(href);
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (initialProblem) return initialProblem;
+    if (!hasRecoveryCredentials(href)) return 'invalid';
+    return 'checking';
+  });
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (phase !== 'checking') return;
+    let active = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (!active) return;
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setPhase('ready');
+    });
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      if (!active) return;
+      if (sessionError) {
+        setPhase('invalid');
+        return;
+      }
+      if (data.session) setPhase('ready');
+      else setPhase((current) => (current === 'ready' ? current : 'invalid'));
+    }).catch(() => {
+      if (active) setPhase((current) => (current === 'ready' ? current : 'invalid'));
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [phase]);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        const message = updateError.message || '';
+        if (/auth session missing|session missing|jwt expired|otp_expired|email link is invalid/i.test(message)) {
+          setPhase('invalid');
+          return;
+        }
+        setError(message);
+        return;
+      }
+      setPhase('saved');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (/fetch|network|load failed/i.test(message)) {
+        setError('Unable to connect. Please check your connection and try again.');
+      } else {
+        setPhase('invalid');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (phase === 'expired' || phase === 'invalid') {
+    return (
+      <AuthShell>
+        <Glass padding="lg" className="w-full max-w-[420px] flex flex-col gap-4">
+          <Eyebrow>Organizer sign in</Eyebrow>
+          <h1 className="font-display text-[32px] leading-[1.05] text-fg">Reset link did not work</h1>
+          <p role="alert" className="font-ui text-[17px] leading-[1.6] text-fg-2">{problemCopy(phase)}</p>
+          <div className="flex flex-col items-start gap-1">
+            <Link to="/forgot-password" className={ghostLink}>Request a new reset link</Link>
+            <Link to="/login" className={ghostLink}>Back to sign in</Link>
+          </div>
+        </Glass>
+      </AuthShell>
+    );
+  }
+
+  if (phase === 'saved') {
+    return (
+      <AuthShell>
+        <Glass padding="lg" className="w-full max-w-[420px] flex flex-col gap-4">
+          <Eyebrow>Organizer sign in</Eyebrow>
+          <h1 className="font-display text-[32px] leading-[1.05] text-fg">Password updated</h1>
+          <p className="font-ui text-[17px] leading-[1.6] text-fg-2">You can sign in with your new password.</p>
+          <div>
+            <Link to="/dashboard" className={ghostLink}>Continue to your boards</Link>
+          </div>
+        </Glass>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell>
+      <Glass padding="lg" className="w-full max-w-[420px]">
+        <div className="flex flex-col gap-3">
+          <Eyebrow>Organizer sign in</Eyebrow>
+          <h1 className="font-display text-[32px] leading-[1.05] text-fg">Choose a new password</h1>
+          <p className="font-ui text-[16px] leading-[1.5] text-fg-2">
+            {phase === 'checking' ? 'Checking this reset link.' : 'Use at least 6 characters. You will sign in with this password next time.'}
+          </p>
+        </div>
+
+        {error && (
+          <Glass id="new-password-error" role="alert" className="mt-6 border-tone-cardinal/60 font-ui text-[15px] leading-[1.5] text-fg">
+            {error}
+          </Glass>
+        )}
+
+        <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+          <CapsuleInput
+            id="new-password"
+            label="New password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={phase !== 'ready' || saving}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'new-password-error' : undefined}
+            required
+          />
+          <CapsuleInput
+            id="confirm-new-password"
+            label="Confirm Password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            disabled={phase !== 'ready' || saving}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'new-password-error' : undefined}
+            required
+          />
+          <CapsuleButton type="submit" variant="primary" disabled={phase !== 'ready' || saving} className="mt-2 w-full">
+            {saving ? 'Saving...' : 'Update password'}
+          </CapsuleButton>
+        </form>
+      </Glass>
+    </AuthShell>
+  );
+};
+
+export default ResetPassword;

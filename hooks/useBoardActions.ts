@@ -5,7 +5,7 @@ interface UseBoardActionsProps {
     game: GameState;
     board: BoardData;
     activePoolId: string | null;
-    updatePool: (id: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
+    updatePool: (id: string, data: { game: GameState; board: BoardData }, options?: { keepalive?: boolean }) => Promise<boolean>;
     publishPool: (data: { game: GameState; board: BoardData }) => Promise<string | void>;
 }
 
@@ -20,6 +20,7 @@ export const useBoardActions = ({
 
     const handlePublish = async (
         currentData?: { game: GameState; board: BoardData },
+        options?: { keepalive?: boolean },
     ) => {
         if (!user) throw new Error('Sign in with the organizer account before saving.');
         const data = {
@@ -27,7 +28,7 @@ export const useBoardActions = ({
             board: currentData?.board || board,
         };
         if (activePoolId) {
-            const saved = await updatePool(activePoolId, data);
+            const saved = await updatePool(activePoolId, data, options);
             if (!saved) throw new Error('The board could not be saved.');
             return activePoolId;
         }
