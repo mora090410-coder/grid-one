@@ -13,6 +13,7 @@ import {
   withRangeAssigned,
   withSquareName,
   isBlankOpenSquareSave,
+  metaForSavedSquare,
 } from '../../src/features/organizer/workspace/workspaceBoardModel';
 import {
   blockerMessage,
@@ -45,6 +46,21 @@ describe('blank open-square saves', () => {
     expect(isBlankOpenSquareSave(null, '')).toBe(true);
     expect(isBlankOpenSquareSave('Ann', '')).toBe(false);
     expect(isBlankOpenSquareSave('', 'Ann')).toBe(false);
+  });
+
+  it('clears paid state only when a named square is cleared', () => {
+    const paid: EntryMeta = {
+      cell_index: 1,
+      paid_status: 'paid',
+      notify_opt_in: false,
+      contact_type: null,
+      contact_value: null,
+      seller_label: 'Coach Lee',
+    };
+    expect(metaForSavedSquare('Ann', '', paid)).toMatchObject({ paid_status: 'unknown', seller_label: 'Coach Lee' });
+    expect(metaForSavedSquare('Ann', 'Ann Jr', paid).paid_status).toBe('paid');
+    expect(metaForSavedSquare('', 'Bo', paid).paid_status).toBe('paid');
+    expect(metaForSavedSquare('Ann', '  ', paid).paid_status).toBe('unknown');
   });
 });
 

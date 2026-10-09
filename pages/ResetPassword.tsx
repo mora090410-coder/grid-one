@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { CapsuleButton, CapsuleInput, Eyebrow, Glass } from '../src/design/primitives';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import {
-  hasRecoveryCredentials,
-  recoveryLinkProblem,
+  consumeRecoveryArrival,
+  peekRecoveryArrival,
+} from '../src/features/site/recoveryArrival';
+import {
+  initialResetPhase,
   RESET_LINK_EXPIRED,
   RESET_LINK_INVALID,
   type RecoveryLinkProblem,
@@ -18,35 +21,42 @@ const problemCopy = (problem: RecoveryLinkProblem) =>
   problem === 'expired' ? RESET_LINK_EXPIRED : RESET_LINK_INVALID;
 
 const ResetPassword: React.FC = () => {
-  const [href] = useState(() => window.location.href);
-  const initialProblem = recoveryLinkProblem(href);
-  const [phase, setPhase] = useState<Phase>(() => {
-    if (initialProblem) return initialProblem;
-    if (!hasRecoveryCredentials(href)) return 'invalid';
-    return 'checking';
-  });
+  // Auth consumes the recovery hash before this lazy page mounts. The arrival
+  // snapshot still has an error fragment; a created session is the success signal.
+  const [phase, setPhase] = useState<Phase>(() => initialResetPhase(window.location.href, peekRecoveryArrival()));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const recovered = useRef(false);
+
+  React.useEffect(() => {
+    consumeRecoveryArrival();
+  }, []);
 
   React.useEffect(() => {
     if (phase !== 'checking') return;
     let active = true;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (!active) return;
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setPhase('ready');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active || !session) return;
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        recovered.current = true;
+        setPhase('ready');
+      }
     });
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return;
-      if (sessionError) {
-        setPhase('invalid');
+      if (recovered.current || data.session) {
+        setPhase('ready');
         return;
       }
-      if (data.session) setPhase('ready');
-      else setPhase((current) => (current === 'ready' ? current : 'invalid'));
+      if (sessionError) {
+        setPhase((current) => (current === 'ready' ? current : 'invalid'));
+        return;
+      }
+      setPhase((current) => (current === 'ready' ? current : 'invalid'));
     }).catch(() => {
-      if (active) setPhase((current) => (current === 'ready' ? current : 'invalid'));
+      if (active) setPhase((current) => (current === 'ready' || recovered.current ? current : 'invalid'));
     });
     return () => {
       active = false;

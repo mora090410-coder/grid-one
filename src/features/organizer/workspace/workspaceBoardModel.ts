@@ -29,6 +29,22 @@ export const OPEN_SQUARE_NAME_REQUIRED = 'Enter a name before saving an open squ
 export const isBlankOpenSquareSave = (existingName: string | null | undefined, nextName: string) =>
   (existingName ?? '').trim().length === 0 && nextName.trim().length === 0;
 
+/**
+ * Clearing a name that was on the square also clears its paid state, so the
+ * open square does not stay "Blank · paid" or hand that payment to the next
+ * name. A save that keeps or sets a name leaves the chosen payment alone.
+ */
+export const metaForSavedSquare = (
+  existingName: string | null | undefined,
+  nextName: string,
+  meta: EntryMeta,
+): EntryMeta => {
+  if ((existingName ?? '').trim().length > 0 && nextName.trim().length === 0) {
+    return { ...meta, paid_status: 'unknown' };
+  }
+  return meta;
+};
+
 /** Write one square's name (blank clears it), and optionally its availability. */
 export const withSquareName = (
   board: BoardData,

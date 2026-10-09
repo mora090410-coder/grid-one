@@ -33,6 +33,26 @@ export const recoveryLinkProblem = (href: string): RecoveryLinkProblem | null =>
   return 'invalid';
 };
 
+/**
+ * The reset page starts here. An error in the live URL, or in the URL captured
+ * before Auth cleared it, is final. Anything else waits for the session:
+ * a missing hash is not itself an invalid link, because Auth removes the hash
+ * after a successful recovery.
+ */
+export const initialResetPhase = (
+  liveHref: string,
+  arrivalHref: string | null,
+): 'checking' | RecoveryLinkProblem => {
+  const problem = recoveryLinkProblem(liveHref) ?? (arrivalHref ? recoveryLinkProblem(arrivalHref) : null);
+  return problem ?? 'checking';
+};
+
+/** Send a recovery that landed on another route to the reset page, once. */
+export const shouldOpenPasswordReset = (pathname: string, href: string | null): boolean => {
+  if (!href || pathname === RESET_PASSWORD_PATH) return false;
+  return recoveryLinkProblem(href) !== null || hasRecoveryCredentials(href);
+};
+
 /** True when the URL carries a recovery session, implicit tokens, or a PKCE code. */
 export const hasRecoveryCredentials = (href: string) => {
   const { url, hash } = readLink(href);

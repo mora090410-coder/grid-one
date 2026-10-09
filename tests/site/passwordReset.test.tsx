@@ -1,14 +1,17 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   classifyResetEmailError,
   hasRecoveryCredentials,
+  initialResetPhase,
   passwordResetRedirect,
   recoveryLinkProblem,
   RESET_EMAIL_CONFIRMATION,
+  shouldOpenPasswordReset,
 } from '../../src/features/site/passwordReset';
+import { captureRecoveryArrival, resetRecoveryArrivalForTests } from '../../src/features/site/recoveryArrival';
 
 const mocks = vi.hoisted(() => ({
   session: null as Record<string, unknown> | null,
@@ -36,6 +39,7 @@ vi.mock('../../services/supabase', () => ({
 }));
 
 import ForgotPassword from '../../pages/ForgotPassword';
+import { RecoveryLanding } from '../../pages/RecoveryLanding';
 import ResetPassword from '../../pages/ResetPassword';
 
 const renderAt = (ui: React.ReactElement, path: string) => {
@@ -44,6 +48,7 @@ const renderAt = (ui: React.ReactElement, path: string) => {
 };
 
 beforeEach(() => {
+  resetRecoveryArrivalForTests();
   mocks.session = null;
   mocks.loading = false;
   mocks.resetPasswordForEmail.mockReset();
@@ -65,6 +70,10 @@ describe('password reset helpers', () => {
     expect(hasRecoveryCredentials('https://www.getgridone.com/reset-password#access_token=abc&type=recovery')).toBe(true);
     expect(hasRecoveryCredentials('https://www.getgridone.com/reset-password?code=abc')).toBe(true);
     expect(hasRecoveryCredentials('https://www.getgridone.com/reset-password')).toBe(false);
+    expect(initialResetPhase('https://www.getgridone.com/reset-password', null)).toBe('checking');
+    expect(initialResetPhase('https://www.getgridone.com/reset-password', 'https://www.getgridone.com/reset-password#error_code=otp_expired&error=access_denied')).toBe('expired');
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#access_token=abc&type=recovery')).toBe(true);
+    expect(shouldOpenPasswordReset('/reset-password', 'https://getgridone.com/reset-password#access_token=abc&type=recovery')).toBe(false);
     expect(classifyResetEmailError('User not found')).toBe('sent');
     expect(classifyResetEmailError('Email rate limit exceeded')).toBe('wait');
     expect(classifyResetEmailError('For security purposes, you can only request this once every 60 seconds')).toBe('wait');
@@ -115,9 +124,39 @@ describe('Reset password', () => {
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
-  it('explains a link that is not a recovery link', () => {
+  it('explains a link that is not a recovery link', async () => {
     renderAt(<ResetPassword />, '/reset-password');
-    expect(screen.getByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+  });
+
+  it('shows the new-password form when the token was consumed and the hash cleared before mount', async () => {
+    window.history.replaceState(null, '', '/reset-password#access_token=real-token&refresh_token=real-refresh&type=recovery');
+    captureRecoveryArrival();
+    window.history.replaceState(null, '', '/reset-password');
+    expect(window.location.hash).toBe('');
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    renderAt(<ResetPassword />, '/reset-password');
+    const password = await screen.findByLabelText('New password');
+    await waitFor(() => expect(password).toBeEnabled());
+    expect(screen.queryByText('This reset link is invalid. Request a new one.')).toBeNull();
+  });
+
+  it('shows the new-password form from the recovery session when the hash is already gone', async () => {
+    mocks.onAuthStateChange.mockImplementation((callback: (event: string, session: { access_token: string } | null) => void) => {
+      callback('PASSWORD_RECOVERY', { access_token: 'recovery' });
+      return { data: { subscription: { unsubscribe: mocks.unsubscribe } } };
+    });
+    renderAt(<ResetPassword />, '/reset-password');
+    const password = await screen.findByLabelText('New password');
+    await waitFor(() => expect(password).toBeEnabled());
+    expect(screen.queryByText('This reset link is invalid. Request a new one.')).toBeNull();
+  });
+
+  it('keeps an expired link expired when a session already exists', () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'old' } }, error: null });
+    renderAt(<ResetPassword />, '/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired');
+    expect(screen.getByRole('alert')).toHaveTextContent('This reset link has expired. Request a new one.');
+    expect(screen.queryByLabelText('New password')).toBeNull();
   });
 
   it('lets a recovered session set a new password', async () => {
@@ -147,5 +186,23 @@ describe('Reset password', () => {
     fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'new-secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+  });
+});
+
+describe('Recovery landing', () => {
+  it('opens the reset page when a recovery link was consumed on the site root', async () => {
+    window.history.replaceState(null, '', '/#access_token=real-token&type=recovery');
+    captureRecoveryArrival();
+    window.history.replaceState(null, '', '/');
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <RecoveryLanding />
+        <Routes>
+          <Route path="/" element={<h1>Home</h1>} />
+          <Route path="/reset-password" element={<h1>Choose a new password</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Choose a new password' })).toBeInTheDocument();
   });
 });

@@ -1245,6 +1245,19 @@ it('updates selected availability without changing names, allocations or private
   expect(saveEntryMeta).not.toHaveBeenCalled();
 });
 
+it('clears the paid state when a named square is cleared', async () => {
+  const board = emptyBoard();
+  board.squares[1] = ['Ann'];
+  const { onApply, onEntryMetaChange } = renderWorkspace({ board, entryMeta: { 1: paidMeta(1) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Square 2, assigned to Ann' }));
+  fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: '' } });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save' })); });
+  expect(lastBoard(onApply).squares[1]).toEqual([]);
+  expect(saveEntryMeta).toHaveBeenCalledWith('pool-1', expect.objectContaining({ cell_index: 1, paid_status: 'unknown' }));
+  expect(onEntryMetaChange).toHaveBeenCalledWith(expect.objectContaining({ cell_index: 1, paid_status: 'unknown' }));
+  expect(screen.queryByRole('dialog', { name: 'Square 2' })).toBeNull();
+});
+
 it('refuses a blank save on an open square and does not write a payment row', async () => {
   renderWorkspace({ entryMeta: {} });
   fireEvent.click(screen.getByRole('button', { name: 'Square 1, unassigned' }));

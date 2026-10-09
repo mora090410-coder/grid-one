@@ -45,6 +45,7 @@ import {
   withRangeAssigned,
   withSquareName,
   isBlankOpenSquareSave,
+  metaForSavedSquare,
   OPEN_SQUARE_NAME_REQUIRED,
   type DrawPreview,
 } from './workspaceBoardModel';
@@ -355,6 +356,7 @@ export default function OrganizerWorkspace({
       setAlert(OPEN_SQUARE_NAME_REQUIRED);
       return;
     }
+    const savedMeta = metaForSavedSquare(board.squares[index]?.[0], trimmed, meta);
     let nextSquares: string[][] = board.squares;
     setBoard((current) => {
       const next = withSquareName(current, index, trimmed, allocationLabel, availability);
@@ -365,8 +367,8 @@ export default function OrganizerWorkspace({
 
     if (!activePoolId) return;
     try {
-      await withPrivateWrite(() => saveEntryMeta(activePoolId, meta));
-      onEntryMetaChange(meta);
+      await withPrivateWrite(() => saveEntryMeta(activePoolId, savedMeta));
+      onEntryMetaChange(savedMeta);
       setNote(null);
       setAlert(null);
     } catch {

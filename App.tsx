@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { RecoveryLanding } from './pages/RecoveryLanding';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Logo } from './src/design/primitives';
@@ -84,6 +85,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <Router>
+        <RecoveryLanding />
         <AuthProvider>
           <React.Suspense fallback={<FullScreenLoading />}>
             <Routes>
