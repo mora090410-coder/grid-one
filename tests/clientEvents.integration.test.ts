@@ -76,7 +76,11 @@ describe.sequential('client events sink (migrations 033-034)', () => {
     await waitForPostgres();
     await bootstrap();
     const files = migrationFiles();
-    expect(files.map(file => Number(file.slice(0, 3)))).toEqual(expectedMigrationNumbers(34));
+    const numbers = files.map(file => Number(file.slice(0, 3)));
+    // 035 lives on the unmerged function-grant pull request. This branch must
+    // still contain every migration through 034, plus 036.
+    expect(numbers.filter(number => number <= 34)).toEqual(expectedMigrationNumbers(34));
+    expect(numbers).toContain(36);
     for (const file of files.filter(name => name < '033')) await applyMigration(file);
     // Mirror Supabase: every new public table is granted to all API roles by default.
     await executeSql('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;');

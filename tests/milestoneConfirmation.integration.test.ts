@@ -194,9 +194,11 @@ const applyMigrations = async () => {
     .filter(file => /^\d{3}_.+\.sql$/.test(file))
     .sort();
 
-  expect(migrationFiles.map(file => Number(file.slice(0, 3)))).toEqual(
-    expectedMigrationNumbers(34),
-  );
+  const numbers = migrationFiles.map(file => Number(file.slice(0, 3)));
+  // 035 lives on the unmerged function-grant pull request. This branch must
+  // still contain every migration through 034, plus 036.
+  expect(numbers.filter(number => number <= 34)).toEqual(expectedMigrationNumbers(34));
+  expect(numbers).toContain(36);
 
   for (const migrationFile of migrationFiles) {
     await executeSql(readFileSync(resolve(migrationDirectory, migrationFile), 'utf8'));
