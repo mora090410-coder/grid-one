@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { peekRecoveryArrival } from '../src/features/site/recoveryArrival';
-import { RESET_PASSWORD_PATH, shouldOpenPasswordReset } from '../src/features/site/passwordReset';
+import { passwordResetLocation, shouldOpenPasswordReset } from '../src/features/site/passwordReset';
 
 /**
- * A recovery email can land on the site root when the reset URL is not on
- * Supabase's allow list. Auth then clears the hash. This sends that arrival
- * to the reset page once, while the captured URL still describes the link.
+ * A recovery email can land on the site root when /reset-password is not on
+ * Supabase's allow list. Move that arrival to the reset page and keep the
+ * hash, so the auth client can still create the session there. Sign-up and
+ * other auth links stay on the page they opened.
  */
 export const RecoveryLanding: React.FC = () => {
   const location = useLocation();
@@ -15,9 +16,10 @@ export const RecoveryLanding: React.FC = () => {
 
   useEffect(() => {
     if (redirected.current) return;
-    if (!shouldOpenPasswordReset(location.pathname, peekRecoveryArrival())) return;
+    const arrival = peekRecoveryArrival();
+    if (!shouldOpenPasswordReset(location.pathname, arrival) || !arrival) return;
     redirected.current = true;
-    navigate(RESET_PASSWORD_PATH, { replace: true });
+    navigate(passwordResetLocation(arrival), { replace: true });
   }, [location.pathname, navigate]);
 
   return null;

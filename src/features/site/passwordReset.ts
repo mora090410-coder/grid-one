@@ -33,24 +33,47 @@ export const recoveryLinkProblem = (href: string): RecoveryLinkProblem | null =>
   return 'invalid';
 };
 
+/** Password recovery only. Sign-up, magic-link, and other auth redirects are not this. */
+export const isPasswordRecoveryLink = (href: string | null): boolean => {
+  if (!href) return false;
+  const { url, hash } = readLink(href);
+  const type = (hash.get('type') || url.searchParams.get('type') || '').toLowerCase();
+  return type === 'recovery';
+};
+
 /**
- * The reset page starts here. An error in the live URL, or in the URL captured
- * before Auth cleared it, is final. Anything else waits for the session:
- * a missing hash is not itself an invalid link, because Auth removes the hash
- * after a successful recovery.
+ * The reset page starts here. An error in the live URL is final. An error in
+ * the captured URL counts only when that URL is a password recovery, so a
+ * sign-up failure left on the site root cannot poison this page. Anything
+ * else waits for the session: Auth removes a successful recovery hash.
  */
 export const initialResetPhase = (
   liveHref: string,
   arrivalHref: string | null,
 ): 'checking' | RecoveryLinkProblem => {
-  const problem = recoveryLinkProblem(liveHref) ?? (arrivalHref ? recoveryLinkProblem(arrivalHref) : null);
-  return problem ?? 'checking';
+  const liveProblem = recoveryLinkProblem(liveHref);
+  if (liveProblem) return liveProblem;
+  if (arrivalHref && isPasswordRecoveryLink(arrivalHref)) {
+    const arrivalProblem = recoveryLinkProblem(arrivalHref);
+    if (arrivalProblem) return arrivalProblem;
+  }
+  return 'checking';
 };
 
-/** Send a recovery that landed on another route to the reset page, once. */
+/**
+ * Send a recovery that landed on another route to the reset page, once.
+ * `type=recovery` is required. A bare access token, PKCE code, or error
+ * fragment is also how sign-up confirmation arrives, and those stay put.
+ */
 export const shouldOpenPasswordReset = (pathname: string, href: string | null): boolean => {
   if (!href || pathname === RESET_PASSWORD_PATH) return false;
-  return recoveryLinkProblem(href) !== null || hasRecoveryCredentials(href);
+  return isPasswordRecoveryLink(href);
+};
+
+/** Keep the recovery hash and query when moving that arrival onto the reset page. */
+export const passwordResetLocation = (href: string): { pathname: string; search: string; hash: string } => {
+  const url = new URL(href, 'https://www.getgridone.com');
+  return { pathname: RESET_PASSWORD_PATH, search: url.search, hash: url.hash };
 };
 
 /** True when the URL carries a recovery session, implicit tokens, or a PKCE code. */

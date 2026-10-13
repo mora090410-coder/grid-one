@@ -1,11 +1,13 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   classifyResetEmailError,
   hasRecoveryCredentials,
   initialResetPhase,
+  isPasswordRecoveryLink,
+  passwordResetLocation,
   passwordResetRedirect,
   recoveryLinkProblem,
   RESET_EMAIL_CONFIRMATION,
@@ -71,9 +73,25 @@ describe('password reset helpers', () => {
     expect(hasRecoveryCredentials('https://www.getgridone.com/reset-password?code=abc')).toBe(true);
     expect(hasRecoveryCredentials('https://www.getgridone.com/reset-password')).toBe(false);
     expect(initialResetPhase('https://www.getgridone.com/reset-password', null)).toBe('checking');
-    expect(initialResetPhase('https://www.getgridone.com/reset-password', 'https://www.getgridone.com/reset-password#error_code=otp_expired&error=access_denied')).toBe('expired');
+    expect(initialResetPhase('https://www.getgridone.com/reset-password', 'https://www.getgridone.com/#error_code=otp_expired&error=access_denied&type=recovery')).toBe('expired');
+    expect(initialResetPhase('https://www.getgridone.com/reset-password', 'https://www.getgridone.com/#error_code=otp_expired&error=access_denied&type=signup')).toBe('checking');
+    expect(isPasswordRecoveryLink('https://getgridone.com/#access_token=abc&type=recovery')).toBe(true);
+    expect(isPasswordRecoveryLink('https://getgridone.com/#access_token=abc&type=signup')).toBe(false);
+    expect(isPasswordRecoveryLink('https://getgridone.com/#access_token=abc&type=magiclink')).toBe(false);
+    expect(isPasswordRecoveryLink('https://getgridone.com/?code=abc')).toBe(false);
+    expect(isPasswordRecoveryLink('https://getgridone.com/#error=access_denied&error_code=otp_expired')).toBe(false);
     expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#access_token=abc&type=recovery')).toBe(true);
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#access_token=abc&type=signup')).toBe(false);
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#access_token=abc&type=magiclink')).toBe(false);
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#access_token=abc')).toBe(false);
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/?code=abc')).toBe(false);
+    expect(shouldOpenPasswordReset('/', 'https://getgridone.com/#error=access_denied&error_code=otp_expired')).toBe(false);
     expect(shouldOpenPasswordReset('/reset-password', 'https://getgridone.com/reset-password#access_token=abc&type=recovery')).toBe(false);
+    expect(passwordResetLocation('https://getgridone.com/#access_token=real-token&refresh_token=real-refresh&type=recovery')).toEqual({
+      pathname: '/reset-password',
+      search: '',
+      hash: '#access_token=real-token&refresh_token=real-refresh&type=recovery',
+    });
     expect(classifyResetEmailError('User not found')).toBe('sent');
     expect(classifyResetEmailError('Email rate limit exceeded')).toBe('wait');
     expect(classifyResetEmailError('For security purposes, you can only request this once every 60 seconds')).toBe('wait');
@@ -189,20 +207,57 @@ describe('Reset password', () => {
   });
 });
 
+const LocationProbe = () => {
+  const location = useLocation();
+  return <div data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</div>;
+};
+
+const renderLanding = () => render(
+  <MemoryRouter initialEntries={['/']}>
+    <RecoveryLanding />
+    <Routes>
+      <Route path="/" element={<h1>Home</h1>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+    </Routes>
+    <LocationProbe />
+  </MemoryRouter>,
+);
+
 describe('Recovery landing', () => {
-  it('opens the reset page when a recovery link was consumed on the site root', async () => {
-    window.history.replaceState(null, '', '/#access_token=real-token&type=recovery');
+  it('carries a root recovery token onto the new-password form', async () => {
+    window.history.replaceState(null, '', '/#access_token=real-token&refresh_token=real-refresh&type=recovery');
     captureRecoveryArrival();
     window.history.replaceState(null, '', '/');
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <RecoveryLanding />
-        <Routes>
-          <Route path="/" element={<h1>Home</h1>} />
-          <Route path="/reset-password" element={<h1>Choose a new password</h1>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    expect(await screen.findByRole('heading', { name: 'Choose a new password' })).toBeInTheDocument();
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    renderLanding();
+    const password = await screen.findByLabelText('New password');
+    await waitFor(() => expect(password).toBeEnabled());
+    expect(screen.getByTestId('location')).toHaveTextContent('/reset-password#access_token=real-token&refresh_token=real-refresh&type=recovery');
+    expect(screen.queryByText('This reset link is invalid. Request a new one.')).toBeNull();
+  });
+
+  it('leaves sign-up confirmation and other auth links on the page they opened', async () => {
+    window.history.replaceState(null, '', '/#access_token=confirm-token&type=signup');
+    captureRecoveryArrival();
+    const signup = renderLanding();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('New password')).toBeNull();
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+    signup.unmount();
+
+    resetRecoveryArrivalForTests();
+    window.history.replaceState(null, '', '/#access_token=magic-token&type=magiclink');
+    captureRecoveryArrival();
+    const magic = renderLanding();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('New password')).toBeNull();
+    magic.unmount();
+
+    resetRecoveryArrivalForTests();
+    window.history.replaceState(null, '', '/?code=pkce-code');
+    captureRecoveryArrival();
+    renderLanding();
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Choose a new password' })).toBeNull();
   });
 });
