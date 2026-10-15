@@ -18,7 +18,10 @@ const run = (args: string[], input?: string): Promise<string> => new Promise((ac
   child.on('close', code => { clearTimeout(timer); code === 0 ? accept(out.trim()) : reject(new Error(err || out)); });
   child.stdin.end(input);
 });
-const sql = (query: string) => run(['exec', '-i', container, 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'], query);
+// The official image boots a socket-only temporary initialization server, then
+// stops it before starting the real server. TCP readiness inside the container
+// cannot accidentally pass against that temporary server. No host port exposed.
+const sql = (query: string) => run(['exec', '-i', container, 'psql', '-h', '127.0.0.1', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres'], query);
 const text = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const json = async (query: string) => JSON.parse(await sql(query));
 const fixture = async () => {
