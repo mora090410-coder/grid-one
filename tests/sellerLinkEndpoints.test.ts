@@ -1,10 +1,11 @@
+import { webcrypto } from 'node:crypto';
 import { beforeEach, expect, it, vi } from 'vitest';
 const { rpc, getUser } = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn() }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ rpc, auth: { getUser } }) }));
 import { onRequestGet as readSeller, onRequestPost as claimSeller } from '../functions/api/sellers/[code]';
 import { onRequestPost as ownerLinks } from '../functions/api/pools/[id]/seller-links';
 
-const env = { VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'server' };
+const env = { VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'server', GUEST_INVITE_SECRET: 'seller-test-only-secret-at-least-32-characters' };
 const id = '30000000-0000-4000-8000-000000000001';
 const code = '0123456789abcdef';
 const post = (url: string, body: unknown, bearer?: string) => new Request(url, {
@@ -14,7 +15,8 @@ const post = (url: string, body: unknown, bearer?: string) => new Request(url, {
 });
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.stubGlobal('crypto', webcrypto);
+  vi.resetAllMocks();
   getUser.mockResolvedValue({ data: { user: { id } }, error: null });
 });
 
@@ -45,16 +47,20 @@ it('rejects malformed codes and claims before touching the database', async () =
 });
 
 it('claims with a trimmed name and maps a lost race to a clear conflict', async () => {
+  const rate = () => rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: true, error: null });
+  rate();
   rpc.mockResolvedValueOnce({ data: { cells: [3], name: 'Ann', label: 'Mora', shareCode: 'ABCDEFGH' }, error: null });
   const ok = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3], name: '  Ann  ' }), env, params: { code } });
   expect(ok.status).toBe(200);
   expect(rpc).toHaveBeenCalledWith('gridone_seller_link', { p_action: 'claim', p_code: code, p_cells: [3], p_name: 'Ann' });
 
+  rate();
   rpc.mockResolvedValueOnce({ data: null, error: { message: 'seller_square_taken' } });
   const taken = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3], name: 'Bob' }), env, params: { code } });
   expect(taken.status).toBe(409);
   expect((await taken.json()).code).toBe('SQUARE_TAKEN');
 
+  rate();
   rpc.mockResolvedValueOnce({ data: null, error: { message: 'seller_board_locked' } });
   const locked = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [4], name: 'Bob' }), env, params: { code } });
   expect(locked.status).toBe(409);
@@ -62,6 +68,17 @@ it('claims with a trimmed name and maps a lost race to a clear conflict', async 
 
   rpc.mockResolvedValueOnce({ data: null, error: { message: 'seller_access_denied' } });
   expect((await readSeller({ request: new Request(`https://getgridone.com/api/sellers/${code}`), env, params: { code } })).status).toBe(404);
+});
+
+it('fails closed on unavailable or denied rate checks and missing configuration', async () => {
+  const context = { request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3], name: 'Ann' }), env, params: { code } };
+  rpc.mockResolvedValueOnce({ data: false, error: null });
+  expect((await claimSeller(context)).status).toBe(429);
+  expect(rpc).not.toHaveBeenCalledWith('gridone_seller_link', expect.anything());
+  rpc.mockResolvedValueOnce({ data: null, error: { message: 'unavailable' } });
+  // A fresh body for every attempt; no real network or shared request streams.
+  expect((await claimSeller({ ...context, request: post(context.request.url, { cells: [3], name: 'Ann' }) })).status).toBe(503);
+  expect((await claimSeller({ ...context, request: post(context.request.url, { cells: [3], name: 'Ann' }), env: { ...env, GUEST_INVITE_SECRET: undefined } })).status).toBe(503);
 });
 
 it('requires a signed-in owner and returns full links for every seller', async () => {

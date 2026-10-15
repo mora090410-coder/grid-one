@@ -347,14 +347,15 @@ describe.sequential('manual scores, published renames, and function grants', () 
       RETURNING id::text;
     `))).split('\n').at(-1);
     await executeSql(asUser(OWNER_ID, `
-      UPDATE public.contests SET title = 'Draft renamed' WHERE id = '${draftId}'::uuid;
+      UPDATE public.contests SET board_data = '{"squares":[["Buyer"]]}'::jsonb WHERE id = '${draftId}'::uuid;
     `));
-    expect(await queryScalar(`SELECT title FROM public.contests WHERE id = '${draftId}'::uuid`)).toBe('Draft renamed');
+    expect(await queryScalar(`SELECT board_data #>> '{squares,0,0}' FROM public.contests WHERE id = '${draftId}'::uuid`)).toBe('Buyer');
+    await expect(executeSql(asUser(OWNER_ID, `UPDATE public.contests SET title = 'Forbidden' WHERE id = '${draftId}'::uuid;`))).rejects.toThrow(/permission denied/i);
 
     await executeSql(asUser(STRANGER_ID, `
-      UPDATE public.contests SET title = 'Taken' WHERE id = '${draftId}'::uuid;
+      UPDATE public.contests SET board_data = '{"squares":[["Taken"]]}'::jsonb WHERE id = '${draftId}'::uuid;
     `));
-    expect(await queryScalar(`SELECT title FROM public.contests WHERE id = '${draftId}'::uuid`)).toBe('Draft renamed');
+    expect(await queryScalar(`SELECT board_data #>> '{squares,0,0}' FROM public.contests WHERE id = '${draftId}'::uuid`)).toBe('Buyer');
   });
 
   it('refuses a manual score before kickoff and when kickoff is missing', async () => {

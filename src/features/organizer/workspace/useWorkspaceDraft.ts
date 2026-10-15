@@ -53,12 +53,9 @@ export function useWorkspaceDraft({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const editedDuringSaveRef = useRef(false);
-  const onSaveRef = useRef(onSave);
   const unloadKeepaliveRef = useRef(false);
   const unloadSentRef = useRef(false);
   const flushRef = useRef<() => Promise<DraftSaveState>>(async () => saveStateRef.current);
-
-  onSaveRef.current = onSave;
 
   // The newest server props. reloadLatest adopts these after its await,
   // because the adoption effect skips them while a conflict is still showing.
@@ -303,12 +300,9 @@ export function useWorkspaceDraft({
           unloadSentRef.current = false;
         }
       };
-      if (status === 'dirty') {
-        unloadKeepaliveRef.current = true;
-        void flushRef.current().then(releaseIfStillHere, releaseIfStillHere);
-        return;
-      }
-      void onSaveRef.current(latestData.current, { keepalive: true }).then(releaseIfStillHere, releaseIfStillHere);
+      // Drain through the same revision queue; never duplicate an active write.
+      unloadKeepaliveRef.current = true;
+      void flushRef.current().then(releaseIfStillHere, releaseIfStillHere);
     };
     const guard = (event: BeforeUnloadEvent) => {
       const status = saveStateRef.current.status;

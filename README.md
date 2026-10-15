@@ -164,8 +164,10 @@ Supabase and Cloudflare dashboards before relying on anything below.
   `wrangler.*.toml` files; override them per environment if the endpoint moves.
 - **Database.** Migrations in `supabase/migrations/` are applied by hand through
   the Supabase dashboard SQL editor. Nothing in the repo records which have been
-  applied — verify `020` through `025` in the dashboard before relying on live
-  scoring.
+  applied — verify the complete sequence through `037` (intentional `004` gap),
+  including both `035` then `036`, before relying on the integrated candidate.
+  See `docs/audit-release-preflight.md`. No migration or deployment is authorized
+  merely by these instructions; the pricing remediation is still incomplete.
 
 ## Notes
 

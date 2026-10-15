@@ -115,8 +115,7 @@ const applyMigrations = async () => {
   const directory = resolve(process.cwd(), 'supabase/migrations');
   const files = readdirSync(directory).filter(file => /^\d{3}_.+\.sql$/.test(file)).sort();
   const numbers = files.map(file => Number(file.slice(0, 3)));
-  expect(numbers.filter(number => number <= 34)).toEqual(expectedMigrationNumbers(34));
-  expect(numbers).toContain(36);
+  expect(numbers.filter(number => number <= 36)).toEqual(expectedMigrationNumbers(36));
   for (const file of files) {
     await executeSql(readFileSync(resolve(directory, file), 'utf8'));
   }

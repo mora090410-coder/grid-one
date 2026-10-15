@@ -232,6 +232,34 @@ it('keeps an external revision conflict blocked before the new revision prop ren
   expect(retryPatch).not.toHaveBeenCalled();
 });
 
+it('does not start a parallel save on unload while an autosave is pending', async () => {
+  let release!: () => void;
+  const onSave = vi.fn(() => new Promise<void>((resolve) => { release = resolve; }));
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave }));
+  act(() => result.current.setGame((g) => ({ ...g, title: 'First' })));
+  let pending!: Promise<unknown>;
+  act(() => { pending = result.current.flush(); });
+  act(() => {
+    window.dispatchEvent(new Event('beforeunload', { cancelable: true }));
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  await act(async () => { release(); await pending; });
+});
+
+it('keeps a revision conflict blocked when more local edits arrive', async () => {
+  const onSave = vi.fn(async () => undefined);
+  const { result, rerender } = renderHook(({ revision }) => useWorkspaceDraft({ game, board, revision, isPublished: false, onSave }), { initialProps: { revision: 1 } });
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Local' })));
+  rerender({ revision: 2 });
+  await act(async () => { await result.current.flush(); });
+  expect(result.current.saveState.status).toBe('conflicted');
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Still local' })));
+  await act(async () => { await result.current.flush(); });
+  expect(result.current.saveState.status).toBe('conflicted');
+  expect(onSave).not.toHaveBeenCalled();
+});
+
 it('reload after a conflict adopts the server board even when it lands mid-reload', async () => {
   const onSave = vi.fn(async () => { throw new Error('conflict'); });
   let release!: () => void; let entered!: () => void;

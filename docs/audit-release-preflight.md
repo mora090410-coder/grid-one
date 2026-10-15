@@ -1,0 +1,49 @@
+# Audit remediation release and payment-test preflight
+
+Status: BLOCKED. This branch is an engineering candidate, not payment-ready or certified. Direct Organization purchase and verified Game Day credit are not implemented. Do not run Anthony's real-payment test on this candidate. Parent Anton independently reviews the exact diff, checks and deployment evidence; no merge, deployment, hosted configuration or production migration is performed by this task.
+
+## Preconditions and evidence custody
+
+Record exact branch/commit, operator, environment and check URLs. Never paste secrets, bearer links, purchaser names/emails, Stripe payloads or payment credentials into reports. Use isolated fixtures/test-mode mocks for engineering checks. Preserve production backup and a reviewed rollback decision before any separately authorized migration. Main is Git-connected to production; merging is a deployment action, not just repository housekeeping.
+
+Required engineering gates: focused regressions, typecheck, full unit suite, build, design lint, full disposable-Postgres integrations, Chromium, rendered phone/desktop and keyboard/a11y inspection, dependency audit review. A Docker startup error is not SQL test evidence. A missing browser executable is not a product UI failure. CI must run the real integrations; never substitute static SQL scans or model output. Keep full warnings and failures.
+
+## Database/deployment order — separate operator approval required
+
+1. Inventory hosted migrations/functions/triggers/effective grants and compare with the reviewed candidate. Preserve intentional missing 004. Do not assume repository history represents hosted state.
+2. With checkout disabled under the existing paid-signup kill switch, verify backup/recovery and apply missing reviewed migrations in numeric order. Both 035 and 036 are mandatory, then 037; never apply 036 instead of 035. 037 uses an exact prerequisite check and must abort on mismatch; do not remove that guard to force deployment.
+3. Independently verify effective EXECUTE for PUBLIC, anon, authenticated and service_role. Internal definer functions must deny API roles, legacy lease v1 must be absent, required service RPCs must remain available, owner rename/owns RPCs must work, and authenticated contest updates must be board_data-only. Check table AND column grants/default privileges, ownership/status/publish/axis bypass attempts, normalized writes, cross-account denial, legitimate draft create/save/delete, sharing, publication, owner corrections, service score lease, billing and snapshot access. Do not widen grants for test convenience.
+4. Deploy the reviewed application only after its schema prerequisites. Keep older app compatibility and all stable viewer links. This candidate does not change checkout schema or fulfillment. The future approved pricing implementation requires its own reviewed forward migration, backward-compatible fulfillment acceptance, old-session handling and deployment order before paid signup reopens.
+5. Seller POST protection reuses server-only GUEST_INVITE_SECRET (at least 32 characters) and existing guest rate buckets. Verify configuration without exposing/changing its value here. Missing configuration or RPC failures intentionally close claiming. Confirm CF-Connecting-IP comes from the trusted Cloudflare edge. Fixed-minute limits: 20 requests/IP and 30/link; at most 10 squares/request. Not a per-person quota; boundary bursts/distributed abuse remain possible. Verify throttling does not corrupt a claim and normal sharing still works. Do not advertise abuse elimination.
+6. Verify hosted migration 037 with Mora/Mora, whitespace/case/NFKC variants, distinct identifying names, concurrency, other-seller scope, revocation, locks and quarter-number boards. Recover mistakes before number lock: rotate an abused link, reload current board/revision, identify exact square, restore displayed seller label through the normal owner save, retain responsibility, separately review private payment notes, reload and verify availability. Never reset the entire board or treat a claim as payment. Do not silently alter finalized results.
+
+## Auth and browser release gates — UNVERIFIED
+
+Verify Supabase confirmation policy, SMTP sender/domain and provider restrictions with authorized operator access. Verify exact reset redirect allowlist for https://www.getgridone.com/reset-password and https://getgridone.com/reset-password, confirmation return behavior, root recovery versus reset route, expired/invalid/reused links, existing session and cross-tab/device behavior. Send only separately approved messages to consenting external test recipients and verify actual inbox delivery, not just API acceptance. Confirm signup -> save -> share -> finalize and forgotten password -> usable reset -> sign-in. Inspect phone and desktop, keyboard focus/escape/return, field-linked errors, selected-square changes, blank refusal versus deliberate clear, paid reset, pending-save unload and conflict/reload. Browser keepalive is best effort; it cannot guarantee delivery after process/network termination, especially while another request is already in flight.
+
+## Game-day operational gates — UNVERIFIED
+
+Inventory site/API and separately deployed score-refresh and notification-retry Workers. Verify schedules, endpoint URLs, cron authentication, LIVE_SCORING_ENABLED, PAID_SIGNUP_ENABLED and retry behavior without logging secret values. Verify upcoming NFL schedule creation and provider outage behavior; automatic score recovery does not recover missing schedules. Obtain commercial provider rights/usage/cost confirmation rather than assuming public endpoint access permits commercial use.
+
+Observe a complete live game against a trusted source: correct matchup, kickoff, explicit zero versus unknown quarters, halftime, Q1/Q2/Q3/Final, overtime included in Final, per-quarter axes, OPEN/no rollover/no winner mail. Force a controlled provider outage and manual override, reject pre-kickoff/manual missing-kickoff writes, verify late/stale auto never wins and deliberate return to automatic works. Check rename before resolution synchronizes identity, after resolution freezes it, correction is audited/viewer-visible and quiet correction sends no unintended mail. Test verified opt-in, scanner-safe verification/unsubscribe, one winner notification, retries/leases/idempotency, bounce/error visibility and actual inbox receipt under separate message approval. Record observed times; a fetched-at stamp is not independently certified event freshness.
+
+## Processor and approved Organization policy — OPEN engineering/legal gates
+
+Obtain processor acceptance of the actual software-fee/no-custody/seller-claim/fundraiser workflow and qualified jurisdiction-specific advice where needed. GridOne never collects square money, holds funds, adjudicates payment or pays winners. No conclusion of legal/processor acceptance is made here.
+
+Before any real payment, complete and test the approved policy end-to-end:
+
+- Free -> Organization directly at $79 at any time, including unused free allowance; no forced Game Day purchase or manufactured board exhaustion.
+- Game Day remains $9.99. Eligible verified paid same-account/same-season Game Day source gives $9.99 credit, normally $69.01 net for Organization. No credit from free/granted/legacy/unverified entitlements or client assertions.
+- Canonical SQL/order state derives/reserves credit under the owner-season lock; concurrent checkouts, retry/webhook idempotency and duplicate/expired/old sessions cannot double-spend or misprice it. Signature verification, configured canonical price validation and durable identity remain mandatory. Verify currency, user, season, totals and payment intent/session mismatch denial.
+- Direct/upgrade give 50 TOTAL boards, never 55. Existing used boards count once. Verify organization name on existing/new public projections, dashboard and actual organization-named receipt. A payment description is not proof of a receipt.
+- Test partial/full refunds and disputes of both upgrade and credited source, restored disputes, prior pending sessions, repurchase/capacity, terminal events and late webhook ordering. Define safe handling/operations for legitimate old paid orders rather than discarding them.
+- Use existing local Stripe mocks and fixtures only in engineering. Identify exact price/config provisioning needed once the implementation selects its approach. This incomplete candidate has not selected or provisioned a new price/coupon; no Stripe objects may be created under this task.
+
+Only after independent acceptance and separately approved deployment/configuration may Anthony authorize one legitimate real purchase. Verify charge, canonical paid order, exact entitlement/season/total capacity, organization display and receipt; do not count checkout clicks as success. A refund or further Stripe action needs its own approval.
+
+## Rollback / stop
+
+Stop checkout/outreach on privacy, duplicate-claim, wrong-winner, grant-bypass or billing mismatch evidence. Keep published boards readable and manual score authority available. Disable affected paths with existing authorized controls; do not delete boards, roll back security grants, drop migrations or rewrite audit/history. App rollback must retain schema-compatible code and must not re-enable the original seller collision. Prefer reviewed corrective forward migrations; production SQL and worker changes require separate approval. Preserve canonical orders and event IDs for reconciliation; never automatically issue refunds from this runbook.
+
+Demand remains unverified and cannot be fixed in code. Use the consented pilot template only after readiness and separate outreach approval.

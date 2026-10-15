@@ -1,15 +1,16 @@
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('Phase 5 visual system', () => {
   const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
-  const componentPaths = execFileSync(
-    'rg',
-    ['--files', 'components', 'pages', '-g', '*.tsx'],
-    { cwd: process.cwd(), encoding: 'utf8' },
-  ).trim().split('\n').filter(Boolean);
+  // Node is a declared requirement; ripgrep is not installed on every runner.
+  const componentPaths = ['components', 'pages'].flatMap((directory) =>
+    readdirSync(resolve(process.cwd(), directory), { recursive: true })
+      .map(String)
+      .filter((path) => path.endsWith('.tsx'))
+      .map((path) => `${directory}/${path}`),
+  );
   const componentCorpus = componentPaths.map(
     (path) => readFileSync(resolve(process.cwd(), path), 'utf8'),
   ).join('\n');

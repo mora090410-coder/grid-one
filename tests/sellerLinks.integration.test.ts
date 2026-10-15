@@ -222,6 +222,31 @@ describe('seller links', () => {
     expect(await nameAt(1)).toBe('Mora');
   });
 
+  it.each(['Mora', ' Mora ', 'mOrA', 'Ｍｏｒａ', '\tMora\n', 'M o r a'])('rejects sentinel-equivalent buyer %j atomically', async (name) => {
+    await share();
+    const code = await codeFor('Mora');
+    const before = await revision();
+    await expect(claim(code, [0, 1], name)).rejects.toThrow(/seller_name_matches_label/);
+    expect(await revision()).toBe(before);
+    expect(await nameAt(0)).toBe('Mora');
+    await claim(code, [0], 'Mora Buyer');
+    await expect(claim(code, [0], 'Other Buyer')).rejects.toThrow(/seller_square_taken/);
+  });
+
+  it('lets the organizer recover a mistaken claim without changing responsibility or private payment state', async () => {
+    await share();
+    const code = await codeFor('Mora');
+    await executeSql(asUser(OWNER_ID, `INSERT INTO public.contest_entries(contest_id,cell_index,paid_status,contact_value) VALUES('${id}',0,'paid','private@example.test');`));
+    await claim(code, [0], 'Mistaken buyer');
+    const before = await revision();
+    await executeSql(asUser(OWNER_ID, `UPDATE public.contests SET board_data=jsonb_set(board_data,'{squares,0}','["Mora"]') WHERE id='${id}' AND revision=${before};`));
+    expect(Number(await revision())).toBe(Number(before) + 1);
+    expect(await queryScalar(`SELECT board_data->'allocationLabels'->>0 FROM public.contests WHERE id='${id}'`)).toBe('Mora');
+    await claim(code, [0], 'Correct buyer');
+    expect(await nameAt(0)).toBe('Correct buyer');
+    expect(await queryScalar(asUser(OWNER_ID, `SELECT paid_status || '|' || contact_value FROM public.contest_entries WHERE contest_id='${id}' AND cell_index=0;`))).toContain('paid|private@example.test');
+  });
+
   it('lets exactly one of two racing buyers win a square', async () => {
     await share();
     const code = await codeFor('Mora');
