@@ -81,20 +81,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       if (countError) throw countError;
       used = Number(count || 0);
     }
-    if (!entitlement) {
+    if (!entitlement && requestedTier !== 'org') {
       return Response.json({
         code: 'FREE_BOARD_AVAILABLE',
         error: 'Publish your first board free before choosing a paid plan.',
       }, { status: 409 });
     }
-    const currentTier = (entitlement.tier || 'legacy') as PricingTier;
-    const currentAllowance = Number(entitlement.boards_allowance || 0);
-    const expectedTier = entitlement.status === 'active'
+    const currentTier = (entitlement?.tier || 'free') as PricingTier;
+    const currentAllowance = Number(entitlement?.boards_allowance || 0);
+    const expectedTier = entitlement?.status === 'active'
       ? nextUpgradeTier(currentTier)
       : currentTier === 'org'
         ? 'org'
         : 'gameday';
-    if (used < currentAllowance && entitlement.status === 'active') {
+    if (requestedTier !== 'org' && used < currentAllowance && entitlement?.status === 'active') {
       return Response.json({
         code: 'ALLOWANCE_AVAILABLE',
         error: `Your current plan still has ${currentAllowance - used} board${currentAllowance - used === 1 ? '' : 's'} available.`,
@@ -109,7 +109,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
         error: 'Your Organization plan has reached its 50-board season limit.',
       }, { status: 409 });
     }
-    if (requestedTier !== expectedTier) {
+    if (requestedTier !== 'org' && requestedTier !== expectedTier) {
       return Response.json({
         code: 'WRONG_UPGRADE_TIER',
         error: `The next available plan is ${expectedTier === 'org' ? 'Organization' : 'Game Day'}.`,
@@ -133,7 +133,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
 
     const { data: existingOrders, error: ordersError } = await admin
       .from('checkout_orders')
-      .select('id, contest_id, status, price_id, stripe_checkout_session_id, created_at')
+      .select('id, contest_id, status, price_id, target_tier, organization_display_name, billing_version, stripe_checkout_session_id, created_at')
       .eq('owner_id', user.id)
       .eq('season_year', seasonYear)
       .in('status', ['pending', 'checkout_created', 'awaiting_payment'])
@@ -153,8 +153,14 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       const sessionId = String(existingOrder.stripe_checkout_session_id || '');
       if (!sessionId) continue;
       const existingSession = await stripe.checkout.sessions.retrieve(sessionId);
+      if (existingSession.status === 'complete' || existingSession.payment_status === 'paid') {
+        return Response.json({ code: 'PAYMENT_PROCESSING', error: 'A previous checkout completed. Wait for payment confirmation before starting another.' }, { status: 409 });
+      }
       if (
         existingOrder.price_id === price.id
+        && existingOrder.billing_version === 3
+        && existingOrder.target_tier === requestedTier
+        && (requestedTier !== 'org' || existingOrder.organization_display_name === organizationName)
         && existingSession.status === 'open'
         && existingSession.url
       ) {
@@ -162,8 +168,9 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
           reusable = { orderId: existingOrder.id, sessionId, url: existingSession.url };
           continue;
         }
-        await stripe.checkout.sessions.expire(sessionId);
       }
+      // Expire remotely first, never only in our database.
+      if (existingSession.status === 'open') await stripe.checkout.sessions.expire(sessionId);
       const { error: expireError } = await admin.from('checkout_orders').update({
         status: 'expired',
         terminal_at: new Date().toISOString(),
@@ -171,10 +178,10 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
           ? 'A newer checkout session replaced this session.'
           : 'Stripe Checkout is no longer open.',
         updated_at: new Date().toISOString(),
-      }).eq('id', existingOrder.id);
+      }).eq('id', existingOrder.id).in('status', ['pending', 'checkout_created']);
       if (expireError) throw expireError;
     }
-    const { data: claimData, error: claimError } = await admin.rpc('gridone_claim_checkout_order', {
+    const { data: claimData, error: claimError } = await admin.rpc('gridone_claim_checkout_order_v3', {
       p_owner_id: user.id,
       p_contest_id: contest.id,
       p_season_year: seasonYear,
@@ -184,7 +191,12 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       p_target_tier: requestedTier,
       p_organization_display_name: requestedTier === 'org' ? organizationName : null,
     });
-    if (claimError) throw claimError;
+    if (claimError) {
+      if (/CHECKOUT_(TARGET_CONFLICT|CREDIT_SOURCE_CHANGED)/.test(claimError.message || '')) {
+        return Response.json({ code: 'CHECKOUT_CONFLICT', error: 'An earlier checkout needs to expire or finish before this plan can be purchased. Close that checkout and try again after it expires.' }, { status: 409 });
+      }
+      throw claimError;
+    }
     const claim = Array.isArray(claimData) ? claimData[0] : claimData;
     if (claim?.already_entitled) {
       if (reusable) {
@@ -209,20 +221,34 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       }, { status: 409 });
     }
     if (!claim?.order_id) throw new Error('Unable to claim a checkout order.');
+    const credit = Number(claim.credit_cents);
+    const amount = Number(claim.amount_cents);
+    if (!((credit === 0 && amount === configuredPrice.amountCents)
+      || (requestedTier === 'org' && credit === 999 && amount === 6901 && claim.credit_source_order_id))) {
+      throw new Error('Invalid canonical checkout quote.');
+    }
     if (reusable) {
       return Response.json({ url: reusable.url, orderId: reusable.orderId });
     }
 
     const site = new URL(env.PUBLIC_SITE_URL || 'https://www.getgridone.com').origin;
     const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60;
+    const productId = typeof price.product === 'string' ? price.product : price.product?.id;
+    if (credit && !productId) throw new Error('Organization product is not configured.');
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      line_items: [{ price: price.id, quantity: 1 }],
+      line_items: credit
+        ? [{ price_data: { currency: 'usd', product: productId!, unit_amount: amount }, quantity: 1 }]
+        : [{ price: price.id, quantity: 1 }],
+      custom_text: { submit: { message: requestedTier === 'org'
+        ? `${organizationName} — ${seasonYear} Organization plan. 50 total boards. ${credit ? '$79.00 less verified Game Day credit $9.99: $69.01 due.' : '$79.00 due.'}`
+        : `Game Day — ${seasonYear} season. 5 total boards. $9.99 due.` } },
       client_reference_id: claim.order_id,
       success_url: `${site}/paid?order=${claim.order_id}`,
       cancel_url: `${site}/?poolId=${contest.id}`,
       metadata: {
         order_id: claim.order_id,
+        billing_version: '3',
         owner_id: user.id,
         contest_id: contest.id,
         season: String(seasonYear),

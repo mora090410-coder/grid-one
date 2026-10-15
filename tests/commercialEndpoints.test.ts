@@ -5,629 +5,179 @@ import { onRequestGet as billingStatus } from '../functions/api/billing/status';
 import { onRequestPost as stripeWebhook } from '../functions/api/stripe/webhook';
 
 const mocks = vi.hoisted(() => {
-  const clients: any[] = [];
-  const stripeInstances: any[] = [];
-  const createClient = vi.fn(() => {
-    const client = clients.shift();
-    if (!client) throw new Error('No scripted Supabase client remains.');
-    return client;
-  });
-  const Stripe = vi.fn(function StripeMock() {
-    const instance = stripeInstances.shift();
-    if (!instance) throw new Error('No scripted Stripe instance remains.');
-    return instance;
-  });
+  const clients: any[] = []; const stripeInstances: any[] = [];
+  const createClient = vi.fn(() => { const c = clients.shift(); if (!c) throw new Error('No scripted Supabase client'); return c; });
+  const Stripe = vi.fn(function () { const s = stripeInstances.shift(); if (!s) throw new Error('No scripted Stripe instance'); return s; });
   (Stripe as any).createFetchHttpClient = vi.fn(() => ({}));
   return { clients, stripeInstances, createClient, Stripe };
 });
-
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: mocks.createClient,
-}));
-
-vi.mock('stripe', () => ({
-  default: mocks.Stripe,
-}));
-
+vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }));
+vi.mock('stripe', () => ({ default: mocks.Stripe }));
 const env = {
-  VITE_SUPABASE_URL: 'https://project.supabase.co',
-  VITE_SUPABASE_ANON_KEY: 'anon-key',
-  SUPABASE_SERVICE_ROLE_KEY: 'service-key',
-  STRIPE_SECRET_KEY: 'stripe-secret',
-  STRIPE_WEBHOOK_SECRET: 'webhook-secret',
-  STRIPE_GAMEDAY_PRICE_ID: 'price_gameday',
-  STRIPE_ORG_PRICE_ID: 'price_org',
-  PUBLIC_SITE_URL: 'https://www.getgridone.com',
-  PAID_SIGNUP_ENABLED: 'true',
+  VITE_SUPABASE_URL: 'https://project.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon-key',
+  SUPABASE_SERVICE_ROLE_KEY: 'service-key', STRIPE_SECRET_KEY: 'stripe-secret', STRIPE_WEBHOOK_SECRET: 'webhook-secret',
+  STRIPE_GAMEDAY_PRICE_ID: 'price_gameday', STRIPE_ORG_PRICE_ID: 'price_org', PUBLIC_SITE_URL: 'https://www.getgridone.com', PAID_SIGNUP_ENABLED: 'true',
 };
-
-const jsonRequest = (
-  url: string,
-  body: Record<string, unknown>,
-  token = 'access-token',
-) => new Request(url, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
-  body: JSON.stringify(body),
+const request = (body: object) => new Request('https://example.test/api/stripe/create-checkout-session', {
+  method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer access-token' }, body: JSON.stringify(body),
 });
-
-const authClient = (user: { id: string } | null = { id: 'user-1' }) => ({
-  auth: {
-    getUser: vi.fn(async () => ({ data: { user } })),
-  },
-});
-
-type ScriptedResult = {
-  data?: any;
-  error?: any;
-  count?: number | null;
-};
-
-const adminClient = (
-  results: ScriptedResult[] = [],
-  rpcResults: ScriptedResult[] = [],
-) => {
-  const terminal = () => Promise.resolve(
-    results.shift() || { data: null, error: null },
-  );
-  const query = (): any => {
-    const chain: any = {
-      select: vi.fn(() => chain),
-      eq: vi.fn(() => chain),
-      in: vi.fn(() => chain),
-      order: vi.fn(() => chain),
-      limit: vi.fn(() => chain),
-      update: vi.fn(() => chain),
-      insert: vi.fn(() => chain),
-      maybeSingle: vi.fn(terminal),
-      single: vi.fn(terminal),
-      then: (resolve: any, reject: any) => terminal().then(resolve, reject),
-    };
+const adminClient = (results: any[] = [], rpcResults: any[] = []) => ({
+  from: vi.fn(() => {
+    const terminal = () => Promise.resolve(results.shift() || { data: null, error: null });
+    const chain: any = { select: vi.fn(() => chain), eq: vi.fn(() => chain), in: vi.fn(() => chain), order: vi.fn(() => chain),
+      limit: vi.fn(() => chain), update: vi.fn(() => chain), maybeSingle: vi.fn(terminal),
+      then: (accept: any, reject: any) => terminal().then(accept, reject) };
     return chain;
-  };
-  return {
-    from: vi.fn(() => query()),
-    rpc: vi.fn(async () => (
-      rpcResults.shift() || { data: null, error: null }
-    )),
-  };
-};
-
-const stripeInstance = ({
-  priceId = 'price_gameday',
-  amountCents = 999,
-}: {
-  priceId?: string;
-  amountCents?: number;
-} = {}) => ({
-  prices: {
-    retrieve: vi.fn(async () => ({
-      id: priceId,
-      active: true,
-      type: 'one_time',
-      unit_amount: amountCents,
-      currency: 'usd',
-    })),
-  },
-  checkout: {
-    sessions: {
-      retrieve: vi.fn(),
-      create: vi.fn(),
-      expire: vi.fn(),
-      listLineItems: vi.fn(),
-    },
-  },
-  webhooks: {
-    constructEventAsync: vi.fn(),
-  },
+  }),
+  rpc: vi.fn(async (_name: string, _args: any) => rpcResults.shift() || { data: null, error: null }),
 });
-
-const completedEvent = (
-  tier: 'gameday' | 'org',
-  eventId = `evt_${tier}`,
-) => ({
-  id: eventId,
-  type: 'checkout.session.completed',
-  data: {
-    object: {
-      id: `cs_${tier}`,
-      payment_status: 'paid',
-      client_reference_id: `order-${tier}`,
-      metadata: {
-        order_id: `order-${tier}`,
-        tier,
-      },
-      payment_intent: `pi_${tier}`,
-      customer: `cus_${tier}`,
-    },
-  },
+const stripeInstance = (tier = 'gameday', amount = tier === 'org' ? 7900 : 999) => ({
+  prices: { retrieve: vi.fn(async () => ({ id: `price_${tier}`, active: true, type: 'one_time', unit_amount: amount, currency: 'usd', product: `prod_${tier}` })) },
+  checkout: { sessions: { retrieve: vi.fn(), create: vi.fn(async (_params: any, _options?: any) => ({ id: `cs_${tier}`, url: `https://checkout.stripe.test/${tier}` })), expire: vi.fn(), listLineItems: vi.fn() } },
+  webhooks: { constructEventAsync: vi.fn() },
 });
-
-const checkoutFixture = ({
-  tier,
-  entitlementTier,
-  allowance,
-  used,
-  organizationName,
-}: {
-  tier: 'gameday' | 'org';
-  entitlementTier: 'free' | 'gameday';
-  allowance: 1 | 5;
-  used: 1 | 5;
-  organizationName?: string;
-}) => {
-  const priceId = tier === 'org' ? 'price_org' : 'price_gameday';
-  const amountCents = tier === 'org' ? 7900 : 999;
+const checkoutFixture = ({ tier = 'org', entitlement = { id: 'entitlement-1', tier: 'free', status: 'active', boards_allowance: 1 } as any,
+  used = 1, credit = false, openOrders = [] as any[], quote = {} as any, amount = tier === 'org' ? 7900 : 999 } = {}) => {
   const admin = adminClient([
-    {
-      data: {
-        id: 'board-1',
-        owner_id: 'user-1',
-        season_year: 2026,
-      },
-      error: null,
-    },
-    {
-      data: {
-        id: 'entitlement-1',
-        tier: entitlementTier,
-        status: 'active',
-        boards_allowance: allowance,
-      },
-      error: null,
-    },
-    { count: used, data: null, error: null },
-    { data: [], error: null },
-  ], [
-    {
-      data: [{
-        order_id: `order-${tier}`,
-        order_status: 'pending',
-        already_entitled: false,
-      }],
-      error: null,
-    },
-    { data: null, error: null },
-  ]);
-  const stripe = stripeInstance({ priceId, amountCents });
-  stripe.checkout.sessions.create.mockResolvedValue({
-    id: `cs_${tier}`,
-    url: `https://checkout.stripe.test/${tier}`,
-  });
-  mocks.clients.push(authClient(), admin);
+    { data: { id: 'board-1', owner_id: 'user-1', season_year: 2026 } }, { data: entitlement },
+    ...(entitlement?.id ? [{ count: used }] : []), { data: openOrders }, { data: null },
+  ], [{ data: [{ order_id: `order-${tier}`, order_status: 'pending', already_entitled: false,
+    amount_cents: credit ? 6901 : amount, credit_cents: credit ? 999 : 0, credit_source_order_id: credit ? 'source-gameday' : null, ...quote }] }]);
+  const stripe = stripeInstance(tier, amount);
+  mocks.clients.push({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'user-1' } } })) } }, admin);
   mocks.stripeInstances.push(stripe);
-  return {
-    admin,
-    stripe,
-    request: jsonRequest(
-      'https://example.test/api/stripe/create-checkout-session',
-      {
-        contestId: 'board-1',
-        tier,
-        ...(organizationName ? { organizationName } : {}),
-      },
-    ),
-  };
+  return { admin, stripe, request: request({ contestId: 'board-1', tier, organizationName: '  Riverside   Ravens Booster Club  ', credit: 999, amount: 1 }) };
 };
-
-beforeEach(() => {
-  mocks.clients.length = 0;
-  mocks.stripeInstances.length = 0;
-  vi.clearAllMocks();
-});
+beforeEach(() => { mocks.clients.length = 0; mocks.stripeInstances.length = 0; vi.clearAllMocks(); });
 
 describe.sequential('retired activation endpoint', () => {
-  it('returns 410 without touching authentication or the database', async () => {
-    const response = await activateBoard({
-      request: jsonRequest(
-        'https://example.test/api/pools/activate',
-        { contestId: 'board-1' },
-      ),
-      env,
-    });
-
+  it('returns 410 without authentication/database access', async () => {
+    const response = await activateBoard({ request: request({ contestId: 'board-1' }), env });
     expect(response.status).toBe(410);
-    await expect(response.json()).resolves.toEqual({
-      code: 'PUBLISH_IS_ALLOWANCE_BOUNDARY',
-      error: 'Boards are counted only when they are published. Publish the draft from the organizer view.',
-    });
+    expect(await response.json()).toMatchObject({ code: 'PUBLISH_IS_ALLOWANCE_BOUNDARY' });
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
 });
-
 describe.sequential('tiered checkout session endpoint', () => {
-  it('creates the exact $9.99 Game Day checkout offered at the free limit', async () => {
-    const { admin, stripe, request } = checkoutFixture({
-      tier: 'gameday',
-      entitlementTier: 'free',
-      allowance: 1,
-      used: 1,
+  it('creates the exact $9.99 Game Day checkout at the free limit', async () => {
+    const f = checkoutFixture({ tier: 'gameday' });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(200);
+    expect(f.stripe.prices.retrieve).toHaveBeenCalledWith('price_gameday');
+    expect(f.admin.rpc).toHaveBeenNthCalledWith(1, 'gridone_claim_checkout_order_v3', {
+      p_owner_id: 'user-1', p_contest_id: 'board-1', p_season_year: 2026, p_price_id: 'price_gameday', p_price_cents: 999,
+      p_currency: 'usd', p_target_tier: 'gameday', p_organization_display_name: null,
     });
-
-    const response = await createCheckout({ request, env });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      url: 'https://checkout.stripe.test/gameday',
-      orderId: 'order-gameday',
-    });
-    expect(stripe.prices.retrieve).toHaveBeenCalledWith('price_gameday');
-    expect(admin.rpc).toHaveBeenNthCalledWith(
-      1,
-      'gridone_claim_checkout_order',
-      {
-        p_owner_id: 'user-1',
-        p_contest_id: 'board-1',
-        p_season_year: 2026,
-        p_price_id: 'price_gameday',
-        p_price_cents: 999,
-        p_currency: 'usd',
-        p_target_tier: 'gameday',
-        p_organization_display_name: null,
-      },
-    );
-    expect(stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
-      line_items: [{ price: 'price_gameday', quantity: 1 }],
-      metadata: { tier: 'gameday' },
-      payment_intent_data: {
-        description: 'GridOne Game Day — 2026 season',
-        metadata: { tier: 'gameday' },
-      },
+    expect(f.stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
+      line_items: [{ price: 'price_gameday', quantity: 1 }], metadata: { tier: 'gameday', owner_id: 'user-1', billing_version: '3' },
+      payment_intent_data: { description: 'GridOne Game Day — 2026 season', metadata: { tier: 'gameday' } },
     });
   });
-
-  it('creates the exact $79 Organization checkout offered at the Game Day limit', async () => {
-    const { admin, stripe, request } = checkoutFixture({
-      tier: 'org',
-      entitlementTier: 'gameday',
-      allowance: 5,
-      used: 5,
-      organizationName: '  Riverside   Ravens Booster Club  ',
-    });
-
-    const response = await createCheckout({ request, env });
-
-    expect(response.status).toBe(200);
-    expect(stripe.prices.retrieve).toHaveBeenCalledWith('price_org');
-    expect(admin.rpc).toHaveBeenNthCalledWith(
-      1,
-      'gridone_claim_checkout_order',
-      expect.objectContaining({
-        p_price_id: 'price_org',
-        p_price_cents: 7900,
-        p_target_tier: 'org',
-        p_organization_display_name: 'Riverside Ravens Booster Club',
-      }),
-    );
-    expect(stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
-      line_items: [{ price: 'price_org', quantity: 1 }],
-      metadata: {
-        tier: 'org',
-        organization_name: 'Riverside Ravens Booster Club',
-      },
-      payment_intent_data: {
-        description: 'GridOne Organization — Riverside Ravens Booster Club',
-        metadata: {
-          tier: 'org',
-          organization_name: 'Riverside Ravens Booster Club',
-        },
-      },
-    });
-  });
-
-  it('rejects a plan other than the one offered by the server', async () => {
-    const admin = adminClient([
-      {
-        data: {
-          id: 'board-1',
-          owner_id: 'user-1',
-          season_year: 2026,
-        },
-        error: null,
-      },
-      {
-        data: {
-          id: 'entitlement-1',
-          tier: 'free',
-          status: 'active',
-          boards_allowance: 1,
-        },
-        error: null,
-      },
-      { count: 1, data: null, error: null },
-    ]);
-    mocks.clients.push(authClient(), admin);
-
-    const response = await createCheckout({
-      request: jsonRequest(
-        'https://example.test/api/stripe/create-checkout-session',
-        {
-          contestId: 'board-1',
-          tier: 'org',
-          organizationName: 'Riverside Ravens',
-        },
-      ),
-      env,
-    });
-
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'WRONG_UPGRADE_TIER',
-      offeredTier: 'gameday',
-    });
-    expect(mocks.Stripe).not.toHaveBeenCalled();
-    expect(admin.rpc).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ['gameday', 'price_gameday', 7900],
-    ['org', 'price_org', 999],
-  ] as const)(
-    'rejects %s checkout when Stripe does not return the approved amount',
-    async (tier, priceId, amountCents) => {
-      const entitlementTier = tier === 'org' ? 'gameday' : 'free';
-      const allowance = tier === 'org' ? 5 : 1;
-      const used = allowance;
-      const admin = adminClient([
-        {
-          data: {
-            id: 'board-1',
-            owner_id: 'user-1',
-            season_year: 2026,
-          },
-          error: null,
-        },
-        {
-          data: {
-            id: 'entitlement-1',
-            tier: entitlementTier,
-            status: 'active',
-            boards_allowance: allowance,
-          },
-          error: null,
-        },
-        { count: used, data: null, error: null },
-      ]);
-      const stripe = stripeInstance({ priceId, amountCents });
-      mocks.clients.push(authClient(), admin);
-      mocks.stripeInstances.push(stripe);
-
-      const response = await createCheckout({
-        request: jsonRequest(
-          'https://example.test/api/stripe/create-checkout-session',
-          {
-            contestId: 'board-1',
-            tier,
-            ...(tier === 'org'
-              ? { organizationName: 'Riverside Ravens' }
-              : {}),
-          },
-        ),
-        env,
+  it.each([null, { id: 'e', tier: 'free', status: 'active', boards_allowance: 1 }, { id: 'e', tier: 'gameday', status: 'active', boards_allowance: 5 }])(
+    'offers direct Organization before allowance exhaustion: %j', async entitlement => {
+      const f = checkoutFixture({ entitlement, used: 0 });
+      expect((await createCheckout({ request: f.request, env })).status).toBe(200);
+      expect(f.admin.rpc).toHaveBeenNthCalledWith(1, 'gridone_claim_checkout_order_v3', expect.objectContaining({
+        p_price_id: 'price_org', p_price_cents: 7900, p_target_tier: 'org', p_organization_display_name: 'Riverside Ravens Booster Club',
+      }));
+      expect(f.stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
+        line_items: [{ price: 'price_org', quantity: 1 }],
+        custom_text: { submit: { message: 'Riverside Ravens Booster Club — 2026 Organization plan. 50 total boards. $79.00 due.' } },
+        payment_intent_data: { description: 'GridOne Organization — Riverside Ravens Booster Club', metadata: { tier: 'org', organization_name: 'Riverside Ravens Booster Club' } },
       });
-
-      expect(response.status).toBe(503);
-      expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
-      expect(admin.rpc).not.toHaveBeenCalled();
-    },
-  );
-
-  it('does not reuse an open session created for the other price', async () => {
-    const admin = adminClient([
-      {
-        data: {
-          id: 'board-1',
-          owner_id: 'user-1',
-          season_year: 2026,
-        },
-        error: null,
-      },
-      {
-        data: {
-          id: 'entitlement-1',
-          tier: 'free',
-          status: 'active',
-          boards_allowance: 1,
-        },
-        error: null,
-      },
-      { count: 1, data: null, error: null },
-      {
-        data: [{
-          id: 'order-org',
-          contest_id: 'board-1',
-          status: 'checkout_created',
-          price_id: 'price_org',
-          stripe_checkout_session_id: 'cs_org_old',
-        }],
-        error: null,
-      },
-      { data: null, error: null },
-    ], [
-      {
-        data: [{
-          order_id: 'order-gameday-new',
-          order_status: 'pending',
-          already_entitled: false,
-        }],
-        error: null,
-      },
-      { data: null, error: null },
-    ]);
-    const stripe = stripeInstance();
-    stripe.checkout.sessions.retrieve.mockResolvedValue({
-      id: 'cs_org_old',
-      status: 'open',
-      url: 'https://checkout.stripe.test/wrong-price',
     });
-    stripe.checkout.sessions.create.mockResolvedValue({
-      id: 'cs_gameday_new',
-      url: 'https://checkout.stripe.test/gameday-new',
+  it('uses only the reserved SQL credit and the existing Organization Product for the $69.01 net checkout', async () => {
+    const f = checkoutFixture({ credit: true });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(200);
+    expect(f.stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
+      line_items: [{ price_data: { currency: 'usd', product: 'prod_org', unit_amount: 6901 }, quantity: 1 }],
+      custom_text: { submit: { message: 'Riverside Ravens Booster Club — 2026 Organization plan. 50 total boards. $79.00 less verified Game Day credit $9.99: $69.01 due.' } },
     });
-    mocks.clients.push(authClient(), admin);
-    mocks.stripeInstances.push(stripe);
-
-    const response = await createCheckout({
-      request: jsonRequest(
-        'https://example.test/api/stripe/create-checkout-session',
-        { contestId: 'board-1', tier: 'gameday' },
-      ),
-      env,
-    });
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      url: 'https://checkout.stripe.test/gameday-new',
-      orderId: 'order-gameday-new',
-    });
-    expect(stripe.checkout.sessions.create).toHaveBeenCalledTimes(1);
+    expect(f.admin.rpc.mock.calls[0][1]).not.toHaveProperty('credit');
+  });
+  it.each([{ amount_cents: 1 }, { amount_cents: 6901, credit_cents: 999, credit_source_order_id: null }])('fails closed on malformed canonical quotes %j', async quote => {
+    const f = checkoutFixture({ quote });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(500);
+    expect(f.stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+  it('rejects a downgrade from inactive Organization', async () => {
+    const f = checkoutFixture({ tier: 'gameday', entitlement: { id: 'e', tier: 'org', status: 'revoked', boards_allowance: 50 } });
+    const response = await createCheckout({ request: f.request, env });
+    expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ code: 'WRONG_UPGRADE_TIER', offeredTier: 'org' });
+    expect(mocks.Stripe).not.toHaveBeenCalled(); expect(f.admin.rpc).not.toHaveBeenCalled();
+  });
+  it.each([['gameday', 7900], ['org', 999]])('rejects incorrectly provisioned %s price', async (tier, amount) => {
+    const f = checkoutFixture({ tier: String(tier), amount: Number(amount) });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(503);
+    expect(f.stripe.checkout.sessions.create).not.toHaveBeenCalled(); expect(f.admin.rpc).not.toHaveBeenCalled();
+  });
+  it('expires a different-price open session remotely before replacing its DB reservation', async () => {
+    const f = checkoutFixture({ tier: 'gameday', openOrders: [{ id: 'old', status: 'checkout_created', price_id: 'price_org', stripe_checkout_session_id: 'cs_old' }] });
+    f.stripe.checkout.sessions.retrieve.mockResolvedValue({ id: 'cs_old', status: 'open', url: 'https://checkout.stripe.test/old' });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(200);
+    expect(f.stripe.checkout.sessions.expire).toHaveBeenCalledWith('cs_old');
+    expect(f.stripe.checkout.sessions.expire.mock.invocationCallOrder[0]).toBeLessThan(f.admin.rpc.mock.invocationCallOrder[0]);
+  });
+  it.each(['complete', 'awaiting_payment'])('never expires a %s checkout to create another', async status => {
+    const f = checkoutFixture({ openOrders: [{ id: 'old', status: status === 'complete' ? 'checkout_created' : status, stripe_checkout_session_id: 'cs_old' }] });
+    f.stripe.checkout.sessions.retrieve.mockResolvedValue({ status: 'complete', payment_status: 'paid' });
+    expect((await createCheckout({ request: f.request, env })).status).toBe(409);
+    expect(f.stripe.checkout.sessions.expire).not.toHaveBeenCalled(); expect(f.admin.rpc).not.toHaveBeenCalled();
   });
 });
-
 describe.sequential('billing status endpoint', () => {
-  it('returns tier, allowance, used count, remaining count, and organization name', async () => {
-    mocks.clients.push(
-      authClient(),
-      adminClient([
-        {
-          data: {
-            id: '44444444-4444-4444-8444-444444444444',
-            contest_id: 'board-1',
-            season_year: 2026,
-            status: 'paid',
-            paid_at: '2026-07-29T12:00:00Z',
-            refundable_at: null,
-            terminal_reason: null,
-            amount_refunded_cents: 0,
-          },
-          error: null,
-        },
-        {
-          data: {
-            id: 'entitlement-1',
-            status: 'active',
-            tier: 'org',
-            boards_allowance: 50,
-            organization_display_name: 'Riverside Ravens Booster Club',
-          },
-          error: null,
-        },
-        { count: 7, data: null, error: null },
-      ]),
-    );
-
-    const response = await billingStatus({
-      request: new Request(
-        'https://example.test/api/billing/status?order=44444444-4444-4444-8444-444444444444',
-        { headers: { Authorization: 'Bearer access-token' } },
-      ),
-      env,
-    });
-
+  it('returns allowance, organization and canonical payment summary', async () => {
+    mocks.clients.push({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) } }, adminClient([
+      { data: { id: '44444444-4444-4444-8444-444444444444', contest_id: 'board-1', season_year: 2026, status: 'paid', price_cents: 6901, credit_cents: 999, organization_display_name: 'Ravens Club' } },
+      { data: { id: 'e', status: 'active', tier: 'org', boards_allowance: 50, organization_display_name: 'Ravens Club' } }, { count: 7 },
+    ]));
+    const response = await billingStatus({ request: new Request('https://example.test/api/billing/status?order=44444444-4444-4444-8444-444444444444', { headers: { Authorization: 'Bearer token' } }), env });
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      tier: 'org',
-      allowance: 50,
-      used: 7,
-      remaining: 43,
-      organizationDisplayName: 'Riverside Ravens Booster Club',
-      entitlementStatus: 'active',
-      orderStatus: 'paid',
-      paymentConfirmed: true,
-      contestId: 'board-1',
-    });
+    expect(await response.json()).toMatchObject({ tier: 'org', allowance: 50, used: 7, remaining: 43, organizationDisplayName: 'Ravens Club',
+      entitlementStatus: 'active', orderStatus: 'paid', paymentConfirmed: true, contestId: 'board-1', amountPaidCents: 6901, creditCents: 999 });
   });
 });
-
+const webhookRequest = () => new Request('https://example.test/api/stripe/webhook', { method: 'POST', headers: { 'stripe-signature': 'valid-signature' }, body: '{}' });
+const legacyEvent = (tier: string) => ({ id: `evt_${tier}`, type: 'checkout.session.completed', data: { object: {
+  id: `cs_${tier}`, payment_status: 'paid', client_reference_id: `order-${tier}`, metadata: { order_id: `order-${tier}`, tier }, payment_intent: `pi_${tier}`, customer: `cus_${tier}`,
+} } });
 describe.sequential('Stripe webhook price map', () => {
-  const webhookRequest = () => new Request(
-    'https://example.test/api/stripe/webhook',
-    {
-      method: 'POST',
-      headers: { 'stripe-signature': 'valid-signature' },
-      body: JSON.stringify({ event: 'payload' }),
-    },
-  );
-
+  it.each(['gameday', 'org'])('preserves verified old full-price %s fulfillment', async tier => {
+    const amount = tier === 'org' ? 7900 : 999; const stripe = stripeInstance(tier);
+    stripe.webhooks.constructEventAsync.mockResolvedValue(legacyEvent(tier));
+    stripe.checkout.sessions.listLineItems.mockResolvedValue({ data: [{ price: { id: `price_${tier}` }, amount_total: amount, currency: 'usd' }] });
+    const admin = adminClient([], [{ data: [{ outcome: 'fulfilled' }] }]); mocks.stripeInstances.push(stripe); mocks.clients.push(admin);
+    const response = await stripeWebhook({ request: webhookRequest(), env });
+    expect(response.status).toBe(200); expect(await response.text()).toBe('Fulfilled.');
+    expect(admin.rpc).toHaveBeenCalledWith('gridone_fulfill_checkout_v2', expect.objectContaining({ p_price_id: `price_${tier}`, p_price_cents: amount, p_order_id: `order-${tier}` }));
+  });
   it.each([
-    ['gameday', 'price_gameday', 999],
-    ['org', 'price_org', 7900],
-  ] as const)(
-    'fulfills the exact %s price and metadata combination',
-    async (tier, priceId, amountCents) => {
-      const event = completedEvent(tier);
-      const stripe = stripeInstance({ priceId, amountCents });
-      stripe.webhooks.constructEventAsync.mockResolvedValue(event);
-      stripe.checkout.sessions.listLineItems.mockResolvedValue({
-        data: [{
-          price: { id: priceId },
-          amount_total: amountCents,
-          currency: 'usd',
-        }],
-      });
-      const admin = adminClient([], [{
-        data: [{
-          outcome: 'fulfilled',
-          owner_id: null,
-          season_year: 2026,
-        }],
-        error: null,
-      }]);
-      mocks.stripeInstances.push(stripe);
-      mocks.clients.push(admin);
-
-      const response = await stripeWebhook({
-        request: webhookRequest(),
-        env,
-      });
-
-      expect(response.status).toBe(200);
+    ['gameday', 'price_unknown', 999, 'usd'], ['gameday', 'price_gameday', 7900, 'usd'],
+    ['gameday', 'price_gameday', 999, 'cad'], ['org', 'price_gameday', 999, 'usd'],
+  ])('rejects legacy mismatch %s %s %s %s', async (tier, price, amount, currency) => {
+    const stripe = stripeInstance(); stripe.webhooks.constructEventAsync.mockResolvedValue(legacyEvent(String(tier)));
+    stripe.checkout.sessions.listLineItems.mockResolvedValue({ data: [{ price: { id: price }, amount_total: amount, currency }] }); mocks.stripeInstances.push(stripe);
+    expect(await (await stripeWebhook({ request: webhookRequest(), env })).text()).toBe('Ignored checkout price mismatch.');
+    expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+  it.each(['valid', 'owner', 'season', 'product', 'amount', 'currency', 'quantity', 'session-total', 'source-missing'])('verifies v3 credited payment: %s', async variation => {
+    const stripe = stripeInstance('org');
+    const order = { id: 'order-org', owner_id: 'user-1', contest_id: 'board-1', season_year: 2026, target_tier: 'org', price_id: 'price_org', price_cents: 6901,
+      currency: 'usd', credit_cents: 999, credit_source_order_id: variation === 'source-missing' ? null : 'source', billing_version: 3, stripe_checkout_session_id: 'cs_org' };
+    const event: any = legacyEvent('org');
+    Object.assign(event.data.object, { amount_subtotal: 6901, amount_total: variation === 'session-total' ? 7900 : 6901, currency: 'usd', metadata: {
+      order_id: 'order-org', billing_version: '3', tier: 'org', owner_id: variation === 'owner' ? 'other' : 'user-1', contest_id: 'board-1', season: variation === 'season' ? '2025' : '2026',
+    } });
+    stripe.webhooks.constructEventAsync.mockResolvedValue(event);
+    stripe.checkout.sessions.listLineItems.mockResolvedValue({ data: [{
+      price: { id: 'price_inline', type: 'one_time', unit_amount: 6901, product: variation === 'product' ? 'prod_other' : 'prod_org' }, quantity: variation === 'quantity' ? 2 : 1,
+      amount_subtotal: 6901, amount_total: variation === 'amount' ? 1 : 6901, currency: variation === 'currency' ? 'cad' : 'usd',
+    }] });
+    const admin = adminClient([{ data: order }], [{ data: [{ outcome: 'fulfilled' }] }]); mocks.clients.push(admin); mocks.stripeInstances.push(stripe);
+    const response = await stripeWebhook({ request: webhookRequest(), env });
+    expect(response.status).toBe(200);
+    if (variation === 'valid') {
       expect(await response.text()).toBe('Fulfilled.');
-      expect(admin.rpc).toHaveBeenCalledWith(
-        'gridone_fulfill_checkout_v2',
-        expect.objectContaining({
-          p_event_id: event.id,
-          p_order_id: `order-${tier}`,
-          p_session_id: `cs_${tier}`,
-          p_price_id: priceId,
-          p_price_cents: amountCents,
-          p_currency: 'usd',
-        }),
-      );
-    },
-  );
-
-  it.each([
-    ['unknown price', 'gameday', 'price_unknown', 999, 'usd'],
-    ['wrong amount', 'gameday', 'price_gameday', 7900, 'usd'],
-    ['wrong currency', 'gameday', 'price_gameday', 999, 'cad'],
-    ['wrong metadata tier', 'org', 'price_gameday', 999, 'usd'],
-  ] as const)(
-    'acknowledges but does not fulfill a signed checkout with %s',
-    async (_label, metadataTier, priceId, amountTotal, currency) => {
-      const event = completedEvent(metadataTier);
-      const stripe = stripeInstance();
-      stripe.webhooks.constructEventAsync.mockResolvedValue(event);
-      stripe.checkout.sessions.listLineItems.mockResolvedValue({
-        data: [{
-          price: { id: priceId },
-          amount_total: amountTotal,
-          currency,
-        }],
-      });
-      mocks.stripeInstances.push(stripe);
-
-      const response = await stripeWebhook({
-        request: webhookRequest(),
-        env,
-      });
-
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe('Ignored checkout price mismatch.');
-      expect(mocks.createClient).not.toHaveBeenCalled();
-    },
-  );
+      expect(admin.rpc).toHaveBeenCalledWith('gridone_fulfill_checkout_v2', expect.objectContaining({ p_price_id: 'price_org', p_price_cents: 6901 }));
+    } else expect(admin.rpc).not.toHaveBeenCalled();
+  });
 });

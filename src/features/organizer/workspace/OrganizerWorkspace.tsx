@@ -848,7 +848,8 @@ export default function OrganizerWorkspace({
       onRetry={() => void retry()}
       onReload={() => void reloadLatest()}
       onLogout={onLogout}
-      actions={<CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>}
+      actions={<><CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>
+        {onCheckout && billing?.tier !== 'org' && <CapsuleButton variant="quiet" onClick={() => { setUpgradeError(null); setUpgradeTier('org'); }}>Season plans</CapsuleButton>}</>}
     /></div>
   );
 
@@ -918,6 +919,8 @@ export default function OrganizerWorkspace({
       <UpgradeSheet
         open={upgradeTier !== null}
         tier={upgradeTier ?? 'gameday'}
+        onTierChange={setUpgradeTier}
+        allowGameDay={billing?.tier !== 'gameday' && billing?.tier !== 'org'}
         error={upgradeError}
         organizationName={organizationName}
         onOrganizationNameChange={setOrganizationName}

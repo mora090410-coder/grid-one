@@ -24,8 +24,8 @@ const json = async (query: string) => JSON.parse(await sql(query));
 const fixture = async () => {
   const owner = randomUUID(); const board = randomUUID();
   await sql(`INSERT INTO auth.users VALUES ('${owner}', 'fixture@example.test');
-    INSERT INTO public.contests(id,owner_id,share_code,title,season_year)
-    VALUES ('${board}','${owner}',upper(substr(replace('${board}','-',''),1,8)),'Billing fixture',2026);`);
+    INSERT INTO public.contests(id,owner_id,title,season_year)
+    VALUES ('${board}','${owner}','Billing fixture',2026);`);
   return { owner, board };
 };
 const claim = (owner: string, board: string, tier = 'org', name = 'Ravens Club') => json(`SET ROLE service_role;
@@ -91,8 +91,8 @@ describe.sequential('approved Organization purchase canonical SQL', () => {
   it('does not reuse another account or season purchase', async () => {
     const paid = await paidGameDay(); const f = await fixture();
     expect(await claim(f.owner, f.board)).toMatchObject({ amount_cents: 7900, credit_cents: 0 });
-    await sql(`UPDATE season_entitlements SET season_year=2025 WHERE owner_id='${paid.owner}';
-      UPDATE checkout_orders SET season_year=2025 WHERE id='${paid.source}';`);
+    await sql(`UPDATE season_entitlements SET season_year=2027 WHERE owner_id='${paid.owner}';
+      UPDATE checkout_orders SET season_year=2027 WHERE id='${paid.source}';`);
     expect(await claim(paid.owner, paid.board)).toMatchObject({ amount_cents: 7900, credit_cents: 0 });
   });
   it('blocks a source refund before payment, records the net payment for manual refund review without capacity', async () => {

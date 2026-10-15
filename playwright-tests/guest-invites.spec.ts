@@ -122,9 +122,9 @@ test('disconnected prototype completes a simulated claim without app API or serv
   await page.screenshot({path:info.outputPath('prototype.png'),fullPage:true});
 });
 
-test('another guest converges through polling while disconnected without gaining the first guest receipt',async({page,browser})=>{
+test('another guest converges through polling while disconnected without gaining the first guest receipt',async({page,browser,baseURL})=>{
   const f=await fixture(page);
-  const other=await browser.newPage();
+  const other=await browser.newPage({baseURL});
   await other.clock.install();
   await other.routeWebSocket(/\/realtime\/v1\/websocket/,async socket=>{
     await socket.close({code:1011,reason:'Test disconnected realtime'});
@@ -133,7 +133,7 @@ test('another guest converges through polling while disconnected without gaining
     const state=f.snapshot();
     return route.fulfill({json:{...state,mine:undefined,heldCells:[],holds:state.holds.map(hold=>({...hold,mine:false}))}});
   });
-  await other.goto(`http://127.0.0.1:${process.env.PLAYWRIGHT_PORT||5199}${guestPath}`);
+  await other.goto(guestPath);
   await expect(other.getByRole('button',{name:/^Square 1, available/})).toBeVisible();
   await page.goto(guestPath);
   await page.getByRole('button',{name:/^Square 1, available/}).click();

@@ -14,6 +14,7 @@ const Paid: React.FC = () => {
     const [message, setMessage] = useState('Confirming your plan…');
     const [contestId, setContestId] = useState<string | null>(null);
     const [retryKey, setRetryKey] = useState(0);
+    const [receipt, setReceipt] = useState<{ organization: string | null; amount: number; credit: number; paidAt: string | null; season: number } | null>(null);
     const orderId = searchParams.get('order');
 
     useEffect(() => {
@@ -50,6 +51,10 @@ const Paid: React.FC = () => {
                 if (cancelled) return;
                 transientFailures = 0;
                 setContestId(result.contestId || null);
+                if (result.paymentConfirmed && Number.isInteger(result.amountPaidCents)) {
+                    setReceipt({ organization: result.orderOrganizationDisplayName || null, amount: result.amountPaidCents,
+                        credit: result.creditCents || 0, paidAt: result.paidAt || null, season: result.seasonYear });
+                }
                 if (result.orderStatus === 'duplicate_paid') {
                     setState('duplicate');
                     setMessage('A second payment was received, but it did not add another plan or board allowance. It is marked for refund review.');
@@ -88,6 +93,11 @@ const Paid: React.FC = () => {
                     setMessage('Payment confirmed. Return to your draft and publish when you are ready.');
                     return;
                 }
+                if (result.paymentConfirmed && result.entitlementStatus !== 'active') {
+                    setState('inactive');
+                    setMessage('Payment received, but the plan is inactive because a supporting payment was reversed or disputed. Previously shared boards remain available. Contact support before purchasing again.');
+                    return;
+                }
                 attempt += 1;
                 if (attempt >= 10) {
                     setState('delayed');
@@ -117,6 +127,7 @@ const Paid: React.FC = () => {
 
     const retry = () => {
         setContestId(null);
+        setReceipt(null);
         setState('checking');
         setMessage('Confirming your plan…');
         setRetryKey(key => key + 1);
@@ -151,6 +162,16 @@ const Paid: React.FC = () => {
                                         : 'Checkout needs attention.'}
                 </h1>
                 <p className="font-ui text-[19px] leading-[1.5] text-fg-2">{message}</p>
+                {receipt && <section aria-label="Payment receipt" className="flex flex-col gap-2 rounded-control border border-hairline p-4 font-ui text-fg">
+                    <h2 className="text-lg font-semibold">GridOne payment receipt</h2>
+                    {receipt.organization && <p>Organization: {receipt.organization}</p>}
+                    <p>Season: {receipt.season}</p>
+                    <p>Receipt: {orderId}</p>
+                    {receipt.paidAt && <p>Paid: {new Date(receipt.paidAt).toLocaleDateString()}</p>}
+                    {receipt.credit > 0 && <p>Game Day credit: ${(receipt.credit / 100).toFixed(2)}</p>}
+                    <p>Amount paid: ${(receipt.amount / 100).toFixed(2)} USD</p>
+                    <p>Software only. GridOne does not collect square money or pay winners.</p>
+                </section>}
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-3">
                 {state === 'checking' && <CapsuleTag>Secure verification in progress</CapsuleTag>}

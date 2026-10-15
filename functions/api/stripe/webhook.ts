@@ -162,13 +162,48 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       return text('Ignored unexpected checkout line items.');
     }
     const line = lineItems.data[0];
-    const priceId = stripeId(line.price);
+    let priceId = stripeId(line.price);
+    let verifiedV3 = false;
+    let admin: ReturnType<typeof adminClient> | undefined;
+    if (session.metadata?.billing_version === '3') {
+      admin = adminClient(env);
+      const { data: order, error: orderError } = await admin.from('checkout_orders')
+        .select('id, owner_id, contest_id, season_year, target_tier, price_id, price_cents, currency, credit_cents, credit_source_order_id, billing_version, stripe_checkout_session_id')
+        .eq('id', orderId).maybeSingle();
+      if (orderError) throw orderError;
+      const definition = order && configuredTierForPrice(order.price_id, env);
+      if (!order || !definition || order.billing_version !== 3
+        || session.metadata.owner_id !== order.owner_id
+        || session.metadata.contest_id !== order.contest_id
+        || session.metadata.season !== String(order.season_year)
+        || session.metadata.tier !== order.target_tier
+        || order.target_tier !== definition.tier
+        || (order.stripe_checkout_session_id && order.stripe_checkout_session_id !== session.id)) {
+        return text('Ignored checkout order mismatch.');
+      }
+      const credited = order.target_tier === 'org' && order.credit_cents === 999 && order.credit_source_order_id;
+      const expected = credited ? 6901 : definition.amountCents;
+      const canonicalPrice = await stripe.prices.retrieve(definition.priceId);
+      const actualPrice = line.price;
+      if (order.price_cents !== expected || order.currency !== 'usd'
+        || canonicalPrice.unit_amount !== definition.amountCents || canonicalPrice.currency !== 'usd' || canonicalPrice.type !== 'one_time'
+        || !actualPrice || actualPrice.type !== 'one_time' || actualPrice.unit_amount !== expected
+        || stripeId(actualPrice.product) !== stripeId(canonicalPrice.product)
+        || (!credited && actualPrice.id !== definition.priceId)
+        || line.quantity !== 1 || line.amount_subtotal !== expected || line.amount_total !== expected || line.currency !== 'usd'
+        || session.amount_subtotal !== expected || session.amount_total !== expected || session.currency !== 'usd'
+        || (!credited && order.credit_cents !== 0)) {
+        return text('Ignored checkout price mismatch.');
+      }
+      priceId = definition.priceId;
+      verifiedV3 = true;
+    }
     const configuredTier = configuredTierForPrice(priceId, env);
     if (
-      !configuredTier
+      !verifiedV3 && (!configuredTier
       || line.amount_total !== configuredTier.amountCents
       || line.currency !== 'usd'
-      || session.metadata?.tier !== configuredTier.tier
+      || session.metadata?.tier !== configuredTier.tier)
     ) {
       // No existing RPC records a mismatch without changing the order's state,
       // so the paid session is logged for manual review instead.
@@ -184,7 +219,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       return text('Ignored checkout price mismatch.');
     }
 
-    const admin = adminClient(env);
+    admin ??= adminClient(env);
     const { data, error } = await admin.rpc('gridone_fulfill_checkout_v2', {
       p_event_id: event.id,
       p_event_type: event.type,

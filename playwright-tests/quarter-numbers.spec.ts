@@ -45,7 +45,12 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
     // The four sets are independent draws, not one set copied four times.
     expect(new Set((['Q1','Q2','Q3','Q4'] as const).map(key => JSON.stringify(board.topAxisByQuarter?.[key]))).size).toBeGreaterThan(1);
     expect(board.squares).toEqual(names);
-    await page.keyboard.press('Escape');
+    // Saving the draw and opening the preview are separate React commits.
+    // Wait for the real preview, then dismiss it as an organizer would.
+    const initialPreview = page.getByRole('dialog',{name:'Private preview — sharing is off',exact:true});
+    await expect(initialPreview).toBeVisible();
+    await initialPreview.getByRole('button',{name:'Close',exact:true}).click();
+    await expect(initialPreview).toBeHidden();
     const beforeReload = structuredClone(board);
     await page.evaluate(() => {
       const original = CanvasRenderingContext2D.prototype.fillText;
