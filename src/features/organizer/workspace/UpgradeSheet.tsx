@@ -19,7 +19,7 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
   const organizationNameIsValid = organizationName.trim().length >= 2 && organizationName.trim().length <= 120;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Choose a plan">
+    <div data-base="cream"><Sheet open={open} onClose={onClose} title="Choose a plan" solidSurface>
       <div className="flex flex-col gap-4">
         {onTierChange && <fieldset className="flex flex-col gap-2">
           <legend className="font-ui text-base text-fg">Season plan</legend>
@@ -68,6 +68,6 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
           </CapsuleButton>
         </div>
       </div>
-    </Sheet>
+    </Sheet></div>
   );
 }

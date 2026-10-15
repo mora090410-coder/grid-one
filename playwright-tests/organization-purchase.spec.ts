@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
 
-for (const width of [390, 1440]) {
-  test(`Organization is reachable with free allowance and shows its canonical receipt at ${width}px`, async ({ page }, info) => {
+for (const credited of [false, true]) for (const width of [390, 1440]) {
+  test(`Organization is reachable with remaining allowance and shows its canonical ${credited ? 'credited' : 'direct'} receipt at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 });
     await installOrganizerSession(page); await installOrganizerSupport(page);
     await page.route(`**/api/pools/${boardId}`, route => route.fulfill({ json: {
@@ -17,8 +17,8 @@ for (const width of [390, 1440]) {
     await page.route('**/api/billing/status*', route => route.fulfill({ json: purchased ? {
       tier: 'org', allowance: 50, used: 0, remaining: 50, organizationDisplayName: 'Ravens Fixture Club',
       orderOrganizationDisplayName: 'Ravens Fixture Club', seasonYear: 2026, entitlementStatus: 'active',
-      orderStatus: 'paid', paymentConfirmed: true, contestId: boardId, paidAt: '2026-10-14T18:00:00Z', amountPaidCents: 7900, creditCents: 0,
-    } : { tier: 'free', allowance: 1, used: 0, remaining: 1, seasonYear: 2026, entitlementStatus: 'active' } }));
+      orderStatus: 'paid', paymentConfirmed: true, contestId: boardId, paidAt: '2026-10-14T18:00:00Z', amountPaidCents: credited ? 6901 : 7900, creditCents: credited ? 999 : 0,
+    } : { tier: credited ? 'gameday' : 'free', allowance: credited ? 5 : 1, used: credited ? 1 : 0, remaining: credited ? 4 : 1, seasonYear: 2026, entitlementStatus: 'active' } }));
     await page.route('**/api/stripe/create-checkout-session', async route => {
       expect(route.request().postDataJSON()).toEqual({ contestId: boardId, tier: 'org', organizationName: 'Ravens Fixture Club' });
       purchased = true;
@@ -40,7 +40,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Plan ready.' })).toBeVisible();
     const receipt = page.getByRole('region', { name: 'Payment receipt' });
     await expect(receipt).toContainText('Organization: Ravens Fixture Club');
-    await expect(receipt).toContainText('Amount paid: $79.00 USD');
+    await expect(receipt).toContainText(`Amount paid: ${credited ? '$69.01' : '$79.00'} USD`);
+    if (credited) await expect(receipt).toContainText('Game Day credit: $9.99');
     await expect(receipt).toContainText('Season: 2026');
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const receiptA11y = await new AxeBuilder({ page }).analyze();

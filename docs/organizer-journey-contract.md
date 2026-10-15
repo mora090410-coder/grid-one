@@ -30,7 +30,7 @@ Building, editing, previewing, and redrawing are free and reversible. **Publicat
 | Tools | `BoardToolsCard` | `Board tools` |
 | Seller links | `sellers/SellerLinksCard` | region `Send seller links`; `Get seller links`, list `Seller links`, `Share {label}’s link`, `New link for {label}`, `Copy all links`, `Update for new sellers` |
 | Preview → publish | `PreviewSheet` → `PublishSheet` → `PublishedSheet` | dialogs `Private preview — sharing is off`, `Publish viewer link`, `Published` |
-| Upgrade | `UpgradeSheet` | dialog `Choose a plan` |
+| Upgrade | `UpgradeSheet` | `Season plans` header action before allowance exhaustion; dialog `Choose a plan`, `Season plan` radio group, `Continue to Organization checkout` |
 | Game day | `gameday/SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard` | `Public board`, `Score authority`, `Correct a published result`, `Review delivery issue`, `Final record` |
 
 Board state lives in `useWorkspaceDraft`. Selection lives in `selection.ts`. The draw lives in `secureDraw.ts`. Publication lives in `publishBoard.ts`.
