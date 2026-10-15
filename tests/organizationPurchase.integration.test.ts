@@ -126,6 +126,35 @@ describe.sequential('approved Organization purchase canonical SQL', () => {
     expect(await fulfill(first.order_id, 6901)).toMatchObject({ outcome: 'duplicate_payment', refundable: true });
     expect(await sql(`SELECT boards_allowance FROM season_entitlements WHERE owner_id='${f.owner}'`)).toBe('50');
   });
+  it('preserves verified previously paid v2 Game Day sources, but blocks mixed-version creation', async () => {
+    const f = await fixture();
+    const id = await sql(`INSERT INTO checkout_orders(owner_id,contest_id,season_year,price_id,price_cents,currency,target_tier)
+      VALUES('${f.owner}','${f.board}',2026,'price_gameday',999,'usd','gameday') RETURNING id;`);
+    await fulfill(id, 999, 'gameday');
+    expect(await claim(f.owner, f.board)).toMatchObject({ amount_cents: 6901, credit_source_order_id: id });
+    await expect(sql(`SET ROLE service_role; SELECT * FROM gridone_claim_checkout_order('${f.owner}','${f.board}',2026::smallint,'price_org',7900,'usd','org','Club');`)).rejects.toThrow(/VERSION_UNSUPPORTED/);
+  });
+  it('refuses credit after a source partial refund or lost dispute, without trusting active tiers', async () => {
+    for (const kind of ['partial', 'lost']) {
+      const f = await paidGameDay();
+      if (kind === 'partial') await reversal(f.source, 'charge.refunded', '', 100);
+      else await reversal(f.source, 'charge.dispute.closed', 'lost', 0);
+      expect(await claim(f.owner, f.board)).toMatchObject({ amount_cents: 7900, credit_cents: 0 });
+    }
+  });
+  it('keeps expired unattached creation retry identity stable and then releases its reservation', async () => {
+    const f = await paidGameDay(); const a = await claim(f.owner, f.board);
+    expect(await claim(f.owner, f.board)).toMatchObject({ order_id: a.order_id, checkout_expires_at: a.checkout_expires_at, checkout_contest_id: f.board });
+    await sql(`UPDATE checkout_orders SET stripe_expires_at=now()-interval '1 minute' WHERE id='${a.order_id}';`);
+    const b = await claim(f.owner, f.board);
+    expect(b.order_id).not.toBe(a.order_id);
+    expect(b).toMatchObject({ amount_cents: 6901, credit_source_order_id: f.source });
+  });
+  it('serializes a paid upgrade against source refund and never leaves active unpaid capacity', async () => {
+    const f = await paidGameDay(); const o = await claim(f.owner, f.board);
+    await Promise.all([fulfill(o.order_id, 6901), reversal(f.source)]);
+    expect(await sql(`SELECT status FROM season_entitlements WHERE owner_id='${f.owner}'`)).not.toBe('active');
+  });
   it('rejects client amounts/currencies and denies public execution', async () => {
     const f = await fixture();
     await expect(sql(`SET ROLE service_role; SELECT * FROM gridone_claim_checkout_order_v3('${f.owner}','${f.board}',2026::smallint,'price_org',6901,'usd','org','Club');`)).rejects.toThrow(/price/i);

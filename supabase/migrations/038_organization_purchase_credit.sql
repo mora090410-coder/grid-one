@@ -49,7 +49,7 @@ DECLARE e public.season_entitlements%ROWTYPE; o public.checkout_orders%ROWTYPE;
   source_id uuid; org_name text := nullif(regexp_replace(btrim(p_organization_display_name),'\s+',' ','g'),'');
 BEGIN
   IF p_target_tier IS NULL OR p_target_tier NOT IN ('gameday','org') OR p_currency IS DISTINCT FROM 'usd'
-    OR p_price_cents IS DISTINCT FROM CASE p_target_tier WHEN 'org' THEN 7900 ELSE 999 END
+    OR p_price_cents IS DISTINCT FROM (CASE p_target_tier WHEN 'org' THEN 7900 ELSE 999 END)
     OR nullif(btrim(p_price_id),'') IS NULL THEN RAISE EXCEPTION 'Invalid canonical checkout price'; END IF;
   IF p_target_tier='org' AND (org_name IS NULL OR char_length(org_name) NOT BETWEEN 2 AND 120)
     THEN RAISE EXCEPTION 'CHECKOUT_ORGANIZATION_NAME_REQUIRED'; END IF;
@@ -111,6 +111,7 @@ BEGIN
   SELECT * INTO o FROM public.checkout_orders q WHERE q.id=p_order_id FOR UPDATE;
   IF o.price_id IS DISTINCT FROM p_price_id OR o.price_cents IS DISTINCT FROM p_price_cents OR o.currency IS DISTINCT FROM p_currency
     OR nullif(p_payment_intent_id,'') IS NULL OR nullif(p_session_id,'') IS NULL
+    OR (o.stripe_payment_intent_id IS NOT NULL AND o.stripe_payment_intent_id<>p_payment_intent_id)
     OR (o.stripe_checkout_session_id IS NOT NULL AND o.stripe_checkout_session_id<>p_session_id)
     THEN RAISE EXCEPTION 'Checkout price or session does not match the order'; END IF;
   IF o.credit_source_order_id IS NOT NULL AND o.status NOT IN ('paid','refunded','disputed','duplicate_paid') AND (
