@@ -1022,3 +1022,10 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - **Gates:** `npx tsc --noEmit` passed. `npm run test:unit`: 160 files, 1215 passed. `npm run build` passed. `npm run design:lint`: 0 errors, 5 existing warnings. Every integration file: 18 files, 128 passed, 1 skipped. Local `supabase start` then `supabase db reset` applied migration 035. The first full `supabase start` failed because the Realtime container could not reach the database; the database-only start and reset succeeded.
 - **Not verified:** Playwright and a signed-in browser pass of the organizer score panel. Chromium was not installed. No production migration.
 
+## 2026-10-13 — Backend security review
+
+- **Scope:** one migration, CI, and a plain-English risk summary. No Stripe, email, wrangler flags, secrets, or production database writes. Function grants stay with pull request 16 (migration 035).
+- **Change:** `supabase/migrations/036_organizer_column_and_grant_hardening.sql` limits organizer contest writes to the create columns and `board_data`, revokes unused table and GraphQL grants, scopes the contest-entries policy to authenticated with `(select auth.uid())`, pins `update_updated_at_column` search_path, and adds twelve hot-path foreign-key indexes. `.github/workflows/ci.yml` runs typecheck, unit tests, build, design lint, and disposable-Postgres integration tests. `docs/security-review-2026-10.md` records each finding.
+- **Local Supabase:** `supabase db start` then `supabase db reset --local --no-seed` on this machine. Postgres 17.11. Migration 036 applied. Organizer draft save, column denials, cross-account reads, service-role checkout and score lease, seller and family table access, and draft versus published delete were checked with `psql` against `127.0.0.1:54322`. The old score-lease function is still callable by a signed-in user on that database. Production was not contacted.
+- **Gates:** `npx tsc --noEmit` passed; `npm run test:unit`: 160 files, 1209 passed; `npm run build` passed; `npm run design:lint`: 0 errors, 5 existing warnings; `npm run test:integration`: 18 files, 130 passed, 1 skipped. Playwright was not run.
+
