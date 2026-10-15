@@ -42,7 +42,8 @@ CREATE FUNCTION public.gridone_claim_checkout_order_v3(
   p_owner_id uuid,p_contest_id uuid,p_season_year smallint,p_price_id text,p_price_cents integer,
   p_currency text,p_target_tier text,p_organization_display_name text DEFAULT NULL
 ) RETURNS TABLE(order_id uuid,order_status text,stripe_checkout_session_id text,entitlement_status text,
-  already_entitled boolean,amount_cents integer,credit_cents integer,credit_source_order_id uuid)
+  already_entitled boolean,amount_cents integer,credit_cents integer,credit_source_order_id uuid,
+  checkout_contest_id uuid,checkout_expires_at timestamptz)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE e public.season_entitlements%ROWTYPE; o public.checkout_orders%ROWTYPE;
   source_id uuid; org_name text := nullif(regexp_replace(btrim(p_organization_display_name),'\s+',' ','g'),'');
@@ -58,9 +59,15 @@ BEGIN
     THEN RAISE EXCEPTION 'Contest is not owned by this user for this season'; END IF;
   SELECT * INTO e FROM public.season_entitlements s WHERE s.owner_id=p_owner_id AND s.season_year=p_season_year FOR UPDATE;
   IF e.status='active' AND (e.tier='org' OR (e.tier='gameday' AND p_target_tier='gameday')) THEN
-    RETURN QUERY SELECT NULL::uuid,NULL::text,NULL::text,e.status,true,0,0,NULL::uuid; RETURN;
+    RETURN QUERY SELECT NULL::uuid,NULL::text,NULL::text,e.status,true,0,0,NULL::uuid,NULL::uuid,NULL::timestamptz; RETURN;
   END IF;
   IF e.tier='org' AND p_target_tier='gameday' THEN RAISE EXCEPTION 'CHECKOUT_DOWNGRADE_NOT_ALLOWED'; END IF;
+  -- A create response can be lost before session attachment. Stripe's default
+  -- session lifetime is 24h; retain the idempotency reservation beyond that
+  -- lifetime rather than freeing a potentially payable session prematurely.
+  UPDATE public.checkout_orders q SET status='expired',terminal_at=now(),terminal_reason='unattached_checkout_reservation_expired'
+    WHERE q.owner_id=p_owner_id AND q.season_year=p_season_year AND q.billing_version=3
+      AND q.status='pending' AND q.stripe_checkout_session_id IS NULL AND q.stripe_expires_at<now();
   SELECT * INTO o FROM public.checkout_orders q WHERE q.owner_id=p_owner_id AND q.season_year=p_season_year
     AND q.status IN ('pending','checkout_created','awaiting_payment') FOR UPDATE;
   IF FOUND THEN
@@ -68,7 +75,7 @@ BEGIN
       OR o.organization_display_name IS DISTINCT FROM org_name THEN RAISE EXCEPTION 'CHECKOUT_TARGET_CONFLICT'; END IF;
     IF o.credit_source_order_id IS NOT NULL AND NOT public.gridone_credit_source_valid(o.credit_source_order_id,p_owner_id,p_season_year)
       THEN RAISE EXCEPTION 'CHECKOUT_CREDIT_SOURCE_CHANGED'; END IF;
-    RETURN QUERY SELECT o.id,o.status,o.stripe_checkout_session_id,e.status,false,o.price_cents,o.credit_cents,o.credit_source_order_id; RETURN;
+    RETURN QUERY SELECT o.id,o.status,o.stripe_checkout_session_id,e.status,false,o.price_cents,o.credit_cents,o.credit_source_order_id,o.contest_id,o.stripe_expires_at; RETURN;
   END IF;
   -- A tier/grant is never payment evidence. Credit follows the current verified
   -- source purchase, under the same lock as fulfillment/reversal/publication.
@@ -78,10 +85,10 @@ BEGIN
       AND (q.credit_consumed_at IS NOT NULL OR q.status IN ('pending','checkout_created','awaiting_payment')))
     THEN source_id:=e.source_checkout_order_id; END IF;
   INSERT INTO public.checkout_orders(owner_id,contest_id,season_year,price_id,price_cents,currency,target_tier,
-    organization_display_name,billing_version,credit_source_order_id,credit_cents)
+    organization_display_name,billing_version,credit_source_order_id,credit_cents,stripe_expires_at)
   VALUES(p_owner_id,p_contest_id,p_season_year,p_price_id,p_price_cents-CASE WHEN source_id IS NULL THEN 0 ELSE 999 END,
-    'usd',p_target_tier,org_name,3,source_id,CASE WHEN source_id IS NULL THEN 0 ELSE 999 END) RETURNING * INTO o;
-  RETURN QUERY SELECT o.id,o.status,o.stripe_checkout_session_id,e.status,false,o.price_cents,o.credit_cents,o.credit_source_order_id;
+    'usd',p_target_tier,org_name,3,source_id,CASE WHEN source_id IS NULL THEN 0 ELSE 999 END,date_trunc('second',now())+interval '24 hours 5 minutes') RETURNING * INTO o;
+  RETURN QUERY SELECT o.id,o.status,o.stripe_checkout_session_id,e.status,false,o.price_cents,o.credit_cents,o.credit_source_order_id,o.contest_id,o.stripe_expires_at;
 END;
 $$;
 REVOKE ALL ON FUNCTION public.gridone_claim_checkout_order_v3(uuid,uuid,smallint,text,integer,text,text,text) FROM PUBLIC,anon,authenticated;

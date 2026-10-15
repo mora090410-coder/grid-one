@@ -34,6 +34,11 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Focused Organization purchase SQL regression
+        run: |
+          docker pull postgres:17
+          npx vitest run --project integration tests/organizationPurchase.integration.test.ts
+
       - name: Unit tests
         run: npm run test:unit
 

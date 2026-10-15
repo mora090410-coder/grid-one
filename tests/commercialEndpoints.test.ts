@@ -33,7 +33,7 @@ const adminClient = (results: any[] = [], rpcResults: any[] = []) => ({
 });
 const stripeInstance = (tier = 'gameday', amount = tier === 'org' ? 7900 : 999) => ({
   prices: { retrieve: vi.fn(async () => ({ id: `price_${tier}`, active: true, type: 'one_time', unit_amount: amount, currency: 'usd', product: `prod_${tier}` })) },
-  checkout: { sessions: { retrieve: vi.fn(), create: vi.fn(async (_params: any, _options?: any) => ({ id: `cs_${tier}`, url: `https://checkout.stripe.test/${tier}` })), expire: vi.fn(), listLineItems: vi.fn() } },
+  checkout: { sessions: { retrieve: vi.fn(), create: vi.fn(async (_params: any, _options?: any) => ({ id: `cs_${tier}`, url: `https://checkout.stripe.test/${tier}`, expires_at: 1790000000 })), expire: vi.fn(), listLineItems: vi.fn() } },
   webhooks: { constructEventAsync: vi.fn() },
 });
 const checkoutFixture = ({ tier = 'org', entitlement = { id: 'entitlement-1', tier: 'free', status: 'active', boards_allowance: 1 } as any,
@@ -42,7 +42,8 @@ const checkoutFixture = ({ tier = 'org', entitlement = { id: 'entitlement-1', ti
     { data: { id: 'board-1', owner_id: 'user-1', season_year: 2026 } }, { data: entitlement },
     ...(entitlement?.id ? [{ count: used }] : []), { data: openOrders }, { data: null },
   ], [{ data: [{ order_id: `order-${tier}`, order_status: 'pending', already_entitled: false,
-    amount_cents: credit ? 6901 : amount, credit_cents: credit ? 999 : 0, credit_source_order_id: credit ? 'source-gameday' : null, ...quote }] }]);
+    amount_cents: credit ? 6901 : amount, credit_cents: credit ? 999 : 0, credit_source_order_id: credit ? 'source-gameday' : null,
+    checkout_contest_id: 'board-1', checkout_expires_at: '2027-01-01T00:31:00Z', ...quote }] }]);
   const stripe = stripeInstance(tier, amount);
   mocks.clients.push({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'user-1' } } })) } }, admin);
   mocks.stripeInstances.push(stripe);

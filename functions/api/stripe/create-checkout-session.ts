@@ -228,11 +228,16 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       throw new Error('Invalid canonical checkout quote.');
     }
     if (reusable) {
+      if (reusable.orderId !== claim.order_id) throw new Error('Checkout reservation changed.');
       return Response.json({ url: reusable.url, orderId: reusable.orderId });
     }
 
     const site = new URL(env.PUBLIC_SITE_URL || 'https://www.getgridone.com').origin;
-    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60;
+    const checkoutContestId = claim.checkout_contest_id;
+    if (!checkoutContestId) throw new Error('Invalid canonical checkout board.');
+    if (new Date(claim.checkout_expires_at).getTime() < Date.now() + 35 * 60 * 1000) {
+      return Response.json({ code: 'CHECKOUT_EXPIRING', error: 'This checkout reservation is expiring. Wait for it to expire before trying again.' }, { status: 409 });
+    }
     const productId = typeof price.product === 'string' ? price.product : price.product?.id;
     if (credit && !productId) throw new Error('Organization product is not configured.');
     const session = await stripe.checkout.sessions.create({
@@ -245,12 +250,12 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
         : `Game Day — ${seasonYear} season. 5 total boards. $9.99 due.` } },
       client_reference_id: claim.order_id,
       success_url: `${site}/paid?order=${claim.order_id}`,
-      cancel_url: `${site}/?poolId=${contest.id}`,
+      cancel_url: `${site}/?poolId=${checkoutContestId}`,
       metadata: {
         order_id: claim.order_id,
         billing_version: '3',
         owner_id: user.id,
-        contest_id: contest.id,
+        contest_id: checkoutContestId,
         season: String(seasonYear),
         tier: requestedTier,
         ...(requestedTier === 'org' ? { organization_name: organizationName } : {}),
@@ -267,13 +272,13 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
           ...(requestedTier === 'org' ? { organization_name: organizationName } : {}),
         },
       },
-      expires_at: expiresAt,
     }, { idempotencyKey: claim.order_id });
 
+    if (!Number.isInteger(session.expires_at)) throw new Error('Stripe checkout lifetime is missing.');
     const { error: attachError } = await admin.rpc('gridone_attach_checkout_session', {
       p_order_id: claim.order_id,
       p_session_id: session.id,
-      p_expires_at: new Date(expiresAt * 1000).toISOString(),
+      p_expires_at: new Date(session.expires_at * 1000).toISOString(),
     });
     if (attachError) throw attachError;
     return Response.json({ url: session.url, orderId: claim.order_id });
