@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BoardData, GameState } from '../../../../types';
 import { acknowledgeRemoteSave, failDraftSave, markDraftDirty, startDraftSave, type DraftSaveState } from '../draft/draftSaveModel';
 
+/** `keepalive` lets the browser finish the request after the page unloads. */
+export type DraftSaveOptions = { keepalive?: boolean };
+
 export interface UseWorkspaceDraftInput {
   game: GameState;
   board: BoardData;
   revision: number;
   isPublished: boolean;
-  onSave: (data: { game: GameState; board: BoardData }) => Promise<unknown>;
+  onSave: (data: { game: GameState; board: BoardData }, options?: DraftSaveOptions) => Promise<unknown>;
   onApply?: (game: GameState, board: BoardData) => void;
   onReload?: () => Promise<void> | void;
   debounceMs?: number;
@@ -50,6 +53,12 @@ export function useWorkspaceDraft({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const editedDuringSaveRef = useRef(false);
+  const onSaveRef = useRef(onSave);
+  const unloadKeepaliveRef = useRef(false);
+  const unloadSentRef = useRef(false);
+  const flushRef = useRef<() => Promise<DraftSaveState>>(async () => saveStateRef.current);
+
+  onSaveRef.current = onSave;
 
   // The newest server props. reloadLatest adopts these after its await,
   // because the adoption effect skips them while a conflict is still showing.
@@ -112,10 +121,12 @@ export function useWorkspaceDraft({
 
     editedDuringSaveRef.current = false;
     const payload = latestData.current;
+    const keepalive = unloadKeepaliveRef.current;
+    unloadKeepaliveRef.current = false;
 
     const run = (async () => {
       try {
-        await onSave(payload);
+        await onSave(payload, keepalive ? { keepalive: true } : undefined);
         updateSaveState((current) => {
           if (current.status !== 'saving') return current;
           const serverRevision = Math.max(revisionRef.current, current.localRevision ?? current.revision);
@@ -162,6 +173,7 @@ export function useWorkspaceDraft({
   }, [clearTimer, debounceMs, runSave]);
 
   const commitLocal = useCallback((nextGame: GameState, nextBoard: BoardData) => {
+    unloadSentRef.current = false;
     latestData.current = { game: nextGame, board: nextBoard };
     onApply?.(nextGame, nextBoard);
 
@@ -207,6 +219,8 @@ export function useWorkspaceDraft({
     // behind when an awaited caller reads it.
     return saveStateRef.current;
   }, [clearTimer, runSave]);
+
+  flushRef.current = flush;
 
   // Serialize revision-changing field endpoints with draft autosave. Edits
   // made during the request stay local and drain against the new revision.
@@ -276,15 +290,40 @@ export function useWorkspaceDraft({
   }, [clearTimer, onReload, updateSaveState]);
 
   useEffect(() => {
+    // A reload inside the debounce window used to drop the edit. Start the
+    // save immediately, with keepalive so the browser can finish it after
+    // the document is gone. beforeunload and pagehide share one send.
+    const flushForUnload = () => {
+      if (unloadSentRef.current) return;
+      const status = saveStateRef.current.status;
+      if (status !== 'dirty' && status !== 'saving') return;
+      unloadSentRef.current = true;
+      const releaseIfStillHere = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          unloadSentRef.current = false;
+        }
+      };
+      if (status === 'dirty') {
+        unloadKeepaliveRef.current = true;
+        void flushRef.current().then(releaseIfStillHere, releaseIfStillHere);
+        return;
+      }
+      void onSaveRef.current(latestData.current, { keepalive: true }).then(releaseIfStillHere, releaseIfStillHere);
+    };
     const guard = (event: BeforeUnloadEvent) => {
       const status = saveStateRef.current.status;
       if (status === 'dirty' || status === 'saving') {
         event.preventDefault();
         event.returnValue = '';
       }
+      flushForUnload();
     };
     window.addEventListener('beforeunload', guard);
-    return () => window.removeEventListener('beforeunload', guard);
+    window.addEventListener('pagehide', flushForUnload);
+    return () => {
+      window.removeEventListener('beforeunload', guard);
+      window.removeEventListener('pagehide', flushForUnload);
+    };
   }, []);
 
   useEffect(() => () => clearTimer(), [clearTimer]);

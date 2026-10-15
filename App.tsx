@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { RecoveryLanding } from './pages/RecoveryLanding';
 import FullScreenLoading from './components/loading/FullScreenLoading';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Logo } from './src/design/primitives';
@@ -16,6 +17,8 @@ const BoardView = React.lazy(loadBoardView);
 const CreateContest = React.lazy(() => import('./pages/CreateContest'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Login = React.lazy(() => import('./pages/Login'));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const Paid = React.lazy(() => import('./pages/Paid'));
 const Privacy = React.lazy(() => import('./pages/Privacy'));
@@ -82,6 +85,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <Router>
+        <RecoveryLanding />
         <AuthProvider>
           <React.Suspense fallback={<FullScreenLoading />}>
             <Routes>
@@ -102,6 +106,8 @@ const App: React.FC = () => {
                 path="/login"
                 element={<Login />}
               />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected Routes */}
               <Route

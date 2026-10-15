@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { CapsuleButton, CapsuleInput, Eyebrow, Glass } from '../src/design/primitives';
 import { ghostLink } from '../src/features/homepage/sections/cta';
-import { SitePage } from '../src/features/site';
 import FullScreenLoading from '../components/loading/FullScreenLoading';
+import { AuthShell } from './AuthShell';
 
 export const safeReturnTo = (value: string | null): string | null => {
     if (!value) return null;
@@ -14,24 +14,6 @@ export const safeReturnTo = (value: string | null): string | null => {
     if (!value.startsWith('/') || value.startsWith('//')) return null;
     return value;
 };
-
-/**
- * The sign-in card on the site shell, so /login carries the same banner and
- * main landmarks as every other public route. The header's own Sign in link is
- * dropped here: this page is that link's destination. The main is short, so it
- * holds its own height (header band plus the shell's vertical padding) and
- * centres the card inside it.
- */
-const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <SitePage
-        width="prose"
-        withFooter={false}
-        hideSignIn
-        mainProps={{ className: 'flex min-h-[calc(100dvh-172px)] items-center justify-center' }}
-    >
-        {children}
-    </SitePage>
-);
 
 const Login: React.FC = () => {
     const { session, loading: authLoading } = useAuth();
@@ -233,6 +215,12 @@ const Login: React.FC = () => {
                         aria-describedby={error ? 'auth-error' : undefined}
                         required
                     />
+
+                    {!isSignUp && (
+                        <div className="-mt-1">
+                            <Link to="/forgot-password" className={ghostLink}>Forgot password?</Link>
+                        </div>
+                    )}
 
                     {isSignUp && (
                         <CapsuleInput

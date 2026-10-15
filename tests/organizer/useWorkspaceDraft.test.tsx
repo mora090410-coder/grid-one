@@ -151,7 +151,41 @@ describe('useWorkspaceDraft', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
-  it('flush resolves with save_failed when the save is rejected', async () => {
+  it('flushes a pending edit on pagehide before the debounce, including inside one second', async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn(async (_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => undefined);
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+  act(() => result.current.setGame((current) => ({ ...current, title: 'Saved before reload' })));
+  expect(onSave).not.toHaveBeenCalled();
+  await act(async () => { vi.advanceTimersByTime(200); });
+  expect(onSave).not.toHaveBeenCalled();
+  await act(async () => { window.dispatchEvent(new Event('pagehide')); });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  expect(onSave.mock.calls[0][0].game.title).toBe('Saved before reload');
+  expect(onSave.mock.calls[0][1]).toEqual({ keepalive: true });
+  await act(async () => { vi.advanceTimersByTime(2000); });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  vi.useRealTimers();
+});
+
+it('flushes the same pending edit once when beforeunload and pagehide both fire', async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn(async (_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => undefined);
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+  act(() => result.current.setBoard((current) => ({ ...current, squares: current.squares.map((names, index) => index === 3 ? ['Dana P.'] : names) })));
+  const leaving = new Event('beforeunload', { cancelable: true });
+  await act(async () => {
+    window.dispatchEvent(leaving);
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  expect(leaving.defaultPrevented).toBe(true);
+  expect(onSave).toHaveBeenCalledTimes(1);
+  expect(onSave.mock.calls[0][0].board.squares[3]).toEqual(['Dana P.']);
+  expect(onSave.mock.calls[0][1]).toEqual({ keepalive: true });
+  vi.useRealTimers();
+});
+
+it('flush resolves with save_failed when the save is rejected', async () => {
     const onSave = vi.fn(async () => { throw new Error('The board could not be saved.'); });
     const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
     act(() => result.current.setGame((g) => ({ ...g, title: 'flushed' })));

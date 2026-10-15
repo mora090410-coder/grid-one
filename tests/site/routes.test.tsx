@@ -69,6 +69,7 @@ describe('Login', () => {
     expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'password');
     expect(screen.queryByLabelText('Confirm Password')).toBeNull();
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeEnabled();
+    expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
@@ -90,6 +91,7 @@ describe('Login', () => {
     expect(screen.getByLabelText('First Name (optional)')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name (optional)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create organizer account' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Forgot password?' })).toBeNull();
   });
 
   it('reports a mismatch through the auth-error alert', async () => {

@@ -102,6 +102,18 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
     { noIndex: true },
   ),
   websiteRoute(
+    '/forgot-password',
+    'Reset your password | GridOne',
+    'Request a link to choose a new password for your GridOne organizer account.',
+    { noIndex: true },
+  ),
+  websiteRoute(
+    '/reset-password',
+    'Choose a new password | GridOne',
+    'Set a new password for your GridOne organizer account.',
+    { noIndex: true },
+  ),
+  websiteRoute(
     '/paid',
     'Checkout status | GridOne',
     'Confirming your GridOne plan payment and published-board allowance.',

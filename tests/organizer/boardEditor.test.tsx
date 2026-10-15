@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import BoardEditor from '../../src/features/organizer/workspace/BoardEditor';
 import SquareSheet from '../../src/features/organizer/workspace/SquareSheet';
-import type { BoardData, GameState } from '../../types';
+import type { BoardData, EntryMeta, GameState } from '../../types';
 
 const game: GameState = { title: 'T', meta: '', leftAbbr: 'KC', leftName: 'Kansas City', topAbbr: 'PHI', topName: 'Philadelphia', dates: '', lockTitle: false, lockMeta: false };
 const board: BoardData = { topAxis: Array(10).fill(null), leftAxis: Array(10).fill(null), squares: Array.from({ length: 100 }, (_, i) => (i === 0 ? ['Ann'] : [])) };
@@ -96,6 +96,53 @@ it('preserves a published allocation when correcting its displayed name', () => 
   fireEvent.click(screen.getByRole('button', {name: 'Save'}));
   expect(onSave).toHaveBeenCalledWith(11, 'John B', expect.any(Object), false, 'Mora family');
   expect(screen.getByText(/recorded in the board history/)).toBeInTheDocument();
+});
+
+it('shows the square just opened, not the previous square, before effects run', () => {
+  const paints: { value: string; paid: string }[] = [];
+  const paid: EntryMeta = { cell_index: 0, paid_status: 'paid', notify_opt_in: false, contact_type: null, contact_value: null };
+  const Probe = ({ index, name, meta }: { index: number; name: string; meta?: EntryMeta }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+      const root = ref.current;
+      const input = root?.querySelector('input');
+      const selected = root?.querySelector('[role="radio"][aria-checked="true"]');
+      paints.push({ value: input?.value ?? '', paid: selected?.textContent ?? '' });
+    });
+    return (
+      <div ref={ref}>
+        <SquareSheet open index={index} name={name} meta={meta} isPublished={false} hasNextOpen={false} onSave={vi.fn()} onClose={vi.fn()} />
+      </div>
+    );
+  };
+  const view = render(<Probe index={0} name="Emily C." meta={paid} />);
+  expect(paints.at(-1)).toEqual({ value: 'Emily C.', paid: 'Paid' });
+  const before = paints.length;
+  view.rerender(<Probe index={1} name="" />);
+  const next = paints.slice(before);
+  expect(next.some((paint) => paint.value === 'Emily C.' || paint.paid === 'Paid')).toBe(false);
+  expect(next.at(-1)).toEqual({ value: '', paid: 'Not asked yet' });
+});
+
+it('refuses a blank save on an open square and keeps the sheet open', () => {
+  const onSave = vi.fn();
+  const onClose = vi.fn();
+  render(<SquareSheet open index={4} name="   " isPublished={false} hasNextOpen onSave={onSave} onClose={onClose} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save and next' }));
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name on the board' }), { key: 'Enter' });
+  expect(onSave).not.toHaveBeenCalled();
+  expect(onClose).not.toHaveBeenCalled();
+  expect(screen.getByRole('alert')).toHaveTextContent('Enter a name before saving an open square.');
+});
+
+it('still saves a cleared name on a square that already has one', () => {
+  const onSave = vi.fn();
+  render(<SquareSheet open index={0} name="Ann" isPublished={false} hasNextOpen={false} onSave={onSave} onClose={vi.fn()} />);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Name on the board' }), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(onSave).toHaveBeenCalledWith(0, '', expect.any(Object), false);
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 it('prevents saving a buyer longer than the server limit', () => {

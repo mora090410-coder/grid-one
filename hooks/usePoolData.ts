@@ -68,7 +68,7 @@ interface UsePoolDataReturn extends PoolDataState {
     loadPoolData: (poolId: string, options?: { background?: boolean }) => Promise<void>;
     shareBoard: (poolId: string) => Promise<void>;
     publishPool: (currentData?: { game: GameState; board: BoardData }) => Promise<string | void>;
-    updatePool: (poolId: string, data: { game: GameState; board: BoardData }) => Promise<boolean>;
+    updatePool: (poolId: string, data: { game: GameState; board: BoardData }, options?: { keepalive?: boolean }) => Promise<boolean>;
     updatePayoutDescriptions: (poolId: string, descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
     updatePublishedOpenSquares: (poolId: string, squares: string[][]) => Promise<void>;
     migrateGuestBoard: (_user: unknown, guestData: { game: GameState; board: BoardData }) => Promise<string>;
@@ -82,6 +82,7 @@ export function usePoolData(): UsePoolDataReturn {
     const [shareCode, setShareCode] = useState<string | null>(null);
     const [revision, setRevision] = useState<number | null>(null);
     const revisionRef = useRef<number | null>(null);
+    const accessTokenRef = useRef<string | null>(null);
     const updateQueueRef = useRef<Promise<unknown>>(Promise.resolve());
     const [ownerId, setOwnerId] = useState<string | null>(null);
     const [loadingPool, setLoadingPool] = useState(true);
@@ -126,6 +127,7 @@ export function usePoolData(): UsePoolDataReturn {
         try {
             const { data: sessionData } = await supabase.auth.getSession();
             const accessToken = sessionData.session?.access_token;
+            if (accessToken) accessTokenRef.current = accessToken;
             const response = await fetch(`/api/pools/${poolId}`, {
                 headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
             });
@@ -273,19 +275,27 @@ export function usePoolData(): UsePoolDataReturn {
     // Update existing pool in Supabase
     const updatePool = useCallback((
         poolId: string,
-        data: { game: GameState; board: BoardData }
+        data: { game: GameState; board: BoardData },
+        options?: { keepalive?: boolean },
     ): Promise<boolean> => {
         const run = async () => {
             try {
                 const currentRevision = revisionRef.current;
                 if (!currentRevision) throw new Error('Reload this board before saving.');
-                const { data: sessionData } = await supabase.auth.getSession();
-                const token = sessionData.session?.access_token;
+                // An unload save should not wait on another session read. The
+                // token from the board load is already in memory.
+                let token = options?.keepalive ? accessTokenRef.current : null;
+                if (!token) {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    token = sessionData.session?.access_token ?? null;
+                    if (token) accessTokenRef.current = token;
+                }
                 if (!token) throw new Error('Sign in before saving.');
                 const response = await fetch(`/api/pools/${poolId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify({ ...data, revision: currentRevision }),
+                    keepalive: options?.keepalive === true,
                 });
                 const result = await response.json();
                 if (!response.ok) {
