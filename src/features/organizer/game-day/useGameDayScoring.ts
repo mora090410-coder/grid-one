@@ -105,21 +105,24 @@ export function useGameDayScoring({ activePoolId, game, setGame, liveData, winne
     }, 'idle', 'Automatic score checks are enabled.', 'Automatic scoring could not be enabled.');
   };
 
-  const publishCorrection = async () => {
+  const publishCorrection = async (notify = true) => {
     if (!activePoolId || !correctionDraft) return;
     const draft = correctionDraft;
     await run(async () => {
-      const result = await publishMilestoneCorrectionToServer(activePoolId, draft);
+      const result = await publishMilestoneCorrectionToServer(activePoolId, draft, notify);
       if (Array.isArray(result.winnerHistory)) setCorrectionHistory(result.winnerHistory);
       setCorrectionDraft(null);
       await onReload?.();
-    }, 'saved', 'Correction published. Both correction notices were queued for verified recipients.', 'The correction could not be published.');
+    }, 'saved', notify
+      ? 'Correction published. Both correction notices were queued for verified recipients.'
+      : 'Correction published. No winner emails were queued.', 'The correction could not be published.');
   };
 
-  const updateManualQuarter = (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => {
+  const updateManualQuarter = (quarter: ManualQuarterKey, side: ManualScoreSide, value: number | null) => {
     setGame((current) => {
       const base = current.manualQuarterScores ?? EMPTY_MANUAL_SCORES;
-      return { ...current, manualQuarterScores: { ...base, [quarter]: { ...base[quarter], [side]: Math.max(0, value) } } };
+      const next = value === null ? null : Math.max(0, value);
+      return { ...current, manualQuarterScores: { ...base, [quarter]: { ...base[quarter], [side]: next } } };
     });
   };
 

@@ -27,11 +27,13 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     sideScore?: number;
     topScore?: number;
     reason?: string;
+    notify?: boolean;
   };
   const expectedVersion = Number(body.expectedVersion);
   const sideScore = Number(body.sideScore);
   const topScore = Number(body.topScore);
   const reason = String(body.reason || '').trim();
+  const notify = body.notify !== false;
   if (
     !Number.isInteger(expectedVersion)
     || expectedVersion < 1
@@ -55,6 +57,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     p_side_score: sideScore,
     p_top_score: topScore,
     p_reason: reason,
+    p_notify: notify,
   });
   if (error) {
     if (/version|stale|already corrected/i.test(error.message || '')) {

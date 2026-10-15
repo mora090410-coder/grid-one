@@ -37,7 +37,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   const parsed = await readJsonObject(request, 16_384);
   if (parsed instanceof Response) return parsed;
   const body = parsed as {
-    quarterScores?: Record<QuarterKey, { left: number; top: number }>;
+    quarterScores?: Record<QuarterKey, { left: number | null; top: number | null }>;
     period?: number;
     state?: 'pre' | 'in' | 'post';
     clock?: string;
@@ -47,17 +47,28 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   if (!Number.isInteger(period) || period < 0 || period > 5 || !['pre', 'in', 'post'].includes(String(state))) {
     return json({ error: 'Choose a valid game status and period.' }, 400);
   }
-  const quarterScores = {} as Record<QuarterKey, { left: number; top: number }>;
+  const quarterScores = {} as Record<QuarterKey, { left: number | null; top: number | null }>;
+  const readSide = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return null;
+    const score = Number(value);
+    if (!Number.isInteger(score) || score < 0 || score > 99) return undefined;
+    return score;
+  };
   for (const key of quarterKeys) {
-    const left = Number(body.quarterScores?.[key]?.left);
-    const top = Number(body.quarterScores?.[key]?.top);
-    if (!Number.isInteger(left) || !Number.isInteger(top) || left < 0 || top < 0 || left > 99 || top > 99) {
+    const raw = body.quarterScores?.[key];
+    if (raw == null) {
+      quarterScores[key] = { left: null, top: null };
+      continue;
+    }
+    const left = readSide(raw.left);
+    const top = readSide(raw.top);
+    if (left === undefined || top === undefined || (left === null) !== (top === null)) {
       return json({ error: `Enter valid points for ${key}.` }, 400);
     }
     quarterScores[key] = { left, top };
   }
-  const total = (side: 'left' | 'top') => quarterKeys.reduce((sum, key) => sum + quarterScores[key][side], 0);
-  const hasOvertimeScore = quarterScores.OT.left > 0 || quarterScores.OT.top > 0;
+  const total = (side: 'left' | 'top') => quarterKeys.reduce((sum, key) => sum + (quarterScores[key][side] ?? 0), 0);
+  const hasOvertimeScore = (quarterScores.OT.left ?? 0) > 0 || (quarterScores.OT.top ?? 0) > 0;
   const effectivePeriod = state === 'post' ? (hasOvertimeScore ? 5 : 4) : period;
   const now = new Date();
   const admin = owner.admin!;
@@ -72,7 +83,16 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     p_clock: String(body.clock || '').slice(0, 32),
     p_observed_at: now.toISOString(),
   });
-  if (commitError) return maskedError('Manual score commit failed', commitError, SCORE_SAVE_FAILED);
+  if (commitError) {
+    const message = commitError.message || '';
+    if (/before kickoff/i.test(message)) {
+      return json({ error: 'Manual scores cannot be published before kickoff.' }, 409);
+    }
+    if (/kickoff is unavailable/i.test(message)) {
+      return json({ error: 'Link a scheduled game before publishing a manual score.' }, 409);
+    }
+    return maskedError('Manual score commit failed', commitError, SCORE_SAVE_FAILED);
+  }
   const snapshot = Array.isArray(committed) ? committed[0] : committed;
   if (!snapshot?.id) return json({ error: 'The manual score was not committed.' }, 500);
   const publicScore = {

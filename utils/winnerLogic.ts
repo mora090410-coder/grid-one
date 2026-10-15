@@ -37,10 +37,11 @@ export const calculateWinnerHighlights = (liveData: LiveGameData | null): Winner
     // Same rule as the database (migration 028): Q2 is decided at an explicit
     // halftime, not only once the third quarter starts.
     const atHalftime = period === 2 && state === 'in' && (liveData.detail || '').trim().toLowerCase() === 'halftime';
+    const entered = (key: 'Q1' | 'Q2' | 'Q3' | 'Q4') => !liveData.unenteredQuarters?.includes(key);
 
-    if (period > 1 || state === 'post') qw['Q1'] = getWinnerKey(0);
-    if (period > 2 || state === 'post' || atHalftime) qw['Q2'] = getWinnerKey(1);
-    if (period > 3 || state === 'post') qw['Q3'] = getWinnerKey(2);
+    if ((period > 1 || state === 'post') && entered('Q1')) qw['Q1'] = getWinnerKey(0);
+    if ((period > 2 || state === 'post' || atHalftime) && entered('Q1') && entered('Q2')) qw['Q2'] = getWinnerKey(1);
+    if ((period > 3 || state === 'post') && entered('Q1') && entered('Q2') && entered('Q3')) qw['Q3'] = getWinnerKey(2);
     if (state === 'post') qw['Final'] = `${topScore % 10}-${leftScore % 10}`;
 
     return { quarterWinners: qw, currentLabel: state === 'post' ? 'FINAL' : 'NOW' };

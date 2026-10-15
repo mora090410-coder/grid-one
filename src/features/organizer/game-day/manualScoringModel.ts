@@ -6,11 +6,11 @@ export type ManualQuarterKey = keyof ManualQuarterScores;
 export type ManualScoreSide = 'left' | 'top';
 
 export const EMPTY_MANUAL_SCORES: ManualQuarterScores = {
-  Q1: { left: 0, top: 0 },
-  Q2: { left: 0, top: 0 },
-  Q3: { left: 0, top: 0 },
-  Q4: { left: 0, top: 0 },
-  OT: { left: 0, top: 0 },
+  Q1: { left: null, top: null },
+  Q2: { left: null, top: null },
+  Q3: { left: null, top: null },
+  Q4: { left: null, top: null },
+  OT: { left: null, top: null },
 };
 
 export const MANUAL_SCORE_PERIODS = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const;
@@ -25,7 +25,7 @@ export const manualPeriodForState = (
   if (state === 'pre') return 0;
   if (state === 'post') {
     const hasOvertimeScore = Boolean(
-      quarterScores && (quarterScores.OT.left > 0 || quarterScores.OT.top > 0),
+      quarterScores && ((quarterScores.OT.left ?? 0) > 0 || (quarterScores.OT.top ?? 0) > 0),
     );
     return hasOvertimeScore || period === 5 ? 5 : 4;
   }
@@ -48,3 +48,10 @@ export const manualScoreTotal = (
   quarterScores: ManualQuarterScores | undefined,
   side: ManualScoreSide,
 ) => MANUAL_SCORE_PERIODS.reduce((sum, q) => sum + (quarterScores?.[q]?.[side] ?? 0), 0);
+
+/** Quarters with either side still empty. Explicit 0 is an entered score. */
+export const unenteredManualQuarters = (quarterScores: ManualQuarterScores | undefined) => (
+  MANUAL_SCORE_PERIODS.filter((quarter) => (
+    quarterScores?.[quarter]?.left == null || quarterScores?.[quarter]?.top == null
+  ))
+);

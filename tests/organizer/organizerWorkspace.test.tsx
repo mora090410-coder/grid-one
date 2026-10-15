@@ -736,6 +736,24 @@ describe('OrganizerWorkspace published boards', () => {
     expect(saveEntryMeta).not.toHaveBeenCalled();
   });
 
+  it('shows the locked-name message when a published result freezes the square', async () => {
+    (renamePublishedSquare as any).mockRejectedValueOnce(
+      new Error('This square already has a published result, so its name is locked.'),
+    );
+    renderPublished({ board: drawnBoard(99) });
+
+    fireEvent.click(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` }));
+    fireEvent.change(screen.getByLabelText('Name on the board'), { target: { value: 'Dana P.' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(screen.getByRole('button', { name: `Square 1, assigned to ${NAMES[0]}` })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This square already has a published result, so its name is locked.',
+    );
+  });
+
   it('switches score authority to manual through the service', async () => {
     renderPublished();
 
@@ -790,7 +808,7 @@ describe('OrganizerWorkspace published boards', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Publish correction and email both people' }));
     });
 
-    expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('pool-1', expect.objectContaining({ milestone: 'Q1', reason: 'Scoreboard error' }));
+    expect(publishMilestoneCorrectionToServer).toHaveBeenCalledWith('pool-1', expect.objectContaining({ milestone: 'Q1', reason: 'Scoreboard error' }), true);
   });
 
   it('reuses only current title and rules from the final organizer action', () => {
