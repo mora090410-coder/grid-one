@@ -247,6 +247,22 @@ it('does not start a parallel save on unload while an autosave is pending', asyn
   await act(async () => { release(); await pending; });
 });
 
+it('keeps the edit-during-save drain alive when pagehide happens before the first save settles', async () => {
+  let release!: () => void;
+  const onSave = vi.fn((_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => Promise.resolve());
+  onSave.mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve; }));
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave }));
+  act(() => result.current.setGame((g) => ({ ...g, title: 'First' })));
+  let pending!: Promise<unknown>;
+  act(() => { pending = result.current.flush(); });
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Last edit before leaving' })));
+  act(() => window.dispatchEvent(new Event('pagehide')));
+  expect(onSave).toHaveBeenCalledTimes(1);
+  await act(async () => { release(); await pending; });
+  expect(onSave).toHaveBeenCalledTimes(2);
+  expect(onSave.mock.calls[1]).toEqual([expect.objectContaining({ game: expect.objectContaining({ title: 'Last edit before leaving' }) }), { keepalive: true }]);
+});
+
 it('keeps a revision conflict blocked when more local edits arrive', async () => {
   const onSave = vi.fn(async () => undefined);
   const { result, rerender } = renderHook(({ revision }) => useWorkspaceDraft({ game, board, revision, isPublished: false, onSave }), { initialProps: { revision: 1 } });

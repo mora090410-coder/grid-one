@@ -53,7 +53,13 @@ function SavePill({ saveState, onRetry, onReload }: { saveState: DraftSaveState;
     case 'dirty':
       return <div role="status" className="font-mono text-[12px] text-fg-3">Unsaved changes</div>;
     case 'recovered':
-      return <div role="status" className="font-mono text-[12px] text-fg-3">Recovered draft · review before publishing</div>;
+      return (
+        <div role="alert" className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-fg-2">
+          <span>Recovered unsaved changes from this tab. Review them; the server board may be newer.</span>
+          <CapsuleButton variant="quiet" size="md" onClick={onRetry}>Save recovered changes</CapsuleButton>
+          <CapsuleButton variant="quiet" size="md" onClick={onReload}>Discard and reload server board</CapsuleButton>
+        </div>
+      );
     case 'clean':
     default:
       return <div role="status" className="font-mono text-[12px] text-fg-3">Saved</div>;

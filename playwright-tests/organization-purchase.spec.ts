@@ -33,6 +33,11 @@ for (const credited of [false, true]) for (const width of [390, 1440]) {
     await sheet.getByLabel('Organization name').fill('Ravens Fixture Club');
     await expect(sheet).toContainText('$69.01');
     await expect(sheet).toContainText('50 total boards');
+    // Sheet entry fades the entire panel (including text) from opacity 0 to 1.
+    // Audit its settled interactive state, not a transient animation frame.
+    await sheet.evaluate(async element => {
+      await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished));
+    });
     const a11y = await new AxeBuilder({ page }).analyze();
     expect(a11y.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
     await info.attach('plan-choice', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });

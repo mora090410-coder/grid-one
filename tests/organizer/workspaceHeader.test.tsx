@@ -57,10 +57,16 @@ describe('WorkspaceHeader', () => {
     expect(onTitleChange).toHaveBeenCalledWith('New Title');
   });
 
-  it('shows a recovered draft status instead of Saved', () => {
-    render(<WorkspaceHeader {...base} saveState={{ status: 'recovered', revision: 1 }} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Recovered draft · review before publishing');
+  it('requires explicit save or discard of a recovered draft instead of claiming Saved', () => {
+    const onRetry = vi.fn();
+    const onReload = vi.fn();
+    render(<WorkspaceHeader {...base} onRetry={onRetry} onReload={onReload} saveState={{ status: 'recovered', revision: 1 }} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('server board may be newer');
     expect(screen.queryByText('Saved')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Save recovered changes' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Discard and reload server board' }));
+    expect(onReload).toHaveBeenCalledTimes(1);
   });
 
   it('uses 44px touch targets for Retry, Reload latest board, and Change game', () => {

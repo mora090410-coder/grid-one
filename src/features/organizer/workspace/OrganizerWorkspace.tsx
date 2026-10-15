@@ -81,6 +81,7 @@ import DeliveryIssuesCard from './gameday/DeliveryIssuesCard';
 import FinalRecordCard from './gameday/FinalRecordCard';
 
 export interface OrganizerWorkspaceProps {
+  recoveryKey?: string;
   game: GameState;
   board: BoardData;
   activePoolId: string | null;
@@ -131,6 +132,7 @@ const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
  * the public link, score authority, corrections, and the locked final record.
  */
 export default function OrganizerWorkspace({
+  recoveryKey,
   game: gameProp,
   board: boardProp,
   activePoolId,
@@ -158,7 +160,8 @@ export default function OrganizerWorkspace({
   shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
-  const { game, board, setGame, setBoard, saveState, flush, retry, saveExternalGame, reloadLatest } = useWorkspaceDraft({
+  const { game, board, setGame, setBoard, saveState, flush, retry, saveExternalGame, reloadLatest, recoveryUnavailable } = useWorkspaceDraft({
+    recoveryKey,
     game: gameProp,
     board: boardProp,
     revision,
@@ -850,7 +853,9 @@ export default function OrganizerWorkspace({
       onLogout={onLogout}
       actions={<><CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>
         {onCheckout && billing?.tier !== 'org' && <CapsuleButton variant="quiet" onClick={() => { setUpgradeError(null); setUpgradeTier('org'); }}>Season plans</CapsuleButton>}</>}
-    /></div>
+    />
+      {recoveryUnavailable && saveState.status !== 'clean' && <p role="alert">This browser cannot keep a recovery copy. Wait for Saved before closing or reloading this tab.</p>}
+    </div>
   );
 
   // The sheets live outside the published/unpublished branch: publishing flips

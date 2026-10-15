@@ -165,6 +165,15 @@ afterEach(() => {
 });
 
 describe('OrganizerWorkspace island', () => {
+  it('warns unpublished organizers when the browser cannot retain a recovery copy', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('storage unavailable'); });
+    renderWorkspace({ recoveryKey: 'gridone:draft-recovery:owner-warning:board-warning', onPublish: vi.fn(() => new Promise<string>(() => {})), isPublished: false });
+    const title = screen.getByRole('textbox', { name: 'Board name' });
+    fireEvent.change(title, { target: { value: 'Unacknowledged title' } });
+    fireEvent.blur(title);
+    expect(screen.getByRole('alert')).toHaveTextContent('This browser cannot keep a recovery copy. Wait for Saved before closing or reloading this tab.');
+  });
+
   it('offers seller links, asking to share first while the board is private', () => {
     const sellerBoard = { ...boardWithAssignments(3), allocationLabels: Array.from({ length: 100 }, (_, index) => (index < 3 ? 'Mora family' : null)) };
     const { unmount } = renderWorkspace({ board: sellerBoard, isShared: false, shareCode: null });

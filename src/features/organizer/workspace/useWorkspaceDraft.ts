@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BoardData, GameState } from '../../../../types';
 import { acknowledgeRemoteSave, failDraftSave, markDraftDirty, startDraftSave, type DraftSaveState } from '../draft/draftSaveModel';
+import { readDraftRecovery, removeDraftRecovery, writeDraftRecovery } from '../draft/draftRecoveryStorage';
 
 /** `keepalive` lets the browser finish the request after the page unloads. */
 export type DraftSaveOptions = { keepalive?: boolean };
@@ -14,6 +15,8 @@ export interface UseWorkspaceDraftInput {
   onApply?: (game: GameState, board: BoardData) => void;
   onReload?: () => Promise<void> | void;
   debounceMs?: number;
+  /** Owner + board scoped, tab-local key. Remount the workspace when it changes. */
+  recoveryKey?: string;
 }
 
 export interface UseWorkspaceDraft {
@@ -27,6 +30,7 @@ export interface UseWorkspaceDraft {
   saveExternalGame: (save: () => Promise<Partial<GameState>>) => Promise<void>;
   retry: () => Promise<void>;
   reloadLatest: () => Promise<void>;
+  recoveryUnavailable: boolean;
 }
 
 const clean = (revision: number): DraftSaveState => ({ status: 'clean', revision, canPublish: true });
@@ -40,14 +44,19 @@ export function useWorkspaceDraft({
   onApply,
   onReload,
   debounceMs = 800,
+  recoveryKey,
 }: UseWorkspaceDraftInput): UseWorkspaceDraft {
-  const [localGame, setLocalGame] = useState(game);
-  const [localBoard, setLocalBoard] = useState(board);
-  const [saveState, setSaveState] = useState<DraftSaveState>(() => clean(revision));
+  const [recovery] = useState(() => isPublished ? null : readDraftRecovery(recoveryKey));
+  const [localGame, setLocalGame] = useState(recovery?.game ?? game);
+  const [localBoard, setLocalBoard] = useState(recovery?.board ?? board);
+  const [saveState, setSaveState] = useState<DraftSaveState>(() => recovery
+    ? { status: 'recovered', revision, canPublish: false }
+    : clean(revision));
+  const [recoveryUnavailable, setRecoveryUnavailable] = useState(false);
 
   // Mutable mirrors so async callbacks (debounced saves, retries) always see
   // the latest values without becoming stale closures.
-  const latestData = useRef({ game, board });
+  const latestData = useRef({ game: recovery?.game ?? game, board: recovery?.board ?? board });
   const saveStateRef = useRef(saveState);
   const revisionRef = useRef(revision);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,7 +98,7 @@ export function useWorkspaceDraft({
   // silently discard the user's edits.
   useEffect(() => {
     const status = saveStateRef.current.status;
-    const pending = status === 'dirty' || status === 'saving' || status === 'save_failed' || status === 'conflicted';
+    const pending = status === 'dirty' || status === 'saving' || status === 'save_failed' || status === 'conflicted' || status === 'recovered';
     if (pending) return;
     setLocalGame(game);
     setLocalBoard(board);
@@ -124,6 +133,9 @@ export function useWorkspaceDraft({
     const run = (async () => {
       try {
         await onSave(payload, keepalive ? { keepalive: true } : undefined);
+        // Only remove the exact acknowledged snapshot; an edit during this
+        // request (or another surviving document) may have written a newer one.
+        removeDraftRecovery(recoveryKey, payload);
         updateSaveState((current) => {
           if (current.status !== 'saving') return current;
           const serverRevision = Math.max(revisionRef.current, current.localRevision ?? current.revision);
@@ -158,7 +170,7 @@ export function useWorkspaceDraft({
     inFlightRef.current = run;
     return run;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSave]);
+  }, [onSave, recoveryKey]);
 
   const scheduleSave = useCallback(() => {
     clearTimer();
@@ -176,6 +188,11 @@ export function useWorkspaceDraft({
 
     if (isPublished) return;
 
+    // Synchronous on EVERY edit, before the network queue or unload handlers.
+    // Browser teardown cannot be relied on to execute a later promise drain.
+    setRecoveryUnavailable(!writeDraftRecovery(recoveryKey, latestData.current));
+    if (saveStateRef.current.status === 'recovered') return;
+
     if (inFlightRef.current) {
       editedDuringSaveRef.current = true;
       return;
@@ -183,7 +200,7 @@ export function useWorkspaceDraft({
 
     updateSaveState((current) => (current.status === 'dirty' ? current : markDraftDirty({ status: 'clean', revision: current.revision })));
     scheduleSave();
-  }, [isPublished, onApply, scheduleSave]);
+  }, [isPublished, onApply, scheduleSave, recoveryKey]);
 
   const setGame = useCallback((updater: (g: GameState) => GameState) => {
     const next = updater(latestData.current.game);
@@ -233,6 +250,11 @@ export function useWorkspaceDraft({
         const fields = await save();
         const nextGame = { ...latestData.current.game, ...fields };
         latestData.current = { ...latestData.current, game: nextGame };
+        if (editedDuringSaveRef.current && !isPublished) {
+          // The external fields have already committed. A recovery copy made
+          // during that request must not replay their old values after reload.
+          setRecoveryUnavailable(!writeDraftRecovery(recoveryKey, latestData.current));
+        }
         setLocalGame(nextGame);
         onApply?.(nextGame, latestData.current.board);
         // The contests update trigger increments revision exactly once. A
@@ -260,11 +282,12 @@ export function useWorkspaceDraft({
     // flush() waits for completion while callers of this method retain errors.
     inFlightRef.current = operation.catch(() => undefined);
     await operation;
-  }, [flush, clearTimer, updateSaveState, onApply, isPublished, scheduleSave]);
+  }, [flush, clearTimer, updateSaveState, onApply, isPublished, scheduleSave, recoveryKey]);
 
   const retry = useCallback(async () => {
-    if (saveStateRef.current.status !== 'save_failed') return;
+    if (saveStateRef.current.status !== 'save_failed' && saveStateRef.current.status !== 'recovered') return;
     const current = saveStateRef.current;
+    if (current.status === 'recovered') onApply?.(latestData.current.game, latestData.current.board);
     updateSaveState(() => ({
       status: 'dirty',
       revision: current.revision,
@@ -272,7 +295,7 @@ export function useWorkspaceDraft({
       canPublish: false,
     }));
     await runSave();
-  }, [runSave]);
+  }, [runSave, onApply]);
 
   const reloadLatest = useCallback(async () => {
     clearTimer();
@@ -283,13 +306,16 @@ export function useWorkspaceDraft({
     setLocalGame(server.game);
     setLocalBoard(server.board);
     latestData.current = { game: server.game, board: server.board };
+    removeDraftRecovery(recoveryKey);
+    setRecoveryUnavailable(false);
     updateSaveState(() => clean(server.revision));
-  }, [clearTimer, onReload, updateSaveState]);
+  }, [clearTimer, onReload, updateSaveState, recoveryKey]);
 
   useEffect(() => {
     // A reload inside the debounce window used to drop the edit. Start the
-    // save immediately, with keepalive so the browser can finish it after
-    // the document is gone. beforeunload and pagehide share one send.
+    // save best-effort with keepalive. Queued callbacks may not run after
+    // teardown; the synchronous tab snapshot retains unacknowledged edits.
+    // beforeunload and pagehide share one send.
     const flushForUnload = () => {
       if (unloadSentRef.current) return;
       const status = saveStateRef.current.status;
@@ -332,5 +358,6 @@ export function useWorkspaceDraft({
     retry,
     saveExternalGame,
     reloadLatest,
+    recoveryUnavailable,
   };
 }

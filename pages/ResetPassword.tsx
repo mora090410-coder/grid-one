@@ -4,11 +4,15 @@ import { supabase } from '../services/supabase';
 import { CapsuleButton, CapsuleInput, Eyebrow, Glass } from '../src/design/primitives';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import {
+  clearVerifiedRecoverySession,
   consumeRecoveryArrival,
+  isVerifiedRecoverySession,
+  observeRecoveryAuthEvent,
   peekRecoveryArrival,
 } from '../src/features/site/recoveryArrival';
 import {
   initialResetPhase,
+  hasRecoveryCredentials,
   RESET_LINK_EXPIRED,
   RESET_LINK_INVALID,
   type RecoveryLinkProblem,
@@ -22,44 +26,59 @@ const problemCopy = (problem: RecoveryLinkProblem) =>
 
 const ResetPassword: React.FC = () => {
   // Auth consumes the recovery hash before this lazy page mounts. The arrival
-  // snapshot still has an error fragment; a created session is the success signal.
+  // snapshot retains errors; only a verified recovery event grants reset authority.
   const [phase, setPhase] = useState<Phase>(() => initialResetPhase(window.location.href, peekRecoveryArrival()));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const recovered = useRef(false);
+  const recoveredUserId = useRef<string | null>(null);
+  const expectsRecoveryEvent = useRef(hasRecoveryCredentials(window.location.href)
+    || hasRecoveryCredentials(peekRecoveryArrival() || window.location.href));
 
   React.useEffect(() => {
     consumeRecoveryArrival();
   }, []);
 
   React.useEffect(() => {
-    if (phase !== 'checking') return;
+    if (phase !== 'checking' && phase !== 'ready') return;
     let active = true;
+    let recoveryGrace: ReturnType<typeof setTimeout> | undefined;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!active || !session) return;
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        recovered.current = true;
+      if (!active) return;
+      observeRecoveryAuthEvent(event, session);
+      if (isVerifiedRecoverySession(session)) {
+        recoveredUserId.current = session!.user.id;
         setPhase('ready');
+      } else if (phase === 'ready') {
+        recoveredUserId.current = null;
+        setPhase('invalid');
       }
     });
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return;
-      if (recovered.current || data.session) {
+      if (!sessionError && isVerifiedRecoverySession(data.session)) {
+        recoveredUserId.current = data.session!.user.id;
         setPhase('ready');
         return;
       }
-      if (sessionError) {
-        setPhase((current) => (current === 'ready' ? current : 'invalid'));
+      // Auth-js saves the URL session before it emits PASSWORD_RECOVERY on a
+      // zero-delay timer. getSession can therefore settle before the proof.
+      // Wait briefly with the form disabled; a URL never grants authority.
+      if (!sessionError && phase === 'checking' && expectsRecoveryEvent.current) {
+        recoveryGrace = setTimeout(() => {
+          if (active) { recoveredUserId.current = null; setPhase('invalid'); }
+        }, 500);
         return;
       }
-      setPhase((current) => (current === 'ready' ? current : 'invalid'));
+      recoveredUserId.current = null;
+      setPhase('invalid');
     }).catch(() => {
-      if (active) setPhase((current) => (current === 'ready' || recovered.current ? current : 'invalid'));
+      if (active) { recoveredUserId.current = null; setPhase('invalid'); }
     });
     return () => {
       active = false;
+      clearTimeout(recoveryGrace);
       subscription.unsubscribe();
     };
   }, [phase]);
@@ -77,6 +96,12 @@ const ResetPassword: React.FC = () => {
     }
     setSaving(true);
     try {
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (phase !== 'ready' || sessionError || !isVerifiedRecoverySession(data.session)
+        || data.session?.user.id !== recoveredUserId.current) {
+        setPhase('invalid');
+        return;
+      }
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) {
         const message = updateError.message || '';
@@ -87,6 +112,8 @@ const ResetPassword: React.FC = () => {
         setError(message);
         return;
       }
+      clearVerifiedRecoverySession();
+      recoveredUserId.current = null;
       setPhase('saved');
     } catch (err) {
       const message = err instanceof Error ? err.message : '';

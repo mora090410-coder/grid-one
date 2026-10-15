@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -13,7 +13,7 @@ import {
   RESET_EMAIL_CONFIRMATION,
   shouldOpenPasswordReset,
 } from '../../src/features/site/passwordReset';
-import { captureRecoveryArrival, resetRecoveryArrivalForTests } from '../../src/features/site/recoveryArrival';
+import { captureRecoveryArrival, observeRecoveryAuthEvent, resetRecoveryArrivalForTests } from '../../src/features/site/recoveryArrival';
 
 const mocks = vi.hoisted(() => ({
   session: null as Record<string, unknown> | null,
@@ -135,6 +135,61 @@ describe('Forgot password', () => {
 });
 
 describe('Reset password', () => {
+  it('does not authorize a reset from an unrelated existing signed-in session', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'unrelated', user: { id: 'account-a' } } }, error: null });
+    renderAt(<ResetPassword />, '/reset-password#access_token=other-account-token&type=recovery');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+    expect(screen.queryByLabelText('New password')).toBeNull();
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('refuses submission if the active account changes after recovery was verified', async () => {
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    observeRecoveryAuthEvent('PASSWORD_RECOVERY', recoverySession);
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
+    renderAt(<ResetPassword />, '/reset-password');
+    await waitFor(() => expect(screen.getByLabelText('New password')).toBeEnabled());
+    fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'new-secret' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'new-secret' } });
+    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'other-login', user: { id: 'other-user' } } }, error: null });
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('does not treat an ordinary SIGNED_IN event as password recovery', async () => {
+    const session = { access_token: 'ordinary-login', user: { id: 'organizer' } };
+    mocks.getSession.mockResolvedValue({ data: { session }, error: null });
+    mocks.onAuthStateChange.mockImplementation((callback: (event: string, currentSession: typeof session) => void) => {
+      callback('SIGNED_IN', session);
+      return { data: { subscription: { unsubscribe: mocks.unsubscribe } } };
+    });
+    renderAt(<ResetPassword />, '/reset-password');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This reset link is invalid. Request a new one.');
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('waits for a delayed verified recovery event instead of treating early getSession as final', async () => {
+    window.history.replaceState(null, '', '/reset-password#access_token=recovery&refresh_token=refresh&type=recovery');
+    captureRecoveryArrival();
+    window.history.replaceState(null, '', '/reset-password');
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    let notify!: (event: string, session: typeof recoverySession | null) => void;
+    mocks.onAuthStateChange.mockImplementation((callback: typeof notify) => {
+      notify = callback;
+      return { data: { subscription: { unsubscribe: mocks.unsubscribe } } };
+    });
+    renderAt(<ResetPassword />, '/reset-password');
+    await waitFor(() => expect(mocks.getSession).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(screen.getByText('Checking this reset link.')).toBeInTheDocument();
+    expect(screen.getByLabelText('New password')).toBeDisabled();
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
+    await act(async () => { notify('PASSWORD_RECOVERY', recoverySession); });
+    await waitFor(() => expect(screen.getByLabelText('New password')).toBeEnabled());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('explains an expired recovery link', () => {
     renderAt(<ResetPassword />, '/reset-password#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired');
     expect(screen.getByRole('alert')).toHaveTextContent('This reset link has expired. Request a new one.');
@@ -152,7 +207,9 @@ describe('Reset password', () => {
     captureRecoveryArrival();
     window.history.replaceState(null, '', '/reset-password');
     expect(window.location.hash).toBe('');
-    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    observeRecoveryAuthEvent('PASSWORD_RECOVERY', recoverySession);
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
     renderAt(<ResetPassword />, '/reset-password');
     const password = await screen.findByLabelText('New password');
     await waitFor(() => expect(password).toBeEnabled());
@@ -160,8 +217,10 @@ describe('Reset password', () => {
   });
 
   it('shows the new-password form from the recovery session when the hash is already gone', async () => {
-    mocks.onAuthStateChange.mockImplementation((callback: (event: string, session: { access_token: string } | null) => void) => {
-      callback('PASSWORD_RECOVERY', { access_token: 'recovery' });
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
+    mocks.onAuthStateChange.mockImplementation((callback: (event: string, session: typeof recoverySession | null) => void) => {
+      callback('PASSWORD_RECOVERY', recoverySession);
       return { data: { subscription: { unsubscribe: mocks.unsubscribe } } };
     });
     renderAt(<ResetPassword />, '/reset-password');
@@ -178,7 +237,9 @@ describe('Reset password', () => {
   });
 
   it('lets a recovered session set a new password', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    observeRecoveryAuthEvent('PASSWORD_RECOVERY', recoverySession);
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
     mocks.updateUser.mockResolvedValue({ data: { user: { id: 'user' } }, error: null });
     renderAt(<ResetPassword />, '/reset-password#access_token=abc&refresh_token=def&type=recovery');
     const password = await screen.findByLabelText('New password');
@@ -197,7 +258,9 @@ describe('Reset password', () => {
   });
 
   it('turns a missing recovery session into an invalid-link error', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    observeRecoveryAuthEvent('PASSWORD_RECOVERY', recoverySession);
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
     mocks.updateUser.mockResolvedValue({ data: null, error: { message: 'Auth session missing!' } });
     renderAt(<ResetPassword />, '/reset-password#access_token=abc&type=recovery');
     fireEvent.change(await screen.findByLabelText('New password'), { target: { value: 'new-secret' } });
@@ -228,7 +291,9 @@ describe('Recovery landing', () => {
     window.history.replaceState(null, '', '/#access_token=real-token&refresh_token=real-refresh&type=recovery');
     captureRecoveryArrival();
     window.history.replaceState(null, '', '/');
-    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'recovery' } }, error: null });
+    const recoverySession = { access_token: 'recovery', user: { id: 'recovering-user' } };
+    observeRecoveryAuthEvent('PASSWORD_RECOVERY', recoverySession);
+    mocks.getSession.mockResolvedValue({ data: { session: recoverySession }, error: null });
     renderLanding();
     const password = await screen.findByLabelText('New password');
     await waitFor(() => expect(password).toBeEnabled());
