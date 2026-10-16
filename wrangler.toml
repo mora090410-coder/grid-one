@@ -12,7 +12,7 @@ EMAIL_FROM = "GridOne <updates@parksideag.com>"
 GRIDONE_SEASON = "2026"
 STRIPE_GAMEDAY_PRICE_ID = "price_1TytcMFwSi8ogxSrCLXjAzRA"
 STRIPE_ORG_PRICE_ID = "price_1TytdIFwSi8ogxSrTg4WLaNj"
-PAID_SIGNUP_ENABLED = "true"
+PAID_SIGNUP_ENABLED = "false"
 # Live-scoring cadence and kill switch — dashboard-editable without a deploy.
 SCORE_POLL_SECONDS = "180"
 LIVE_SCORING_ENABLED = "true"
