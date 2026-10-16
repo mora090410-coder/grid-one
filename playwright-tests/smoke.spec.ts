@@ -1,10 +1,13 @@
 import { test, expect, type Locator } from '@playwright/test';
 
 const expectTouchTarget = async (locator: Locator) => {
-  const box = await locator.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.width).toBeGreaterThanOrEqual(44);
-  expect(box!.height).toBeGreaterThanOrEqual(44);
+  // Sheets translate on entry; wait for their real target geometry to settle
+  // rather than rejecting a transient floating-point rect such as 43.999984px.
+  // Keep the exact 44px minimum instead of rounding it down or adding tolerance.
+  await expect.poll(async () => {
+    const box = await locator.boundingBox();
+    return box ? Math.min(box.width, box.height) : 0;
+  }).toBeGreaterThanOrEqual(44);
 };
 
 test('landing page leads with the live board and free-first publishing model', async ({ page }) => {

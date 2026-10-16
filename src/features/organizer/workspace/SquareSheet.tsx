@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Sheet } from '../../../design/primitives/Sheet';
-import { CapsuleButton, CapsuleInput, CapsuleTag } from '../../../design/primitives';
+import { CapsuleButton, CapsuleInput } from '../../../design/primitives';
 import type { EntryMeta, SquareAvailability } from '../../../../types';
 import { isBlankOpenSquareSave, OPEN_SQUARE_NAME_REQUIRED } from './workspaceBoardModel';
 
@@ -19,10 +19,10 @@ export interface SquareSheetProps {
 
 type PaidStatus = EntryMeta['paid_status'];
 
-const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'turf' }[] = [
-  { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
-  { value: 'unpaid', label: 'Unpaid', tone: 'neutral' },
-  { value: 'paid', label: 'Paid', tone: 'turf' },
+const PAID_OPTIONS: { value: PaidStatus; label: string }[] = [
+  { value: 'unknown', label: 'Not asked yet' },
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'paid', label: 'Paid' },
 ];
 
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
@@ -121,11 +121,13 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
                 type="button"
                 role="radio"
                 aria-checked={paidStatus === option.value}
+                tabIndex={paidStatus === option.value ? 0 : -1}
                 onClick={() => setPaidStatus(option.value)}
                 onKeyDown={(event) => onPaymentKeyDown(event, position)}
-                className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+                className="group min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center gap-2 border border-hairline font-ui text-base text-fg aria-checked:border-fg aria-checked:bg-fg aria-checked:text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
               >
-                <CapsuleTag tone={paidStatus === option.value ? option.tone : 'neutral'}>{option.label}</CapsuleTag>
+                <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full border border-current group-aria-checked:bg-current" />
+                {option.label}
               </button>
             ))}
           </div>

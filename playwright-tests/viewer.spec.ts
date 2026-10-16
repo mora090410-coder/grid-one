@@ -183,7 +183,7 @@ test.describe('viewer shell', () => {
 });
 
 for (const width of [320, 390, 1440]) {
-  test(`completed Q1 and compact 99-square selection at ${width}px`, async ({ page }) => {
+  test(`completed Q1 and compact 99-square selection at ${width}px`, async ({ page, isMobile }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const score = { ...liveScore, period: 2, leftScore: 0, topScore: 0, clock: '12:21', detail: '12:21 - 2nd Quarter' };
@@ -203,8 +203,13 @@ for (const width of [320, 390, 1440]) {
     await dialog.getByRole('button', { name: 'Ann', exact: true }).click();
     const summary = page.getByRole('region', { name: 'Ann square summary' });
     await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(4);
-    await summary.getByRole('button', { name: /Show all/ }).click();
+    const showAll = summary.getByRole('button', { name: /Show all/ });
+    // Exercise touch on phone projects: Safari must not focus-scroll an ancestor
+    // between press and release and turn this into a missed tap.
+    if (isMobile) await showAll.tap();
+    else await showAll.click();
     await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(99);
+    await expect(summary.getByRole('button', { name: /Show fewer/ })).toBeFocused();
     await summary.getByRole('button', { name: /Show fewer/ }).click();
     await expect(summary.getByRole('button', { name: /View on board/ })).toHaveCount(4);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

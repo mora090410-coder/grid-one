@@ -32,7 +32,10 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     // Hold the hero's entrance motion still so any movement measured is layout.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const release = await holdAuthClient(page);
-    await page.goto('/');
+    // WebKit includes the deliberately held dynamic import in its load event.
+    // Observe the rendered pending state before releasing that import instead
+    // of waiting for an event that the fixture itself prevents.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const banner = page.locator('header').first();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
@@ -41,7 +44,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     await expect(banner.getByRole('link', { name: 'Your boards' })).toHaveCount(0);
     const pendingSlot = await box(page, 'header [data-auth-slot="pending"]');
     const pendingHeading = await box(page, 'h1');
-    await page.screenshot({ path: testInfo.outputPath(`pending-signed-out-${viewport.width}.png`) });
+    // The pending state is checked above by DOM and exact geometry. WebKit's
+    // screenshot waits for the intentionally held module to finish loading;
+    // capture the settled state below, after releasing it, instead.
 
     release();
     const signIn = banner.getByRole('link', { name: 'Sign in' });
@@ -59,7 +64,10 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await installOrganizerSession(page);
     const release = await holdAuthClient(page);
-    await page.goto('/');
+    // WebKit includes the deliberately held dynamic import in its load event.
+    // Observe the rendered pending state before releasing that import instead
+    // of waiting for an event that the fixture itself prevents.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const banner = page.locator('header').first();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
@@ -68,7 +76,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     await expect(banner.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
     const pendingWordmark = await box(page, 'header a[href="/"]');
     const pendingHeading = await box(page, 'h1');
-    await page.screenshot({ path: testInfo.outputPath(`pending-signed-in-${viewport.width}.png`) });
+    // Pending DOM/geometry assertions above do not require a screenshot while
+    // the module is held (WebKit capture waits for that request to complete).
 
     release();
     await expect(banner.getByRole('link', { name: 'Your boards' })).toBeVisible();

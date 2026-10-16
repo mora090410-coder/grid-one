@@ -80,17 +80,22 @@ test.describe('site routes contract', () => {
     await expect(page.getByLabel('Confirm Password')).toBeVisible();
   });
 
-  test('the first two tab stops are the wordmark and sign in, each with a visible ring', async ({ page }) => {
+  test('the first two tab stops are the wordmark and sign in, each with a visible ring', async ({ page, browserName }) => {
     await page.goto('/articles/how-football-squares-work');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    await page.keyboard.press('Tab');
+    // macOS Safari uses Option-Tab for links with its default keyboard setting.
+    const nextLink = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
+    await page.keyboard.press(nextLink);
     const wordmark = await focusRing(page);
+    // BODY contains the logo too; its descendant alt text is not link focus.
+    expect(wordmark?.tag).toBe('A');
     expect(wordmark?.name).toBe('GridOne');
     expect(wordmark?.boxShadow !== 'none' || wordmark?.outlineStyle !== 'none').toBe(true);
 
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(nextLink);
     const signIn = await focusRing(page);
+    expect(signIn?.tag).toBe('A');
     expect(signIn?.name).toBe('Sign in');
     expect(signIn?.boxShadow !== 'none' || signIn?.outlineStyle !== 'none').toBe(true);
   });

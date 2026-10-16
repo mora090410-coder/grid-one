@@ -14,6 +14,18 @@ import { hasValidAxes } from '../../../../utils/boardValidation';
 
 const VIEWER_QUARTER_LABEL = { Q1: '1st', Q2: '2nd', Q3: '3rd', Final: 'Final' } as const;
 
+// Safari may focus a tabindex=-1 ancestor rather than the clicked button. That
+// scrolls a long viewer section between mousedown and mouseup, losing the click.
+// Keep pointer focus on the actual control without moving the viewport. Keyboard
+// navigation and the notch's programmatic section-focus handoff are unchanged.
+const focusViewerControlWithoutScroll = (event: React.MouseEvent<HTMLDivElement>) => {
+  if (event.defaultPrevented || event.button !== 0 || !(event.target instanceof Element)) return;
+  const control = event.target.closest<HTMLButtonElement>('button');
+  if (!control || control.disabled || !event.currentTarget.contains(control)) return;
+  event.preventDefault();
+  control.focus({ preventScroll: true });
+};
+
 export interface ViewerShellProps {
   game: GameState;
   board: BoardData;
@@ -112,15 +124,15 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
       >
         <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
-          <div ref={scoreRef} tabIndex={-1}>
+          <div ref={scoreRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
           <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
           </div>
           <div ref={findRef}><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
-          <div ref={resultsRef} tabIndex={-1} aria-label="Published results">
+          <div ref={resultsRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
           {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No quarter winners yet.</p>}
           </div>
-          {selectedPlayer && <div ref={personalRef} tabIndex={-1}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
+          {selectedPlayer && <div ref={personalRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {pendingMilestones.length > 0 && servicesEnabled && (
             <Glass as="section" padding="md" className="flex flex-col gap-2" aria-labelledby="pending-results-title">
               <h2 id="pending-results-title" className="font-ui text-[15px] font-medium text-fg">Pending confirmation</h2>
@@ -131,7 +143,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </Glass>
           )}
-          {!isFinal && <div ref={scenariosRef} tabIndex={-1}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
+          {!isFinal && <div ref={scenariosRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
           <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
         </div>
 

@@ -271,7 +271,7 @@ test('normal motion morphs through intermediate geometry and reverses smoothly',
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('iPad touch hold remains expanded on release and movement cancels hold', async ({ page }, testInfo) => {
+test('iPad touch hold remains expanded on release and movement cancels hold', async ({ page, browserName, isMobile }, testInfo) => {
   await page.setViewportSize({ width: 820, height: 1180 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await paymentsFixture().install(page);
@@ -287,8 +287,15 @@ test('iPad touch hold remains expanded on release and movement cancels hold', as
   await toggle.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 2, clientX: 410, clientY: 40 });
   await toggle.dispatchEvent('pointermove', { pointerType: 'touch', pointerId: 2, clientX: 410, clientY: 100 });
   await toggle.dispatchEvent('pointercancel', { pointerType: 'touch', pointerId: 2 });
-  await page.mouse.move(4, 700);
-  await page.mouse.wheel(0, 350);
+  if (browserName === 'webkit' && isMobile) {
+    // Mobile WebKit has no wheel API. The synthetic touch movement/cancel above
+    // still exercises hold cancellation; scroll the real viewport here without
+    // claiming this fixture certifies a physical touch swipe.
+    await page.evaluate(() => window.scrollBy(0, 350));
+  } else {
+    await page.mouse.move(4, 700);
+    await page.mouse.wheel(0, 350);
+  }
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
   // Observe longer than the hold threshold so a forgotten timer cannot pass.
   await page.waitForTimeout(650);
