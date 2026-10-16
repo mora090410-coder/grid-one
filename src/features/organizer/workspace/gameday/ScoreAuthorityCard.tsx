@@ -14,7 +14,7 @@ export interface ScoreAuthorityCardProps {
   onEnableManualScoring: () => void;
   onUpdateManualGameState: (state: ManualGameState) => void;
   onUpdateManualPeriod: (period: number) => void;
-  onUpdateManualQuarter: (quarter: ManualQuarterKey, side: ManualScoreSide, value: number) => void;
+  onUpdateManualQuarter: (quarter: ManualQuarterKey, side: ManualScoreSide, value: number | null) => void;
   onSaveManualScore: () => void;
 }
 

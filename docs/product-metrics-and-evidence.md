@@ -13,7 +13,7 @@ GridOne’s primary outcome is the count and rate of published boards that succe
 
 A board qualifies only when all of the following are true:
 
-1. The board is published with a scheduled game and one committed set of top/side axis digits.
+1. The board is published with a scheduled game and committed top/side axis digits for its selected mode: one set for the whole game or four milestone-specific sets (Final includes overtime).
 2. Its public viewer remains available after publication.
 3. Its canonical score authority becomes active through validated automatic scoring or explicit organizer manual scoring.
 4. Q1, Q2, Q3, and Final are durably resolved exactly once, including any audited corrections.
@@ -117,11 +117,11 @@ Set numerical improvement targets only after baseline review. Targets must inclu
 
 ## Privacy-minimal instrumentation contract
 
-GridOne currently has durable domain records but no verified product-analytics implementation. Instrumentation is a later, approval-gated implementation slice.
+Source implementation exists: the closed schema in `src/features/instrumentation/eventSchema.ts`, privacy-suppressed client delivery in `track.ts`, `POST /api/events`, and service-only storage/13-month retention in migrations 033/034. This is not evidence of deployment, event volume, customers or conversion. Current events have no account, board, campaign or URL join. DNT/GPC suppression and anonymous aggregates prevent unique-viewer, cohort-retention and CAC claims. Use `audit-pilot-evidence-template.md` for separately consented evidence; no tracking expansion is approved here.
 
 Permitted event data:
 
-- internal board/account identifiers needed for funnel joins;
+- no board/account identifiers or campaign joins in the current client schema;
 - event name and server/client timestamp;
 - route/surface and lifecycle phase;
 - success/failure code;
@@ -143,7 +143,7 @@ Prefer server-derived outcome events for publication, checkout, milestone, deliv
 
 ## Proposed event families
 
-Names are provisional until the instrumentation ticket is resolved:
+The following is a historical proposed list, NOT the implemented event inventory or authorization to collect more data. The closed code schema is authoritative:
 
 - `board_draft_created`
 - `board_first_assignment_completed`

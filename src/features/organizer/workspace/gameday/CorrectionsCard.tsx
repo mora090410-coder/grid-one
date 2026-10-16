@@ -9,7 +9,7 @@ export interface CorrectionsCardProps {
   draft: MilestoneCorrectionDraft | null;
   pending?: boolean;
   onDraftChange: (draft: MilestoneCorrectionDraft | null) => void;
-  onPublishCorrection: () => void;
+  onPublishCorrection: (notify: boolean) => void;
 }
 
 export default function CorrectionsCard({
@@ -73,10 +73,19 @@ export default function CorrectionsCard({
             onChange={(event) => draft && onDraftChange({ ...draft, reason: event.target.value })}
           />
         </label>
-        {selected && <p className="font-ui text-[14px] text-fg-2">Current winner: {selected.participantName || 'OPEN'}.</p>}
-        <CapsuleButton type="button" className="self-start" disabled={!canPublish} aria-busy={pending} onClick={onPublishCorrection}>
-          {pending ? 'Publishing correction…' : 'Publish correction and email both people'}
-        </CapsuleButton>
+        {selected && (
+          <p className="font-ui text-[14px] text-fg-2">
+            Current winner: {selected.participantName || 'OPEN'}. Emailing notifies verified subscribers of {selected.participantName || 'the previous winner'} and of the corrected winner. Correct without notifying publishes the public reason and sends no email.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <CapsuleButton type="button" className="self-start" disabled={!canPublish} aria-busy={pending} onClick={() => onPublishCorrection(true)}>
+            {pending ? 'Publishing correction…' : 'Publish correction and email both people'}
+          </CapsuleButton>
+          <CapsuleButton type="button" variant="quiet" className="self-start" disabled={!canPublish} aria-busy={pending} onClick={() => onPublishCorrection(false)}>
+            Correct without notifying
+          </CapsuleButton>
+        </div>
       </div>
       {winnerHistory.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-hairline pt-4" aria-label="Result history">

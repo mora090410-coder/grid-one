@@ -32,12 +32,12 @@ const gridOnePriceSurfaces = [
 
 describe('launch pricing copy', () => {
   it('quotes only the prices the server actually charges', async () => {
-    const { PAID_TIERS } = await import('../functions/_lib/pricingTiers');
-    const charged = new Set(Object.values(PAID_TIERS).map((tier) => {
+    const { PAID_TIERS, ORGANIZATION_UPGRADE } = await import('../functions/_lib/pricingTiers');
+    const charged = new Set([...Object.values(PAID_TIERS), ORGANIZATION_UPGRADE].map((tier) => {
       const dollars = tier.amountCents / 100;
       return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
     }));
-    expect([...charged].sort()).toEqual(['$79', '$9.99']);
+    expect([...charged].sort()).toEqual(['$69.01', '$79', '$9.99']);
     for (const path of gridOnePriceSurfaces) {
       const quoted = read(path).match(/\$\d+(?:\.\d{2})?/g) ?? [];
       for (const price of quoted) {

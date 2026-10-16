@@ -175,7 +175,7 @@ describe.sequential('pregame sharing on disposable PostgreSQL',()=>{
  afterAll(async()=>{if(containerStarted) await docker(['rm','--force',containerName]).catch(()=>undefined);},60000);
 
  it('cannot share via direct authenticated column writes or RPC calls',async()=>{
-  await expect(executeSql(asUser(OWNER_ID,`UPDATE contests SET shared_at=now() WHERE id='${CONTEST_ID}';`))).rejects.toThrow(/sharing endpoint/i);
+  await expect(executeSql(asUser(OWNER_ID,`UPDATE contests SET shared_at=now() WHERE id='${CONTEST_ID}';`))).rejects.toThrow(/permission denied/i);
   await expect(executeSql(asUser(OWNER_ID,`SELECT * FROM gridone_share_board('${CONTEST_ID}','${OWNER_ID}',1);`))).rejects.toThrow(/permission denied/i);
   expect(await queryScalar(`SELECT count(*) FROM board_activations`)).toBe('0');
  });
@@ -198,7 +198,7 @@ describe.sequential('pregame sharing on disposable PostgreSQL',()=>{
  });
  it('enforces allowance on a second board and cannot move the reserved season',async()=>{
   await expect(share(OPEN_CONTEST_ID,OWNER_ID,'1')).rejects.toThrow(/PUBLISH_ALLOWANCE_EXHAUSTED:free:1:1/);
-  await expect(executeSql(asUser(OWNER_ID,`UPDATE contests SET season_year=2027 WHERE id='${CONTEST_ID}';`))).rejects.toThrow(/identity is locked/i);
+  await expect(executeSql(asUser(OWNER_ID,`UPDATE contests SET season_year=2027 WHERE id='${CONTEST_ID}';`))).rejects.toThrow(/permission denied/i);
  });
  it('keeps owner editing before finalization while rejecting malformed allocation and multi-buyer data',async()=>{
   await executeSql(asUser(OWNER_ID,`UPDATE contests SET board_data=jsonb_set(board_data,'{squares,0}','["Jane Smith"]') WHERE id='${CONTEST_ID}';`));

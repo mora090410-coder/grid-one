@@ -422,6 +422,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 <div inert={entriesLoading || Boolean(entriesError)}>
                 <React.Suspense fallback={<FullScreenLoading />}>
                 {hasLoadedEntries && <OrganizerWorkspace
+                    key={`${ownerId}:${activePoolId}`}
+                    recoveryKey={isOwner && ownerId && activePoolId ? `gridone:draft-recovery:${ownerId}:${activePoolId}` : undefined}
                     game={game}
                     board={board}
                     activePoolId={activePoolId || ''}

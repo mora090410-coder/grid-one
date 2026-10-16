@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Sheet } from '../../../design/primitives/Sheet';
-import { CapsuleButton, CapsuleInput, CapsuleTag } from '../../../design/primitives';
+import { CapsuleButton, CapsuleInput } from '../../../design/primitives';
 import type { EntryMeta, SquareAvailability } from '../../../../types';
+import { isBlankOpenSquareSave, OPEN_SQUARE_NAME_REQUIRED } from './workspaceBoardModel';
 
 export interface SquareSheetProps {
   open: boolean;
@@ -18,10 +19,10 @@ export interface SquareSheetProps {
 
 type PaidStatus = EntryMeta['paid_status'];
 
-const PAID_OPTIONS: { value: PaidStatus; label: string; tone: 'neutral' | 'turf' }[] = [
-  { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
-  { value: 'unpaid', label: 'Unpaid', tone: 'neutral' },
-  { value: 'paid', label: 'Paid', tone: 'turf' },
+const PAID_OPTIONS: { value: PaidStatus; label: string }[] = [
+  { value: 'unknown', label: 'Not asked yet' },
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'paid', label: 'Paid' },
 ];
 
 const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded in the board history and updates the shared link right away.';
@@ -30,14 +31,17 @@ const PUBLISHED_HELPER = 'This board is published. Renaming a square is recorded
 export default function SquareSheet({ open, index, name, allocationLabel, availability, meta, isPublished, hasNextOpen, onSave, onClose }: SquareSheetProps) {
   const [nameValue, setNameValue] = useState(name);
   const [paidStatus, setPaidStatus] = useState<PaidStatus>(meta?.paid_status ?? 'unknown');
+  const [formError, setFormError] = useState<string | null>(null);
   const radioRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => {
-    if (!open) return;
+  // Reset while rendering, not in an effect. An effect's update is deferred, so
+  // the field still shows the previous square when the next name is entered.
+  const [shownSquare, setShownSquare] = useState({ open, index });
+  if (shownSquare.open !== open || shownSquare.index !== index) {
+    setShownSquare({ open, index });
     setNameValue(name);
     setPaidStatus(meta?.paid_status ?? 'unknown');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, index]);
+    setFormError(null);
+  }
 
   if (!open) return null;
 
@@ -54,6 +58,11 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
 
   const save = (advance: boolean) => {
     if (index === null || nameValue.trim().length > 80) return;
+    if (isBlankOpenSquareSave(name, nameValue)) {
+      setFormError(OPEN_SQUARE_NAME_REQUIRED);
+      return;
+    }
+    setFormError(null);
     if (availability !== undefined) {
       onSave(index, nameValue, buildMeta(), advance, allocationLabel || (isPublished ? null : nameValue.trim() || null), availability);
       return;
@@ -86,10 +95,16 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
           label="Name on the board"
           maxLength={80}
           value={nameValue}
-          onChange={(event) => setNameValue(event.target.value)}
+          onChange={(event) => {
+            setNameValue(event.target.value);
+            if (formError) setFormError(null);
+          }}
           onKeyDown={onNameKeyDown}
           autoFocus
+          aria-invalid={formError ? true : undefined}
+          aria-describedby={formError ? 'square-name-error' : undefined}
         />
+        {formError && <p id="square-name-error" role="alert" className="font-ui text-[15px] text-tone-cardinal">{formError}</p>}
         {allocationLabel && (
           <div className="font-ui text-[14px] text-fg-2">
             <p>Responsible person or family: <span className="text-fg">{allocationLabel}</span></p>
@@ -106,11 +121,13 @@ export default function SquareSheet({ open, index, name, allocationLabel, availa
                 type="button"
                 role="radio"
                 aria-checked={paidStatus === option.value}
+                tabIndex={paidStatus === option.value ? 0 : -1}
                 onClick={() => setPaidStatus(option.value)}
                 onKeyDown={(event) => onPaymentKeyDown(event, position)}
-                className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+                className="group min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center gap-2 border border-hairline font-ui text-base text-fg aria-checked:border-fg aria-checked:bg-fg aria-checked:text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
               >
-                <CapsuleTag tone={paidStatus === option.value ? option.tone : 'neutral'}>{option.label}</CapsuleTag>
+                <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full border border-current group-aria-checked:bg-current" />
+                {option.label}
               </button>
             ))}
           </div>

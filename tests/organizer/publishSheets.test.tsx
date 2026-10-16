@@ -218,6 +218,13 @@ describe('PublishSheet', () => {
 });
 
 describe('UpgradeSheet', () => {
+  it('allows choosing Organization without spending the free allowance first', () => {
+    const change = vi.fn();
+    render(<UpgradeSheet open tier="gameday" error={null} organizationName="" onOrganizationNameChange={vi.fn()} onClose={vi.fn()} onCheckout={vi.fn()} onTierChange={change} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Organization.*79/ }));
+    expect(change).toHaveBeenCalledWith('org');
+    expect(screen.getByText(/eligible.*Game Day.*credit/i)).toBeInTheDocument();
+  });
   it('disables checkout until the organization name is valid for org tier', () => {
     const onCheckout = vi.fn();
     const onChange = vi.fn();
@@ -234,7 +241,7 @@ describe('UpgradeSheet', () => {
     );
     expect(screen.getByText('Choose a plan')).toBeInTheDocument();
     expect(screen.getByText('Organization · up to 50 boards')).toBeInTheDocument();
-    const checkoutButton = screen.getByRole('button', { name: 'Continue to $79 checkout' });
+    const checkoutButton = screen.getByRole('button', { name: 'Continue to Organization checkout' });
     expect(checkoutButton).toBeDisabled();
 
     rerender(
@@ -248,7 +255,7 @@ describe('UpgradeSheet', () => {
         onCheckout={onCheckout}
       />,
     );
-    const enabledButton = screen.getByRole('button', { name: 'Continue to $79 checkout' });
+    const enabledButton = screen.getByRole('button', { name: 'Continue to Organization checkout' });
     expect(enabledButton).not.toBeDisabled();
     fireEvent.click(enabledButton);
     expect(onCheckout).toHaveBeenCalled();
@@ -267,7 +274,7 @@ describe('UpgradeSheet', () => {
       />,
     );
     expect(screen.getByText('Game Day · up to 5 boards')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Your free board is used.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose your season plan.' })).toBeInTheDocument();
     expect(screen.getByText('$9.99 covers up to 5 boards this season, counting your first. It doesn’t reset after a game.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue to $9.99 checkout' })).not.toBeDisabled();
     expect(screen.queryByLabelText('Organization name')).not.toBeInTheDocument();

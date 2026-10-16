@@ -47,6 +47,8 @@ const liveCopyFiles = [
   'src/features/organizer/game-day/ManualScoringPanel.tsx',
   'pages/Dashboard.tsx',
   'pages/Login.tsx',
+  'pages/ForgotPassword.tsx',
+  'pages/ResetPassword.tsx',
   'pages/NotFound.tsx',
   'pages/Paid.tsx',
   'pages/CreateContest.tsx',

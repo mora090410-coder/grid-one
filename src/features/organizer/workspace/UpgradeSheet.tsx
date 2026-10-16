@@ -9,21 +9,29 @@ export interface UpgradeSheetProps {
   onOrganizationNameChange: (value: string) => void;
   onClose: () => void;
   onCheckout: () => void;
+  onTierChange?: (tier: 'gameday' | 'org') => void;
+  allowGameDay?: boolean;
 }
 
 /** 402 upgrade path to Stripe checkout. */
-export default function UpgradeSheet({ open, tier, error, organizationName, onOrganizationNameChange, onClose, onCheckout }: UpgradeSheetProps) {
+export default function UpgradeSheet({ open, tier, error, organizationName, onOrganizationNameChange, onClose, onCheckout, onTierChange, allowGameDay = true }: UpgradeSheetProps) {
   const isOrganization = tier === 'org';
   const organizationNameIsValid = organizationName.trim().length >= 2 && organizationName.trim().length <= 120;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Choose a plan">
+    <div data-base="cream"><Sheet open={open} onClose={onClose} title="Choose a plan" solidSurface>
       <div className="flex flex-col gap-4">
+        {onTierChange && <fieldset className="flex flex-col gap-2">
+          <legend className="font-ui text-base text-fg">Season plan</legend>
+          {allowGameDay && <label className="flex min-h-11 items-center gap-3 font-ui text-fg"><input type="radio" name="season-plan" checked={tier === 'gameday'} onChange={() => onTierChange('gameday')} />Game Day — $9.99 · 5 total boards</label>}
+          <label className="flex min-h-11 items-center gap-3 font-ui text-fg"><input type="radio" name="season-plan" checked={tier === 'org'} onChange={() => onTierChange('org')} />Organization — $79 · 50 total boards</label>
+        </fieldset>}
+        <p className="font-ui text-sm text-fg-2">An eligible paid Game Day purchase on this account for the same season receives a $9.99 credit toward Organization: $69.01 due. Eligibility and the final amount are verified at checkout. Grants, refunds and disputed payments do not qualify.</p>
         <Eyebrow>{isOrganization ? 'Organization · up to 50 boards' : 'Game Day · up to 5 boards'}</Eyebrow>
         <h3 className="font-ui text-[22px] font-semibold text-fg">
           {isOrganization
             ? "Sounds like you're running this for a whole organization."
-            : "Your free board is used."}
+            : 'Choose your season plan.'}
         </h3>
         <p className="font-ui text-[15px] text-fg-2">
           {isOrganization
@@ -56,10 +64,10 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
             onClick={onCheckout}
             disabled={isOrganization && !organizationNameIsValid}
           >
-            Continue to {isOrganization ? '$79' : '$9.99'} checkout
+            {isOrganization ? 'Continue to Organization checkout' : 'Continue to $9.99 checkout'}
           </CapsuleButton>
         </div>
       </div>
-    </Sheet>
+    </Sheet></div>
   );
 }

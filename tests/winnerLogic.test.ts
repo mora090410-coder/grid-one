@@ -73,6 +73,21 @@ describe('winnerLogic', () => {
     expect(endOfQ2.quarterWinners.Q2).toBeUndefined();
   });
 
+  it('does not award blank quarters when only a final score was entered', () => {
+    const liveData = makeLiveData({
+      state: 'post',
+      period: 4,
+      leftScore: 7,
+      topScore: 3,
+      unenteredQuarters: ['Q1', 'Q2', 'Q3'],
+    });
+    const result = calculateWinnerHighlights(liveData);
+    expect(result.quarterWinners.Q1).toBeUndefined();
+    expect(result.quarterWinners.Q2).toBeUndefined();
+    expect(result.quarterWinners.Q3).toBeUndefined();
+    expect(result.quarterWinners.Final).toBe('3-7');
+  });
+
   it('computes quarter winners from manual scores like live data', () => {
     const liveData = makeLiveData({ isManual: true, state: 'in', period: 2 });
     const result = calculateWinnerHighlights(liveData);

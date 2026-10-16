@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Glass, Eyebrow, CapsuleButton, CapsuleInput, CapsuleTag } from '../../../design/primitives';
+import { Glass, Eyebrow, CapsuleButton, CapsuleInput } from '../../../design/primitives';
 import type { EntryMeta } from '../../../../types';
 
 type Paid = EntryMeta['paid_status'];
@@ -22,10 +22,10 @@ export interface RangeAssignBarProps {
   onExitSelectMode?: () => void;
 }
 
-const PAID_OPTIONS: { value: Paid; label: string; tone: 'neutral' | 'turf' }[] = [
-  { value: 'unknown', label: 'Not asked yet', tone: 'neutral' },
-  { value: 'unpaid', label: 'Unpaid', tone: 'neutral' },
-  { value: 'paid', label: 'Paid', tone: 'turf' },
+const PAID_OPTIONS: { value: Paid; label: string }[] = [
+  { value: 'unknown', label: 'Not asked yet' },
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'paid', label: 'Paid' },
 ];
 
 const DRAFT_HELP = 'Tap squares to select them, or drag across a block.';
@@ -91,11 +91,13 @@ export default function RangeAssignBar({
                 type="button"
                 role="radio"
                 aria-checked={paid === option.value}
+                tabIndex={paid === option.value ? 0 : -1}
                 onClick={() => setPaid(option.value)}
                 onKeyDown={(event) => onPaymentKeyDown(event, position)}
-                className="min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
+                className="group min-h-11 min-w-11 px-3 rounded-capsule inline-flex items-center gap-2 border border-hairline font-ui text-base text-fg aria-checked:border-fg aria-checked:bg-fg aria-checked:text-ground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action"
               >
-                <CapsuleTag tone={paid === option.value ? option.tone : 'neutral'}>{option.label}</CapsuleTag>
+                <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full border border-current group-aria-checked:bg-current" />
+                {option.label}
               </button>
             ))}
           </div>

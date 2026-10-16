@@ -151,7 +151,41 @@ describe('useWorkspaceDraft', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
-  it('flush resolves with save_failed when the save is rejected', async () => {
+  it('flushes a pending edit on pagehide before the debounce, including inside one second', async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn(async (_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => undefined);
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+  act(() => result.current.setGame((current) => ({ ...current, title: 'Saved before reload' })));
+  expect(onSave).not.toHaveBeenCalled();
+  await act(async () => { vi.advanceTimersByTime(200); });
+  expect(onSave).not.toHaveBeenCalled();
+  await act(async () => { window.dispatchEvent(new Event('pagehide')); });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  expect(onSave.mock.calls[0][0].game.title).toBe('Saved before reload');
+  expect(onSave.mock.calls[0][1]).toEqual({ keepalive: true });
+  await act(async () => { vi.advanceTimersByTime(2000); });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  vi.useRealTimers();
+});
+
+it('flushes the same pending edit once when beforeunload and pagehide both fire', async () => {
+  vi.useFakeTimers();
+  const onSave = vi.fn(async (_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => undefined);
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
+  act(() => result.current.setBoard((current) => ({ ...current, squares: current.squares.map((names, index) => index === 3 ? ['Dana P.'] : names) })));
+  const leaving = new Event('beforeunload', { cancelable: true });
+  await act(async () => {
+    window.dispatchEvent(leaving);
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  expect(leaving.defaultPrevented).toBe(true);
+  expect(onSave).toHaveBeenCalledTimes(1);
+  expect(onSave.mock.calls[0][0].board.squares[3]).toEqual(['Dana P.']);
+  expect(onSave.mock.calls[0][1]).toEqual({ keepalive: true });
+  vi.useRealTimers();
+});
+
+it('flush resolves with save_failed when the save is rejected', async () => {
     const onSave = vi.fn(async () => { throw new Error('The board could not be saved.'); });
     const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave, debounceMs: 800 }));
     act(() => result.current.setGame((g) => ({ ...g, title: 'flushed' })));
@@ -196,6 +230,50 @@ it('keeps an external revision conflict blocked before the new revision prop ren
   const retryPatch = vi.fn(async () => ({}));
   await act(async () => { await expect(result.current.saveExternalGame(retryPatch)).rejects.toThrow(); });
   expect(retryPatch).not.toHaveBeenCalled();
+});
+
+it('does not start a parallel save on unload while an autosave is pending', async () => {
+  let release!: () => void;
+  const onSave = vi.fn(() => new Promise<void>((resolve) => { release = resolve; }));
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave }));
+  act(() => result.current.setGame((g) => ({ ...g, title: 'First' })));
+  let pending!: Promise<unknown>;
+  act(() => { pending = result.current.flush(); });
+  act(() => {
+    window.dispatchEvent(new Event('beforeunload', { cancelable: true }));
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  expect(onSave).toHaveBeenCalledTimes(1);
+  await act(async () => { release(); await pending; });
+});
+
+it('keeps the edit-during-save drain alive when pagehide happens before the first save settles', async () => {
+  let release!: () => void;
+  const onSave = vi.fn((_data: { game: GameState; board: BoardData }, _options?: { keepalive?: boolean }) => Promise.resolve());
+  onSave.mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve; }));
+  const { result } = renderHook(() => useWorkspaceDraft({ game, board, revision: 1, isPublished: false, onSave }));
+  act(() => result.current.setGame((g) => ({ ...g, title: 'First' })));
+  let pending!: Promise<unknown>;
+  act(() => { pending = result.current.flush(); });
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Last edit before leaving' })));
+  act(() => window.dispatchEvent(new Event('pagehide')));
+  expect(onSave).toHaveBeenCalledTimes(1);
+  await act(async () => { release(); await pending; });
+  expect(onSave).toHaveBeenCalledTimes(2);
+  expect(onSave.mock.calls[1]).toEqual([expect.objectContaining({ game: expect.objectContaining({ title: 'Last edit before leaving' }) }), { keepalive: true }]);
+});
+
+it('keeps a revision conflict blocked when more local edits arrive', async () => {
+  const onSave = vi.fn(async () => undefined);
+  const { result, rerender } = renderHook(({ revision }) => useWorkspaceDraft({ game, board, revision, isPublished: false, onSave }), { initialProps: { revision: 1 } });
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Local' })));
+  rerender({ revision: 2 });
+  await act(async () => { await result.current.flush(); });
+  expect(result.current.saveState.status).toBe('conflicted');
+  act(() => result.current.setGame((g) => ({ ...g, title: 'Still local' })));
+  await act(async () => { await result.current.flush(); });
+  expect(result.current.saveState.status).toBe('conflicted');
+  expect(onSave).not.toHaveBeenCalled();
 });
 
 it('reload after a conflict adopts the server board even when it lands mid-reload', async () => {

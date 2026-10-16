@@ -38,6 +38,9 @@ for (const width of [390, 1440]) {
 
     await page.getByRole('button', { name: 'Square 61, open' }).click();
     await page.getByRole('button', { name: 'Square 62, open' }).click();
+    // Selection must change both foreground and background immediately; a
+    // foreground flip during a dark-to-light fill animation fails contrast.
+    await expect(page.getByRole('button', { name: 'Square 61, open' })).toHaveCSS('transition-property', 'border-color');
     await page.getByLabel('Your name, as it shows on the board').fill('Maria Lopez');
     const claim = page.getByRole('button', { name: 'Claim 2 squares' });
     const box = await claim.boundingBox();

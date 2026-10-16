@@ -3,7 +3,7 @@ import { familyAdmin, familyResponse, isRecord, readFamilyBody, type FamilyEnv }
 
 // Seller links reuse the family helpers' bounded body reader, no-store
 // responses, and server-only database client.
-export type SellerEnv = FamilyEnv;
+export type SellerEnv = FamilyEnv & { GUEST_INVITE_SECRET?: string };
 export const sellerResponse = familyResponse;
 export const sellerAdmin = familyAdmin;
 export const readSellerBody = readFamilyBody;
@@ -27,6 +27,7 @@ export const sellerLinkUrl = (env: SellerEnv, request: Request, code: string) =>
 
 export const sellerFailure = (error: unknown) => {
   const message = isRecord(error) && typeof error.message === 'string' ? error.message : '';
+  if (message.includes('seller_name_matches_label')) return sellerResponse({ error: 'Add a first name or another identifying word so your name differs from the seller’s name.', code: 'NAME_MATCHES_SELLER' }, 400);
   if (message.includes('seller_square_taken')) return sellerResponse({ error: 'Someone just grabbed one of those squares. Pick another.', code: 'SQUARE_TAKEN' }, 409);
   if (message.includes('seller_board_locked')) return sellerResponse({ error: 'The numbers are locked, so squares can’t be claimed anymore.', code: 'BOARD_LOCKED' }, 409);
   if (message.includes('seller_board_not_shared')) return sellerResponse({ error: 'Share your board first. Then seller links are ready.', code: 'NOT_SHARED' }, 409);

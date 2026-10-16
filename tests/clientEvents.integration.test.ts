@@ -76,7 +76,7 @@ describe.sequential('client events sink (migrations 033-034)', () => {
     await waitForPostgres();
     await bootstrap();
     const files = migrationFiles();
-    expect(files.map(file => Number(file.slice(0, 3)))).toEqual(expectedMigrationNumbers(34));
+    expect(files.map(file => Number(file.slice(0, 3)))).toEqual(expectedMigrationNumbers(38));
     for (const file of files.filter(name => name < '033')) await applyMigration(file);
     // Mirror Supabase: every new public table is granted to all API roles by default.
     await executeSql('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;');

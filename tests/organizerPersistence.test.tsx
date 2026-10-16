@@ -290,4 +290,39 @@ describe('organizer save ordering', () => {
 
     expect(result.current.revision).toBe(5);
   });
+
+  it('sends an unload save with keepalive and the token already in memory', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (!init?.method) {
+        return new Response(JSON.stringify({
+          id: '11111111-1111-4111-8111-111111111111',
+          share_code: 'ABCDEFGH',
+          owner_id: '22222222-2222-4222-8222-222222222222',
+          revision: 4,
+          ...game,
+          board,
+          is_activated: true,
+          locked: false,
+          published_at: null,
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, revision: 5 }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => usePoolData());
+    await act(async () => {
+      await result.current.loadPoolData('11111111-1111-4111-8111-111111111111');
+    });
+    getSessionMock.mockClear();
+    await act(async () => {
+      await result.current.updatePool(
+        '11111111-1111-4111-8111-111111111111',
+        { game: { ...game, title: 'Kept' }, board },
+        { keepalive: true },
+      );
+    });
+    const put = fetchMock.mock.calls.find((call) => call[1]?.method === 'PUT');
+    expect(put?.[1]).toEqual(expect.objectContaining({ keepalive: true }));
+    expect(getSessionMock).not.toHaveBeenCalled();
+  });
 });

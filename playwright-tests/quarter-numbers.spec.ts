@@ -45,7 +45,12 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
     // The four sets are independent draws, not one set copied four times.
     expect(new Set((['Q1','Q2','Q3','Q4'] as const).map(key => JSON.stringify(board.topAxisByQuarter?.[key]))).size).toBeGreaterThan(1);
     expect(board.squares).toEqual(names);
-    await page.keyboard.press('Escape');
+    // Saving the draw and opening the preview are separate React commits.
+    // Wait for the real preview, then dismiss it as an organizer would.
+    const initialPreview = page.getByRole('dialog',{name:'Private preview — sharing is off',exact:true});
+    await expect(initialPreview).toBeVisible();
+    await initialPreview.getByRole('button',{name:'Close',exact:true}).click();
+    await expect(initialPreview).toBeHidden();
     const beforeReload = structuredClone(board);
     await page.evaluate(() => {
       const original = CanvasRenderingContext2D.prototype.fillText;
@@ -64,14 +69,19 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
         (window as any).nativeExport={name:file.name,size:file.size,type:file.type,bytes};
       }});
     },exportMode);
-    const downloading = exportMode==='download' ? page.waitForEvent('download') : null;
+    // Both branches wait for the same asynchronously encoded PNG. Real Chromium
+    // runs delivered valid native bytes just after expect.poll's default 5s;
+    // use one explicit bounded export budget, not different default timeouts.
+    // This is artifact correctness, not a five-second performance SLA.
+    const imageExportTimeout = 15_000;
+    const downloading = exportMode==='download' ? page.waitForEvent('download', { timeout: imageExportTimeout }) : null;
     await page.getByRole('button',{name:'Share board image',exact:true}).click();
     if(downloading) {
       const download=await downloading;
       await download.saveAs(testInfo.outputPath('final-quarter-board.png'));
       expect(await download.failure()).toBeNull();
     } else {
-      await expect.poll(()=>page.evaluate(()=>(window as any).nativeExport?.type)).toBe('image/png');
+      await expect.poll(()=>page.evaluate(()=>(window as any).nativeExport?.type), { timeout: imageExportTimeout }).toBe('image/png');
       const file=await page.evaluate(()=>(window as any).nativeExport);
       expect(file.size).toBeGreaterThan(0);expect(file.bytes).toEqual([137,80,78,71,13,10,26,10]);
       await testInfo.attach('native-contract-received-file',{body:JSON.stringify(file),contentType:'application/json'});

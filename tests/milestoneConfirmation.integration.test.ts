@@ -195,7 +195,7 @@ const applyMigrations = async () => {
     .sort();
 
   expect(migrationFiles.map(file => Number(file.slice(0, 3)))).toEqual(
-    expectedMigrationNumbers(34),
+    expectedMigrationNumbers(38),
   );
 
   for (const migrationFile of migrationFiles) {
@@ -720,12 +720,12 @@ describe.sequential('milestone confirmation and correction in disposable Postgre
         ),
         'anonCorrect', has_function_privilege(
           'anon',
-          'public.gridone_correct_milestone(uuid,uuid,text,integer,integer,integer,text)',
+          'public.gridone_correct_milestone(uuid,uuid,text,integer,integer,integer,text,boolean)',
           'EXECUTE'
         ),
         'authCorrect', has_function_privilege(
           'authenticated',
-          'public.gridone_correct_milestone(uuid,uuid,text,integer,integer,integer,text)',
+          'public.gridone_correct_milestone(uuid,uuid,text,integer,integer,integer,text,boolean)',
           'EXECUTE'
         )
       )::text

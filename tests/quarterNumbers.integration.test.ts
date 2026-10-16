@@ -37,7 +37,7 @@ beforeAll(async () => {
   for (const file of readdirSync(dir).filter(file => /^\d{3}_.+\.sql$/.test(file)).sort()) sql(readFileSync(resolve(dir,file),'utf8'));
   sql(`INSERT INTO auth.users VALUES ('${owner}','owner@example.test');
     INSERT INTO contests(id,owner_id,share_code,title,game_external_id,game_starts_at,top_team_abbr,side_team_abbr,board_data)
-    VALUES ('${id}','${owner}','QQQQQ234','Local quarter verification','401772999','2027-02-01T00:00:00Z','TOP','SIDE',${quote(board)});`);
+    VALUES ('${id}','${owner}','QQQQQ234','Local quarter verification','401772999','2026-01-15T18:00:00Z','TOP','SIDE',${quote(board)});`);
 },120000);
 afterAll(() => { if (started) docker('rm','--force',container); });
 

@@ -50,6 +50,7 @@ A name is selected through the `Find my squares` dialog. In the current stack, `
 
 - the count (`1 square`, `{n} squares`),
 - one detailed list, initially limited to four squares with the current match first; Show all squares exposes the full list,
+- pointer activation of buttons inside focusable viewer destinations keeps focus on the actual control without scrolling the section between press and release; keyboard navigation and the notch's explicit section-focus handoff are unchanged,
 - each coordinate as `{away team} column {digit} × {home team} row {digit}`,
 - `View on board top {n} side {n}` per square, which centers the grid without stealing focus first,
 - the current result — `Winning right now.` / `Not winning right now.`,

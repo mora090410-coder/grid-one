@@ -44,6 +44,9 @@ import {
   withCommittedDraw,
   withRangeAssigned,
   withSquareName,
+  isBlankOpenSquareSave,
+  metaForSavedSquare,
+  OPEN_SQUARE_NAME_REQUIRED,
   type DrawPreview,
 } from './workspaceBoardModel';
 import { usePayoutDraft } from './usePayoutDraft';
@@ -78,6 +81,7 @@ import DeliveryIssuesCard from './gameday/DeliveryIssuesCard';
 import FinalRecordCard from './gameday/FinalRecordCard';
 
 export interface OrganizerWorkspaceProps {
+  recoveryKey?: string;
   game: GameState;
   board: BoardData;
   activePoolId: string | null;
@@ -86,7 +90,7 @@ export interface OrganizerWorkspaceProps {
   pendingMilestones?: PendingMilestone[];
   notificationDeliveryIssues: NotificationDeliveryIssue[];
   onApply: (game: GameState, board: BoardData) => void;
-  onPublish: (currentData: { game: GameState; board: BoardData }) => Promise<string | void>;
+  onPublish: (currentData: { game: GameState; board: BoardData }, options?: { keepalive?: boolean }) => Promise<string | void>;
   onSavePayoutDescriptions: (descriptions: PayoutDescriptions) => Promise<PayoutDescriptions>;
   onAssignOpenSquares: (squares: string[][]) => Promise<void>;
   /** `background` asks for a quiet refresh that must not lock or re-render the editor as loading. */
@@ -128,6 +132,7 @@ const CLEAR_META_FAILED = 'The private notes were not cleared. Try again.';
  * the public link, score authority, corrections, and the locked final record.
  */
 export default function OrganizerWorkspace({
+  recoveryKey,
   game: gameProp,
   board: boardProp,
   activePoolId,
@@ -155,12 +160,13 @@ export default function OrganizerWorkspace({
   shareCode,
   renderPreview,
 }: OrganizerWorkspaceProps) {
-  const { game, board, setGame, setBoard, saveState, flush, retry, saveExternalGame, reloadLatest } = useWorkspaceDraft({
+  const { game, board, setGame, setBoard, saveState, flush, retry, saveExternalGame, reloadLatest, recoveryUnavailable } = useWorkspaceDraft({
+    recoveryKey,
     game: gameProp,
     board: boardProp,
     revision,
     isPublished,
-    onSave: (data) => onPublish(data),
+    onSave: (data, options) => options ? onPublish(data, options) : onPublish(data),
     onApply,
     onReload,
   });
@@ -347,6 +353,13 @@ export default function OrganizerWorkspace({
   const saveSquare = async (index: number, name: string, meta: EntryMeta, advance: boolean, allocationLabel?: string | null, availability?: SquareAvailability) => {
     const trimmed = name.trim();
     if (trimmed.length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
+    // A blank name on an open square changes nothing. Skip the board write and
+    // the payment row that would otherwise mark an empty square Paid.
+    if (isBlankOpenSquareSave(board.squares[index]?.[0], trimmed)) {
+      setAlert(OPEN_SQUARE_NAME_REQUIRED);
+      return;
+    }
+    const savedMeta = metaForSavedSquare(board.squares[index]?.[0], trimmed, meta);
     let nextSquares: string[][] = board.squares;
     setBoard((current) => {
       const next = withSquareName(current, index, trimmed, allocationLabel, availability);
@@ -357,8 +370,8 @@ export default function OrganizerWorkspace({
 
     if (!activePoolId) return;
     try {
-      await withPrivateWrite(() => saveEntryMeta(activePoolId, meta));
-      onEntryMetaChange(meta);
+      await withPrivateWrite(() => saveEntryMeta(activePoolId, savedMeta));
+      onEntryMetaChange(savedMeta);
       setNote(null);
       setAlert(null);
     } catch {
@@ -679,6 +692,10 @@ export default function OrganizerWorkspace({
     if (name.trim().length > 80) { setAlert('Names must be 80 characters or fewer.'); return; }
     const previous = board.squares[index]?.[0]?.trim() ?? '';
     const next = name.trim();
+    if (isBlankOpenSquareSave(previous, next)) {
+      setAlert(OPEN_SQUARE_NAME_REQUIRED);
+      return;
+    }
     setSelectedSquare(null);
 
     // Private notes follow the name on the board, so they are saved only when
@@ -834,8 +851,11 @@ export default function OrganizerWorkspace({
       onRetry={() => void retry()}
       onReload={() => void reloadLatest()}
       onLogout={onLogout}
-      actions={<CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>}
-    /></div>
+      actions={<><CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>
+        {onCheckout && billing?.tier !== 'org' && <CapsuleButton variant="quiet" onClick={() => { setUpgradeError(null); setUpgradeTier('org'); }}>Season plans</CapsuleButton>}</>}
+    />
+      {recoveryUnavailable && saveState.status !== 'clean' && <p role="alert">This browser cannot keep a recovery copy. Wait for Saved before closing or reloading this tab.</p>}
+    </div>
   );
 
   // The sheets live outside the published/unpublished branch: publishing flips
@@ -858,20 +878,21 @@ export default function OrganizerWorkspace({
           <CapsuleButton disabled={sharePending || saveState.status !== 'clean'} onClick={() => void enableSharing()}>{sharePending ? 'Sharing…' : 'Enable shared board'}</CapsuleButton>
         </div>
       </Sheet>
-      <SquareSheet
-        open={selectedSquare !== null}
+      {selectedSquare !== null && <SquareSheet
+        key={selectedSquare}
+        open
         index={selectedSquare}
-        name={selectedSquare === null ? '' : board.squares[selectedSquare]?.[0] ?? ''}
-        allocationLabel={selectedSquare === null ? undefined : board.allocationLabels?.[selectedSquare]}
-        availability={selectedSquare === null ? 'unspecified' : board.availability?.[selectedSquare] ?? 'unspecified'}
-        meta={selectedSquare === null ? undefined : entryMeta[selectedSquare]}
+        name={board.squares[selectedSquare]?.[0] ?? ''}
+        allocationLabel={board.allocationLabels?.[selectedSquare]}
+        availability={board.availability?.[selectedSquare] ?? 'unspecified'}
+        meta={entryMeta[selectedSquare]}
         isPublished={isPublished}
         hasNextOpen={openCount > 0}
         onSave={(index, name, meta, advance, allocationLabel, availability) => void (isPublished
           ? savePublishedSquare(index, name, meta)
           : saveSquare(index, name, meta, advance, allocationLabel, availability))}
         onClose={() => setSelectedSquare(null)}
-      />
+      />}
 
       <PreviewSheet
         isShared={isShared}
@@ -903,6 +924,8 @@ export default function OrganizerWorkspace({
       <UpgradeSheet
         open={upgradeTier !== null}
         tier={upgradeTier ?? 'gameday'}
+        onTierChange={setUpgradeTier}
+        allowGameDay={billing?.tier !== 'gameday' && billing?.tier !== 'org'}
         error={upgradeError}
         organizationName={organizationName}
         onOrganizationNameChange={setOrganizationName}
@@ -1009,7 +1032,7 @@ export default function OrganizerWorkspace({
                 draft={gameDay.correctionDraft}
                 pending={gameDay.scoreSaveStatus === 'saving'}
                 onDraftChange={gameDay.setCorrectionDraft}
-                onPublishCorrection={() => void gameDay.publishCorrection()}
+                onPublishCorrection={(notify) => void gameDay.publishCorrection(notify)}
               /></div>
               <div id="organizer-delivery" tabIndex={-1}><DeliveryIssuesCard issues={notificationDeliveryIssues} /></div>
               <BoardToolsCard

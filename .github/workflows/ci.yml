@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Focused Organization purchase SQL regression
+        run: |
+          docker pull postgres:17
+          npx vitest run --project integration tests/organizationPurchase.integration.test.ts
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Production build
+        run: npm run build
+
+      - name: Design lint
+        run: npm run design:lint
+
+      # Integration tests start disposable Postgres containers and apply the
+      # migrations in this repo. They do not use production credentials and
+      # they do not talk to the production Supabase project.
+      - name: Pull the Postgres image used by integration tests
+        run: docker pull postgres:17
+
+      - name: Integration tests
+        run: npm run test:integration

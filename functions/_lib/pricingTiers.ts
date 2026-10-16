@@ -31,6 +31,9 @@ export const PAID_TIERS: Record<PaidTier, PaidTierDefinition> = {
   },
 };
 
+/** Approved net price; eligibility and reservation are owned by SQL, never the client. */
+export const ORGANIZATION_UPGRADE = { creditCents: 999, amountCents: 6901 } as const;
+
 export const paidTierFromRequest = (value: unknown): PaidTier | null =>
   value === 'gameday' || value === 'org' ? value : null;
 

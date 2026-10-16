@@ -96,6 +96,7 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 - The Free tier includes **1 published board per account per season**.
 - The **Game Day** tier is **$9.99 once** for up to 5 published boards in the 2026 season.
 - The **Organization** tier is **$79 per season** for up to 50 published boards, an organization name on each board, one dashboard for all organization boards, and one receipt with the organization name.
+- Organization can be purchased directly from a saved board at any time, including before free allowance is used. An eligible verified paid same-account/same-season $9.99 Game Day purchase is credited on upgrade ($69.01 net); grants and refunded/disputed sources do not qualify. Migration 038 reserves credit once and reconciles both supporting payments; direct purchase and upgrade provide 50 TOTAL boards, not 55. The organizer's Season plans action is available before allowance exhaustion. The authenticated payment-return page provides the organization-named GridOne receipt from canonical paid order data; actual processor receipt/email delivery remains a separate operational acceptance gate.
 - First sharing reserves one board from the same seasonal allowance; finalizing that board never counts twice. Shared boards cannot be deleted to reclaim their allowance or break team links.
 - Payment gates published-board count only. Every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing.
 - "100 viewers" is a tested capacity target, not a hard gate or marketing guarantee.
@@ -143,16 +144,17 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 - Server-cached automatic ESPN scoring plus manual override
 - Viewer score updates about every three minutes through visibility-aware polling
 - Verified email opt-in, winner delivery, and delivery retry
+- Public seller-link claiming before final number lock; optional private scoped family editing
+- One number set for the game or four quarter-specific sets (Final includes overtime)
 - Explicit error, stale, and offline states; RLS-backed schema; the accessibility contract
 
 ### Later
 
 - Seller accounts
-- Viewer claiming
+- Viewer accounts and broader self-service claiming beyond the implemented seller/legacy links
 - In-app money handling or payouts
 - SMS, co-organizers, non-NFL sports
 - Realtime transport in place of polling
-- Multiple digit sets by quarter
 - Native apps and hard viewer caps
 
 ## Success
@@ -182,7 +184,7 @@ Most fundraisers sell through sellers: the organizer assigns each player or fami
 
 A buyer opens the link, sees only that seller's squares, taps the open ones (up to 10), types a name, and taps **Claim**. The claim is one atomic database write under the board lock: if someone got there first, the buyer is told to pick another and nothing is claimed. The buyer is remembered on that phone, so on game day the board opens on their squares. The buyer pays the seller directly; GridOne never handles money and a claim is not proof of payment. Unsold squares keep the seller's name. Claiming closes when the numbers are locked; the link then points to the board. **New link** replaces a seller's link and stops the old one. Links are stored plainly (like share codes) because they are meant to be posted publicly.
 
-v1 limits: no hold timers, no claim codes, and no rate limiting beyond the 10-square cap. The organizer's open workspace sees new claims after a reload; a stale autosave reports a conflict rather than overwriting a claim.
+Limits: no hold timers or claim codes. Migration 037 rejects buyer names equivalent to the seller label after NFKC normalization, case folding and whitespace removal; ask that buyer to add an identifying word. The API uses the existing persistent guest rate buckets: 20 claim requests per source IP and 30 per seller link per fixed minute, in addition to the 10-square per-request cap. These are request limits, not per-person quotas; distributed abuse or boundary bursts remain possible, and shared networks may be throttled. Missing signing configuration or failed limit checks close claiming. The organizer's open workspace sees new claims after a reload; a stale autosave reports a conflict rather than overwriting a claim. Before finalization, an organizer can reload, review a mistaken claim, and restore that square's displayed seller label while retaining its responsibility; review private payment notes separately. Rotate the link before recovery if it is being abused. Never infer payment from a claim or recovery.
 
 ## Optional family editing and repeat setup
 

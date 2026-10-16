@@ -142,13 +142,19 @@ export function useLiveScoring(
         if (manualScoringEnabled) {
             const zero = { left: 0, top: 0 };
             const mq = currentGame.manualQuarterScores;
+            const sidePoints = (quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT', side: 'left' | 'top') => (
+                mq?.[quarter]?.[side] ?? 0
+            );
             const quarterScores = {
-                Q1: mq?.Q1 ?? zero,
-                Q2: mq?.Q2 ?? zero,
-                Q3: mq?.Q3 ?? zero,
-                Q4: mq?.Q4 ?? zero,
-                OT: mq?.OT ?? zero,
+                Q1: mq?.Q1 ? { left: sidePoints('Q1', 'left'), top: sidePoints('Q1', 'top') } : zero,
+                Q2: mq?.Q2 ? { left: sidePoints('Q2', 'left'), top: sidePoints('Q2', 'top') } : zero,
+                Q3: mq?.Q3 ? { left: sidePoints('Q3', 'left'), top: sidePoints('Q3', 'top') } : zero,
+                Q4: mq?.Q4 ? { left: sidePoints('Q4', 'left'), top: sidePoints('Q4', 'top') } : zero,
+                OT: mq?.OT ? { left: sidePoints('OT', 'left'), top: sidePoints('OT', 'top') } : zero,
             };
+            const unenteredQuarters = (['Q1', 'Q2', 'Q3', 'Q4', 'OT'] as const).filter((quarter) => (
+                mq?.[quarter]?.left == null || mq?.[quarter]?.top == null
+            ));
             const total = (side: 'left' | 'top') =>
                 quarterScores.Q1[side] + quarterScores.Q2[side] + quarterScores.Q3[side] +
                 quarterScores.Q4[side] + quarterScores.OT[side];
@@ -167,7 +173,8 @@ export function useLiveScoring(
                 state,
                 detail: 'Manual Entry',
                 isOvertime: period > 4,
-                isManual: true
+                isManual: true,
+                unenteredQuarters,
             });
             setLiveStatus(state === 'post' ? 'FINAL' : state === 'pre' ? 'PRE-GAME' : 'MANUAL');
             setIsSynced(true);

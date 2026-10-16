@@ -10,7 +10,7 @@ This file describes the current production architecture, not an immutable topolo
   - `workers/score-refresh-scheduler.ts` (`wrangler.score-scheduler.toml`) calls `POST /api/scores/refresh`.
   - `workers/notification-retry-scheduler.ts` (`wrangler.retry-scheduler.toml`) calls `POST /api/notifications/retry`.
   Both authenticate with `CRON_SECRET`; the endpoints do the work, the workers only wake them.
-- **Data:** Supabase Postgres with Row Level Security. Schema and policies live in `supabase/migrations/` (`000`–`032`; `004` was deliberately removed, see `tests/fixtures/migrationSequence.ts`). The browser client is `services/supabase.ts`.
+- **Data:** Supabase Postgres with Row Level Security. Schema and policies live in `supabase/migrations/` (`000`–`038`; `004` was deliberately removed, see `tests/fixtures/migrationSequence.ts`). 033/034 add privacy-limited client events and retention; 035 hardens score/rename/function authority, 036 restricts organizer column/table grants, 037 rejects seller-name occupancy collisions, and 038 adds direct Organization purchase and single-use verified Game Day credit. Repository inventory is not proof of hosted migration state. The browser client is `services/supabase.ts`.
 - **Payments:** Stripe Checkout — session creation and webhook activation in `functions/api/stripe/`.
 - **NFL schedule and live score:** ESPN, server-side only, through `functions/_lib/espnNfl.ts`. `functions/api/nfl/games.ts` lists scheduled games; `functions/api/scores/refresh.ts` fetches the live scoreboard **once per cron tick for the whole slate** and promotes canonical snapshots.
 - **Paper-board import:** Gemini OCR runs only inside `functions/api/boards/scan.ts`. It never runs in the browser.
@@ -30,6 +30,8 @@ This file describes the current production architecture, not an immutable topolo
 | `/family` | Scoped private family editor; fragment credential, no organizer account |
 | `/s/:code` | Public seller link: pick a seller's unsold squares and claim them by name; no account |
 | `/login` | `pages/Login` |
+| `/forgot-password` | `pages/ForgotPassword` — asks Supabase to email a reset link; the confirmation does not say whether the account exists |
+| `/reset-password` | `pages/ResetPassword` — handles the recovery redirect and sets a new password |
 | `/dashboard` | `pages/Dashboard` behind `RequireAuth` |
 | `/create` | Public `pages/CreateContest` preview; API creation remains authenticated |
 | `/paid` | `pages/Paid` — checkout return |
@@ -147,6 +149,8 @@ functions/api/stripe/webhook.ts
 `BoardData.participation` and `availability` are explicit public fields. Server and migration 027 validate shape and bounds; the sales projection remains an allowlist. Neither names nor payment notes imply availability.
 
 `POST /api/pools/:id/seller-links` verifies the organizer and creates one active link per seller (`sync`) or replaces one (`rotate`). `GET /api/sellers/:code` and `POST /api/sellers/:code` read a seller's squares and claim unsold ones by name through service-only `gridone_seller_link` (migration `031_seller_links.sql`). The RPC locks the contest row, rechecks shared/lock state, seller scope (current `allocationLabels`), and that each square still shows the seller's name, then writes names and an audit event. `seller_links` has RLS enabled and no anon/authenticated grants.
+
+Migration 037 adds a normalized same-label rejection without replacing that occupancy model or quarter-axis support. Claim POSTs first use `gridone_guest_rate_limit` with HMAC keys from the existing server-only `GUEST_INVITE_SECRET`; no raw IP is stored in the buckets or analytics. The handler fails closed if configuration or checks fail. Fixed-minute limits are 20 requests per source IP and 30 per seller link, not human identity quotas. Edge header trust must be checked on the deployed route. Owner recovery uses the existing revision-checked draft-save path after reloading; do not reset whole boards or private payment records to recover a claim.
 
 `POST /api/pools/:id/family` verifies the organizer and issues, revokes, or reassigns scoped family access. `POST /api/family` accepts a family bearer token, hashes it with SHA-256 and invokes service-only `gridone_family_access`. The private table has RLS enabled and no anon/authenticated grants. The RPC serializes on the contest row before checking credential, revision and cell scope. Tokens are randomly generated 256-bit values in URL fragments; they are never stored plaintext, included in public payloads, or sent in referrers. Mutating POST requests are never automatically retried. A conflict preserves UI edits until deliberate reload.
 

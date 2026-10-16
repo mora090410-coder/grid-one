@@ -15,7 +15,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     if (!isUuid(orderId)) return Response.json({ error: 'Checkout order not found.' }, { status: 404 });
     const { data, error } = await admin
       .from('checkout_orders')
-      .select('id, contest_id, season_year, status, paid_at, refundable_at, terminal_reason, amount_refunded_cents')
+      .select('id, contest_id, season_year, status, paid_at, refundable_at, terminal_reason, amount_refunded_cents, price_cents, credit_cents, organization_display_name')
       .eq('id', orderId)
       .eq('owner_id', user.id)
       .maybeSingle();
@@ -58,6 +58,9 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
       refundable: Boolean(order.refundable_at),
       terminalReason: order.terminal_reason,
       amountRefundedCents: Number(order.amount_refunded_cents || 0),
+      amountPaidCents: order.paid_at || order.status === 'paid' ? Number(order.price_cents) : null,
+      creditCents: Number(order.credit_cents || 0),
+      orderOrganizationDisplayName: order.organization_display_name || null,
     } : {}),
   });
 };
