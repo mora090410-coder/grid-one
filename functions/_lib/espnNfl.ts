@@ -416,8 +416,21 @@ export const fetchScheduledGames = async (
       : right.endAt - left.endAt);
   for (const week of weeks) {
     if (selectGames().length >= limit) break;
-    const weekPayload = await fetchSchedule(espnScheduleUrl(seasonYear, week.seasonType, week.week));
-    const weekEvents = scheduleEvents(weekPayload);
+    let weekEvents: unknown[];
+    try {
+      const weekPayload = await fetchSchedule(espnScheduleUrl(seasonYear, week.seasonType, week.week));
+      weekEvents = scheduleEvents(weekPayload);
+    } catch (error) {
+      // Extra weeks fill the picker, but must not make already verified upcoming
+      // games unavailable. Stop at the gap rather than skip to a later slate.
+      // With no selectable games (or in completed-game discovery), retain the
+      // provider error so callers show Retry instead of a misleading empty list.
+      if (options.scope !== 'upcoming' || selectGames().length === 0) throw error;
+      console.warn('NFL schedule expansion failed; retaining verified upcoming games.', {
+        season: seasonYear, seasonType: week.seasonType, week: week.week,
+      });
+      break;
+    }
     events.push(...weekEvents);
     addEvents(weekEvents);
   }
