@@ -4,6 +4,8 @@ import { Base, CapsuleButton, Eyebrow, Glass } from '../../../design/primitives'
 import ViewerBoardGrid from '../board/ViewerBoardGrid';
 import GlassGridBackground from '../../../design/liquid/GlassGridBackground';
 import { summarizeSellers } from '../../organizer/sellers/sellerLinksModel';
+import BoardMap, {type BoardMapState} from '../../../design/liquid/BoardMap';
+import {buildBoardGridModel} from '../board/boardGridModel';
 import ScoreInstrument from '../score/ScoreInstrument';
 import ViewerIsland from './ViewerIsland';
 import FindSquaresEntry from '../identity/FindSquaresEntry';
@@ -99,6 +101,11 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
     return playersForDigits(board, live.topScore % 10, live.leftScore % 10, quarterForLive(live)).includes(selectedPlayer);
   }, [board, live, selectedPlayer]);
 
+  const personalMap = useMemo(() => {
+    const model = buildBoardGridModel({selectedQuarter:activeQuarter,board,game,live,highlights,winnerHistory,pendingMilestones,selectedPlayer,highlightedCoords:null,showOpenSquares:false});
+    return new Map<number,BoardMapState>(model.cells.flat().map((cell,index):[number,BoardMapState]=>[index,cell.states.includes('current') ? 'live' : cell.states.includes('selected') ? 'mine' : 'neutral']));
+  },[activeQuarter,board,game,live,highlights,winnerHistory,pendingMilestones,selectedPlayer]);
+
   const setFocus = (coords: { left: number; top: number } | null) => {
     setInspectedQuarter(null);
     setBoardFocus(coords);
@@ -116,7 +123,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
 
   return (
-    <Base kind="dark" theme={!organizerPreview && !stageChrome ? 'liquid' : undefined} className={stageChrome ? 'demo-stage' : organizerPreview ? '' : 'g1-page'}>
+    <Base kind="dark" theme={!organizerPreview && !stageChrome ? 'liquid' : undefined} className={stageChrome ? 'demo-stage' : organizerPreview ? '' : `g1-page${selectedPlayer ? ' g1-personalized' : ''}`}>
       {!organizerPreview && !stageChrome && <GlassGridBackground />}
       {!organizerPreview && <ViewerIsland key={shareCode || game.title} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
         winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
@@ -128,7 +135,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument liquid={!organizerPreview && !stageChrome} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
+          <ScoreInstrument liquid={!organizerPreview && !stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
           </div>
           <div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
@@ -182,6 +189,10 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         {!organizerPreview && !stageChrome && board.allocationLabels?.some(Boolean) && <Glass as="section" className="g1-sellers-region" data-g1-blur="true" aria-label="Sellers">
           <h2 className="g1-label">Sellers</h2>
           <ul>{summarizeSellers(board.allocationLabels, board.squares).map((seller,index)=><li key={seller.label} className="g1-seller-row"><span aria-hidden="true" className="g1-seller-dot" style={{background:`color-mix(in srgb, var(--g1-seller-${index % 6 + 1}) 55%, transparent)`}}/><span>{seller.label}</span><span>{seller.total}</span></li>)}</ul>
+        </Glass>}
+        {selectedPlayer && !organizerPreview && !stageChrome && <Glass as="section" className="g1-personal-map" aria-label="Your board map">
+          <BoardMap label="Board map. Your squares and the current matching square." states={personalMap}/>
+          <p className="g1-label">Payments stay between people.</p>
         </Glass>}
       </MainTag>
     </Base>

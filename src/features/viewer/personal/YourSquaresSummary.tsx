@@ -55,7 +55,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
   const leftLabel = game.leftAbbr || 'Side';
 
   return (
-    <section className="flex flex-col gap-4" role="region" aria-label={`${selectedPlayer} square summary`}>
+    <section className="g1-personal-summary g1-glass flex flex-col gap-4" role="region" aria-label={`${selectedPlayer} square summary`}>
       <div className="flex items-baseline justify-between gap-3">
         <Eyebrow>Your squares · {selectedPlayer}</Eyebrow>
         <span className="whitespace-nowrap font-mono tabular-nums text-[15px] text-fg">{rows.length} {rows.length === 1 ? 'square' : 'squares'}</span>
@@ -68,6 +68,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
         {visibleRows.map((row) => (
           <li key={`row-${row.index}`}>
             <Glass padding="md" className="flex flex-wrap items-center justify-between gap-3">
+              <span data-g1-chip data-g1-matching={row.matchesCurrent ? 'true' : undefined} aria-hidden="true">{row.index + 1}</span>
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-mono tabular-nums text-[15px] text-fg">{topLabel} column {row.top} × {leftLabel} row {row.left}</span>
                 <span className="font-ui text-[14px] text-fg-2">

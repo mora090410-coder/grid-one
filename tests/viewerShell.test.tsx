@@ -96,6 +96,21 @@ describe('liquid glass slice 4: board-first live layout', () => {
   });
 });
 
+describe('liquid buyer game day slice 6', () => {
+  it('personalizes the winning card and square map from the existing viewer identity', () => {
+    const {container}=renderShell({selectedPlayer:'Carrie Moss'});
+    expect(container.querySelector('.g1-current-card[data-g1-personal-win="true"]')).not.toBeNull();
+    expect(screen.getByRole('heading',{name:/You’re winning Q3/})).toBeVisible();
+    expect(screen.getByRole('img',{name:'Board map. Your squares and the current matching square.'})).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-g1-chip]')).toHaveLength(2);
+    expect(container.querySelector('[data-g1-chip]')).toHaveTextContent('15');
+  });
+  it('does not give stale data a personal winning glow', () => {
+    const {container}=renderShell({selectedPlayer:'Carrie Moss',live:live({freshness:'stale'})});
+    expect(container.querySelector('.g1-current-card[data-g1-personal-win="true"]')).toBeNull();
+  });
+});
+
 describe('ViewerShell', () => {
   it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });

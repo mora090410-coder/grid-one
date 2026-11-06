@@ -23,14 +23,17 @@ export interface ScoreInstrumentProps {
   /** Extra chrome on the score panel. Demo uses the marketing glass surface. */
   surfaceClassName?: string;
   liquid?: boolean;
+  selectedPlayer?: string;
+  winsNow?: boolean;
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false, selectedPlayer = '', winsNow = false }) => {
   const score = buildViewerScoreModel({ live, liveStatus, isSynced });
   const Heading = headingLevel;
   const quarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) : [];
   const stale = live?.freshness === 'stale' || live?.freshness === 'offline' || live?.freshness === 'refreshing';
+  const personalWin = Boolean(liquid && selectedPlayer && winsNow && live?.state === 'in' && !stale && live.freshness !== 'rejected' && isSynced);
   const topDigit = live ? live.topScore % 10 : null;
   const sideDigit = live ? live.leftScore % 10 : null;
   const leftLabel = game.leftAbbr || 'AWAY';
@@ -44,9 +47,9 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 
-      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" padding="lg" className="g1-current-card" data-g1-blur="true">
-        <h2 className="g1-label">{live.state === 'post' ? 'Final score matches:' : stale ? 'Last known' : 'Winning right now'}</h2>
-        <p className="g1-big-number">{shortName(currentNames, 'Open square')}</p>
+      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" padding="lg" className="g1-current-card" data-g1-personal-win={personalWin ? 'true' : undefined} data-g1-blur="true">
+        <h2 className="g1-label"><span className={personalWin ? 'g1-only-desktop' : undefined}>{live.state === 'post' ? 'Final score matches:' : stale || live.freshness === 'rejected' || !isSynced ? 'Last known' : 'Winning right now'}</span>{personalWin && <span className="g1-only-phone">You’re winning {quarter}</span>}</h2>
+        <p className="g1-big-number"><span className={personalWin ? 'g1-only-desktop' : undefined}>{shortName(currentNames, 'Open square')}</span>{personalWin && <span className="g1-only-phone">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</span>}</p>
         <p className="g1-label">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</p>
       </Glass>}
       <Glass as="div" padding="lg" data-g1-blur={liquid ? 'true' : undefined} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${surfaceClassName}`.trim()} aria-label="Score">
