@@ -197,6 +197,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
 
   const focusedCell = model.cells[focus.row]?.[focus.col];
   const cellStyle = { width: geometry.cell, height: geometry.cell, fontSize: geometry.cellFont };
+  const publicSellers = [...new Set(board.allocationLabels?.filter((label): label is string => Boolean(label)) ?? [])].sort();
   const axisStyle = { fontSize: geometry.axisFont };
   const badgeStyle = { fontSize: geometry.badgeFont };
 
@@ -248,7 +249,11 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                 <th role="rowheader" scope="row" aria-colindex={1} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-0 z-20 bg-chyron text-broadcast-white font-mono tabular-nums rounded-cell p-0" style={axisStyle}>
                   {model.sideAxis[rowIndex]}
                 </th>
-                {row.map((cell) => (
+                {row.map((cell) => {
+                  const seller = board.allocationLabels?.[cell.rowIndex * 10 + cell.colIndex] || '';
+                  const sellerIndex = publicSellers.indexOf(seller);
+                  const tint = sellerIndex < 0 ? 'transparent' : `color-mix(in srgb, var(--g1-seller-${sellerIndex % 6 + 1}) 55%, transparent)`;
+                  return (
                   <td
                     key={cell.id}
                     ref={(node) => {
@@ -260,6 +265,8 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     aria-label={cell.ariaName}
                     aria-selected={cell.states.includes('selected') ? 'true' : 'false'}
                     data-current={cell.states.includes('current') ? 'true' : 'false'}
+                    data-g1-current={cell.states.includes('current') ? 'true' : undefined}
+                    data-g1-seller={seller || undefined}
                     data-resolved={cell.states.includes('resolved') ? 'true' : 'false'}
                     data-corrected={cell.states.includes('corrected') ? 'true' : 'false'}
                     data-open={cell.states.includes('open') ? 'true' : 'false'}
@@ -269,19 +276,21 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     data-match-emphasis={pulsingIds.has(cell.id) ? 'on' : undefined}
                     data-match-tone={pulsingIds.has(cell.id) ? (cell.states.includes('current') ? 'ink' : 'gold') : undefined}
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
-                    className={`group relative rounded-cell p-0 text-center align-middle font-ui leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
-                    style={cellStyle}
+                    className={`g1-cell ${cell.states.includes('current') ? 'g1-cell--live' : cell.states.includes('resolved') ? 'g1-cell--past' : cell.isOpen ? 'g1-cell--open' : ''} group relative rounded-cell p-0 text-center align-middle font-ui leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
+                    style={{...cellStyle, '--t': tint} as React.CSSProperties}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}
                     onClick={(event) => { setShowDetail(true); event.currentTarget.focus(); }}
                   >
                     <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] [@media(hover:hover)]:group-hover:block">{(cell.names.length ? cell.names.join(', ') : 'OPEN')} · {topLabel} {cell.topDigit ?? '?'} across · {sideLabel} {cell.sideDigit ?? '?'} down</span>
+                    <span data-g1-number aria-hidden="true">{cell.rowIndex * 10 + cell.colIndex + 1}{cell.resolvedMilestones.length > 0 && !cell.states.includes('current') ? ` · ${cell.resolvedMilestones.join(', ')}` : ''}</span>
+                    <span data-g1-buyer aria-hidden="true">{cell.names.join(', ')}</span>
                     <span className="flex h-full flex-col items-center justify-center gap-0.5 overflow-hidden font-medium">
                       {cell.states.includes('current') && <span className="font-mono leading-none text-ink" style={badgeStyle} aria-hidden="true">NOW</span>}
                       {cell.displayText}
                     </span>
                     {cell.states.includes('corrected') && <span className={`absolute bottom-0.5 right-0.5 font-mono leading-none ${isWinner(cell) ? 'text-ink' : 'text-broadcast-white'}`} style={badgeStyle} aria-hidden="true">C</span>}
                   </td>
-                ))}
+                ); })}
               </tr>
             ))}
           </tbody>

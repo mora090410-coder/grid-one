@@ -71,6 +71,21 @@ describe('liquid glass slice 2: public shell opt-in', () => {
   });
 });
 
+describe('liquid glass slice 3: public square materials', () => {
+  it('adds permanent numbers and public allocation ownership without replacing grid semantics', () => {
+    const labels = Array.from({length:100}, (_,i) => i < 25 ? 'Jamie' : null);
+    const { container } = renderShell({ board: {...board, allocationLabels:labels}, winnerHistory:[{milestone:'Q1',topDigit:4,sideDigit:1,participantName:'Carrie Moss',resolvedAt:'2026-09-13T18:00:00Z'}] });
+    const cells = screen.getAllByRole('gridcell');
+    expect(cells).toHaveLength(100);
+    expect(cells[0]).toHaveClass('g1-cell');
+    expect(cells[0]).toHaveAttribute('data-g1-seller', 'Jamie');
+    expect(cells[0].querySelector('[data-g1-number]')).toHaveTextContent('1');
+    expect(container.querySelectorAll('[data-g1-current="true"]')).toHaveLength(1);
+    expect(cells.filter(cell=>cell.tabIndex===0)).toHaveLength(1);
+    expect(container.querySelector('[data-g1-seller="Private seller"]')).toBeNull();
+  });
+});
+
 describe('ViewerShell', () => {
   it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });

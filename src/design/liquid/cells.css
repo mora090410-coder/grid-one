@@ -1,0 +1,48 @@
+/* Board cells. No backdrop-filter here (performance). */
+.g1-page .g1-cell {
+  --t: transparent; /* set to a seller tint at ~55% alpha */
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--g1-radius-cell);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(170deg, rgba(255,255,255,.06), rgba(255,255,255,.015)) padding-box,
+    linear-gradient(var(--g1-glass-backing), var(--g1-glass-backing)) padding-box,
+    linear-gradient(160deg, rgba(255,255,255,.28), rgba(255,255,255,.03) 45%, rgba(255,255,255,.06)) border-box;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -3px 8px -2px var(--t);
+}
+.g1-page .g1-cell--open { background: transparent; border: 1px dashed rgba(255,255,255,.16); }
+.g1-page .g1-cell--picked {
+  background:
+    linear-gradient(170deg, rgba(232,211,155,.24), rgba(232,211,155,.06)) padding-box,
+    linear-gradient(var(--g1-glass-backing), var(--g1-glass-backing)) padding-box,
+    linear-gradient(135deg, #FFF3CF, #E8D39B 30%, rgba(232,211,155,.25) 60%, #E8D39B) border-box;
+}
+.g1-page .g1-cell--past {
+  background:
+    linear-gradient(170deg, rgba(232,211,155,.08), rgba(255,255,255,.01)) padding-box,
+    linear-gradient(var(--g1-glass-backing), var(--g1-glass-backing)) padding-box,
+    linear-gradient(150deg, rgba(232,211,155,.6), rgba(232,211,155,.08) 60%) border-box;
+}
+.g1-page .g1-cell--live {
+  background:
+    linear-gradient(170deg, rgba(232,211,155,.20), rgba(232,211,155,.04)) padding-box,
+    linear-gradient(var(--g1-glass-backing), var(--g1-glass-backing)) padding-box,
+    linear-gradient(135deg, #FFF3CF, #E8D39B 30%, rgba(232,211,155,.2) 60%, #E8D39B) border-box;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 4px rgba(232,211,155,.10), 0 0 34px rgba(232,211,155,.45);
+  position: relative;
+  z-index: 1;
+}
+
+
+.g1-cell [data-g1-number], .g1-cell [data-g1-buyer] { display: none; }
+.g1-page td.g1-cell { border-radius: var(--g1-radius-cell); color: var(--g1-chalk); padding: 6px; text-align: left; vertical-align: bottom; background-color: transparent; backdrop-filter: none; }
+.g1-page td.g1-cell > span:not([data-g1-number]):not([data-g1-buyer]) { display: none; }
+.g1-page td.g1-cell [data-g1-number] { display: block; position: absolute; top: 6px; left: 7px; right: 3px; color: var(--g1-faint); font-size: 10px; line-height: 1; font-weight: 400; }
+.g1-page td.g1-cell [data-g1-buyer] { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 10px; line-height: 1.2; }
+.g1-page td.g1-cell--live [data-g1-number] { color: var(--g1-gold-lit); }
+.g1-page td.g1-cell--past [data-g1-number] { color: var(--g1-gold); }
+.g1-page td.g1-cell[aria-selected="true"] { outline: 1px solid var(--g1-gold-lit); outline-offset: -2px; }
+.g1-page td.g1-cell:focus-visible { outline: 2px solid var(--g1-gold-lit); outline-offset: 2px; }
+.g1-page td.g1-cell--live::after { content: 'now'; position: absolute; top: 18px; left: 7px; font-size: 10px; color: var(--g1-gold-lit); }
+.g1-page [data-sticky-axis] { color: var(--g1-gold-lit); font: 300 18px var(--g1-font); background: var(--g1-ground); }

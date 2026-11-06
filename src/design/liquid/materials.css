@@ -68,6 +68,8 @@
 
 [data-base].g1-page {
   position: relative; isolation: isolate;
+  --g1-glass-backing-alpha: .94;
+  --g1-glass-backing: rgb(7 11 20 / var(--g1-glass-backing-alpha));
   --g-ground: var(--g1-ground); --g-panel: #141E31; --g-panel-hover: var(--g1-midnight);
   --g-text: var(--g1-chalk); --g-text-2: var(--g1-muted); --g-text-3: var(--g1-faint);
   --g-action: var(--g1-gold-lit); --g-action-hover: var(--g1-gold-lit); --g-action-text: var(--g1-midnight);

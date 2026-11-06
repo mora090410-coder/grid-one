@@ -13,6 +13,7 @@ export interface ViewerBoardCellModel {
   sideDigit: number | null;
   names: string[];
   displayText: string;
+  resolvedMilestones: string[];
   isOpen: boolean;
   states: ViewerBoardCellState[];
   ariaName: string;
@@ -192,6 +193,7 @@ export const buildBoardGridModel = ({
       sideDigit,
       names,
       displayText: cellDisplay(names, isOpen),
+      resolvedMilestones: winners.map(winner => winner.milestone),
       isOpen,
       states,
       ariaName: buildAriaName({ names, isOpen, rowIndex, colIndex, topDigit, sideDigit, topTeamName, sideTeamName, states, milestones, winners, pending }),

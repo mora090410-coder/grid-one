@@ -11,4 +11,5 @@ it('keeps translucent glass text readable even over the brightest permitted rim'
   const ratio=(luminance([169,180,198])+.05)/(luminance(background)+.05);
   expect(ratio).toBeGreaterThanOrEqual(4.5);
   expect(css).toContain('var(--g1-glass-backing-alpha)');
+  expect(readFileSync('src/design/liquid/cells.css','utf8')).toContain('var(--g1-glass-backing)');
 });

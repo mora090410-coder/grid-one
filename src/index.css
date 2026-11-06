@@ -5,6 +5,7 @@
 @import "./design/liquid/tokens.css";
 @import "./design/liquid/fonts.css";
 @import "./design/liquid/materials.css";
+@import "./design/liquid/cells.css";
 
 /* Semantic utilities. Values resolve per data-base at runtime. */
 @theme inline {
