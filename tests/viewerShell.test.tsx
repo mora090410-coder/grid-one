@@ -52,6 +52,25 @@ const renderShell = (props: Partial<ShellProps> = {}) => render(
   />
 );
 
+describe('liquid glass slice 2: public shell opt-in', () => {
+  it('mounts decorative masked grid edges behind the public viewer only', () => {
+    const { container } = renderShell();
+    expect(container.querySelector('[data-g1-theme="liquid"]')).not.toBeNull();
+    const grids = container.querySelectorAll('svg[data-g1-grid]');
+    expect(grids).toHaveLength(2);
+    for (const grid of grids) {
+      expect(grid).toHaveAttribute('aria-hidden', 'true');
+      expect(grid.querySelector('mask')).not.toBeNull();
+      expect(grid.querySelector('filter feGaussianBlur')).not.toBeNull();
+    }
+    expect(screen.getByRole('button', { name: 'Find my squares' })).toHaveClass('g1-btn-primary');
+  });
+  it('leaves the organizer preview on its existing theme', () => {
+    const { container } = renderShell({ organizerPreview: true });
+    expect(container.querySelector('[data-g1-theme="liquid"]')).toBeNull();
+  });
+});
+
 describe('ViewerShell', () => {
   it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });

@@ -16,7 +16,7 @@ export const Glass = React.forwardRef<HTMLElement, GlassProps>(function Glass(
   return (
     <Tag
       ref={ref as React.Ref<HTMLDivElement>}
-      className={`bg-panel border border-hairline rounded-card backdrop-blur-[var(--g-blur)] shadow-[var(--g-shadow)] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] ${PAD[padding]} ${className}`.trim()}
+      className={`g1-glass bg-panel border border-hairline rounded-card backdrop-blur-[var(--g-blur)] shadow-[var(--g-shadow)] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] ${PAD[padding]} ${className}`.trim()}
       {...rest}
     />
   );

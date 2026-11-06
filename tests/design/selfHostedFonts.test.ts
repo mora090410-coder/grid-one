@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
  * cache header) pointing at files that actually ship.
  */
 const html = readFileSync('index.html', 'utf8');
-const tokens = readFileSync('src/design/tokens.css', 'utf8');
+const tokens = [readFileSync('src/design/tokens.css', 'utf8'), readFileSync('src/design/liquid/fonts.css', 'utf8')].join('\n');
 const headers = readFileSync('public/_headers', 'utf8');
 const shippedFonts = readdirSync('public/fonts').filter((name) => name.endsWith('.woff2'));
 
@@ -40,6 +40,7 @@ describe('self-hosted web fonts', () => {
     for (const expected of [
       // Archivo is a variable font: one face covers every weight the brand uses.
       'Archivo 100 900 normal',
+      'Inter 200 600 normal',
       'Geist Mono 400 normal', 'Geist Mono 500 normal',
     ]) {
       expect(declared, expected).toContain(expected);
@@ -68,6 +69,7 @@ describe('self-hosted web fonts', () => {
   it('caches /fonts/* as immutable and ships the font licenses', () => {
     expect(headers).toMatch(/\/fonts\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/);
     expect(existsSync('public/fonts/OFL-Archivo.txt')).toBe(true);
+    expect(existsSync('public/fonts/inter-liquid-OFL.txt')).toBe(true);
     // Geist Mono stays for tabular data and is licensed under the Geist OFL.
     expect(existsSync('public/fonts/OFL-Geist.txt')).toBe(true);
     expect(existsSync('public/fonts/OFL-InstrumentSerif.txt')).toBe(false);

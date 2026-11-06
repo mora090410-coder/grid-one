@@ -26,7 +26,7 @@ export interface CapsuleButtonProps extends React.ButtonHTMLAttributes<HTMLButto
 
 export function CapsuleButton({ variant = 'primary', size = 'md', className = '', type = 'button', children, ...rest }: CapsuleButtonProps) {
   return (
-    <button type={type} className={`${BASE} ${VARIANT[variant]} ${SIZE[size]} ${className}`.trim()} {...rest}>
+    <button type={type} className={`${variant === 'primary' ? 'g1-btn-primary' : 'g1-btn-ghost'} ${BASE} ${VARIANT[variant]} ${SIZE[size]} ${className}`.trim()} {...rest}>
       {children}
       {variant === 'primary' && <span aria-hidden="true" className="motion-safe:transition-[translate] motion-safe:duration-[var(--g-dur-state)] motion-safe:ease-[var(--g-ease-state)] motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1">→</span>}
     </button>
