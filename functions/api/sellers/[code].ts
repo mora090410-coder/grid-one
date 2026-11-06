@@ -30,13 +30,14 @@ export const onRequestPost = async ({ request, env, params }: Context) => {
   try {
     // Persistent request limits, not a per-person quota. Missing configuration
     // or a failed limit check closes claiming rather than bypassing protection.
-    if (!env.GUEST_INVITE_SECRET || env.GUEST_INVITE_SECRET.length < 32) throw new Error('seller_unavailable');
+    const rateSecret = env.SELLER_CLAIM_SECRET ?? env.GUEST_INVITE_SECRET;
+    if (!rateSecret || rateSecret.length < 32) throw new Error('seller_unavailable');
     stage = 'client';
     const db = sellerAdmin(env);
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     for (const [key, limit] of [[`seller:ip:${ip}`, 20], [`seller:link:${code}`, 30]] as const) {
       stage = 'rate_hash';
-      const hashedKey = await keyedGuestHash(env.GUEST_INVITE_SECRET, key);
+      const hashedKey = await keyedGuestHash(rateSecret, key);
       stage = 'rate_check';
       const rate = await db.rpc('gridone_guest_rate_limit', {
         p_key: hashedKey, p_limit: limit, p_window_seconds: 60,

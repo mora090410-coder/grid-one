@@ -81,6 +81,22 @@ it('fails closed on unavailable or denied rate checks and missing configuration'
   expect((await claimSeller({ ...context, request: post(context.request.url, { cells: [3], name: 'Ann' }), env: { ...env, GUEST_INVITE_SECRET: undefined } })).status).toBe(503);
 });
 
+it('claims with a dedicated seller secret when the legacy guest secret is unavailable', async () => {
+  rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: true, error: null })
+    .mockResolvedValueOnce({ data: { cells: [3, 8], name: 'Emily', label: 'Anthony Mora', shareCode: 'ABCDEFGH' }, error: null });
+  const response = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3, 8], name: 'Emily' }), env: { ...env, GUEST_INVITE_SECRET: undefined, SELLER_CLAIM_SECRET: 'dedicated-seller-test-key-at-least-32-characters' }, params: { code } });
+  expect(response.status).toBe(200);
+  expect(rpc).toHaveBeenCalledTimes(3);
+  expect(rpc.mock.calls[0][1].p_key).toMatch(/^[a-f0-9]{64}$/);
+  expect(rpc).toHaveBeenLastCalledWith('gridone_seller_link', { p_action: 'claim', p_code: code, p_cells: [3, 8], p_name: 'Emily' });
+});
+
+it.each(['', 'too-short'])('fails closed for an explicitly invalid dedicated seller key %j', async (secret) => {
+  const response = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3], name: 'Emily' }), env: { ...env, SELLER_CLAIM_SECRET: secret }, params: { code } });
+  expect(response.status).toBe(503);
+  expect(rpc).not.toHaveBeenCalled();
+});
+
 it('logs a safe diagnostic when claim configuration fails closed', async () => {
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   try {

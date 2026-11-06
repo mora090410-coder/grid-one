@@ -55,6 +55,9 @@ export default function SellerClaimPage() {
         if (!mounted.current) return;
         if (result?.code === 'SQUARE_TAKEN') { setError('Someone just grabbed one of those squares. Pick another.'); submitting.current = false; setBusy(false); void load(); return; }
         if (result?.code === 'BOARD_LOCKED') { setView({ ...view, open: false }); setError(''); return; }
+        if (result?.code === 'NAME_MATCHES_SELLER') { setError('Use a buyer name different from the seller’s name.'); return; }
+        if (result?.code === 'RATE_LIMITED' || response.status === 429) { setError('Please wait a minute before trying again.'); return; }
+        if (response.status >= 500) { setError('Claiming is temporarily unavailable. Check the board or contact the organizer before trying again.'); return; }
         setError(response.status === 404 ? DEAD_LINK : 'That didn’t go through. Nothing was claimed. Try again.');
         return;
       }

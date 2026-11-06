@@ -118,6 +118,21 @@ describe('SellerClaimPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('This seller link isn’t active. Ask the seller for a new one.');
   });
 
+  it.each([
+    [400, 'NAME_MATCHES_SELLER', 'Use a buyer name different from the seller’s name.'],
+    [429, 'RATE_LIMITED', 'Please wait a minute before trying again.'],
+    [503, undefined, 'Claiming is temporarily unavailable. Check the board or contact the organizer before trying again.'],
+  ] as const)('explains claim failure %s without telling buyers to repeat an unchanged request', async (status, code, message) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(ok(view)).mockResolvedValueOnce(fail(status, { code })));
+    renderPage();
+    await screen.findByRole('heading', { level: 1 });
+    fireEvent.click(screen.getByRole('button', { name: 'Square 62, open' }));
+    fireEvent.change(screen.getByLabelText('Your name, as it shows on the board'), { target: { value: 'Emily' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Claim 1 square' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByLabelText('Your name, as it shows on the board')).toHaveValue('Emily');
+  });
+
   it('does not submit twice while a claim is in flight', async () => {
     let resolveClaim: (value: unknown) => void = () => {};
     const fetcher = vi.fn()
