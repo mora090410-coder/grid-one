@@ -3,7 +3,7 @@ import { familyAdmin, familyResponse, isRecord, readFamilyBody, type FamilyEnv }
 
 // Seller links reuse the family helpers' bounded body reader, no-store
 // responses, and server-only database client.
-export type SellerEnv = FamilyEnv & { GUEST_INVITE_SECRET?: string };
+export type SellerEnv = FamilyEnv & { GUEST_INVITE_SECRET?: string; SELLER_CLAIM_SECRET?: string };
 export const sellerResponse = familyResponse;
 export const sellerAdmin = familyAdmin;
 export const readSellerBody = readFamilyBody;

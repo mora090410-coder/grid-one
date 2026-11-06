@@ -26,22 +26,38 @@ export const onRequestPost = async ({ request, env, params }: Context) => {
   if (!body || Object.keys(body).some((key) => !['cells', 'name'].includes(key)) || !validClaimCells(body.cells) || !name) {
     return sellerResponse({ error: 'Pick up to 10 squares and enter your name.' }, 400);
   }
+  let stage = 'configuration';
   try {
     // Persistent request limits, not a per-person quota. Missing configuration
     // or a failed limit check closes claiming rather than bypassing protection.
-    if (!env.GUEST_INVITE_SECRET || env.GUEST_INVITE_SECRET.length < 32) throw new Error('seller_unavailable');
+    const rateSecret = env.SELLER_CLAIM_SECRET ?? env.GUEST_INVITE_SECRET;
+    if (!rateSecret || rateSecret.length < 32) throw new Error('seller_unavailable');
+    stage = 'client';
     const db = sellerAdmin(env);
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     for (const [key, limit] of [[`seller:ip:${ip}`, 20], [`seller:link:${code}`, 30]] as const) {
+      stage = 'rate_hash';
+      const hashedKey = await keyedGuestHash(rateSecret, key);
+      stage = 'rate_check';
       const rate = await db.rpc('gridone_guest_rate_limit', {
-        p_key: await keyedGuestHash(env.GUEST_INVITE_SECRET, key), p_limit: limit, p_window_seconds: 60,
+        p_key: hashedKey, p_limit: limit, p_window_seconds: 60,
       });
       if (rate.error) throw rate.error;
       if (rate.data !== true) return sellerResponse({ code: 'RATE_LIMITED', error: 'Please wait a minute before trying again.' }, 429);
     }
+    stage = 'claim';
     const { data, error } = await db.rpc('gridone_seller_link', { p_action: 'claim', p_code: code, p_cells: body.cells, p_name: name });
     if (error) throw error;
     if (!data) throw new Error('seller_access_denied');
     return sellerResponse(data);
-  } catch (error) { return sellerFailure(error); }
+  } catch (error) {
+    const response = sellerFailure(error);
+    if (response.status >= 500) {
+      const rawCode = error && typeof error === 'object' && 'code' in error ? error.code : null;
+      const knownCodes = ['PGRST202', 'PGRST301', 'PGRST002', '42501', '42883', '42P01', '42703', '23514', '23505', '57014', '53300', '08006'];
+      const code = typeof rawCode === 'string' && knownCodes.includes(rawCode) ? rawCode : null;
+      console.error('seller_claim_unavailable', { stage, code });
+    }
+    return response;
+  }
 };
