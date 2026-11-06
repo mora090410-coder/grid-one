@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import GlassGridBackground from '../src/design/liquid/GlassGridBackground';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/image';
@@ -167,7 +168,7 @@ const CreateContest: React.FC = () => {
     if (authLoading) return <FullScreenLoading />;
 
     return (
-        <Base kind="cream" className="g-editorial create-entrance">
+        <Base kind="dark" theme="liquid" className="g1-page g1-organizer-page g-editorial create-entrance"><GlassGridBackground />
             <main aria-label="New board" className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
 
                 <header className="flex items-center justify-between gap-4">

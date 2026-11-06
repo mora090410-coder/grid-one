@@ -89,7 +89,7 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
             const summary = sellers.find((seller) => seller.label === link.label);
             return <li key={link.code} aria-label={link.label} className="flex flex-col gap-2 rounded-control border border-hairline bg-panel p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="break-words font-ui text-[16px] font-semibold text-fg">{link.label}</span>
+                <span className="break-words font-ui text-[16px] font-semibold text-fg"><span aria-hidden="true" className="g1-seller-dot" style={{display:'inline-block',marginRight:8,background:`color-mix(in srgb, var(--g1-seller-${sellers.findIndex(seller=>seller.label===link.label) % 6 + 1}) 55%, transparent)`}}/>{link.label}</span>
                 {summary && <span className="font-ui text-[14px] text-fg-2">{summary.total} {summary.total === 1 ? 'square' : 'squares'} · {summary.unsold} not sold yet</span>}
               </div>
               <div className="flex flex-wrap gap-2">

@@ -55,6 +55,7 @@ import { renamePublishedSquare } from './renamePublishedSquare';
 import { useGameDayScoring } from '../game-day/useGameDayScoring';
 import { publishedOpenSquaresAreAssignable } from '../services/game-day/publishedOpenSquares';
 import WorkspaceHeader from './WorkspaceHeader';
+import GlassGridBackground from '../../../design/liquid/GlassGridBackground';
 import BoardEditor from './BoardEditor';
 import RangeAssignBar, { type RangeAssignInput } from './RangeAssignBar';
 import SquareSheet from './SquareSheet';
@@ -959,7 +960,8 @@ export default function OrganizerWorkspace({
     };
 
     return (
-      <Base kind="cream">
+      <Base kind="dark" theme="liquid" className="g1-page g1-organizer-page">
+      <GlassGridBackground />
         <OrganizerIsland
           key={activePoolId}
           {...islandExtras}
@@ -1051,7 +1053,8 @@ export default function OrganizerWorkspace({
   }
 
   return (
-    <Base kind="cream">
+    <Base kind="dark" theme="liquid" className="g1-page g1-organizer-page">
+      <GlassGridBackground />
       {familyBusy && <p role="status" className="px-5 py-3 text-sm text-fg-2">Updating family access. Board editing will resume when this finishes.</p>}
       <OrganizerIsland
           key={activePoolId}

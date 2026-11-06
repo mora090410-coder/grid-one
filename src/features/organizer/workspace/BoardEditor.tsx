@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Glass, CapsuleTag, CapsuleButton, DigitFlow } from '../../../design/primitives';
 import type { BoardData, EntryMeta } from '../../../../types';
+import {summarizeSellers} from '../sellers/sellerLinksModel';
 import { assignable, rangeBetween, toggle, type Selection } from './selection';
 
 export interface BoardEditorProps {
@@ -58,6 +59,7 @@ function BoardEditor({
   const previousSelectionSize = useRef(selection.size);
   const firstFocusSignal = useRef(focusToggleSignal);
 
+  const sellerLabels = summarizeSellers(board.allocationLabels ?? [],board.squares).map(seller=>seller.label);
   const topDigits = drawPreview ? drawPreview.top : board.topAxis;
   const leftDigits = drawPreview ? drawPreview.left : board.leftAxis;
 
@@ -220,7 +222,7 @@ function BoardEditor({
       {availabilityMode && <p className="font-ui text-base text-fg-2">Select the squares you want to offer, then choose their availability.</p>}
       <div data-testid="contained-board-overflow" className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-card border border-hairline" style={{ contain: 'inline-size' }}>
         <div className="min-w-[640px]">
-          <Glass padding="md">
+          <Glass padding="md" className="g1-organizer-board" data-g1-blur="true">
             <div
               data-testid="board-grid"
               className="grid gap-1"
@@ -260,6 +262,8 @@ function BoardEditor({
                         key={index}
                         type="button"
                         data-cell-index={index}
+                        data-g1-seller={family ? sellerLabels.indexOf(family) % 6 + 1 : undefined}
+                        style={family ? {'--t':`color-mix(in srgb, var(--g1-seller-${sellerLabels.indexOf(family) % 6 + 1}) 55%, transparent)`} as React.CSSProperties : undefined}
                         aria-label={label}
                         aria-pressed={selectMode ? selection.has(index) : undefined}
                         disabled={disabled}
