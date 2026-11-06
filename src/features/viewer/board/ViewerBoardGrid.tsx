@@ -7,6 +7,7 @@ import type { ViewerQuarter } from '../scenarios/scenarioModel';
 
 interface ViewerBoardGridProps {
   selectedQuarter?: ViewerQuarter;
+  minimumBoardWidth?: number;
   board: BoardData;
   game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'>;
   live: LiveGameData | null;
@@ -56,6 +57,7 @@ const squareDetail = (cell: ViewerBoardCellModel, topLabel: string, sideLabel: s
 
 const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   selectedQuarter,
+  minimumBoardWidth = 0,
   board,
   game,
   live,
@@ -156,14 +158,14 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
     const measure = () => {
       const padding = parseFloat(getComputedStyle(viewport).paddingLeft || '0') + parseFloat(getComputedStyle(viewport).paddingRight || '0');
       const available = viewport.clientWidth - padding;
-      if (available > 0) setFitWidth(boardFitWidth(available));
+      if (available > 0) setFitWidth(boardFitWidth(Math.max(available, minimumBoardWidth)));
     };
     measure();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, []);
+  }, [minimumBoardWidth]);
 
   const geometry = boardGeometry(fitWidth, zoom);
   const zoomed = zoom > BOARD_ZOOM.min;
@@ -197,7 +199,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
 
   const focusedCell = model.cells[focus.row]?.[focus.col];
   const cellStyle = { width: geometry.cell, height: geometry.cell, fontSize: geometry.cellFont };
-  const publicSellers = [...new Set(board.allocationLabels?.filter((label): label is string => Boolean(label)) ?? [])].sort();
+  const publicSellers = [...new Set(board.allocationLabels?.filter((label): label is string => Boolean(label)) ?? [])].sort((a,b)=>a.localeCompare(b));
   const axisStyle = { fontSize: geometry.axisFont };
   const badgeStyle = { fontSize: geometry.badgeFont };
 

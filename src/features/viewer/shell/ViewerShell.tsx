@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { Base, CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
 import ViewerBoardGrid from '../board/ViewerBoardGrid';
+import GlassGridBackground from '../../../design/liquid/GlassGridBackground';
+import { summarizeSellers } from '../../organizer/sellers/sellerLinksModel';
 import ScoreInstrument from '../score/ScoreInstrument';
 import ViewerIsland from './ViewerIsland';
 import FindSquaresEntry from '../identity/FindSquaresEntry';
@@ -114,25 +116,26 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
 
   return (
-    <Base kind="dark" className={stageChrome ? 'demo-stage' : ''}>
+    <Base kind="dark" theme={!organizerPreview && !stageChrome ? 'liquid' : undefined} className={stageChrome ? 'demo-stage' : organizerPreview ? '' : 'g1-page'}>
+      {!organizerPreview && !stageChrome && <GlassGridBackground />}
       {!organizerPreview && <ViewerIsland key={shareCode || game.title} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
         winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
         onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
       <MainTag
-        className={`mx-auto grid w-full max-w-6xl gap-10 px-4 pt-6 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
+        className={`g1-live-layout mx-auto grid w-full max-w-6xl gap-10 px-4 pt-6 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
         aria-label={`${game.title || 'GridOne board'} viewer`}
       >
-        <div data-testid="viewer-first-viewport" className="flex min-w-0 flex-col gap-8">
+        <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
-          <div ref={scoreRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
+          <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
+          <ScoreInstrument liquid={!organizerPreview && !stageChrome} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
           </div>
-          <div ref={findRef}><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
-          <div ref={resultsRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
+          <div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
+          <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
           {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No quarter winners yet.</p>}
           </div>
-          {selectedPlayer && <div ref={personalRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
+          {selectedPlayer && <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {pendingMilestones.length > 0 && servicesEnabled && (
             <Glass as="section" padding="md" className="flex flex-col gap-2" aria-labelledby="pending-results-title">
               <h2 id="pending-results-title" className="font-ui text-[15px] font-medium text-fg">Pending confirmation</h2>
@@ -143,11 +146,11 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </Glass>
           )}
-          {!isFinal && <div ref={scenariosRef} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
+          {!isFinal && <div ref={scenariosRef} className="g1-scenarios-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
           <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
         </div>
 
-        <section className={`relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
+        <section className={`g1-board-region relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
           {stageChrome && <div className="demo-board-light" aria-hidden="true" />}
           <div className="relative z-[1] flex items-end justify-between gap-3">
             <div className="flex flex-col gap-1">
@@ -172,10 +175,14 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <div className="relative z-[1]"><ViewerBoardGrid selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
+            <div className="relative z-[1]"><ViewerBoardGrid minimumBoardWidth={!organizerPreview && !stageChrome ? 640 : undefined} selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>
+        {!organizerPreview && !stageChrome && board.allocationLabels?.some(Boolean) && <Glass as="section" className="g1-sellers-region" data-g1-blur="true" aria-label="Sellers">
+          <h2 className="g1-label">Sellers</h2>
+          <ul>{summarizeSellers(board.allocationLabels, board.squares).map((seller,index)=><li key={seller.label} className="g1-seller-row"><span aria-hidden="true" className="g1-seller-dot" style={{background:`color-mix(in srgb, var(--g1-seller-${index % 6 + 1}) 55%, transparent)`}}/><span>{seller.label}</span><span>{seller.total}</span></li>)}</ul>
+        </Glass>}
       </MainTag>
     </Base>
   );

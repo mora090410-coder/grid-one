@@ -86,6 +86,16 @@ describe('liquid glass slice 3: public square materials', () => {
   });
 });
 
+describe('liquid glass slice 4: board-first live layout', () => {
+  it('shows a real current-match summary and counts only public allocations', () => {
+    const { container } = renderShell({ board:{...board,allocationLabels:Array.from({length:100},(_,i)=>i<25?'Jamie':null)} });
+    expect(screen.getByRole('heading', {name:'Winning right now'})).toBeVisible();
+    expect(container.querySelector('.g1-current-card')).toHaveTextContent('Carrie Moss');
+    expect(screen.getByRole('region', {name:'Sellers'})).toHaveTextContent('Jamie');
+    expect(screen.getByRole('region', {name:'Sellers'})).toHaveTextContent('25');
+  });
+});
+
 describe('ViewerShell', () => {
   it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });

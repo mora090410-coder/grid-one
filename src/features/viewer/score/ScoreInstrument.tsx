@@ -2,7 +2,7 @@ import React from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { DigitFlow, Eyebrow, Glass, Numeral } from '../../../design/primitives';
 import { buildViewerScoreModel } from './viewerScoreModel';
-import { playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
+import { playersForDigits, quarterForLive, squareIndexForDigits } from '../scenarios/scenarioModel';
 import { hasValidAxes } from '../../../../utils/boardValidation';
 import TeamStripe from '../teams/TeamStripe';
 
@@ -22,9 +22,10 @@ export interface ScoreInstrumentProps {
   headingLevel?: 'h1' | 'h2';
   /** Extra chrome on the score panel. Demo uses the marketing glass surface. */
   surfaceClassName?: string;
+  liquid?: boolean;
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '' }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false }) => {
   const score = buildViewerScoreModel({ live, liveStatus, isSynced });
   const Heading = headingLevel;
   const quarter = quarterForLive(live);
@@ -36,14 +37,19 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
   const topLabel = game.topAbbr || 'HOME';
 
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="viewer-score-title">
+    <section className={`flex flex-col gap-4${liquid ? ' g1-score-section' : ''}`} aria-labelledby="viewer-score-title">
       <div className="flex flex-col gap-2">
         <Eyebrow>{game.dates || 'Game date pending'}</Eyebrow>
         <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] text-fg">{game.title || 'Football squares'}</Heading>
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 
-      <Glass as="div" padding="lg" className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${surfaceClassName}`.trim()} aria-label="Score">
+      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" padding="lg" className="g1-current-card" data-g1-blur="true">
+        <h2 className="g1-label">{live.state === 'post' ? 'Final score matches:' : stale ? 'Last known' : 'Winning right now'}</h2>
+        <p className="g1-big-number">{shortName(currentNames, 'Open square')}</p>
+        <p className="g1-label">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</p>
+      </Glass>}
+      <Glass as="div" padding="lg" data-g1-blur={liquid ? 'true' : undefined} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${surfaceClassName}`.trim()} aria-label="Score">
         <div className="flex flex-col gap-2 min-w-0">
           <span className="flex items-center gap-1.5 min-w-0"><TeamStripe abbr={game.leftAbbr} /><span className="min-w-0 break-words"><Eyebrow>{game.leftName || leftLabel}</Eyebrow></span></span>
           {live ? <Numeral value={live.leftScore} size="lg" label={`${game.leftName || leftLabel} ${live.leftScore}`} /> : <span role="img" aria-label={`${game.leftName || leftLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}
