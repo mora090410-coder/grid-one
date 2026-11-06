@@ -94,14 +94,17 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex w-full min-w-0 flex-col gap-2 font-ui text-sm text-fg md:w-auto md:flex-1">
               Find a name or square number
-              <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Name or square 1–100" className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" />
+              <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Name or square 1–100" className="h-12 min-h-12 w-full appearance-none rounded-control border border-hairline bg-panel px-3 text-base leading-normal text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action" />
             </label>
             {families.length > 0 && <label className="flex w-full min-w-0 flex-col gap-2 font-ui text-sm text-fg md:w-auto md:flex-1 md:max-w-xs">
               Family
-              <select aria-label="Family" value={visibleFamily} onChange={event => setFamily(event.target.value)} className="min-h-11 w-full rounded-control border border-hairline bg-panel px-3 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
+              <span className="relative block w-full">
+              <select aria-label="Family" value={visibleFamily} onChange={event => setFamily(event.target.value)} className="h-12 min-h-12 w-full appearance-none rounded-control border border-hairline bg-panel pl-3 pr-10 text-base leading-normal text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
                 <option value="">All families</option>
                 {families.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 20 20" className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-2"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </span>
             </label>}
             <CapsuleButton variant="quiet" aria-pressed={blankOnly} onClick={() => setBlankOnly(value => !value)}>Highlight blank squares</CapsuleButton>
             {cells.some(cell => cell.availability !== 'unspecified') && <CapsuleButton variant="quiet" aria-pressed={availableOnly} onClick={() => setAvailableOnly(value => !value)}>Show available squares</CapsuleButton>}
@@ -116,7 +119,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
           <details open={filtered || undefined}>
             <summary className="flex min-h-11 cursor-pointer items-center rounded-control font-ui text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Square details · {details.length} {details.length === 1 ? 'square' : 'squares'} <span aria-hidden="true" className="ml-2">↓</span></summary>
             <p className="pb-3 font-ui text-sm text-fg-2">Full names and responsibility for every matching square.</p>
-            {details.length === 0 ? <p className="font-ui text-sm text-fg-2">No squares match these filters.</p> : <ul className="grid max-h-80 gap-2 overflow-y-auto sm:grid-cols-2 md:max-h-none lg:grid-cols-3">{details.map(cell => <li key={cell.number} className="flex min-w-0 flex-col gap-1 rounded-control border border-hairline bg-panel p-3">
+            {details.length === 0 ? <p className="font-ui text-sm text-fg-2">No squares match these filters.</p> : <ul tabIndex={0} aria-label="Matching square details" className="grid max-h-80 gap-2 overflow-y-auto rounded-control focus-visible:ring-2 focus-visible:ring-action sm:grid-cols-2 md:max-h-none lg:grid-cols-3">{details.map(cell => <li key={cell.number} className="flex min-w-0 flex-col gap-1 rounded-control border border-hairline bg-panel p-3">
               <span className="font-mono text-xs text-fg-3">Square {cell.number}</span>
               <span className="break-words font-ui text-base text-fg">{cell.buyer}</span>
               <span className="break-words font-ui text-sm text-fg-2">{cell.family ? `Responsible: ${cell.family}` : 'No family assigned'}</span>

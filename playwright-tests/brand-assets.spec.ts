@@ -7,7 +7,7 @@ test('the head names brand icons and a share image that all load', async ({ page
     links => links.map(link => link.getAttribute('href')),
   );
   expect(hrefs).toEqual(['/favicon.ico', '/favicon.svg', '/favicon-32.png', '/favicon-16.png', '/apple-touch-icon.png']);
-  await expect(page.locator('head meta[name="theme-color"]')).toHaveAttribute('content', '#13212E');
+  await expect(page.locator('head meta[name="theme-color"]')).toHaveAttribute('content', '#101B2A');
 
   for (const path of [...hrefs, '/icon-192.png', '/icon-512.png', '/og-image.png', '/site.webmanifest']) {
     const response = await request.get(path!);
@@ -24,20 +24,20 @@ test('pages paint in Archivo with brand text colors and tight headings', async (
     return { font: style.fontFamily, color: style.color };
   });
   expect(body.font).toMatch(/^"?Archivo"?,/);
-  expect(body.color).toBe('rgb(246, 247, 245)');
+  expect(body.color).toBe('rgb(240, 237, 229)');
 
   const heading = page.getByRole('heading', { level: 1 }).first();
   await expect(heading).toHaveCSS('font-family', /^"?Archivo"?,/);
-  await expect(heading).toHaveCSS('color', 'rgb(238, 241, 238)');
-  expect(await heading.evaluate(el => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize))).toBeCloseTo(-0.03, 2);
+  await expect(heading).toHaveCSS('color', 'rgb(240, 237, 229)');
+  await expect.poll(() => heading.evaluate(el => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize))).toBeCloseTo(-0.055, 3);
   await expect.poll(() => page.evaluate(async () => {
     await document.fonts.ready;
     return document.fonts.check('700 16px Archivo');
   })).toBe(true);
 
-  // The light (organizer) base: ink text on chalk.
+  // The adopted acquisition/create scope: editorial ink on warm paper.
   await page.goto('/create');
   const ground = page.locator('[data-base="cream"]').first();
-  await expect(ground).toHaveCSS('color', 'rgb(19, 33, 46)');
-  await expect(ground).toHaveCSS('background-color', 'rgb(246, 247, 245)');
+  await expect(ground).toHaveCSS('color', 'rgb(240, 237, 229)');
+  await expect(ground).toHaveCSS('background-color', 'rgb(16, 27, 42)');
 });

@@ -104,7 +104,7 @@ export default function WorkspaceHeader({
     <header className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-4">
-        <a href="/" className="inline-flex min-h-11 items-center rounded-control focus-visible:ring-2 focus-visible:ring-action"><Logo size={28} /></a>
+        <a href="/" className="inline-flex min-h-11 items-center rounded-control focus-visible:ring-2 focus-visible:ring-action"><Logo tone="white" size={28} /></a>
         <a href="/dashboard" className="inline-flex min-h-11 w-fit items-center rounded-control font-ui text-[14px] text-fg-2 focus-visible:ring-2 focus-visible:ring-action">My boards</a>
       </div>
       {isPublished

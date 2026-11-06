@@ -9,7 +9,7 @@ import { ScoreSection } from './sections/ScoreSection';
 
 export default function Homepage() {
   return (
-    <Base kind="dark" className="marketing-stage overflow-x-clip">
+    <Base kind="cream" className="g-editorial marketing-stage overflow-x-clip">
       <main data-testid="homepage">
         <Hero />
         <OrganizerSection />

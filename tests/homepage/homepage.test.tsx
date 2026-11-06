@@ -1,12 +1,32 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
 describe('Homepage', () => {
+  it('uses translate-only reveals for text before and immediately after scroll entry', () => {
+    const callbacks: IntersectionObserverCallback[] = [];
+    const bounds = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top: 2000 } as DOMRect);
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback) { callbacks.push(callback); }
+      observe() {}
+      disconnect() {}
+    });
+    try {
+      const { container } = renderPage();
+      const reveals = [...container.querySelectorAll('[data-reveal]')];
+      expect(reveals.length).toBeGreaterThan(0);
+      expect(reveals.map(node => node.getAttribute('data-reveal'))).toEqual(reveals.map(() => 'shift'));
+      act(() => callbacks.forEach(callback => callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver)));
+      expect(reveals.map(node => node.getAttribute('data-reveal'))).toEqual(reveals.map(() => 'in'));
+    } finally {
+      bounds.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
   it('welcomes different groups and keeps setup to three steps', () => {
     renderPage();
     expect(screen.getByText('For watch parties, office pools, friends, and fundraisers.')).toBeInTheDocument();
@@ -17,8 +37,8 @@ describe('Homepage', () => {
   it('puts identity, promise, one primary action, and viewing reassurance in the hero', () => {
     renderPage();
     const hero = screen.getByTestId('homepage-first-viewport');
-    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Football squares. Made easy.');
-    expect(within(hero).getByText(/Create your board, share one link/)).toBeInTheDocument();
+    expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Your team. One board. Less chasing.');
+    expect(within(hero).getByText(/football-squares fundraiser/i)).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
     expect(within(hero).getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
@@ -29,18 +49,97 @@ describe('Homepage', () => {
     expect(within(hero).getByText('Sample board — not a live game')).toBeInTheDocument();
   });
 
-  it('separates preparation from game day in static excerpts of the same board', () => {
+  it('explores a real 100-square sample with keyboard-accessible details and truthful stages', () => {
     renderPage();
-    const hero = screen.getByTestId('homepage-first-viewport');
-    for (const name of ['Prepare your board', 'Your group on game day']) {
-      const excerpt = within(hero).getByRole('region', { name });
-      expect(within(excerpt).getByText('Sunday Football Board')).toBeInTheDocument();
-      expect(excerpt.querySelector('a, button, input, select, textarea, [tabindex]')).toBeNull();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    expect(within(sample).getAllByRole('gridcell')).toHaveLength(100);
+    expect(within(sample).getByText('Select a numbered square to see its name and position.')).toBeVisible();
+    expect(within(sample).getByText('Numbers not drawn')).toBeVisible();
+    fireEvent.click(within(sample).getByRole('button', { name: 'Share' }));
+    expect(within(sample).getByText(/Public viewer link: viewing only/)).toBeVisible();
+    expect(within(sample).getByRole('link', { name: 'Open sample viewer' })).toHaveAttribute('href', '/demo');
+    fireEvent.click(within(sample).getByRole('button', { name: 'Game day' }));
+    expect(within(sample).getByText(/Currently matching: Taylor M./)).toBeVisible();
+    expect(within(sample).getByText(/No confirmed quarter results in this illustration/)).toBeVisible();
+    const cell = within(sample).getByRole('gridcell', { name: /Square 1, Taylor M\./ });
+    fireEvent.click(cell);
+    expect(within(sample).getByRole('status')).toHaveTextContent('Square 1 · Taylor M.');
+    fireEvent.keyDown(cell, { key: 'ArrowRight' });
+    expect(within(sample).getByRole('gridcell', { name: /Square 2,/ })).toHaveFocus();
+    expect(within(sample).getAllByRole('gridcell').filter(el => el.tabIndex === 0)).toHaveLength(1);
+    fireEvent.click(within(sample).getByRole('button', { name: 'Set up' }));
+    expect(within(sample).getByText('Numbers not drawn')).toBeVisible();
+  });
+
+  it('provides large previous/next controls for dense-grid touch inspection and names the current match', () => {
+    renderPage();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    expect(within(sample).getByRole('button', { name: 'Previous square' })).toBeDisabled();
+    fireEvent.click(within(sample).getByRole('button', { name: 'Next square' }));
+    expect(within(sample).getByTestId('sample-inspection-announcement')).toHaveTextContent('Square 2');
+    expect(within(sample).getByRole('status')).toHaveAttribute('aria-live', 'off');
+    fireEvent.click(within(sample).getByRole('button', { name: 'Previous square' }));
+    fireEvent.click(within(sample).getByRole('button', { name: 'Game day' }));
+    expect(within(sample).getByRole('gridcell', { name: /Square 1, Taylor M.*currently matching/ })).toBeInTheDocument();
+    expect(within(sample).getByRole('status')).toHaveTextContent('Currently matching');
+  });
+
+  it('keeps one polite atomic announcement region for controls without repeating grid or stage inspections', () => {
+    renderPage();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    const announcement = within(sample).getByTestId('sample-inspection-announcement');
+    const inspector = within(sample).getByRole('status');
+    expect(announcement).toHaveAttribute('aria-live', 'polite');
+    expect(announcement).toHaveAttribute('aria-atomic', 'true');
+    expect(announcement).toBeEmptyDOMElement();
+    expect(inspector).toHaveAttribute('aria-live', 'off');
+    fireEvent.click(within(sample).getByRole('button', { name: 'Next square' }));
+    expect(announcement).toHaveTextContent('Square 2');
+    expect(within(sample).getByTestId('sample-inspection-announcement')).toBe(announcement);
+    fireEvent.click(within(sample).getByRole('button', { name: 'Next square' }));
+    expect(announcement).toHaveTextContent('Square 3');
+    fireEvent.click(within(sample).getByRole('button', { name: 'Previous square' }));
+    expect(announcement).toHaveTextContent('Square 2');
+    expect(within(sample).getByTestId('sample-inspection-announcement')).toBe(announcement);
+    const cell = within(sample).getByRole('gridcell', { name: /Square 4,/ });
+    fireEvent.click(cell);
+    fireEvent.keyDown(cell, { key: 'ArrowRight' });
+    fireEvent.click(within(sample).getByRole('button', { name: 'Game day' }));
+    expect(announcement).toBeEmptyDOMElement();
+    expect(within(sample).getByTestId('sample-inspection-announcement')).toBe(announcement);
+    expect(inspector).toHaveAttribute('aria-live', 'off');
+  });
+
+  it('keeps selected coordinates and supporter positions across stages and keyboard boundaries', () => {
+    renderPage();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    const cells = within(sample).getAllByRole('gridcell');
+    const inspector = within(sample).getByRole('status');
+    fireEvent.keyDown(cells[0], { key: 'End' });
+    expect(cells[9]).toHaveFocus();
+    expect(inspector).toHaveAttribute('aria-live', 'off');
+    fireEvent.keyDown(cells[9], { key: 'ArrowRight' });
+    expect(cells[9]).toHaveFocus();
+    fireEvent.keyDown(cells[9], { key: 'ArrowDown' });
+    expect(cells[19]).toHaveFocus();
+    expect(inspector).toHaveTextContent('Row 2 · Column 10');
+    expect(within(sample).getAllByRole('rowheader')[1]).toHaveAttribute('data-inspected', 'true');
+    expect(within(sample).getAllByRole('columnheader')[10]).toHaveAttribute('data-inspected', 'true');
+    for (const stage of ['Game day', 'Share', 'Game day', 'Set up']) {
+      fireEvent.click(within(sample).getByRole('button', { name: stage }));
+      expect(within(sample).getByRole('status')).toBe(inspector);
+      expect(cells[19]).toHaveAttribute('aria-selected', 'true');
+      expect(cells[0]).toHaveAccessibleName(/Square 1, Taylor M\./);
     }
-    expect(within(hero).getByText('Numbers not drawn')).toBeInTheDocument();
-    expect(within(hero).getByText('Published · numbers locked')).toBeInTheDocument();
-    expect(within(hero).getByText('Currently matching')).toBeInTheDocument();
-    expect(hero.querySelector('[data-reveal], [data-fill]')).toBeNull();
+    fireEvent.keyDown(cells[19], { key: 'Home' });
+    expect(cells[10]).toHaveFocus();
+    fireEvent.keyDown(cells[10], { key: 'ArrowUp' });
+    fireEvent.keyDown(cells[0], { key: 'ArrowLeft' });
+    expect(cells[0]).toHaveFocus();
+    fireEvent.click(cells[99]);
+    fireEvent.keyDown(cells[99], { key: 'ArrowDown' });
+    expect(cells[99]).toHaveFocus();
+    expect(within(sample).getAllByRole('gridcell').filter(cell => cell.tabIndex === 0)).toHaveLength(1);
   });
 
   it('tells the organizer, game-day, then pricing story without retired demonstrations', () => {

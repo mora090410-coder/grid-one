@@ -1,0 +1,89 @@
+/* Palette A finish. Existing semantic tokens remain the only color system. */
+[data-base] .g-float {
+  background: var(--g-panel);
+  border-color: var(--g-hairline);
+  box-shadow: var(--g-shadow);
+}
+[data-base] :is(button, a).rounded-capsule {
+  border-radius: var(--g-radius-control);
+}
+[data-base] button.bg-action,
+[data-base] button.bg-action:hover,
+[data-base] button.bg-action:focus-visible,
+[data-base] .g-cta,
+[data-base] .g-cta:hover,
+[data-base] .g-cta:focus-visible {
+  box-shadow: none;
+}
+/* Matte, bounded surfaces. No ambient animation or metallic gold treatment. */
+[data-base] #organizer-share {
+  border-top: 2px solid var(--g-action);
+}
+[data-base] [data-testid="board-grid"] {
+  padding: 2px;
+}
+[data-base] [data-cell-index] {
+  border-radius: var(--g-radius-cell);
+}
+[data-base] [data-cell-index][aria-pressed="true"] {
+  background-color: color-mix(in srgb, var(--g-action) 16%, var(--g-cell));
+  border-color: var(--g-action);
+}
+[data-base] #allocation-editor {
+  border-top: 2px solid var(--g-action);
+}
+/* Selecting a cell reveals companion controls. Neither column may become a
+   document scroll anchor: picking squares must not move the board viewport. */
+[data-base] #workspace-board,
+[data-base] #workspace-board + aside {
+  overflow-anchor: none;
+}
+[data-base] .g-handoff {
+  border-top-style: dashed;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-base] [data-cell-index] {
+    transition: background-color var(--g-dur-state) var(--g-ease-state),
+      border-color var(--g-dur-state) var(--g-ease-state),
+      transform var(--g-dur-state) var(--g-ease-state);
+  }
+  [data-base] [data-cell-index]:not(:disabled):hover { transform: translateY(-1px); }
+  [data-base] [data-cell-index]:not(:disabled)[aria-pressed="true"] { transform: translateY(-2px); }
+  [data-base] [data-cell-index]:not(:disabled):active { transform: translateY(1px); }
+  [data-base] #allocation-editor,
+  [data-base] .g-handoff { animation: g-handoff-open var(--g-dur-state) var(--g-ease-state) both; }
+  [data-base] #workspace-board [data-testid="board-grid"] {
+    animation: g-board-settle var(--g-dur-spring) var(--g-ease-state);
+  }
+  @keyframes g-handoff-open {
+    from { transform: translateY(8px); }
+    to { transform: translateY(0); }
+  }
+  @keyframes g-board-settle {
+    from { transform: translateY(6px); }
+    to { transform: translateY(0); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-base] [data-cell-index],
+  [data-base] #allocation-editor,
+  [data-base] .g-handoff,
+  [data-base] #workspace-board [data-testid="board-grid"] {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  [data-base] [data-cell-index][aria-pressed="true"] {
+    background: Highlight;
+    color: HighlightText;
+    border: 2px solid HighlightText;
+  }
+  [data-base] .g-float { background: Canvas; border-color: CanvasText; box-shadow: none; }
+}
+@media print {
+  [data-base] [data-cell-index], [data-base] .g-handoff, [data-base] #allocation-editor {
+    animation: none; transition: none; transform: none;
+  }
+}

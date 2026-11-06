@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const authStorageKey = 'sb-illqymckwqiawdwxhwcy-auth-token';
+const authStorageKey = 'sb-gridone-test-auth-token';
 const ownerId = '11111111-1111-4111-8111-111111111111';
 const boardId = '22222222-2222-4222-8222-222222222222';
 

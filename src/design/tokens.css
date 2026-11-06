@@ -145,14 +145,14 @@
 }
 
 :root {
-  /* Core palette, built from the brand tokens (src/styles/tokens.css).
-     Gold means winner: it is only for the logo corner and winning squares.
-     It is never text, a button, a link, a focus ring, a glow, or a tint. */
+  /* Palette A: matte midnight and muted gold, explicitly selected by Anthony.
+     Gold is an action/selection accent; confirmed results always keep their
+     textual result and milestone semantics, never color alone. */
   --g-ink: var(--g1-ink);
   --g-white: var(--g1-chalk);
   --g-gold: var(--g1-gold);
   /* Pressed winner fill. Winner squares only. */
-  --g-gold-deep: #C08A0E;
+  --g-gold-deep: #A28F64;
   /* Success and settled states (Drawn, Published, Paid). Sparingly. */
   --g-turf: var(--g1-turf);
   --g-newsprint: var(--g1-line);
@@ -162,12 +162,9 @@
   --g-cardinal-deep: #6E1622;
   /* An in-progress NFL game and nothing else. */
   --g-live: #22C55E;
-  /* Raised surface for the island, the chyron strip, and the board axis rails.
-     It has to sit visibly ABOVE the ink ground (--g-ground on the dark base).
-     #213549 is brand ink lifted in its own hue, 1.30:1 over the ground, the
-     same step the earlier palette needed so the axis rails and the score
-     island still read as raised. Chalk text on it is 11.7:1. */
-  --g-chyron: #213549;
+  /* Raised axis/island surface. Contrast is enforced against the current
+     midnight ground by tests rather than retaining historical ratio claims. */
+  --g-chyron: #223249;
 
   /* Shape */
   --g-radius-control: var(--g1-radius);
@@ -203,9 +200,9 @@
      flush on it. Glass is ink lifted in its own hue. */
   --g-stage: var(--g1-ink);
   --g-glass: rgba(255, 255, 255, 0.10);
-  --g-glass-fill: rgba(33, 53, 73, 0.94);
+  --g-glass-fill: var(--g1-dark-surface);
   --g-glass-edge: rgba(255, 255, 255, 0.22);
-  --g-glass-sheen: rgba(255, 255, 255, 0.10);
+  --g-glass-sheen: transparent;
   --g-stage-light: rgba(255, 255, 255, 0.32);
   --g-shadow-float:
     0 1px 0 rgba(255, 255, 255, 0.16) inset,
@@ -248,14 +245,14 @@
 [data-base="dark"] {
   color-scheme: dark;
   --g-ground: var(--g1-ink);
-  --g-panel: rgba(255, 255, 255, 0.07);
-  --g-panel-hover: rgba(255, 255, 255, 0.10);
-  --g-hairline: rgba(255, 255, 255, 0.12);
+  --g-panel: var(--g1-dark-surface);
+  --g-panel-hover: var(--g1-dark-cell);
+  --g-hairline: var(--g1-dark-line);
   --g-text: var(--g1-dark-text);
   --g-text-2: var(--g1-dark-stone);
   --g-text-3: var(--g1-dark-stone);
-  --g-action: var(--g-white);
-  --g-action-hover: var(--g1-line);
+  --g-action: var(--g-gold);
+  --g-action-hover: var(--g-gold-deep);
   --g-action-text: var(--g-ink);
   --g-shadow: 0 24px 48px rgba(12, 21, 30, 0.45);
   --g-glow: color-mix(in srgb, var(--g-white) 14%, transparent);
@@ -267,27 +264,27 @@
   --g-tone-cardinal: #F2B8C0;
 }
 
-/* Light base: organizer. Named "cream" for continuity; it renders brand chalk
-   with white cards and brand line edges. Ink is the action color. */
+/* Historical organizer base name retained for API continuity. Palette A makes
+   the organizer, dashboard and viewer share matte midnight and muted gold. */
 [data-base="cream"] {
-  color-scheme: light;
-  --g-ground: var(--g1-chalk);
-  --g-panel: var(--g1-surface);
-  --g-panel-hover: color-mix(in srgb, var(--g1-ink) 4%, var(--g1-surface));
-  --g-hairline: var(--g1-line);
-  --g-text: var(--g-ink);
-  --g-text-2: var(--g1-stone);
-  --g-text-3: var(--g1-stone);
-  --g-action: var(--g-ink);
-  --g-action-hover: var(--g1-dark-bg);
-  --g-action-text: var(--g-white);
+  color-scheme: dark;
+  --g-ground: var(--g1-ink);
+  --g-panel: var(--g1-dark-surface);
+  --g-panel-hover: var(--g1-dark-cell);
+  --g-hairline: var(--g1-dark-line);
+  --g-text: var(--g1-dark-text);
+  --g-text-2: var(--g1-dark-stone);
+  --g-text-3: var(--g1-dark-stone);
+  --g-action: var(--g-gold);
+  --g-action-hover: var(--g-gold-deep);
+  --g-action-text: var(--g-ink);
   --g-shadow: 0 24px 48px rgba(19, 33, 46, 0.06);
   --g-glow: color-mix(in srgb, var(--g-ink) 6%, transparent);
-  --g-cell: var(--g1-cell);
-  --g-cell-edge: var(--g1-line);
-  --g-tone-turf: var(--g-turf);
-  --g-tone-live: #0F5A2A;
-  --g-tone-cardinal: var(--g-cardinal);
+  --g-cell: var(--g1-dark-cell);
+  --g-cell-edge: var(--g1-dark-line);
+  --g-tone-turf: #8CCBA6;
+  --g-tone-live: var(--g-live);
+  --g-tone-cardinal: #F2B8C0;
 }
 
 /* Floating marketing chrome. Translucent fill, no backdrop blur: square grids
@@ -556,3 +553,57 @@
   mix-blend-mode: overlay;
   pointer-events: none;
 }
+
+/* Acquisition layout aliases. Historical paper names now resolve to the
+   approved palette A so entering the product never switches visual identity. */
+:root {
+  --g-paper: #101B2A;
+  --g-paper-raised: #192638;
+  --g-paper-line: #728198;
+  --g-editorial-ink: #F0EDE5;
+  --g-editorial-muted: #B4BDCA;
+  --g-editorial-action: #B7A477;
+  --g-editorial-action-hover: #A28F64;
+  --g-editorial-axis: #223249;
+  --g-editorial-shadow: 0 16px 40px rgba(0, 0, 0, .18);
+  --g-editorial-max: 1440px;
+  --g-editorial-gutter: clamp(20px, 3.4vw, 56px);
+  --g-editorial-space: clamp(48px, 7vw, 104px);
+  --g-editorial-title: clamp(3rem, 5.6vw, 5.5rem);
+  --g-editorial-cell: clamp(.625rem, 1.1vw, 1rem);
+}
+[data-base].g-editorial {
+  --g-chyron: var(--g-paper-raised);
+  --g-ground: var(--g-paper);
+  --g-panel: var(--g-paper-raised);
+  --g-panel-hover: var(--g-editorial-axis);
+  --g-text: var(--g-editorial-ink);
+  --g-text-2: var(--g-editorial-muted);
+  --g-text-3: var(--g-editorial-muted);
+  --g-hairline: var(--g-paper-line);
+  --g-action: var(--g-editorial-action);
+  --g-action-hover: var(--g-editorial-action-hover);
+  --g-action-text: var(--g-ink);
+  --g-stage: var(--g-paper);
+  --g-cell: var(--g-paper-raised);
+  --g-cell-edge: var(--g-paper-line);
+  --g-shadow: var(--g-editorial-shadow);
+  --g-glass-fill: var(--g-paper-raised);
+  --g-glass-edge: var(--g-paper-line);
+  --g-glass-sheen: transparent;
+  --g-shadow-float: var(--g-editorial-shadow);
+  --g-cta-glow: transparent;
+}
+/* Outrank the unlayered [data-base] focus reset in src/index.css. */
+[data-base].g-editorial :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline-style: solid;
+  outline-width: 3px;
+}
+/* Only ordinary controls need the paper contrast default. Sample controls own
+   their inset/currentColor ring; nested dark surfaces own their inverse ring. */
+[data-base].g-editorial :is(a, button, input, select, textarea, [tabindex]):not(:where(.sample-steps *, .sample-grid *, .bg-ink *, .bg-cardinal *, .bg-chyron *, [data-base="dark"] *)):focus-visible {
+  outline-color: var(--g-action);
+}
+.g-editorial :focus-visible { outline-offset: 3px; }
+.g-editorial .g-cta { box-shadow: none; border-radius: var(--g-radius-control); }
+.g-editorial .g-chip { box-shadow: none; background: transparent; border: 0; text-decoration: underline; text-underline-offset: .3em; }

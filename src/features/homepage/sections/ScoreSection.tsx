@@ -16,7 +16,7 @@ export function ScoreSection() {
   return (
     <section className="editorial-gameday" aria-labelledby="score-heading">
       <div className="editorial-section">
-        <Reveal as="header" className="editorial-intro"><p className="editorial-kicker">On game day</p><h2 id="score-heading">Know what to root for.</h2><p>Find your squares, follow the live score, and see which next scores would make you win.</p><p>Quarter winners are tracked automatically. Final includes overtime.</p></Reveal>
+        <Reveal keepVisible as="header" className="editorial-intro"><p className="editorial-kicker">On game day</p><h2 id="score-heading">Know what to root for.</h2><p>Find your squares, follow the live score, and see which next scores would make you win.</p><p>Quarter winners are tracked automatically. Final includes overtime.</p></Reveal>
         <div ref={explanation} data-score-explanation className="editorial-score-explanation" role="region" aria-label="How the score matches a square">
           <section className="editorial-score-card g-float" aria-label="Sample score">
             <h3>{demoGame.title}</h3><p className="editorial-small-label">Sample game · Q{demoLive.period} · {demoLive.clock}</p>

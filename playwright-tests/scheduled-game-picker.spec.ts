@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const authStorageKey = 'sb-illqymckwqiawdwxhwcy-auth-token';
+const authStorageKey = 'sb-gridone-test-auth-token';
 
 const installOrganizerSession = async (page: Page) => {
   await page.addInitScript(({ key }) => {
@@ -69,7 +69,7 @@ test('Create board stays disabled until both the name and the matchup are set', 
 
   await page.getByRole('radio', { name: /DAL.*at.*WAS/i }).click();
   await expect(create).toBeDisabled();
-  await expect(page.getByRole('status')).toContainText('Dallas Cowboys at Washington Commanders');
+  await expect(page.getByRole('status').filter({ hasText: 'Selected game' })).toContainText('Dallas Cowboys at Washington Commanders');
 
   await page.getByLabel('Board name').fill('Week 1 fundraiser');
   await expect(create).toBeEnabled();
@@ -127,7 +127,7 @@ test('matchup selection works by keyboard on a phone-sized viewport', async ({ p
   await matchup.focus();
   await page.keyboard.press('Space');
 
-  await expect(page.getByRole('status')).toContainText('Dallas Cowboys at Washington Commanders');
+  await expect(page.getByRole('status').filter({ hasText: 'Selected game' })).toContainText('Dallas Cowboys at Washington Commanders');
   await expect(page.getByRole('button', { name: 'Change game' })).toBeFocused();
   await expect(page.getByRole('button', { name: 'Create board' })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -151,20 +151,20 @@ for (const width of [390, 1440]) {
   test(`selected game keeps Create board in view at ${width}px with a 50-game slate`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(({ user }) => {
-      localStorage.setItem('sb-illqymckwqiawdwxhwcy-auth-token', JSON.stringify({
+      localStorage.setItem('sb-gridone-test-auth-token', JSON.stringify({
         access_token: 'test-access-token', refresh_token: 'test-refresh-token',
         expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600,
         token_type: 'bearer', user,
       }));
     }, { user });
-    await page.route('https://illqymckwqiawdwxhwcy.supabase.co/**', route => route.fulfill({ json: user }));
+    await page.route('https://gridone-test.supabase.invalid/**', route => route.fulfill({ json: user }));
     await page.route('**/api/nfl/games?**', route => route.fulfill({ json: { games } }));
     await page.goto('/create');
     await page.getByRole('textbox', { name: 'Board name' }).fill('Game One test');
     await expect(page.getByRole('radio')).toHaveCount(16);
     await page.getByRole('radio').first().click();
     await expect(page.getByRole('radio')).toHaveCount(0);
-    await expect(page.getByRole('status')).toContainText('New England Patriots at Seattle Seahawks');
+    await expect(page.getByRole('status').filter({ hasText: 'Selected game' })).toContainText('New England Patriots at Seattle Seahawks');
     const create = page.getByRole('button', { name: 'Create board', exact: true });
     await expect(create).toBeEnabled();
     await expect(create).toBeInViewport({ ratio: 1 });
@@ -183,8 +183,8 @@ for (const width of [390, 1440]) {
     await page.getByRole('radio').first().focus();
     await expect(page.getByRole('radio').first()).toBeFocused();
     await page.keyboard.press('Space');
-    await expect(page.getByRole('status')).toContainText('Away team 16 at Home team 16');
-    await expect(page.getByRole('status')).toContainText('Week 2');
+    await expect(page.getByRole('status').filter({ hasText: 'Selected game' })).toContainText('Away team 16 at Home team 16');
+    await expect(page.getByRole('status').filter({ hasText: 'Selected game' })).toContainText('Week 2');
     await expect(create).toBeInViewport({ ratio: 1 });
     await expect(page.getByRole('button', { name: 'Change game' })).toBeFocused();
   });

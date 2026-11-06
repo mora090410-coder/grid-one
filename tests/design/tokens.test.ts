@@ -11,20 +11,20 @@ const cream = tokens.slice(tokens.indexOf('[data-base="cream"]'));
 describe('brand tokens (Corner Square kit)', () => {
   it('ships the kit palette, type, and shape as --g1-* tokens', () => {
     for (const [name, value] of [
-      ['--g1-ink', '#13212E'],
-      ['--g1-chalk', '#F6F7F5'],
-      ['--g1-gold', '#E3A91C'],
+      ['--g1-ink', '#101B2A'],
+      ['--g1-chalk', '#F0EDE5'],
+      ['--g1-gold', '#B7A477'],
       ['--g1-turf', '#1E5A3C'],
       ['--g1-stone', '#5B6670'],
       ['--g1-line', '#D9DDD8'],
       ['--g1-cell', 'rgba(19, 33, 46, 0.08)'],
       ['--g1-surface', '#FFFFFF'],
-      ['--g1-dark-bg', '#0C151E'],
-      ['--g1-dark-surface', '#13212E'],
-      ['--g1-dark-text', '#EEF1EE'],
-      ['--g1-dark-stone', '#9AA7B2'],
-      ['--g1-dark-line', '#24374A'],
-      ['--g1-dark-cell', 'rgba(246, 247, 245, 0.10)'],
+      ['--g1-dark-bg', '#101B2A'],
+      ['--g1-dark-surface', '#192638'],
+      ['--g1-dark-text', '#F0EDE5'],
+      ['--g1-dark-stone', '#B4BDCA'],
+      ['--g1-dark-line', '#728198'],
+      ['--g1-dark-cell', '#223249'],
       ['--g1-tracking-tight', '-0.03em'],
       ['--g1-radius-sm', '6px'],
       ['--g1-radius', '12px'],
@@ -57,7 +57,7 @@ describe('design tokens', () => {
     expect(tokens).toMatch(/--g-stage:\s*var\(--g1-ink\);/);
   });
 
-  it('keeps cardinal for errors and destructive confirmations only', () => {
+  it('preserves existing error cardinal while editorial actions use their own token', () => {
     expect(tokens).toContain('--g-cardinal: #8F1D2C;');
     expect(tokens).toContain('--g-cardinal-deep: #6E1622;');
   });
@@ -70,34 +70,30 @@ describe('design tokens', () => {
     expect(dark).toMatch(/--g-ground:\s*var\(--g1-ink\)/);
     expect(dark).toMatch(/--g-text:\s*var\(--g1-dark-text\)/);
     expect(dark).toMatch(/--g-text-2:\s*var\(--g1-dark-stone\)/);
-    expect(dark).toMatch(/--g-panel:\s*rgba\(255,\s*255,\s*255,\s*0\.07\)/);
-    expect(dark).toMatch(/--g-panel-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.10\)/);
-    expect(dark).toMatch(/--g-hairline:\s*rgba\(255,\s*255,\s*255,\s*0\.12\)/);
+    expect(dark).toMatch(/--g-panel:\s*var\(--g1-dark-surface\)/);
+    expect(dark).toMatch(/--g-panel-hover:\s*var\(--g1-dark-cell\)/);
+    expect(dark).toMatch(/--g-hairline:\s*var\(--g1-dark-line\)/);
   });
 
-  it('sets the light (cream) base on brand chalk with white cards and line edges', () => {
-    expect(cream).toMatch(/--g-ground:\s*var\(--g1-chalk\)/);
-    expect(cream).toMatch(/--g-panel:\s*var\(--g1-surface\)/);
-    expect(cream).toMatch(/--g-hairline:\s*var\(--g1-line\)/);
-    expect(cream).toMatch(/--g-text:\s*var\(--g-ink\)/);
-    expect(cream).toMatch(/--g-text-2:\s*var\(--g1-stone\)/);
+  it('keeps the historical cream API while adopting the same midnight workspace palette', () => {
+    expect(cream).toMatch(/--g-ground:\s*var\(--g1-ink\)/);
+    expect(cream).toMatch(/--g-panel:\s*var\(--g1-dark-surface\)/);
+    expect(cream).toMatch(/--g-hairline:\s*var\(--g1-dark-line\)/);
+    expect(cream).toMatch(/--g-text:\s*var\(--g1-dark-text\)/);
+    expect(cream).toMatch(/--g-text-2:\s*var\(--g1-dark-stone\)/);
   });
 
-  it('uses ink for actions and never gold', () => {
-    expect(cream).toMatch(/--g-action:\s*var\(--g-ink\)/);
-    expect(cream).toMatch(/--g-action-text:\s*var\(--g-white\)/);
-    // On the dark base the ink action inverts to chalk with ink text.
-    expect(dark).toMatch(/--g-action:\s*var\(--g-white\)/);
-    expect(dark).toMatch(/--g-action-text:\s*var\(--g-ink\)/);
+  it('uses the approved muted gold with readable navy text for primary actions', () => {
     for (const block of [dark, cream]) {
-      expect(block).not.toMatch(/--g-action[\w-]*:\s*var\(--g-gold/);
+      expect(block).toMatch(/--g-action:\s*var\(--g-gold\)/);
+      expect(block).toMatch(/--g-action-text:\s*var\(--g-ink\)/);
     }
   });
 
   it('keeps gold out of every glow, tint, tone, and focus token', () => {
     const nonWinner = tokens.replace(/--g-gold(-deep)?:[^;]+;/g, '');
     const offenders = [...nonWinner.matchAll(/^\s*(--g-[\w-]+):[^;]*--g-gold[^;]*;/gm)].map((m) => m[1]);
-    expect(offenders).toEqual([]);
+    expect(offenders.filter(name => !['--g-action', '--g-action-hover'].includes(name))).toEqual([]);
     expect(tokens).not.toMatch(/--g-(tone|tint)-gold/);
   });
 
@@ -114,7 +110,7 @@ describe('design tokens', () => {
 
   it('introduces no hue outside the brand ink, gold, turf, live, and cardinal', () => {
     // ink 209, gold 42.5, live 142.1, turf 150, cardinal 352.1
-    const BRAND_HUES = [209, 42.5, 142.1, 150, 352.1];
+    const BRAND_HUES = [209, 42.5, 142.1, 150, 352.1, 35]; // adopted warm newsprint
     const literals: [number, number, number][] = [];
     for (const source of [tokens, brand]) {
       for (const m of source.matchAll(/#([0-9a-fA-F]{6})\b/g)) {

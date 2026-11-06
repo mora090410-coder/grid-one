@@ -1,5 +1,39 @@
 import { expect, test, type Locator } from '@playwright/test';
 
+for (const width of [1440, 320]) {
+  test(`sample sheet preserves geometry and interrupts seeded axis motion at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    const sample = page.getByRole('region', { name: 'Interactive sample board' });
+    const sheet = sample.locator('.sample-board-sheet');
+    await sample.scrollIntoViewIfNeeded();
+    const originalTop = await sheet.evaluate(element => element.getBoundingClientRect().top + scrollY);
+    const inspectorHeight = (await sample.getByRole('status').boundingBox())!.height;
+    const firstLabel = await sample.getByRole('gridcell').first().getAttribute('aria-label');
+    for (const stage of ['Share', 'Game day', 'Set up', 'Game day']) {
+      await sample.getByRole('button', { name: stage, exact: true }).click();
+      expect(await sheet.evaluate(element => element.getBoundingClientRect().top + scrollY)).toBeCloseTo(originalTop, 0);
+      expect((await sample.getByRole('status').boundingBox())!.height).toBeCloseTo(inspectorHeight, 0);
+      expect(await sample.locator('.sample-stage-copy').evaluate(element => getComputedStyle(element).opacity)).toBe('1');
+      const digits = await sample.getByRole('columnheader').allTextContents();
+      expect(digits.slice(1)).toEqual(stage === 'Game day' ? ['4', '1', '8', '6', '2', '9', '0', '5', '7', '3'] : Array(10).fill('–'));
+      if (stage !== 'Game day') {
+        expect(await sample.locator('.sample-axis-digit').evaluateAll(elements => elements.flatMap(element => element.getAnimations()).length)).toBe(0);
+        expect(await sample.getByRole('gridcell').first().getAttribute('aria-label')).toBe(firstLabel);
+      }
+    }
+    // Repeated activation does not restart an already-entered stage.
+    await sample.getByRole('button', { name: 'Game day', exact: true }).click();
+    await sample.evaluate(async element => { await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))); });
+    expect(await sample.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await sample.getByRole('button', { name: 'Set up', exact: true }).click();
+    await sample.getByRole('button', { name: 'Game day', exact: true }).click();
+    expect(await sample.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  });
+}
+
 const settleEntrance = (page: import('@playwright/test').Page) => page.evaluate(async () => {
   await Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
 });
@@ -52,12 +86,63 @@ const opacityOf = (locator: Locator) => locator.evaluate((element) => getCompute
  * fully opaque for a reduced-motion reader who never scrolls.
  */
 const SECTION_HEADINGS: Array<[string, RegExp]> = [
-  ['hero', /^Football squares\.\s*Made easy\.$/],
+  ['hero', /^Your team\.\s*One board\.\s*Less chasing\.$/],
   ['score', /^Know what to root for\.$/],
   ['organizer', /^Set up\. Fill squares\. Share\.$/],
   ['pricing', /^Your first board is free\.$/],
   ['close', /^Ready to build the board\?$/],
 ];
+
+test('conversion links retain visible focus under the editorial theme', async ({ page, browserName }) => {
+  const forward = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+  const backward = browserName === 'webkit' ? 'Alt+Shift+Tab' : 'Shift+Tab';
+  await page.goto('/');
+  const hero = page.getByTestId('homepage-first-viewport');
+  const create = hero.getByRole('link', { name: 'Create your free board' });
+  const demo = hero.getByRole('link', { name: 'Try the demo' });
+  await create.focus();
+  await page.keyboard.press(forward);
+  await expect(demo).toBeFocused();
+  for (const link of [demo, create]) {
+    if (link === create) await page.keyboard.press(backward);
+    await expect(link).toBeFocused();
+    const focus = await link.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        visible: element.matches(':focus-visible'),
+        outline: style.outlineStyle,
+        width: Number.parseFloat(style.outlineWidth),
+      };
+    });
+    expect(focus.visible).toBe(true);
+    expect(focus.outline).toBe('solid');
+    expect(focus.width).toBeGreaterThanOrEqual(3);
+  }
+});
+
+test('sample controls keep contrasting inset focus rings', async ({ page, browserName }) => {
+  // macOS Safari uses Option+Tab to include all controls in keyboard navigation.
+  const forward = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+  const backward = browserName === 'webkit' ? 'Alt+Shift+Tab' : 'Shift+Tab';
+  await page.goto('/');
+  const sample = page.getByRole('region', { name: 'Interactive sample board' });
+  const stage = sample.getByRole('button', { name: 'Set up', exact: true });
+  const cell = sample.getByRole('gridcell').first();
+  for (const [control, offset] of [[stage, '-4px'], [cell, '-3px']] as const) {
+    await control.focus();
+    await page.keyboard.press(forward);
+    await page.keyboard.press(backward);
+    await expect(control).toBeFocused();
+    const ring = await control.evaluate(element => {
+      const style = getComputedStyle(element);
+      return { visible: element.matches(':focus-visible'), offset: style.outlineOffset, outline: style.outlineColor, foreground: style.color, style: style.outlineStyle };
+    });
+    expect(ring.visible).toBe(true);
+    expect(ring.style).toBe('solid');
+    expect(ring.offset).toBe(offset);
+    expect(ring.outline).toBe(ring.foreground);
+  }
+});
 
 test('phone first viewport holds identity, actions, and group examples', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -70,7 +155,7 @@ test('desktop first viewport holds the same and the demo card', async ({ page })
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
   await firstViewport(page, 720);
-  await expect(page.getByRole('region', { name: 'Prepare your board', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Interactive sample board', exact: true })).toBeVisible();
   expect(await overflow(page)).toBe(0);
 });
 
@@ -136,51 +221,38 @@ test('no-JS fallback keeps the promise, the actions, and the boundary', async ({
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
   await expect(page.getByRole('link', { name: /Create your free board/i })).toBeVisible();
   await expect(page.getByText(/does not collect square money/i)).toBeVisible();
   await context.close();
 });
 
 
-test('static hero connects preparation and game day with one fictional board', async ({ page }) => {
+test('interactive sample separates sharing capability and illustrative results', async ({ page }) => {
   await page.goto('/');
-  const hero = page.getByTestId('homepage-first-viewport');
-  await expect(hero.getByRole('heading', { level: 1 })).toHaveText(/Football squares\.\s*Made easy\./);
-  for (const name of ['Prepare your board', 'Your group on game day']) {
-    const region = hero.getByRole('region', { name, exact: true });
-    await expect(region).toBeVisible();
-    await expect(region.getByText('Sunday Football Board', { exact: true })).toBeVisible();
-    expect(await region.locator('a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])').count(), `${name} is a static preview`).toBe(0);
-  }
-  const viewer = hero.getByRole('region', { name: 'Your group on game day', exact: true });
-  await expect(viewer.getByText('Currently matching', { exact: true })).toBeVisible();
-  await expect(viewer.getByText('Taylor M.', { exact: true })).toBeVisible();
+  const sample = page.getByRole('region', { name: 'Interactive sample board' });
+  await expect(sample.getByRole('gridcell')).toHaveCount(100);
+  await sample.getByRole('button', { name: 'Share', exact: true }).click();
+  await expect(sample.getByText(/Public viewer link: viewing only/)).toBeVisible();
+  await expect(sample.getByRole('link', { name: 'Open sample viewer' })).toHaveAttribute('href', '/demo');
+  await sample.getByRole('button', { name: 'Game day', exact: true }).click();
+  await expect(sample.getByText(/Currently matching: Taylor M./)).toBeVisible();
+  await expect(sample.getByText(/No confirmed quarter results/)).toBeVisible();
+  const first = sample.getByRole('gridcell').first();
+  await first.focus();
+  await first.press('ArrowRight');
+  await expect(sample.getByRole('gridcell').nth(1)).toBeFocused();
+  await expect(sample.getByRole('status')).toContainText('Square 2');
 });
 
-test('phone hero puts game-day proof and its primary action in the first viewport', async ({ page }) => {
+test('phone first viewport prioritizes the organizer action before the sample', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  const hero = page.getByTestId('homepage-first-viewport');
-  await settleEntrance(page);
-  const viewer = hero.getByRole('region', { name: 'Your group on game day', exact: true });
-  const preparation = hero.getByRole('region', { name: 'Prepare your board', exact: true });
-  await expect(viewer).toBeVisible();
-  await expect(preparation).toBeVisible();
-  const preparationElement = await preparation.elementHandle();
-  expect(await viewer.evaluate((element, nextRegion) => (
-    nextRegion !== null && Boolean(element.compareDocumentPosition(nextRegion) & Node.DOCUMENT_POSITION_FOLLOWING)
-  ), preparationElement), 'viewer precedes preparation in reading order').toBe(true);
-  for (const locator of [
-    hero.getByRole('link', { name: 'Create your free board' }),
-    viewer.getByText('Currently matching', { exact: true }),
-    viewer.getByText('Taylor M.', { exact: true }),
-  ]) {
-    await expect(locator).toBeVisible();
-    const box = await locator.boundingBox();
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(844);
-  }
+  await firstViewport(page, 844);
+  const sample = page.getByRole('region', { name: 'Interactive sample board' });
+  await expect(sample).toBeVisible();
+  const sampleHandle = await sample.elementHandle();
+  expect(await page.getByRole('heading', { level: 1 }).evaluate((heading, element) => element !== null && Boolean(heading.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING), sampleHandle)).toBe(true);
 });
 
 for (const rootFontPercent of [100, 200]) {
@@ -190,7 +262,7 @@ for (const rootFontPercent of [100, 200]) {
     const hero = page.getByTestId('homepage-first-viewport');
     await expect(hero).toBeVisible();
     await page.addStyleTag({ content: `html { font-size: ${rootFontPercent}% !important; }` });
-    for (const name of ['Your group on game day', 'Prepare your board']) {
+    for (const name of ['Interactive sample board']) {
       const region = hero.getByRole('region', { name, exact: true });
       await expect(region).toBeVisible();
       await region.scrollIntoViewIfNeeded();
@@ -209,9 +281,9 @@ test('phone hero remains readable when web fonts are unavailable', async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const hero = page.getByTestId('homepage-first-viewport');
-  const result = hero.getByRole('region', { name: 'Your group on game day' }).getByText('Taylor M.', { exact: true });
-  await expect(result).toBeVisible();
-  const box = await result.boundingBox();
+  const action = hero.getByRole('link', { name: 'Create your free board' });
+  await expect(action).toBeVisible();
+  const box = await action.boundingBox();
   expect(box!.y + box!.height).toBeLessThanOrEqual(844);
   expect(await overflow(page)).toBe(0);
 });

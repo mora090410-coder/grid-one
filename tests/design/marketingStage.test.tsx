@@ -13,10 +13,10 @@ const create = readFileSync('pages/CreateContest.tsx', 'utf8');
 const cta = readFileSync('src/features/homepage/sections/cta.ts', 'utf8');
 
 describe('marketing stage tokens', () => {
-  it('adds a brand-ink stage and a chalk (never gold) action glow without replacing the grounds', () => {
+  it('uses the adopted midnight ground consistently across acquisition and operation', () => {
     expect(tokens).toMatch(/--g-stage:\s*var\(--g1-ink\)/);
     expect(tokens).toMatch(/--g-ground:\s*var\(--g1-ink\)/);
-    expect(tokens).toMatch(/--g-ground:\s*var\(--g1-chalk\)/);
+    expect(tokens).toMatch(/--g-action:\s*var\(--g-gold\)/);
     expect(tokens).toMatch(/--g-cta-glow:\s*color-mix\(in srgb, var\(--g-white\) 22%, transparent\)/);
     expect(tokens).toContain('.g-cta');
     expect(tokens).toContain('.g-float');
@@ -28,19 +28,23 @@ describe('marketing stage tokens', () => {
     const reduced = tokens.slice(tokens.lastIndexOf('prefers-reduced-motion: reduce'));
     expect(reduced).toContain('[data-enter="run"]');
     expect(reduced).toContain('[data-match-emphasis="on"]');
-    expect(hero).not.toMatch(/@keyframes/);
+    expect(hero).toContain('@media (prefers-reduced-motion: no-preference)');
     expect(studio).not.toMatch(/@keyframes/);
     expect(preview).not.toMatch(/@keyframes/);
     expect(demo).not.toMatch(/@keyframes/);
-    expect(preview).toContain('prefers-reduced-motion: reduce');
+    expect(preview).not.toMatch(/animation:|transition:/);
     expect(demo).toContain('animation: none');
   });
 });
 
 describe('marketing chrome does not blur squares', () => {
+  it('keeps reduced-transparency fallbacks readable on the paper scope', () => {
+    const editorial = tokens.slice(tokens.indexOf('[data-base].g-editorial {'));
+    expect(editorial).toMatch(/--g-chyron:\s*var\(--g-paper-raised\)/);
+  });
   it('keeps the create preview on a 10 by 10 opaque grid', () => {
     expect(create).toContain('create-preview-stage');
-    expect(create).toContain('data-base="dark"');
+    expect(create).toContain('g-editorial create-entrance');
     expect(create).toContain('CrossfadeText');
     expect(create).toContain('grid-cols-10');
     expect(create).toContain('aspect-square');
@@ -57,15 +61,11 @@ describe('marketing chrome does not blur squares', () => {
     expect(demo).not.toMatch(/filter:\s*blur/);
   });
 
-  it('renders the homepage hero as dark glass, with the entrance still available', () => {
+  it('renders an editorial paper sample with the real create entrance available', () => {
     render(<MemoryRouter><Homepage /></MemoryRouter>);
-    const preparation = screen.getByRole('region', { name: 'Prepare your board' });
-    const gameDay = screen.getByRole('region', { name: 'Your group on game day' });
-    expect(preparation.className).toContain('g-float');
-    expect(gameDay.className).toContain('g-float');
-    expect(preparation).not.toHaveAttribute('data-base', 'cream');
-    expect(document.querySelector('.editorial-organizer')).not.toHaveAttribute('data-base');
-    expect(document.querySelector('.studio-hero-light')).toBeTruthy();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    expect(within(sample).getAllByRole('gridcell')).toHaveLength(100);
+    expect(document.querySelector('.g-editorial')).toHaveAttribute('data-base', 'cream');
     const hero = screen.getByTestId('homepage-first-viewport');
     expect(within(hero).getByRole('link', { name: 'Create your free board' }).className).toContain('g-cta');
   });

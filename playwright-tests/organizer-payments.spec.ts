@@ -240,7 +240,7 @@ test('normal motion morphs through intermediate geometry and reverses smoothly',
   await testInfo.attach('normal-motion-frames', { body: JSON.stringify(samples), contentType: 'application/json' });
   await toggle.click();
   await expect.poll(async () => (await page.locator('.organizer-island').boundingBox())!.height).toBeLessThan(90);
-  const { heights: reversed, times: frameTimes } = await toggle.evaluate(async button => {
+  const { heights: reversed, times: frameTimes } = await toggle.evaluate(async (button, expandedHeight) => {
     const island = button.closest('.organizer-island')!;
     const heights: number[] = [island.getBoundingClientRect().height];
     const times: number[] = [0];
@@ -249,14 +249,19 @@ test('normal motion morphs through intermediate geometry and reverses smoothly',
     await new Promise<void>(resolve => {
       const frame = () => {
         const elapsed = performance.now() - start;
-        heights.push(island.getBoundingClientRect().height);
+        const paintedHeight = island.getBoundingClientRect().height;
+        heights.push(paintedHeight);
         times.push(elapsed);
-        if (!reversed && elapsed > 120) { (button as HTMLButtonElement).click(); reversed = true; }
+        // Reverse an observed in-flight shape, not a wall-clock deadline that
+        // may elapse before React/browser paint on a busy test worker.
+        if (!reversed && paintedHeight > heights[0] + 20 && paintedHeight < expandedHeight - 20) {
+          (button as HTMLButtonElement).click(); reversed = true;
+        }
         if (elapsed < 750) requestAnimationFrame(frame); else resolve();
       }; requestAnimationFrame(frame);
     });
     return { heights, times };
-  });
+  }, last.height);
   await testInfo.attach('reversed-motion-frames', { body: JSON.stringify({ heights: reversed, times: frameTimes }), contentType: 'application/json' });
   expect(Math.max(...reversed)).toBeGreaterThan(reversed[0] + 20);
   expect(reversed.at(-1)!).toBeLessThan(90);

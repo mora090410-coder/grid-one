@@ -19,6 +19,22 @@ export const summarizeSellers = (labels: (string | null | undefined)[], squares:
 export const sellerShareText = (boardTitle: string) =>
   `I’m selling football squares for ${boardTitle}. Pick yours here and pay me directly:`;
 
+/** Organizer-to-seller packet. This is a draft to copy, never a delivery receipt. */
+export const sellerHandoffText = (boardTitle: string, link: SellerLink, labels: (string | null)[], squares: string[][]): string => {
+  const positions = labels.slice(0, 100).flatMap((label, index) => label === link.label ? [index + 1] : []);
+  const remaining = positions.filter(number => squares[number - 1]?.[0] === link.label).length;
+  return [
+    `Hi ${link.label}, here are your ${positions.length} squares for ${boardTitle}:`,
+    positions.join(', '),
+    `${remaining} still carry your name.`,
+    '',
+    'Share this buyer claim link with your people:',
+    link.url,
+    'This is for buyers to pick your unsold squares before numbers lock, not a seller-management page.',
+    'Buyers pay you directly. GridOne does not collect or distribute square money.',
+  ].join('\n');
+};
+
 /** One message the organizer can paste into the team chat. */
 export const allLinksMessage = (boardTitle: string, links: SellerLink[]) =>
   [`Here’s everyone’s link for ${boardTitle}. Post yours so people can pick your squares:`, '', ...links.map((link) => `${link.label}: ${link.url}`)].join('\n');

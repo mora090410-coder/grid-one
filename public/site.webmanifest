@@ -2,8 +2,8 @@
     "name": "GridOne",
     "short_name": "GridOne",
     "description": "Run football squares and Super Bowl squares online for fundraisers, office pools, and community groups.",
-    "theme_color": "#13212E",
-    "background_color": "#13212E",
+    "theme_color": "#101B2A",
+    "background_color": "#101B2A",
     "display": "standalone",
     "orientation": "portrait",
     "icons": [

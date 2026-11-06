@@ -205,6 +205,7 @@ describe('organizer dashboard', () => {
     renderDashboard();
 
     expect(await screen.findByText('No boards yet.')).toBeInTheDocument();
+    expect(screen.getByText('Start with a name and an NFL game. Save a private draft, then add sellers, fill squares, and share when you’re ready.')).toBeVisible();
     const links = screen.getAllByRole('link', { name: 'New board' });
     expect(links.length).toBeGreaterThan(0);
     links.forEach((link) => expect(link).toHaveAttribute('href', '/create'));

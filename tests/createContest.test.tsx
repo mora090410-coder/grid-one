@@ -74,6 +74,18 @@ beforeEach(() => {
 });
 
 describe('CreateContest one-screen creation', () => {
+  it('explains signup at save and updates the next step as the preview becomes ready', () => {
+    mocks.signedIn = false;
+    renderPage();
+    expect(screen.getByText('Preview first. Sign up when you save. No card required.')).toBeVisible();
+    expect(screen.getByRole('status', { name: 'Setup progress' })).toHaveTextContent('Next: name your board');
+    fireEvent.change(screen.getByLabelText('Board name'), { target: { value: 'Falcons families' } });
+    expect(screen.getByRole('status', { name: 'Setup progress' })).toHaveTextContent('Next: choose an NFL game');
+    fireEvent.click(screen.getByRole('button', { name: 'Select test game' }));
+    expect(screen.getByRole('status', { name: 'Setup progress' })).toHaveTextContent('Ready to save your private draft');
+    expect(screen.getByRole('region', { name: 'Board preview' })).toHaveTextContent('Falcons families');
+  });
+
   it('waits for the sign-in check before offering the signed-out save path', () => {
     mocks.signedIn = false;
     mocks.authLoading = true;

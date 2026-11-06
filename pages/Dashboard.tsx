@@ -325,6 +325,7 @@ const Dashboard: React.FC = () => {
                     <Glass padding="lg" className="flex flex-col items-start gap-4">
                         <SquareOne size={72} />
                         <p className="font-display text-[26px] leading-[1.05] text-fg">No boards yet.</p>
+                        <p className="max-w-lg font-ui text-[15px] leading-relaxed text-fg-2">Start with a name and an NFL game. Save a private draft, then add sellers, fill squares, and share when you’re ready.</p>
                         <Link to="/create" className={CAPSULE_LINK}>New board</Link>
                     </Glass>
                 ) : (

@@ -5,7 +5,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 // Browser fixtures seed Supabase's project-derived local-storage session key.
 // Pin a non-secret test client here so the dev server resolves that same key,
 // rather than the placeholder client used when an operator has no local env.
-const testSupabaseUrl = 'https://illqymckwqiawdwxhwcy.supabase.co';
+const testSupabaseUrl = 'https://gridone-test.supabase.invalid';
 const testSupabaseAnonKey = 'playwright-test-anon-key';
 
 export default defineConfig({
@@ -34,7 +34,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${port}`,
+    command: `npm run ${process.env.PLAYWRIGHT_BUILT_UI === '1' ? 'preview' : 'dev'} -- --host 127.0.0.1 --port ${port} --configLoader runner`,
     env: {
       ...process.env,
       VITE_SUPABASE_URL: testSupabaseUrl,

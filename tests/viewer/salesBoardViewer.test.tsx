@@ -14,6 +14,13 @@ const fixture = () => ({
 } as BoardData);
 
 describe('SalesBoardViewer', () => {
+  it('gives search and Family the same explicit touch-sized non-native control geometry', () => {
+    render(<SalesBoardViewer game={INITIAL_GAME} board={fixture()} />);
+    for (const control of [screen.getByRole('searchbox'), screen.getByLabelText('Family')]) {
+      expect(control).toHaveClass('h-12', 'min-h-12', 'appearance-none');
+    }
+  });
+
   it('shows 100 fixed square identities, public family allocation, and selling context without game-day tools', () => {
     render(<SalesBoardViewer game={{ ...INITIAL_GAME, title: 'Team fundraiser' }} board={fixture()} />);
     expect(screen.getByRole('heading', { name: 'Team fundraiser' })).toBeInTheDocument();

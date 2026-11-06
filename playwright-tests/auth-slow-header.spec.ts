@@ -38,7 +38,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const banner = page.locator('header').first();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
     await expect(banner.locator('[data-auth-slot="pending"]')).toBeAttached();
     await expect(banner.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
     await expect(banner.getByRole('link', { name: 'Your boards' })).toHaveCount(0);
@@ -70,7 +70,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const banner = page.locator('header').first();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
     await expect(banner.locator('[data-auth-slot="pending"]')).toBeAttached();
     // The wrong label never appears for an organizer.
     await expect(banner.getByRole('link', { name: 'Sign in' })).toHaveCount(0);

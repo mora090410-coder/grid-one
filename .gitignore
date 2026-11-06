@@ -39,3 +39,6 @@ playwright-report
 
 # Hermes agent run artifacts (local evidence; kept on disk, not in git)
 .hermes/
+
+# Local Vite cache stays out of the shared node_modules checkout.
+.vite-cache/

@@ -61,8 +61,8 @@ const articleRoute = (
 export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
   {
     path: '/',
-    title: 'Football Squares App for Super Bowl Squares, Fundraisers, and Group Pools | GridOne',
-    description: 'Run football squares and Super Bowl squares online with GridOne. Built for fundraisers, office pools, watch parties, and community groups that want one clean live board link.',
+    title: 'Football Squares for Team Fundraisers | GridOne',
+    description: 'Your team. One board. Less chasing. Create a football-squares board, preview before signup, and share a viewer link. First published board free each season.',
     type: 'website',
     schema: [
       organization,

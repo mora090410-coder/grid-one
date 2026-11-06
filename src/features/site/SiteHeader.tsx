@@ -27,9 +27,10 @@ export interface SiteHeaderProps {
   className?: string;
   /** `/login` is already the sign-in page: the header link there is noise. */
   hideSignIn?: boolean;
+  light?: boolean;
 }
 
-export function SiteHeader({ className = '', hideSignIn = false }: SiteHeaderProps) {
+export function SiteHeader({ className = '', hideSignIn = false, light = false }: SiteHeaderProps) {
   const { user, loading, signOut } = useOptionalAuth();
   const navigate = useNavigate();
 
@@ -40,7 +41,7 @@ export function SiteHeader({ className = '', hideSignIn = false }: SiteHeaderPro
 
   return (
     <header className={`flex items-center justify-between h-11 ${className}`.trim()}>
-      <Link to="/" className={wordmark}><Logo variant="horizontal" tone="reversed" size={30} /></Link>
+      <Link to="/" className={wordmark}><Logo variant="horizontal" tone="white" size={30} /></Link>
       {loading ? (
         // The sign-in check is still running. Hold the signed-out link's box,
         // unlabeled, so neither a wrong "Sign in" nor a layout shift appears.
