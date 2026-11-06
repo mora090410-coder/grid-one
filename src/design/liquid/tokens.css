@@ -1,0 +1,30 @@
+/* GridOne Liquid Glass tokens and materials. Visual layer only. */
+[data-g1-theme="liquid"] {
+  --g1-ground: #070B14;
+  --g1-midnight: #10182A;
+  --g1-channel-a: #22324C;
+  --g1-channel-b: #121B2C;
+  --g1-chalk: #E9ECF2;
+  --g1-muted: #A9B4C6;
+  --g1-faint: #8C9AB0;
+  --g1-gold: #B7A477;
+  --g1-gold-lit: #E8D39B;
+  --g1-gold-hi: #FFF3CF;
+  --g1-live: #E5734F;
+
+  /* Seller tints: ownership only */
+  --g1-seller-1: #5FA8A0;
+  --g1-seller-2: #A894D6;
+  --g1-seller-3: #D08A6A;
+  --g1-seller-4: #8FB27A;
+  --g1-seller-5: #7FA6D9;
+  --g1-seller-6: #D58AA0;
+
+  --g1-radius-panel: 28px;
+  --g1-radius-panel-phone: 24px;
+  --g1-radius-cell: 10px;
+  --g1-font: "Inter", system-ui, sans-serif;
+
+  /* One light source: top-left gold */
+  --g1-stadium-light: radial-gradient(70% 520px at 22% -80px, rgba(232, 211, 155, .20), rgba(232, 211, 155, 0) 70%);
+}

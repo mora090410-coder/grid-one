@@ -2,6 +2,7 @@
 @import "./styles/tokens.css";
 @import "./design/tokens.css";
 @import "./design/interactions.css";
+@import "./design/liquid/tokens.css";
 
 /* Semantic utilities. Values resolve per data-base at runtime. */
 @theme inline {
