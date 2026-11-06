@@ -81,6 +81,29 @@ it('fails closed on unavailable or denied rate checks and missing configuration'
   expect((await claimSeller({ ...context, request: post(context.request.url, { cells: [3], name: 'Ann' }), env: { ...env, GUEST_INVITE_SECRET: undefined } })).status).toBe(503);
 });
 
+it('logs a safe diagnostic when claim configuration fails closed', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const response = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3, 8], name: 'Emily' }), env: { ...env, GUEST_INVITE_SECRET: undefined }, params: { code } });
+    expect(response.status).toBe(503);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('seller_claim_unavailable', { stage: 'configuration', code: null });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('Emily');
+    expect(JSON.stringify(log.mock.calls)).not.toContain(code);
+  } finally { log.mockRestore(); }
+});
+
+it('never logs arbitrary provider error codes or buyer data', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: 'EMILY', message: 'private buyer details' } });
+    const response = await claimSeller({ request: post(`https://getgridone.com/api/sellers/${code}`, { cells: [3, 8], name: 'Emily' }), env, params: { code } });
+    expect(response.status).toBe(503);
+    expect(log).toHaveBeenCalledWith('seller_claim_unavailable', { stage: 'rate_check', code: null });
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/EMILY|Emily|private buyer/);
+  } finally { log.mockRestore(); }
+});
+
 it('requires a signed-in owner and returns full links for every seller', async () => {
   getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
   expect((await ownerLinks({ request: post('https://getgridone.com/api/pools/x/seller-links', { action: 'sync' }, 'jwt'), env, params: { id } })).status).toBe(401);
