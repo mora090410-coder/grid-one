@@ -1078,15 +1078,6 @@ export default function OrganizerWorkspace({
           </div>
           {onShareBoard && !isShared && saveState.status !== 'clean' && <p className="font-ui text-[14px] text-fg-2">Sharing is available after your latest changes save. Use Retry or Reload latest board above if needed.</p>}
         </Glass>
-        {activePoolId && !isPublished && <SellerLinksCard
-          boardId={activePoolId}
-          boardTitle={game.title || 'our board'}
-          shared={isShared}
-          labels={board.allocationLabels ?? []}
-          squares={board.squares}
-          clean={saveState.status === 'clean' && !rangeBusy}
-          flush={flush}
-        />}
         {alertRegion}
         {/* The island prefers a blocker over its note, and saving is dirty the
             instant a range lands, so the confirmation lives here in the flow. */}
@@ -1151,6 +1142,15 @@ export default function OrganizerWorkspace({
             </div>
             {privateWritesPending > 0 && <p role="status" className="text-sm text-fg-2">Saving private square notes. Family access will resume when this finishes.</p>}
             {privateNotesUncertain && <div role="status" className="text-sm text-fg-2"><p>Refresh private notes before changing family access.</p><CapsuleButton variant="quiet" disabled={privateWritesPending > 0} onClick={() => void reloadFamilyState().catch(() => setAlert('Private notes could not be refreshed. Try again.'))}>Refresh private notes</CapsuleButton></div>}
+            {activePoolId && !isPublished && <SellerLinksCard
+              boardId={activePoolId}
+              boardTitle={game.title || 'our board'}
+              shared={isShared}
+              labels={board.allocationLabels ?? []}
+              squares={board.squares}
+              clean={saveState.status === 'clean' && !rangeBusy}
+              flush={flush}
+            />}
             {activePoolId && <FamilyAccessCard boardId={activePoolId} labels={board.allocationLabels ?? []} clean={saveState.status === 'clean' && !payouts.pending && privateWritesPending === 0 && !privateNotesUncertain && !rangeBusy} flush={flush} onReload={reloadFamilyState} onBusy={setFamilyBusy} />}
             <ParticipationCard details={board.participation ?? {}} onChange={(participation) => setBoard(current => ({ ...current, participation }))} />
             <div id="organizer-review"><ReconcileCard

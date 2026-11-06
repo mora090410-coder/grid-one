@@ -151,3 +151,14 @@
 .editorial-import { margin-top: 32px; border-top: 1px solid var(--g-hairline); color: var(--g-text-2); }
 .editorial-import summary { padding-block: 16px; cursor: pointer; color: var(--g-text); }
 .editorial-import p { max-width: 48rem; font-size: 1rem; line-height: 1.6; }
+
+.g-editorial .editorial-section { padding-block: var(--g-editorial-space); padding-inline: var(--g-editorial-gutter); }
+.g-editorial .editorial-intro h2, .g-editorial .editorial-close h2 { font-weight: 800; }
+.g-editorial .editorial-plan { background: transparent; border-radius: 0; border-width: 0 0 1px; box-shadow: none; padding-inline: 0; }
+.g-editorial .editorial-kicker { color: var(--g-action); font-weight: 700; }
+.g-editorial .editorial-faq { padding-top: 0; }
+.g-editorial .editorial-match-board .is-matching { background: var(--g-editorial-ink); color: var(--g-paper-raised); box-shadow: none; }
+.g-editorial [data-match-accent] { border-color: var(--g-action); }
+.g-editorial [data-score-accent] { background: var(--g-action); }
+.g-editorial .editorial-digit-connection svg { stroke: var(--g-action); }
+.g-editorial .editorial-footer { border-top: 1px solid var(--g-hairline); }

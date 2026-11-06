@@ -4,6 +4,12 @@ import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrgani
 
 async function capture(page: Page, name: string, testInfo: TestInfo) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all(document.getAnimations()
+      .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+      .map(animation => animation.finished.catch(() => undefined)));
+  });
   const result = await new AxeBuilder({ page }).analyze();
   expect(result.violations.filter(issue => issue.impact === 'serious' || issue.impact === 'critical')).toEqual([]);
   await testInfo.attach(name, { body: await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true }), contentType: 'image/png' });

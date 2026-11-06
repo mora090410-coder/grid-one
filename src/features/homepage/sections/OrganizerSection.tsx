@@ -9,7 +9,7 @@ export function OrganizerSection() {
   return (
     <section className="editorial-organizer" aria-labelledby="organizer-heading">
       <div className="editorial-section">
-        <Reveal as="header" className="editorial-intro">
+        <Reveal keepVisible as="header" className="editorial-intro">
           <p className="editorial-kicker">Before kickoff</p>
           <h2 id="organizer-heading">Set up. Fill squares. Share.</h2>
           <p>One board from setup to the final whistle.</p>

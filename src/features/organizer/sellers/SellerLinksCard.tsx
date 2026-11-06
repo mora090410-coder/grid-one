@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { supabase } from '../../../../services/supabase';
 import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
 import { track } from '../../instrumentation/track';
-import { allLinksMessage, parseSellerLinks, sellerShareText, summarizeSellers, type SellerLink } from './sellerLinksModel';
+import { allLinksMessage, parseSellerLinks, sellerShareText, sellerHandoffText, summarizeSellers, type SellerLink } from './sellerLinksModel';
 
 type Props = {
   boardId: string;
@@ -24,6 +24,7 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<string | null>(null);
   const pending = useRef(false);
   const sellers = summarizeSellers(labels, squares);
   const totalSquares = sellers.reduce((sum, seller) => sum + seller.total, 0);
@@ -92,11 +93,18 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
                 {summary && <span className="font-ui text-[14px] text-fg-2">{summary.total} {summary.total === 1 ? 'square' : 'squares'} · {summary.unsold} not sold yet</span>}
               </div>
               <div className="flex flex-wrap gap-2">
+                <CapsuleButton variant="quiet" disabled={busy || !clean} aria-label={`Preview ${link.label}’s handoff`} aria-expanded={previewing === link.code} aria-controls={`seller-handoff-${link.code}`} onClick={() => setPreviewing(value => value === link.code ? null : link.code)}>Preview seller handoff</CapsuleButton>
                 <CapsuleButton variant="quiet" disabled={busy} aria-label={`Share ${link.label}’s link`} onClick={() => void share(link)}>Share link</CapsuleButton>
                 {confirming === link.label
                   ? <CapsuleButton variant="ghost" disabled={busy} aria-label={`Yes, replace ${link.label}’s link`} onClick={() => void request({ action: 'rotate', label: link.label })}>Yes, replace it</CapsuleButton>
                   : <CapsuleButton variant="ghost" disabled={busy} aria-label={`New link for ${link.label}`} onClick={() => setConfirming(link.label)}>New link</CapsuleButton>}
               </div>
+              {previewing === link.code && <div id={`seller-handoff-${link.code}`} role="region" aria-label={`${link.label}’s handoff`} className="g-handoff flex flex-col gap-3 border-t border-hairline pt-4">
+                <h3 className="font-ui text-lg font-semibold text-fg">Organizer → {link.label}</h3>
+                <p className="font-ui text-base text-fg-2">Preview only. Nothing has been emailed.</p>
+                <textarea aria-label={`Handoff message for ${link.label}`} readOnly rows={9} value={sellerHandoffText(boardTitle, link, labels, squares)} className="w-full resize-y rounded-control border border-hairline bg-ground p-3 font-ui text-base leading-relaxed text-fg" />
+                <CapsuleButton aria-label={`Copy ${link.label}’s handoff`} disabled={!clean || busy} onClick={() => void copy(sellerHandoffText(boardTitle, link, labels, squares), 'Handoff copied. Nothing was emailed.')}>Copy handoff message</CapsuleButton>
+              </div>}
               {confirming === link.label && <p className="font-ui text-[14px] text-fg-2">The old link stops working. Squares already claimed stay claimed.</p>}
             </li>;
           })}

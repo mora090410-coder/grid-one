@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { generateStaticSeoPages } from './build/staticSeoPages';
 
 export default defineConfig({
+  cacheDir: '.vite-cache',
   plugins: [
     react(),
     {

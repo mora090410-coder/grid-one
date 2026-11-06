@@ -31,7 +31,7 @@ export function SiteFooter() {
         </ul>
       </div>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <Logo variant="horizontal" tone="reversed" size={24} />
+        <Logo variant="horizontal" tone="white" size={24} />
         <Link to="/login?mode=signin" className={ghostLink}>Sign in</Link>
         <Link to="/privacy" className={ghostLink}>Privacy</Link>
         <Link to="/terms" className={ghostLink}>Terms</Link>

@@ -7,7 +7,7 @@ import type { Page } from '@playwright/test';
  * helpers keep their local copies; only `axe.spec.ts` imports this module.
  */
 
-const authStorageKey = 'sb-illqymckwqiawdwxhwcy-auth-token';
+const authStorageKey = 'sb-gridone-test-auth-token';
 
 export const ownerId = '11111111-1111-4111-8111-111111111111';
 export const boardId = '22222222-2222-4222-8222-222222222222';

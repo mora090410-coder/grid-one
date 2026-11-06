@@ -167,7 +167,7 @@ const CreateContest: React.FC = () => {
     if (authLoading) return <FullScreenLoading />;
 
     return (
-        <Base kind="cream">
+        <Base kind="cream" className="g-editorial create-entrance">
             <main aria-label="New board" className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
 
                 <header className="flex items-center justify-between gap-4">
@@ -196,10 +196,12 @@ const CreateContest: React.FC = () => {
 
                 <div className="flex flex-col gap-3">
                     <Eyebrow>New board</Eyebrow>
-                    <h1 className="font-display text-[40px] leading-[1] text-fg md:text-[52px]">Your next great game day.</h1>
+                    <h1 className="font-display text-[40px] leading-[1] text-fg md:text-[52px]">Start with your team.</h1>
                     <p className="font-ui text-[15px] text-fg-2">Name your board and see it take shape. Nothing is shared until you choose to share it.</p>
+                    <p className="font-ui text-[15px] text-fg-2">{user ? 'Save a private draft, then add sellers and names. Nothing is published yet.' : 'Preview first. Sign up when you save. No card required.'}</p>
                 </div>
 
+                <ol className="create-journey" aria-label="Your setup journey"><li><strong>01</strong> Name & game</li><li><strong>02</strong> Save your draft</li><li><strong>03</strong> Fill & share</li></ol>
                 <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
                 <div className="flex min-w-0 flex-col gap-6">
                 <CapsuleInput
@@ -233,6 +235,7 @@ const CreateContest: React.FC = () => {
                     />
                 </section>
 
+                <p role="status" aria-label="Setup progress" className="create-progress">{!game.title?.trim() ? 'Next: name your board' : !game.gameExternalId ? 'Next: choose an NFL game' : 'Ready to save your private draft'}</p>
                 <CapsuleButton
                     variant="primary"
                     size="lg"
@@ -246,7 +249,7 @@ const CreateContest: React.FC = () => {
                 <p className="font-ui text-[14px] text-fg-2">Choose a scheduled NFL game to save your board. If your game is not listed yet, keep this preview and return when it is available.</p>
 
                 </div>
-                <section aria-label="Board preview" data-base="dark" data-selected={game.gameExternalId ? 'true' : 'false'} className="create-preview-stage">
+                <section aria-label="Board preview" data-selected={game.gameExternalId ? 'true' : 'false'} className="create-preview-stage">
                     <div className="create-preview-light" aria-hidden="true" />
                     <div className="create-preview-frame g-float flex min-w-0 flex-col gap-4">
                     <Eyebrow>Preview · Not shared</Eyebrow>

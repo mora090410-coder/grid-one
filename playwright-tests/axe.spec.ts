@@ -98,7 +98,7 @@ test.describe('axe accessibility sweep', () => {
     await page.goto('/create');
     // A create-specific landmark, so an unauthenticated redirect to /login can
     // never be scanned in place of the create route.
-    await expect(page.getByRole('heading', { level: 1, name: 'Your next great game day.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Start with your team.' })).toBeVisible();
     await expect(page.getByRole('main')).toBeVisible();
     await settle(page);
     await runAxe(page, testInfo);

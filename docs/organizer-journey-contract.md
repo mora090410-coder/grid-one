@@ -210,3 +210,15 @@ On an already shared, unfinalized board, **Guest claim links (optional)** preced
 The list shows each link's available, held and claimed counts, anonymous hold countdowns, and source-labelled guest claims. Manage updates settings, Disable releases pending holds, and Regenerate reactivates/rotates the same invitation. Release claim and Re-issue claim code require explicit confirmation. Code re-issue revokes earlier private access. Payment fields are never prefilled from private records; following a link never changes payment status.
 
 Every mutation uses the exact revision returned by the existing save/flush flow. Background summary refresh cannot overwrite unsaved organizer board edits or silently advance their approval revision. Conflicts keep those edits and offer an explicit reload. Publication with active holds fails with an explanation and directs the organizer to wait or explicitly cancel holds. Reassignment of active guest claims requires their explicit release first. Private draft draws remain compatible; final publication ends guest edits.
+
+
+## Create entrance presentation — November 5, 2026
+
+The public entrance labels Name & game → Save your draft → Fill & share. It states
+that signup happens at save and no card is required. `Setup progress` reports the
+next missing field (name, then scheduled game) or readiness to save a private draft.
+This is not publication readiness. The live numbered preview remains private and
+numbers are drawn later. These presentation changes retain the 24-hour local draft,
+safe auth return, authenticated server save, scan review/fallback, errors, and all
+eight workspace phases. Public viewer links remain read-only; seller claim links
+and optional private family capabilities remain distinct.

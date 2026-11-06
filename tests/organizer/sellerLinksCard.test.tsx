@@ -32,6 +32,23 @@ describe('seller links model', () => {
 });
 
 describe('SellerLinksCard', () => {
+  it('previews a real organizer-to-seller handoff with allocated square numbers and no email claim', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ links }) }));
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<SellerLinksCard boardId="b1" boardTitle="Lincoln Board" shared labels={labels} squares={squares} clean flush={flush} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Get seller links' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Preview Anthony’s handoff' }));
+    const draft = screen.getByRole('textbox', { name: 'Handoff message for Anthony' });
+    expect((draft as HTMLTextAreaElement).value).toContain('1, 2, 3, 4, 5, 6, 7, 8, 9, 10');
+    expect((draft as HTMLTextAreaElement).value).toContain(links[0].url);
+    expect((draft as HTMLTextAreaElement).value).toContain('buyer claim link');
+    expect(screen.getByText('Preview only. Nothing has been emailed.')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Anthony’s handoff' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith((draft as HTMLTextAreaElement).value));
+    expect(await screen.findByRole('status')).toHaveTextContent('Handoff copied. Nothing was emailed.');
+  });
+
   it('asks the organizer to share first when the board is private', () => {
     render(<SellerLinksCard boardId="b1" boardTitle="Lincoln Board" shared={false} labels={labels} squares={squares} clean flush={flush} />);
     expect(screen.getByText('Share your board first. Then every seller gets their own link.')).toBeInTheDocument();

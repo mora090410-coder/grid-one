@@ -42,9 +42,9 @@ describe('brand head tags', () => {
   });
 
   it('paints the browser chrome in brand ink', () => {
-    expect(head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#13212E');
-    expect(manifest.theme_color).toBe('#13212E');
-    expect(manifest.background_color).toBe('#13212E');
+    expect(head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#101B2A');
+    expect(manifest.theme_color).toBe('#101B2A');
+    expect(manifest.background_color).toBe('#101B2A');
   });
 
   it('lists the 192 and 512 app icons in the web manifest', () => {

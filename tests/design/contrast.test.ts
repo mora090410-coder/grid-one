@@ -126,8 +126,8 @@ function parseTint(value: string): { rgb: [number, number, number]; alpha: numbe
 describe('brand ink dark ground', () => {
   const ground = parseRgba(resolveVar(darkGround)).rgb;
 
-  it('is brand ink #13212E and clears AA for all three dark text tokens', () => {
-    expect(ground).toEqual([19, 33, 46]);
+  it('is approved midnight #101B2A and clears AA for all three dark text tokens', () => {
+    expect(ground).toEqual([16, 27, 42]);
     for (const name of ['--g-text', '--g-text-2', '--g-text-3']) {
       const c = contrastAgainstGround(readVar(darkBlock, name), darkGround);
       expect(c, `${name} on the ink ground`).toBeGreaterThanOrEqual(4.5);
@@ -187,6 +187,23 @@ describe('ambient tints keep text at AA', () => {
   it('holds every tint at or below 20% of its brand color', () => {
     for (const tintName of TINTS) {
       expect(parseTint(readVar(rootBlock, tintName)).alpha, tintName).toBeLessThanOrEqual(0.20);
+    }
+  });
+});
+
+describe('organizer-first editorial pairs', () => {
+  const editorialRgb = (name: string) => parseRgba(readVar(css, name)).rgb;
+  it('keeps text and cardinal actions at AA on paper and raised paper', () => {
+    for (const surface of ['--g-paper', '--g-paper-raised', '--g-editorial-axis']) {
+      for (const text of ['--g-editorial-ink', '--g-editorial-muted', '--g-editorial-action']) {
+        expect(contrastRatio(editorialRgb(text), editorialRgb(surface)), `${text} on ${surface}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    expect(contrastRatio(editorialRgb('--g-paper-raised'), editorialRgb('--g-editorial-action'))).toBeGreaterThanOrEqual(4.5);
+  });
+  it('keeps essential grid and input edges at 3:1 on paper', () => {
+    for (const surface of ['--g-paper', '--g-paper-raised']) {
+      expect(contrastRatio(editorialRgb('--g-paper-line'), editorialRgb(surface))).toBeGreaterThanOrEqual(3);
     }
   });
 });

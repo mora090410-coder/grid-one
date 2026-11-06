@@ -1,43 +1,21 @@
-/* Create-page preview chrome. The 10×10 grid keeps its own opaque cells.
-   No backdrop-filter on this frame: open squares must not show a blur. */
-.create-preview-stage {
-  position: relative;
-  isolation: isolate;
-  padding: 22px;
-  border-radius: var(--g-radius-card);
-  background: var(--g-stage);
-  box-shadow: var(--g-shadow-float);
+/* Scoped create entrance; the organizer workspace keeps its established base. */
+.create-journey { display: flex; flex-wrap: wrap; gap: 16px 32px; border-block: 1px solid var(--g-hairline); padding-block: 20px; font-size: .875rem; }
+.create-journey li { display: flex; gap: 12px; align-items: center; }
+.create-journey strong { color: var(--g-action); font-family: var(--g-font-mono); }
+.create-progress { font-size: .875rem; font-weight: 700; color: var(--g-text); }
+.create-preview-stage { position: relative; min-width: 0; padding: 0; border-radius: var(--g-radius-card); background: var(--g-panel); }
+.create-preview-light { display: none; }
+.create-preview-frame { position: relative; padding: 24px; border: 1px solid var(--g-hairline); background: var(--g-panel); box-shadow: var(--g-shadow); }
+.create-preview-stage[data-selected="true"] .create-preview-frame { border-color: var(--g-action); }
+.create-preview-grid, .create-preview-grid > * { filter: none; backdrop-filter: none; }
+.create-preview-grid > * { background: var(--g-ground); border-radius: 0; }
+@media (min-width: 1024px) { .create-preview-stage { position: sticky; top: 24px; } }
+@media (max-width: 767px) {
+  /* Keep the next action visible after matchup selection instead of spending
+     the phone viewport on repeated introduction and large desktop gaps. */
+  .create-entrance > main { gap: 20px; padding-block: 20px; }
+  .create-entrance h1 { font-size: 2rem; line-height: 1.08; }
+  .create-journey { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-block: 12px; }
+  .create-journey li { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
-.create-preview-light {
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-  inset: 0;
-  width: auto;
-  height: auto;
-  border-radius: var(--g-radius-card);
-  background: radial-gradient(circle at 50% 18%, var(--g-stage-light), transparent 62%);
-}
-.create-preview-frame {
-  position: relative;
-  z-index: 1;
-  padding: 16px;
-  transition:
-    border-color var(--g-dur-spring) var(--g-ease-state),
-    box-shadow var(--g-dur-spring) var(--g-ease-state);
-}
-.create-preview-stage[data-selected="true"] .create-preview-frame {
-  border-color: var(--g-white);
-  box-shadow: var(--g-shadow-float), 0 0 28px var(--g-stage-light);
-}
-.create-preview-grid,
-.create-preview-grid > * {
-  filter: none;
-  backdrop-filter: none;
-}
-@media (min-width: 768px) {
-  .create-preview-frame { padding: 24px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .create-preview-frame { transition: none; }
-}
+@media (max-width: 400px) { .create-preview-frame { padding: 16px; } }

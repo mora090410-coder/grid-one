@@ -1,21 +1,27 @@
 ---
 version: alpha
 name: GridOne
-description: Corner Square — premium, calm, instantly recognizable on a phone. Ink for game day, chalk for setup, gold only for the winner.
+description: Organizer-first GridOne with the approved matte midnight navy and muted-gold palette. One coherent material system across acquisition, organizing, selling and game day.
 colors:
-  primary: "#13212E"
-  primary-deep: "#0C151E"
-  accent: "#E3A91C"
+  primary: "#101B2A"
+  primary-deep: "#101B2A"
+  accent: "#B7A477"
   success: "#1E5A3C"
-  neutral: "#F6F7F5"
+  neutral: "#F0EDE5"
   neutral-quiet: "#D9DDD8"
-  ink: "#13212E"
+  ink: "#101B2A"
   stone: "#5B6670"
-  surface-dark: "#213549"
-  ground-dark: "#13212E"
-  ground-cream: "#F6F7F5"
+  surface-dark: "#223249"
+  ground-dark: "#101B2A"
+  ground-cream: "#101B2A"
   danger: "#8F1D2C"
   live: "#22C55E"
+  editorial-paper: "#101B2A"
+  editorial-raised: "#192638"
+  editorial-ink: "#F0EDE5"
+  editorial-muted: "#B4BDCA"
+  editorial-action: "#B7A477"
+  editorial-line: "#728198"
 typography:
   display:
     fontFamily: Archivo
@@ -60,6 +66,23 @@ spacing:
   xl: 32px
   2xl: 48px
 components:
+  editorial-canvas:
+    backgroundColor: "{colors.editorial-paper}"
+    textColor: "{colors.editorial-ink}"
+    typography: "{typography.body}"
+  editorial-sheet:
+    backgroundColor: "{colors.editorial-raised}"
+    textColor: "{colors.editorial-muted}"
+    rounded: "{rounded.surface}"
+    padding: 24px
+  editorial-edge:
+    backgroundColor: "{colors.editorial-line}"
+    height: 1px
+  editorial-primary:
+    backgroundColor: "{colors.editorial-action}"
+    textColor: "{colors.primary}"
+    rounded: "{rounded.control}"
+    padding: 14px
   button-primary-dark:
     backgroundColor: "{colors.neutral}"
     textColor: "{colors.ink}"
@@ -122,7 +145,7 @@ Normative current-production baseline. The Corner Square identity (adopted Septe
 
 - **Logo:** Corner Square. A G drawn in one heavy stroke, with its top right corner broken off as a gold square. One `Logo` component (`src/design/primitives/Logo.tsx`) renders the kit's SVG files unchanged, in mark, horizontal, and stacked variants and color, reversed, black, and white tones. Its accessible name is always "GridOne".
 - **Secondary pattern:** Square One. The 10 by 10 board with one gold square, for loading, empty states, and share images. Never the logo The `SquareOne` primitive renders the kit file (reversed on ink), hidden from assistive tech, with one opacity fade and no movement; reduced motion shows it at once.
-- **The one rule: gold means winner.** Gold (`--g-gold`) is only for the logo corner and winning squares (the current match, a published past winner, and the matching-square emphasis). It is never text, a button, a link, a focus ring, a glow, a tint, or a status tag.
+- **Palette A adoption:** muted gold (`--g-gold`) marks actions and selection as well as result emphasis. A gold surface alone never establishes a winner: NOW/current matching, confirmed milestone labels, OPEN states and accessible names remain distinct. No metallic gradients, ambient gold glows or decorative status percentages.
 - **Board:** open squares use the brand cell fill (`--g-cell`) with brand line edges (`--g-cell-edge`); claimed squares are text on surface with the same edges; axis digits are chalk on the raised chyron. Winning squares carry `gridone-winner` and a solid gold fill with ink text, and are the only gold on the board. A selected square takes an ink (chalk on the dark base) ring. NOW, C, and the accessible name separate the current match from past winners, never color alone.
 - **Team colors:** a thin team-color stripe with a light hairline may sit beside a team's name (score and board key). It is decorative and never replaces the name. Gold and yellow team colors are never used, because gold means winner; a team whose only usable colors are gold and near-black gets no stripe. No NFL or club logos. Colors live in `src/features/viewer/teams/teamColors.ts`.
 - **Name:** always GridOne. One word, capital G, capital O.
@@ -139,15 +162,15 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 
 ## Current bases and palette
 
-- **Dark** (viewer, homepage, article pages): ground `#13212E`, brand ink, one spotlight behind the hero artifact, glass panels (white 7%, hairline white 12%, blur 20px). The primary action is chalk with ink text. Marketing stages use the same ink through `--g-stage`, so the reversed logo tile sits flush; see Marketing stage.
-- **Cream** (organizer workspace, dashboard; the attribute keeps its name): ground brand chalk `#F6F7F5`, white cards with brand line `#D9DDD8` edges. Ink is the action color. Secondary text is brand stone.
-- Gold means winner. See Corner Square identity.
+- **Dark** (viewer and article pages): ground `#101B2A`, matte raised panels `#192638`, square/axis depth `#223249`, warm foreground `#F0EDE5`, muted text `#B4BDCA`, essential edges `#728198`. The primary action is muted gold with navy text.
+- **Cream** (organizer workspace, dashboard; historical attribute retained): the same approved midnight palette, not a light theme. The component API remains compatible while surfaces share one coherent identity.
+- Current matching is not a confirmed winner. Result labels, milestones and accessible names remain the authority; color is supporting feedback.
 - Turf `#1E5A3C` marks settled and success states (Drawn, Published, Paid), sparingly. On the dark base the tag uses a light turf for contrast.
 - Cardinal `#8F1D2C` is kept for errors and destructive confirmations only, always with explicit text. It is not a brand or action color.
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
 
-**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from cardinal, live, or turf (never gold), sitting on a section's vertical mid-edge. The public marketing homepage is one brand-ink stage with glass cards, without ambient section tints. Its real product excerpts are static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 20% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from cardinal, live, or turf (never gold), sitting on a section's vertical mid-edge. The older marketing stage used brand ink; the November organizer-first adoption below supersedes it on the homepage and create entrance. Explanatory content remains static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 20% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Current type
 
@@ -200,7 +223,7 @@ Score freshness is information, not decoration: viewer updates arrive about ever
 
 ## Marketing stage — September 22
 
-Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. Those surfaces use `--g-stage` (brand ink since the Corner Square rebrand), frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Primary actions carry a soft static chalk glow through `--g-cta-glow`; gold stays off actions, status, and prices. The matching square keeps the board's solid gold winner fill. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
+Historical September direction: Anthony chose a full dark premium for the public home page, the create-page preview frame, and the demo board chrome. The November adoption below supersedes home and create only; demo chrome retains this treatment. Those surfaces use `--g-stage` (brand ink since the Corner Square rebrand), frosted `--g-glass-fill` / `--g-glass-edge` chrome, and `--g-shadow-float`. One soft white stage light (`--g-stage-light`) sits behind the hero artifact, the create preview, and the demo board. It does not pulse, and it is not a filter on the squares. Primary actions carry a soft static chalk glow through `--g-cta-glow`; gold stays off actions, status, and prices. The matching square keeps the board's solid gold winner fill. Square grids stay opaque and unfiltered; open cells use a solid fill. `prefers-reduced-motion: reduce` leaves the glass, the light, and the action glow in place and runs no entrance or pulse — the existing one-shot hero entrance, score explanation, and digit motion already collapse. `prefers-reduced-transparency: reduce` replaces translucent chrome with the solid chyron surface. The cream organizer workspace and the lifted viewer ground are unchanged.
 
 ## Truth, access, and integrity requirements
 
@@ -233,3 +256,33 @@ The shell is explicitly brand ink `--g-ink` with concave shoulders and a discree
 ## Inline notch quick views — September 21
 
 Game shows the score and period alongside authority and freshness. Results shows Q1, Halftime, Q3, and Final in place, including canonical published names or OPEN, scores, digits, and correction indicators; pending and unconfirmed results never imply a winner. An empty history explicitly says no results are published. Reading this summary requires no navigation. The viewer keeps its name selector and Your squares summary. Organizer sharing actions belong to Share; an explicit correction action appears only when a published result exists. Existing disclosure keyboard, focus, reduced-motion and scroll behavior remains authoritative.
+
+
+## Organizer-first editorial adoption — November 5, 2026
+
+Authorized local implementation; release acceptance remains pending rendered browser evidence.
+The homepage and `/create` use `.g-editorial` on the cream base. The scoped semantic
+map in `src/design/tokens.css` now uses matte midnight `#101B2A`, raised navy `#192638`,
+warm foreground `#F0EDE5`, secondary text `#B4BDCA`, and muted-gold actions `#B7A477`.
+Existing error cardinal is unchanged. Essential edges use `#728198`; token contrast
+tests require 4.5:1 for text and 3:1 for edges. Colors, shadow, type scale, gutters,
+and section spacing belong to the `--g-*` layer. No parallel token namespace.
+
+The acquisition hierarchy is organizer promise → real create/demo actions → a
+100-square interactive illustration → organizer mechanics → honest scoring →
+existing seasonal pricing → questions and guides. The sample has three explicit
+stages, a single keyboard grid entry, arrow/Home/End navigation, and an adjacent
+persistent selected-square detail. Names stay in place. Setup axes are undrawn;
+game-day axes use the existing demo fixture. Illustrative current matching never
+claims a confirmed quarter result. Share explains viewer and seller capabilities
+and opens the real demo instead of pretending to copy a production link.
+
+Motion is a short, interruptible opacity/translation transition on stage text,
+plus the existing optional score explanation. Controls and content are available
+immediately. Reduced motion gets no sample animation. No scroll capture,
+autoplay, staggered cell effects, or obligatory animation waits. The create preview
+retains recovery/auth/save/import behavior; next-step text follows actual field
+readiness. The established Corner Square logo geometry remains intact; white
+variants are used on the adopted midnight ground. Viewer, demo, organizer workspace,
+dashboard, guides and legal surfaces now share palette A. This visual adoption does not change
+business logic, security boundaries, pricing, or the eight organizer phases.

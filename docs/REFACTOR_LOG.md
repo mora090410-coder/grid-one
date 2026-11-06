@@ -1055,3 +1055,36 @@ Anthony approved commit, push and deployment of the notch-only slice. Release pr
 - Investigated the native image-export browser failure instead of suppressing it: original three-repeat quarter run had 10 pass / 2 fail. Separate unwrapped diagnostics retained the original failure and observed valid nonempty PNG signatures arriving shortly after the five-second assertion deadline (9 pass / 3 fail). This is not proof of an export speed improvement. Both download and native-receiver branches now have the same explicit 15-second artifact completion budget (download previously used 30 seconds; native used 5); MIME/bytes/size/quarter/footer/reload/viewer/a11y assertions are retained. The repaired quarter cases passed all 12 repetitions. A new mocked-browser same-tab reload/explicit-save regression passed at 390px and 1440px after matching the title control's blur commit. Full Chromium remains a required final gate. Native receiver is not a physical OS-share test.
 - Final integration review deleg_6ddf17d3 found one concrete warning-placement defect: recoveryUnavailable was rendered only in the published branch, not the draft where recovery matters. A new unpublished-organizer regression reproduced RED (no accessible alert); moved the warning into the shared header and verified focused GREEN plus typecheck. The in-progress full gate run was cancelled rather than accepted against an evolving tree. Final repaired-tree review and full checks remain required.
 - No merge or production operation in this parent integration. The release preflight explicitly warns main is Git-connected to production; merge/deployment/schema ordering must not outrun operator approval. All current RED, diagnostic and GREEN logs remain in the authorized viability audit directory. No other project, live account, real mail or payment used.
+
+## 2026-11-05 — organizer-first acquisition rebuild (local only)
+
+Rebuilt the existing homepage with scoped paper/cardinal tokens and an interactive
+100-square illustration; coordinated create readiness/preview presentation and
+dashboard empty-state guidance. Preserved backend, pricing, all eight organizer
+phases and capability boundaries. Test-first changes and independent static review
+are recorded in `docs/rebuild-2026-11-05.md`. Final unit result: 163 files / 1,287
+tests passed; TypeScript, build, design lint (five existing warnings) and diff check
+passed. Browser execution/screenshots were blocked by listen/browser sandbox
+permissions; Docker integration setup was blocked by socket access. No live-service
+verification or release occurred. No market-readiness claim. Evidence logs are in
+`evidence/rebuild-2026-11-05/`; the report identifies remaining acceptance and the
+parent capture command.
+
+## 2026-11-05 — integrated palette A rebuild completion (local release candidate)
+
+- Adopted Anthony's selected matte midnight `#101B2A` / muted gold `#B7A477` through the existing brand and semantic tokens across acquisition, create, dashboard, organizer, seller and viewer. Preserved logo geometry using readable white variants. Updated browser chrome and coordinated theme expectations; no parallel theme namespace.
+- Preserved the released seller-claim repair by applying the exact reviewed main delta inside this isolated worktree. No commit, push, merge, deployment, production configuration/data change, secret change, real email or payment.
+- Added real organizer-to-seller handoff previews using current square numbers and issued buyer links, with explicit preview/copy-only wording; no fake email-delivery success. Moved handoff tools after the board in reading order and into its desktop companion column.
+- Fixed the native Family/search mismatch with matching explicit 48px controls and an accessible native select with a decorative custom chevron. Browser acceptance exposed a keyboard-inaccessible mobile details scroller; it now has an explicit tab stop and focus ring.
+- Added bounded board-selection and contextual handoff/allocation motion with reduced-motion and forced-colors treatment. Existing save/recovery, prices, locks, axis modes, authority, OPEN outcomes and privacy boundaries remain intact.
+- Test-first RED/GREEN logs, full gate outcomes, actual built-app screenshots/recording and outstanding operational gates are retained in `../evidence/integrated-rebuild-A/`. The completion report owns the final counts; this append does not predeclare a running browser gate successful. Disposable Postgres returned 158 passed / 1 existing optional hosted Stripe Sandbox proof skipped. Actual email sender-domain repair and production deployment remain separate approvals/operational work.
+
+## 2026-11-06 — integrated rebuild local acceptance closed
+
+- Completed the local rebuild; final report: `docs/rebuild-completion-2026-11-06.md`. No commit, push, deployment, production data/configuration, secret changes or real outreach.
+- Detected incompatible tool versions behind the worktree's shared dependency link. Installed only the existing lockfile in a private verification copy, matched 485 application/test/configuration hashes before and after execution, and repointed only the rebuild's link; the main checkout's dependency target was untouched.
+- Diagnosed a real selection-induced viewport jump as native scroll anchoring across the board/companion area. Both columns now opt out; the original viewport/focus/range/apply/Escape assertions remain. Three repeated runs per browser passed, and the full final Chromium run passed 184/184 with no retries, skips or flaky outcomes.
+- Final exact-lockfile gates: TypeScript PASS; 165 unit files / 1,302 tests PASS; build PASS; disposable Postgres 158 passed / 1 existing hosted Stripe proof intentionally skipped; built-app WebKit 19/19 PASS; built-app Chromium 5/5 PASS; design lint 0 errors / 5 existing warnings; whitespace check PASS.
+- Runtime audit is clean. Full audit retains two pre-existing development-only design CLI/Zod findings; package manifests were unchanged, and no deployment waiver is implied. Full audit's actual nonzero exit remains recorded in the matrix.
+- Captured and visually reviewed the actual final built desktop/phone UI and recorded sample-journey, allocation and seller handoff interactions. Recording uses isolated fake services, verifies sample cells 11/12 and corresponding draft text, sends no real messages, and has no uncaught page/console errors or failed requests after correcting the recording fixture's missing fake contests-list read. Earlier failed runs remain as evidence.
+- No policy/AGENTS rewrite. The reusable shared-dependency verification lesson was staged for skill approval, not silently applied.

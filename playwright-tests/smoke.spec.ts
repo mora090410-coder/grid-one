@@ -12,8 +12,8 @@ const expectTouchTarget = async (locator: Locator) => {
 
 test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Football squares. Made easy.');
-  await expect(page.getByText(/Create your board, share one link/i)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
+  await expect(page.getByText(/One viewer link for your group to find their squares and follow game day/i)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
   await expect(page.getByText('First published board free')).toBeAttached();
 });

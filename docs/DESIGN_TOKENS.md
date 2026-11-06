@@ -13,32 +13,32 @@
 
 | Kit token | Value | Meaning |
 |---|---|---|
-| `--g1-ink` | `#13212E` | Primary text, logo, dark surfaces |
-| `--g1-chalk` | `#F6F7F5` | Page background, text on ink |
-| `--g1-gold` | `#E3A91C` | Winner only |
+| `--g1-ink` | `#101B2A` | Primary text, logo, dark surfaces |
+| `--g1-chalk` | `#F0EDE5` | Page background, text on ink |
+| `--g1-gold` | `#B7A477` | Approved muted-gold action and result accent; textual result semantics remain mandatory |
 | `--g1-turf` | `#1E5A3C` | Success, sparingly |
 | `--g1-stone` | `#5B6670` | Secondary text on chalk |
 | `--g1-line` | `#D9DDD8` | Borders, board cell edges |
 | `--g1-cell` | ink 8% | Empty square fill |
 | `--g1-surface` | `#FFFFFF` | Cards on chalk |
-| `--g1-dark-bg` | `#0C151E` | Deepest ink (pressed ink action) |
-| `--g1-dark-text` | `#EEF1EE` | Text on ink |
-| `--g1-dark-stone` | `#9AA7B2` | Secondary text on ink |
-| `--g1-dark-line` | `#24374A` | Borders on ink |
-| `--g1-dark-cell` | chalk 10% | Empty square fill on ink |
+| `--g1-dark-bg` | `#101B2A` | Deepest ink (pressed ink action) |
+| `--g1-dark-text` | `#F0EDE5` | Text on ink |
+| `--g1-dark-stone` | `#B4BDCA` | Secondary text on ink |
+| `--g1-dark-line` | `#728198` | Borders on ink |
+| `--g1-dark-cell` | `#223249` | Matte empty square fill on ink |
 
 ## Fixed palette
 
 | Meaning | CSS variable | Tailwind | Value |
 |---|---|---|---|
-| Winner only (logo corner, winning squares) | `--g-gold` | `gold` | `--g1-gold` |
-| Winner pressed | `--g-gold-deep` | `gold-deep` | `#C08A0E` |
+| Action, selection and explicit result emphasis | `--g-gold` | `gold` | `--g1-gold` |
+| Winner pressed | `--g-gold-deep` | `gold-deep` | `#A28F64` |
 | Settled and success | `--g-turf` | `turf` | `--g1-turf` |
 | Errors and destructive only | `--g-cardinal` | `cardinal` | `#8F1D2C` |
 | Cardinal pressed | `--g-cardinal-deep` | `cardinal-deep` | `#6E1622` |
 | In-progress NFL game only | `--g-live` | `live` | `#22C55E` |
 | Ink | `--g-ink` | `ink` | `--g1-ink` |
-| Island and chyron ground | `--g-chyron` | `chyron` | `#213549` |
+| Island and chyron ground | `--g-chyron` | `chyron` | `#223249` |
 | Chalk | `--g-white` | `broadcast-white` | `--g1-chalk` |
 | Line | `--g-newsprint` | `newsprint` | `--g1-line` |
 
@@ -46,19 +46,19 @@
 
 | Meaning | CSS variable | Tailwind | Dark | Cream |
 |---|---|---|---|---|
-| Page ground | `--g-ground` | `bg-ground` | `#13212E` | `#F6F7F5` |
-| Panel fill | `--g-panel` | `bg-panel` | white 7% | white card |
-| Panel hover | `--g-panel-hover` | `bg-panel-hover` | white 10% | ink 4% on white |
-| Hairline | `--g-hairline` | `border-hairline` | white 12% | brand line |
-| Text primary | `--g-text` | `text-fg` | `--g1-dark-text` | ink |
-| Text secondary | `--g-text-2` | `text-fg-2` | `--g1-dark-stone` | `--g1-stone` |
-| Text muted | `--g-text-3` | `text-fg-3` | `--g1-dark-stone` | `--g1-stone` |
-| Action fill | `--g-action` | `bg-action` | chalk | ink |
-| Action hover | `--g-action-hover` | `bg-action-hover` | line | deepest ink |
-| Action text | `--g-action-text` | `text-action-text` | ink | chalk |
-| Open square fill | `--g-cell` | `bg-cell` | `--g1-dark-cell` | `--g1-cell` |
-| Square edge | `--g-cell-edge` | `border-cell-edge` | `--g1-dark-line` | `--g1-line` |
-| Settled tag | `--g-tone-turf` | `text-tone-turf` | `#8CCBA6` | turf |
+| Page ground | `--g-ground` | `bg-ground` | `#101B2A` | `#101B2A` |
+| Panel fill | `--g-panel` | `bg-panel` | `#192638` | `#192638` |
+| Panel hover | `--g-panel-hover` | `bg-panel-hover` | `#223249` | `#223249` |
+| Hairline | `--g-hairline` | `border-hairline` | `#728198` | `#728198` |
+| Text primary | `--g-text` | `text-fg` | `--g1-dark-text` | `--g1-dark-text` |
+| Text secondary | `--g-text-2` | `text-fg-2` | `--g1-dark-stone` | `--g1-dark-stone` |
+| Text muted | `--g-text-3` | `text-fg-3` | `--g1-dark-stone` | `--g1-dark-stone` |
+| Action fill | `--g-action` | `bg-action` | muted gold | muted gold |
+| Action hover | `--g-action-hover` | `bg-action-hover` | deep muted gold | deep muted gold |
+| Action text | `--g-action-text` | `text-action-text` | navy | navy |
+| Open square fill | `--g-cell` | `bg-cell` | `--g1-dark-cell` | `--g1-dark-cell` |
+| Square edge | `--g-cell-edge` | `border-cell-edge` | `--g1-dark-line` | `--g1-dark-line` |
+| Settled tag | `--g-tone-turf` | `text-tone-turf` | `#8CCBA6` | `#8CCBA6` |
 | Shadow | `--g-shadow` | `shadow-[var(--g-shadow)]` | 45% deep ink | 6% ink |
 | Spotlight | `--g-glow` | used by `Spotlight` | chalk 14% | ink 6% |
 
@@ -91,7 +91,7 @@ Large, soft ground light for one section. Derived with `color-mix` from the pale
 | Score-moment ambience | `--g-tint-live` | `tint-live` | live 20% |
 | Organizer ambience | `--g-tint-turf` | `tint-turf` | turf 20% |
 
-20% is a contrast cap, not a taste call, and it is a **hard ceiling**. Against the `#13212E` ink ground, the worst case is `--g-text-2` (brand dark stone) over a full-strength live tint at **4.58:1**, which clears the 4.5:1 requirement by 0.08. `SectionTone` renders the tint at 0.75 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong, but the token itself has little headroom. Raising any tint past 20% puts secondary text below AA. `tests/design/contrast.test.ts` asserts both the cap and the composited ratio; `tests/design/docDrift.test.ts` asserts that this table and `DESIGN.md` still name the value `src/design/tokens.css` ships.
+20% is a contrast cap, not a taste call, and it is a **hard ceiling**. Against the `#101B2A` ink ground, the worst case is `--g-text-2` (brand dark stone) over a full-strength live tint at **4.58:1**, which clears the 4.5:1 requirement by 0.08. `SectionTone` renders the tint at 0.75 layer opacity with radial falloff on top of that, so nothing on screen is ever this strong, but the token itself has little headroom. Raising any tint past 20% puts secondary text below AA. `tests/design/contrast.test.ts` asserts both the cap and the composited ratio; `tests/design/docDrift.test.ts` asserts that this table and `DESIGN.md` still name the value `src/design/tokens.css` ships.
 
 ### Rim light
 
@@ -131,3 +131,29 @@ JS constants and `useReducedMotion()` live in `src/design/primitives/motion.ts`.
 ## Legacy
 
 The remaining `--gridone-*` variables in `src/index.css` back the unlayered cascade guards there: `--gridone-color-background`, `--gridone-color-brand-primary-deep` (button fill re-assertion), `--gridone-color-text-primary`, `--gridone-radius-surface`, `--gridone-radius-grid` (sharp board radius), and `--gridone-elevation-raised` (dialog elevation). The old `font-condensed` / `font-data` aliases are gone; Archivo returned as the brand face through `--g-font-display` and `--g-font-ui`. Do not add new `--gridone-*` variables; use the `--g-*` tokens above, built from the `--g1-*` brand tokens.
+
+
+## Organizer-first acquisition scope — November 5, 2026
+
+`.g-editorial` retains acquisition layout scales on homepage and `/create`.
+Both operational bases and the editorial scope now share palette A. Historical
+paper/cream alias names remain for component compatibility, not as color promises.
+Raw values live in `src/design/tokens.css` and `src/styles/tokens.css`.
+
+| Token | Value | Purpose |
+|---|---|---|
+| `--g-paper` | `#101B2A` | Editorial canvas |
+| `--g-paper-raised` | `#192638` | Matte raised sheet; action text is navy |
+| `--g-editorial-ink` | `#F0EDE5` | Primary text |
+| `--g-editorial-muted` | `#B4BDCA` | Secondary text |
+| `--g-editorial-action` | `#B7A477` | Muted-gold action |
+| `--g-editorial-action-hover` | `#A28F64` | Action hover |
+| `--g-paper-line` | `#728198` | Essential control/grid edges |
+| `--g-editorial-axis` | `#223249` | Sample axis rails |
+
+The semantic `--g-ground`, `--g-panel`, `--g-text*`, `--g-action*`, `--g-hairline`,
+`--g-cell*`, and glass aliases resolve to these values within the scope. Existing
+Tailwind aliases therefore remain usable. The editorial shadow, maximum width,
+gutter, section space, title and cell scales are also tokenized. Gold now marks
+actions and selection; live-green and textual result semantics remain intact. Token tests cover AA text
+pairs and essential edges; rendered and assistive-technology verification is still required.
