@@ -52,6 +52,23 @@ describe('seller claim model', () => {
   });
 });
 
+describe('liquid buyer pick slice 5', () => {
+  it('shows a labelled noninteractive map and keeps selection separate from the real claim', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(ok(view));
+    vi.stubGlobal('fetch', fetcher);
+    const {container} = renderPage();
+    const map = await screen.findByRole('img',{name:'Board map. Anthony’s squares are highlighted.'});
+    expect(map.querySelectorAll('[data-g1-map-state]')).toHaveLength(100);
+    expect(map.querySelectorAll('button')).toHaveLength(0);
+    expect(screen.getByText('Game numbers appear when the organizer locks the board.')).toBeVisible();
+    expect(screen.getByRole('button',{name:'Pick a square above'})).toBeDisabled();
+    fireEvent.click(screen.getByRole('button',{name:'Square 62, open'}));
+    expect(container.querySelector('[data-g1-map-state="picked"]')).not.toBeNull();
+    expect(screen.getByRole('button',{name:'Claim my square'})).toBeDisabled();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('SellerClaimPage', () => {
   it('shows only this seller’s squares, then claims with one tap and remembers the buyer', async () => {
     const fetcher = vi.fn()
@@ -63,7 +80,7 @@ describe('SellerClaimPage', () => {
     expect(screen.getByText('$20 a square')).toBeInTheDocument();
     const squares = screen.getByRole('group', { name: 'Anthony’s squares' });
     expect(within(squares).getByRole('button', { name: 'Square 64, taken' })).toBeDisabled();
-    const claimButton = screen.getByRole('button', { name: /Claim/ });
+    const claimButton = screen.getByRole('button', { name: 'Pick a square above' });
     expect(claimButton).toBeDisabled();
 
     fireEvent.click(within(squares).getByRole('button', { name: 'Square 62, open' }));
@@ -72,7 +89,7 @@ describe('SellerClaimPage', () => {
     fireEvent.change(screen.getByLabelText('Your name, as it shows on the board'), { target: { value: 'Maria Lopez' } });
     fireEvent.click(screen.getByRole('button', { name: 'Claim 2 squares' }));
 
-    expect(await screen.findByRole('heading', { name: 'You’re in!' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'You’re on the board' })).toBeInTheDocument();
     expect(screen.getByText('Squares 62 and 63 are yours.')).toBeInTheDocument();
     expect(screen.getByText('Pay Anthony however you usually do. GridOne doesn’t handle money.')).toBeInTheDocument();
     expect(screen.getByText('Venmo @anthony')).toBeInTheDocument();
@@ -92,7 +109,7 @@ describe('SellerClaimPage', () => {
     await screen.findByRole('heading', { level: 1 });
     fireEvent.click(screen.getByRole('button', { name: 'Square 62, open' }));
     fireEvent.change(screen.getByLabelText('Your name, as it shows on the board'), { target: { value: 'Maria' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Claim 1 square' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Claim my square' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Someone just grabbed one of those squares. Pick another.');
     expect(await screen.findByRole('button', { name: 'Square 62, taken' })).toBeDisabled();
     expect(screen.getByLabelText('Your name, as it shows on the board')).toHaveValue('Maria');
@@ -128,7 +145,7 @@ describe('SellerClaimPage', () => {
     await screen.findByRole('heading', { level: 1 });
     fireEvent.click(screen.getByRole('button', { name: 'Square 62, open' }));
     fireEvent.change(screen.getByLabelText('Your name, as it shows on the board'), { target: { value: 'Emily' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Claim 1 square' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Claim my square' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
     expect(screen.getByLabelText('Your name, as it shows on the board')).toHaveValue('Emily');
   });
@@ -143,11 +160,11 @@ describe('SellerClaimPage', () => {
     await screen.findByRole('heading', { level: 1 });
     fireEvent.click(screen.getByRole('button', { name: 'Square 62, open' }));
     fireEvent.change(screen.getByLabelText('Your name, as it shows on the board'), { target: { value: 'Maria' } });
-    const button = screen.getByRole('button', { name: 'Claim 1 square' });
+    const button = screen.getByRole('button', { name: 'Claim my square' });
     fireEvent.click(button);
     fireEvent.click(button);
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
     resolveClaim(ok({ cells: [61], name: 'Maria', label: 'Anthony', shareCode: 'ABCDEFGH' }));
-    expect(await screen.findByRole('heading', { name: 'You’re in!' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'You’re on the board' })).toBeInTheDocument();
   });
 });
