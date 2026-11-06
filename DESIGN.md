@@ -286,3 +286,39 @@ readiness. The established Corner Square logo geometry remains intact; white
 variants are used on the adopted midnight ground. Viewer, demo, organizer workspace,
 dashboard, guides and legal surfaces now share palette A. This visual adoption does not change
 business logic, security boundaries, pricing, or the eight organizer phases.
+
+## Liquid Glass overlay — November 6, 2026
+
+Anthony approved the supplied Liquid Glass tokens and four HTML visual references.
+This overlay supersedes palette A on the public live viewer, seller-link claim page,
+organizer workspace, dashboard and create screen. Homepage, demo, guides, legal
+pages and pregame selling retain their existing treatment and behavior.
+
+Implementation is opt-in at `[data-g1-theme="liquid"].g1-page`. The user-supplied
+`--g1-*` sheet is the scoped visual source; it maps into existing `--g-*` semantic
+properties for shared controls. CSS and self-hosted, OFL-licensed Inter live under
+`src/design/liquid/` and `public/fonts/inter-liquid-*`. Inter uses weights 200–600.
+Ground is #070B14, midnight #10182A, chalk #E9ECF2, muted #A9B4C6, and action/winner
+gold #E8D39B. Seller tints indicate allocation ownership only, never payment status.
+Existing private notes never become a public seller or board data source.
+
+The SVG stadium channels have desktop/phone geometry and no cell-level blur.
+No more than six panels are blurred. A dark backplane protects text contrast.
+Desktop's current square owns the one winning glow; on a personalized phone,
+that glow belongs only to the buyer's current-winning card. Picked tiles, mini-map
+cells and square chips have no outer glow. Stale, rejected or unsynced scores do
+not acquire a personalized current-winning glow.
+
+Phone buyer claims use a labelled, noninteractive map and 72px-high, four-column
+tiles; they do not use the full board as a tiny claim surface. The claim payload,
+scope, race/lock handling, identity persistence and money boundaries remain intact.
+Approved clarification: “Game numbers appear when the organizer locks the board.”
+“Payments stay between people.” remains explicit. Game-day and organizer controls
+retain existing callbacks and flows, including per-quarter number semantics.
+
+Reduced transparency forces #141E31 solid panels without backdrop filters;
+reduced motion removes optional motion. Focus is 2px lit gold with 2px offset,
+with system Highlight used in forced colors. Essential selected-game text remains
+opaque rather than fading below readable contrast. The full live board scrolls
+inside its card on narrow screens; claim tiles and controls remain usable targets.
+Acceptance evidence and disclosed limits: `docs/releases/2026-11-06-liquid-glass.md`.

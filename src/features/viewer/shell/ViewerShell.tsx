@@ -80,7 +80,9 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
       const overlapsFind = find && find.top < 130 && find.bottom > 0;
       setScoreAboveViewport(scoreBottom <= 0 && !overlapsFind);
     };
-    const observer = new IntersectionObserver(([entry]) => update(entry.isIntersecting ? 1 : entry.boundingClientRect.bottom));
+    // Observer records can be queued before the latest scroll. Read current
+    // viewport geometry so an older entry cannot hide the return control.
+    const observer = new IntersectionObserver(() => update());
     observer.observe(target);
     const onScroll = () => update();
     window.addEventListener('scroll', onScroll, { passive: true });

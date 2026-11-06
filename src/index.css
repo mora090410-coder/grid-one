@@ -10,6 +10,7 @@
 @import "./design/liquid/buyer.css";
 @import "./design/liquid/personal.css";
 @import "./design/liquid/organizer.css";
+@import "./design/liquid/accessibility.css";
 
 /* Semantic utilities. Values resolve per data-base at runtime. */
 @theme inline {

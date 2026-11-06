@@ -33,7 +33,7 @@ for (const width of [390, 1440]) {
     });
     await page.goto(`/s/${code}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Pick your squares from Anthony' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Square 63, taken' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Square 63, taken', includeHidden: true })).toBeDisabled();
     await capture(page, `seller-link-open-${width}`, testInfo);
 
     await page.getByRole('button', { name: 'Square 61, open' }).click();
@@ -48,7 +48,7 @@ for (const width of [390, 1440]) {
     await capture(page, `seller-link-picked-${width}`, testInfo);
     await claim.click();
 
-    await expect(page.getByRole('heading', { name: 'You’re in!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'You’re on the board' })).toBeVisible();
     await expect(page.getByText('Squares 61 and 62 are yours.')).toBeVisible();
     await expect(page.getByText('Venmo @anthony-m')).toBeVisible();
     expect(claims).toEqual([{ cells: [60, 61], name: 'Maria Lopez' }]);

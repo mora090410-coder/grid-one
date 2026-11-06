@@ -37,7 +37,8 @@ test('pages paint in Archivo with brand text colors and tight headings', async (
 
   // The adopted acquisition/create scope: editorial ink on warm paper.
   await page.goto('/create');
-  const ground = page.locator('[data-base="cream"]').first();
-  await expect(ground).toHaveCSS('color', 'rgb(240, 237, 229)');
-  await expect(ground).toHaveCSS('background-color', 'rgb(16, 27, 42)');
+  const ground = page.locator('[data-g1-theme="liquid"]').first();
+  await expect(ground).toHaveCSS('font-family', /^Inter,/);
+  await expect(ground).toHaveCSS('color', 'rgb(233, 236, 242)');
+  await expect(ground).toHaveCSS('background-color', 'rgb(7, 11, 20)');
 });

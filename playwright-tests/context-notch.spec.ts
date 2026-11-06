@@ -19,7 +19,7 @@ async function viewer(page: Page, final = false) {
   await expect(page.getByRole('heading', { name: 'Notch fixture' })).toBeVisible();
   await page.getByText('All possible next scores', { exact: true }).click();
   await page.getByRole('heading', { name: 'Board', exact: true }).scrollIntoViewIfNeeded();
-  await page.evaluate(() => window.scrollTo(0, 700));
+  await page.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: document.querySelector('.g1-find-region')!.getBoundingClientRect().bottom + scrollY + 160, behavior: 'instant' }); });
   await expect(page.getByRole('button', { name: 'Score', exact: true })).toBeVisible();
 }
 

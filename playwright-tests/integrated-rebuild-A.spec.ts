@@ -21,7 +21,7 @@ for (const width of [320, 390, 1440]) {
     await page.getByRole('link', { name: 'Create your free board', exact: true }).first().click();
     await expect(page).toHaveURL(/\/create/);
     await expect(page.getByRole('heading', { name: 'Start with your team.', exact: true })).toBeVisible();
-    await expect(page.locator('[data-base]').first()).toHaveCSS('background-color', 'rgb(16, 27, 42)');
+    await expect(page.locator('[data-g1-theme="liquid"]').first()).toHaveCSS('background-color', 'rgb(7, 11, 20)');
     await page.route('**/api/pools/COLORA01', route => route.fulfill({ json: { ...sample(), owner_id: undefined } }));
     await page.route('**/api/pools/*/score', route => route.fulfill({ json: { score: null, winnerHistory: [] } }));
     await page.goto('/b/COLORA01');

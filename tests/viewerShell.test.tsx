@@ -52,6 +52,35 @@ const renderShell = (props: Partial<ShellProps> = {}) => render(
   />
 );
 
+describe('liquid viewport observer race',()=>{
+ it('uses current geometry when an older observer record arrives after scrolling',()=>{
+  let above=false;
+  let notify: ((entries:IntersectionObserverEntry[])=>void)|undefined;
+  const previous=globalThis.IntersectionObserver;
+  const original=Element.prototype.getBoundingClientRect;
+  globalThis.IntersectionObserver=class {
+   constructor(callback:IntersectionObserverCallback){ notify=entries=>callback(entries,this as unknown as IntersectionObserver); }
+   observe(){} disconnect(){}
+  } as unknown as typeof IntersectionObserver;
+  const boxes=vi.spyOn(Element.prototype,'getBoundingClientRect').mockImplementation(function(this:Element){
+   if(this.classList.contains('g1-score-region')) return DOMRect.fromRect({x:0,y:above?-300:100,width:500,height:200});
+   if(this.classList.contains('g1-find-region')) return DOMRect.fromRect({x:0,y:above?-160:320,width:500,height:80});
+   return original.call(this);
+  });
+  let view:ReturnType<typeof renderShell>|undefined;
+  try {
+   view=renderShell();
+   above=true;fireEvent.scroll(window);
+   expect(screen.getByRole('button',{name:'Score'})).toBeVisible();
+   act(()=>notify?.([{isIntersecting:true,boundingClientRect:DOMRect.fromRect({y:100,height:200})} as IntersectionObserverEntry]));
+   expect(screen.getByRole('button',{name:'Score'})).toBeVisible();
+   above=false;
+   act(()=>notify?.([{isIntersecting:false,boundingClientRect:DOMRect.fromRect({y:-300,height:200})} as IntersectionObserverEntry]));
+   expect(screen.queryByRole('button',{name:'Score'})).toBeNull();
+  } finally {view?.unmount();boxes.mockRestore();globalThis.IntersectionObserver=previous;}
+ });
+});
+
 describe('liquid glass slice 2: public shell opt-in', () => {
   it('mounts decorative masked grid edges behind the public viewer only', () => {
     const { container } = renderShell();
@@ -231,7 +260,11 @@ it('shows the floating score only after the main score scrolls above the viewpor
     disconnect = disconnect;
   });
   const view = renderShell();
-  const update = (bottom: number, isIntersecting: boolean) => act(() => notify([{ isIntersecting, boundingClientRect: { bottom } } as IntersectionObserverEntry], {} as IntersectionObserver));
+  const scoreBounds=vi.spyOn(view.container.querySelector('.g1-score-region')!, 'getBoundingClientRect');
+  const update = (bottom: number, isIntersecting: boolean) => {
+    scoreBounds.mockReturnValue(DOMRect.fromRect({y:bottom-100,height:100}));
+    act(() => notify([{ isIntersecting, boundingClientRect: { bottom } } as IntersectionObserverEntry], {} as IntersectionObserver));
+  };
   expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
   update(400, true);
   expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
@@ -241,6 +274,7 @@ it('shows the floating score only after the main score scrolls above the viewpor
   expect(screen.queryByRole('button', { name: /^Score/ })).toBeNull();
   view.unmount();
   expect(disconnect).toHaveBeenCalled();
+  scoreBounds.mockRestore();
   vi.unstubAllGlobals();
 });
 

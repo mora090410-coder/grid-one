@@ -25,6 +25,7 @@
   border-radius: var(--g1-radius-panel);
   background:
     linear-gradient(165deg, rgba(232,211,155,.22), rgba(232,211,155,.05) 55%, rgba(232,211,155,.10)) padding-box,
+    linear-gradient(var(--g1-glass-backing),var(--g1-glass-backing)) padding-box,
     linear-gradient(135deg, #FFF3CF, #E8D39B 25%, rgba(232,211,155,.18) 60%, #E8D39B) border-box;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.45),

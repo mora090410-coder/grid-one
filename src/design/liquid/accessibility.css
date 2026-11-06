@@ -1,0 +1,17 @@
+/* Preference and focus overrides must follow every material variant. */
+/* Essential selected-game text never fades through unreadable contrast. */
+.g1-page .crossfade-in { animation: none; opacity: 1; }
+.g1-page .crossfade-out { display: none; }
+.g1-page .create-progress { font-weight: 600; }
+@media(min-width:1024px) { .g1-page.create-entrance > main { row-gap: 24px; } }
+[data-g1-theme="liquid"].g1-page, [data-g1-theme="liquid"].g1-page [data-base] { --g-text-3: var(--g1-muted); }
+[data-g1-theme="liquid"].g1-page :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible { outline: 2px solid var(--g1-gold-lit) !important; outline-offset: 2px !important; }
+.g1-page :is(.font-bold,.font-extrabold,.font-black) { font-weight: 600; }
+@media(prefers-reduced-transparency:reduce) {
+ [data-g1-theme="liquid"].g1-page :is(.g1-glass,.g1-glass-win,.g1-current-card) { background: #141E31 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+@media(forced-colors:active) {
+ [data-g1-theme="liquid"].g1-page :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible { outline-color: Highlight !important; }
+ .g1-page :is(.g1-buyer-tile,[role="gridcell"],button[data-cell-index]) { border-color: ButtonText; }
+ .g1-page [aria-pressed="true"] { outline: 2px solid Highlight; }
+}
