@@ -31,7 +31,7 @@ function Harness({ isPublished = false, canAssignOpenSquares, filled = [], onApp
   const namedCount = [...selection].filter((index) => filled.includes(index)).length;
   return (
     <>
-      <BoardEditor
+      <BoardEditor game={game}
         board={board(filled)}
         entryMeta={{}}
         drawPreview={null}
@@ -63,7 +63,7 @@ function GridOnlyHarness() {
   const [selectMode, setSelectMode] = useState(false);
   const [selection, setSelection] = useState<Selection>(() => new Set<number>());
   return (
-    <BoardEditor
+    <BoardEditor game={game}
       board={board()}
       entryMeta={{}}
       drawPreview={null}

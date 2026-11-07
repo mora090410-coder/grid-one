@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { RollingDigit } from '../../../design/liquid/RollingDigit';
 import { Glass, CapsuleTag, CapsuleButton, DigitFlow } from '../../../design/primitives';
-import type { BoardData, EntryMeta } from '../../../../types';
+import type { BoardData, EntryMeta, GameState } from '../../../../types';
 import {summarizeSellers} from '../sellers/sellerLinksModel';
 import { assignable, rangeBetween, toggle, type Selection } from './selection';
 
 export interface BoardEditorProps {
+  game: Pick<GameState, 'topAbbr' | 'topName' | 'leftAbbr' | 'leftName'>;
   board: BoardData;
   entryMeta: Record<number, EntryMeta>;
   /** Digits animating into the axes for a draft draw preview. */
@@ -33,6 +34,7 @@ const AXIS_CELL = 'flex items-center justify-center min-h-11 h-11 bg-chyron text
 
 /** Organizer board editor: 11x11 grid with square assignment and a draft draw preview. */
 function BoardEditor({
+  game,
   board,
   entryMeta,
   drawPreview,
@@ -221,6 +223,10 @@ function BoardEditor({
         {selectMode && !availabilityMode && selection.size > 0 && <CapsuleButton variant="quiet" onClick={() => document.getElementById('allocation-editor')?.querySelector('input')?.focus()}>Name {selection.size} selected squares</CapsuleButton>}
       </div>
       {availabilityMode && <p className="font-ui text-base text-fg-2">Select the squares you want to offer, then choose their availability.</p>}
+      <div role="group" aria-label="Team axes" className="flex flex-wrap gap-x-6 gap-y-1 font-ui text-base text-fg-2">
+        <span>Top (columns) · <strong className="font-semibold text-fg" title={game.topName || undefined}>{game.topAbbr || game.topName || 'Not set'}</strong> <span aria-hidden="true">→</span></span>
+        <span>Side (rows) · <strong className="font-semibold text-fg" title={game.leftName || undefined}>{game.leftAbbr || game.leftName || 'Not set'}</strong> <span aria-hidden="true">↓</span></span>
+      </div>
       <div data-testid="contained-board-overflow" className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-card border border-hairline" style={{ contain: 'inline-size' }}>
         <div className="min-w-[640px]">
           <Glass padding="md" className="g1-organizer-board" data-g1-blur="true">

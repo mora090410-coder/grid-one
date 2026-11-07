@@ -993,7 +993,7 @@ export default function OrganizerWorkspace({
             onCommit={() => void commitDraw()} onAgain={startPreview} onReplace={replaceDraw} onCancelPreview={cancelDraw}
           />}
           <BoardEditor availabilityMode={!isPublished && availabilityMode} onOfferAvailability={offerAvailability}
-            board={editorBoard} entryMeta={entryMeta} drawPreview={isPublished ? null : editorDrawPreview}
+            game={game} board={editorBoard} entryMeta={entryMeta} drawPreview={isPublished ? null : editorDrawPreview}
             highlightOpen={!isPublished && highlightOpen} isPublished={isPublished}
             canAssignOpenSquares={isPublished && canAssignOpenSquares} selectMode={selectMode} selection={selection}
             onSelectionChange={setSelection} onToggleSelectMode={toggleSelectMode}
