@@ -10,7 +10,7 @@ export function Hero() {
   return (
     <section data-testid="homepage-first-viewport" className="studio-hero">
       <div className="studio-hero-shell">
-        <SiteHeader light />
+        <SiteHeader />
         <div className="studio-hero-layout">
           <div className="studio-hero-copy">
             <p className="hero-category">Football squares. For the team behind the team.</p>

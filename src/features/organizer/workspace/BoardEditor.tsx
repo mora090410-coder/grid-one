@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { RollingDigit } from '../../../design/liquid/RollingDigit';
 import { Glass, CapsuleTag, CapsuleButton, DigitFlow } from '../../../design/primitives';
 import type { BoardData, EntryMeta } from '../../../../types';
 import {summarizeSellers} from '../sellers/sellerLinksModel';
@@ -232,13 +233,13 @@ function BoardEditor({
               <div className={AXIS_CELL} aria-hidden="true" />
               {topDigits.map((digit, colIndex) => (
                 <div key={`top-${colIndex}`} className={AXIS_CELL}>
-                  <DigitFlow value={digit === null || digit === undefined ? '·' : digit} />
+                  <RollingDigit value={digit} index={colIndex} />
                 </div>
               ))}
               {Array.from({ length: 10 }, (_, rowIndex) => (
                 <React.Fragment key={`row-${rowIndex}`}>
                   <div className={AXIS_CELL}>
-                    <DigitFlow value={leftDigits[rowIndex] === null || leftDigits[rowIndex] === undefined ? '·' : leftDigits[rowIndex]} />
+                    <RollingDigit value={leftDigits[rowIndex]} index={rowIndex} />
                   </div>
                   {Array.from({ length: 10 }, (_, colIndex) => {
                     const index = rowIndex * 10 + colIndex;
@@ -271,9 +272,10 @@ function BoardEditor({
                         onPointerDown={(event) => onCellPointerDown(index, event)}
                         onPointerEnter={(event) => onCellPointerEnter(index, event)}
                         onKeyDown={(event) => onCellKeyDown(index, event)}
-                        className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-pan-x' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
+                        className={`g1-fill-cell flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 font-ui text-[12px] transition-[background-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${selectMode ? 'touch-pan-x' : ''} ${isOpen ? openClasses : assignedClasses} ${highlightClasses} ${selectedClasses}`.trim()}
                       >
-                        <span className="font-mono text-[10px] text-fg-3">#{index + 1}</span>
+                        <span className="g1-fill" aria-hidden="true" />
+                        <span className="g1-fill-label font-mono text-[10px] text-fg-3">#{index + 1}</span>
                         {family && family !== name && <span className="line-clamp-2 text-center text-[10px] text-fg-2">{family}</span>}
                         {isOpen && <span className="text-[10px]">Blank</span>}
                         {!isOpen && <span className="line-clamp-2 text-center leading-tight">{name}</span>}

@@ -16,7 +16,7 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Start assigning', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/40 of 100 assigned/);
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAccessibleDescription(/40 of 100 assigned/);
   });
 
   it('shows committed number status when drawn is true', () => {
@@ -29,7 +29,7 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Review and publish', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/Numbers drawn/);
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAccessibleDescription(/Numbers drawn/);
   });
 
   it('shows zero assigned without a misleading payment percentage', () => {
@@ -42,7 +42,7 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Create draft', onClick: vi.fn() }}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAccessibleDescription(/0 of 100 assigned/);
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAccessibleDescription(/0 of 100 assigned/);
   });
 
   it('expands to show the phase eyebrow, note, primary action, and ghost secondaries', () => {
@@ -59,14 +59,14 @@ describe('OrganizerIsland', () => {
         secondary={[{ label: 'Edit board', onClick: onSecondary }]}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /organizer status/i }));
+    fireEvent.click(screen.getByRole('button', { name: /board actions/i }));
     expect(screen.getByText('Reconcile')).toBeInTheDocument();
     expect(screen.getByText('Some squares are missing a payment status.')).toBeInTheDocument();
     const primaryButton = screen.getByRole('button', { name: 'Continue anyway' });
     fireEvent.click(primaryButton);
     expect(onPrimary).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
     const secondaryButton = screen.getByRole('button', { name: 'Edit board' });
     fireEvent.click(secondaryButton);
     expect(onSecondary).toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('OrganizerIsland', () => {
         primary={{ label: 'Continue anyway', onClick: onPrimary, disabled: true }}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /organizer status/i }));
+    fireEvent.click(screen.getByRole('button', { name: /board actions/i }));
     expect(screen.getByRole('button', { name: 'Continue anyway' })).toBeDisabled();
 
     rerender(

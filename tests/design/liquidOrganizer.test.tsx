@@ -9,7 +9,7 @@ describe('liquid organizer styling slice 7',()=>{
  it('scopes both existing organizer branches without replacing their flows',()=>{
   const source=readFileSync(`${process.cwd()}/src/features/organizer/workspace/OrganizerWorkspace.tsx`,'utf8');
   for (const page of ['Dashboard','CreateContest']) expect(readFileSync(`pages/${page}.tsx`,'utf8')).toContain('theme="liquid"');
-  expect(source.match(/<Base kind="dark" theme="liquid" className="g1-page g1-organizer-page">/g)).toHaveLength(2);
+  expect(source.match(/<Base kind="dark" theme="liquid" className="g1-page g1-organizer-page">/g)).toHaveLength(1);
  });
  it('uses allocation tints while preserving square activation',()=>{
   const onSelectSquare=vi.fn();

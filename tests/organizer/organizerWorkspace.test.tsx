@@ -146,7 +146,26 @@ function renderWorkspace(overrides: Overrides = {}) {
   return { ...utils, props, onApply, onPublish, onEntryMetaChange, onReload };
 }
 
-const expandIsland = () => fireEvent.click(screen.getByRole('button', { name: /organizer status/i }));
+const expandIsland = () => fireEvent.click(screen.getByRole('button', { name: /board actions/i }));
+const closeTask = () => {
+  const dialog = screen.queryByRole('dialog');
+  if (dialog) fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+};
+const openTask = (label: string) => {
+  closeTask();
+  expandIsland();
+  fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: label }));
+};
+const openPayments = () => {
+  openTask('Payments');
+  const open = screen.queryByRole('button', { name: 'Open payments' });
+  if (open) fireEvent.click(open);
+};
+const openSharing = () => {
+  closeTask(); expandIsland();
+  fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+};
+
 const lastBoard = (onApply: ReturnType<typeof vi.fn>): BoardData => onApply.mock.calls.at(-1)![1];
 
 const writeText = vi.fn(async () => undefined);
@@ -168,6 +187,7 @@ describe('OrganizerWorkspace island', () => {
   it('warns unpublished organizers when the browser cannot retain a recovery copy', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('storage unavailable'); });
     renderWorkspace({ recoveryKey: 'gridone:draft-recovery:owner-warning:board-warning', onPublish: vi.fn(() => new Promise<string>(() => {})), isPublished: false });
+    openTask('Game & settings');
     const title = screen.getByRole('textbox', { name: 'Board name' });
     fireEvent.change(title, { target: { value: 'Unacknowledged title' } });
     fireEvent.blur(title);
@@ -177,12 +197,14 @@ describe('OrganizerWorkspace island', () => {
   it('offers seller links, asking to share first while the board is private', () => {
     const sellerBoard = { ...boardWithAssignments(3), allocationLabels: Array.from({ length: 100 }, (_, index) => (index < 3 ? 'Mora family' : null)) };
     const { unmount } = renderWorkspace({ board: sellerBoard, isShared: false, shareCode: null });
+    openTask('Sellers & links');
     const privateCard = screen.getByRole('region', { name: 'Send seller links' });
     expect(within(privateCard).getByText('Share your board first. Then every seller gets their own link.')).toBeInTheDocument();
     expect(screen.queryByText('Guest claim links (optional)')).not.toBeInTheDocument();
     unmount();
 
     renderWorkspace({ board: sellerBoard, isShared: true, shareCode: 'shared-board' });
+    openTask('Sellers & links');
     expect(within(screen.getByRole('region', { name: 'Send seller links' })).getByRole('button', { name: 'Get seller links' })).toBeInTheDocument();
   });
 
@@ -208,7 +230,7 @@ describe('OrganizerWorkspace island', () => {
 
   it('offers a persistent Payments action and keeps not-asked squares distinct from unpaid', () => {
     renderWorkspace({ board: boardWithAssignments(3), entryMeta: { 0: paidMeta(0), 1: { ...paidMeta(1), paid_status: 'unpaid' } } });
-    fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
+    openPayments();
     expect(screen.getByRole('dialog', { name: 'Payments' })).toBeInTheDocument();
     expect(within(screen.getByRole('dialog', { name: 'Payments' })).getByRole('button', { name: 'Not asked yet · 1 squares' })).toBeInTheDocument();
   });
@@ -216,7 +238,7 @@ describe('OrganizerWorkspace island', () => {
   it('surfaces Preview as the next island action after drawing', () => {
     renderWorkspace({ board: drawnBoard(100) });
     expandIsland();
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Preview and publish' })).toBeEnabled();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Preview and publish' })).toBeEnabled();
   });
 
   it('renders readable assignment and separate payment counts', () => {
@@ -225,9 +247,9 @@ describe('OrganizerWorkspace island', () => {
       entryMeta: { 0: paidMeta(0), 1: paidMeta(1) },
     });
 
-    const island = within(screen.getByRole('region', { name: 'Organizer status' }));
-    expect(island.getByRole('button', { name: 'Organizer status' })).toHaveTextContent('3 of 100 assigned');
+    expect(screen.getByRole('region', { name: 'Organizer status' })).toHaveTextContent('3 of 100 assigned');
     expandIsland();
+    const island = within(screen.getByRole('dialog', { name: /Board actions/ }));
     fireEvent.click(island.getByRole('button', { name: 'Payments' }));
     expect(island.getByText('2 paid')).toBeInTheDocument();
     expect(island.getByText('1 not asked yet')).toBeInTheDocument();
@@ -236,20 +258,20 @@ describe('OrganizerWorkspace island', () => {
   it('offers Fill the board while nothing is assigned', () => {
     renderWorkspace();
     expandIsland();
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Fill the board' })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Assign squares' })).toBeInTheDocument();
   });
 
   it('offers Draw numbers once a square is assigned', () => {
     renderWorkspace({ board: boardWithAssignments(1) });
     expandIsland();
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' })).toBeEnabled();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
   });
 
   it('offers Preview once the numbers are committed', () => {
     renderWorkspace({ board: drawnBoard(100) });
     expandIsland();
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Preview and publish' })).toBeInTheDocument();
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByText('Numbers drawn')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Preview and publish' })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByText('Numbers drawn')).toBeInTheDocument();
   });
 });
 
@@ -261,6 +283,7 @@ describe('OrganizerWorkspace game change', () => {
       const onPublish = vi.fn(async (_data: { game: GameState; board: BoardData }) => 'pool-1');
       renderWorkspace({ board: boardWithAssignments(3), onPublish: onPublish as any });
 
+      openTask('Game & settings');
       fireEvent.click(screen.getByRole('button', { name: 'Change game' }));
       act(() => {
         fireEvent.click(screen.getByRole('button', { name: 'Select test game' }));
@@ -294,7 +317,7 @@ describe('OrganizerWorkspace draw flow', () => {
     const { onApply } = renderWorkspace({ board: boardWithAssignments(1) });
     expandIsland();
 
-    fireEvent.click(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' }));
     expect(screen.getByRole('group', { name: '99 squares are open. Draw anyway?' })).toBeInTheDocument();
 
     await act(async () => {
@@ -310,7 +333,7 @@ describe('OrganizerWorkspace draw flow', () => {
     const { onApply } = renderWorkspace({ board: boardWithAssignments(1) });
     expandIsland();
 
-    fireEvent.click(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' }));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Draw with 99 OPEN' }));
     });
@@ -332,7 +355,7 @@ describe('OrganizerWorkspace draw flow', () => {
     expandIsland();
 
     await act(async () => {
-      fireEvent.click(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' }));
+      fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' }));
     });
 
     expect(screen.queryByRole('group', { name: /squares are open/ })).not.toBeInTheDocument();
@@ -381,7 +404,7 @@ describe('OrganizerWorkspace publish', () => {
   const openPublishSheet = async () => {
     expandIsland();
     await act(async () => {
-      fireEvent.click(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Preview and publish' }));
+      fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Preview and publish' }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Review and publish' }));
@@ -504,7 +527,7 @@ describe('OrganizerWorkspace publish', () => {
     });
 
     expect(onReload).toHaveBeenCalled();
-    expect(await screen.findByText('Score authority')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Score authority', hidden: true })).toBeInTheDocument();
   });
 
   it('publishes once the flush started by the click settles clean', async () => {
@@ -570,7 +593,7 @@ describe('OrganizerWorkspace acknowledgement gate', () => {
     const { onApply } = renderWorkspace({ board: boardWithAssignments(40) });
 
     expandIsland();
-    fireEvent.click(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' }));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Draw with 60 OPEN' }));
     });
@@ -632,7 +655,7 @@ describe('OrganizerWorkspace draft participant identities', () => {
     });
     expandIsland();
 
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' })).toBeEnabled();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' })).toBeEnabled();
     expect(screen.queryByText(/Make each public name unique/)).not.toBeInTheDocument();
   });
 
@@ -646,7 +669,7 @@ describe('OrganizerWorkspace draft participant identities', () => {
     });
     expandIsland();
 
-    expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Prepare to publish' })).toBeDisabled();
+    expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Draw numbers' })).toBeDisabled();
     expect(screen.getAllByText(/Make each public name unique/).length).toBeGreaterThan(0);
   });
 });
@@ -663,6 +686,7 @@ describe('OrganizerWorkspace published boards', () => {
     renderPublished();
 
     expect(screen.getByText('Published')).toBeInTheDocument();
+    expandIsland();
     expect(screen.getByRole('button', { name: 'Payments' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Paste names')).not.toBeInTheDocument();
   });
@@ -766,6 +790,8 @@ describe('OrganizerWorkspace published boards', () => {
   it('switches score authority to manual through the service', async () => {
     renderPublished();
 
+    openTask('Game');
+    fireEvent.click(screen.getByRole('button', { name: 'View score authority' }));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Manual' }));
     });
@@ -787,6 +813,8 @@ describe('OrganizerWorkspace published boards', () => {
     };
     const { onReload } = renderPublished({ game: { ...game, scoreSnapshot } as GameState });
 
+    openTask('Game');
+    fireEvent.click(screen.getByRole('button', { name: 'View score authority' }));
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Manual' }));
     });
@@ -811,6 +839,8 @@ describe('OrganizerWorkspace published boards', () => {
     }];
     renderPublished({ winnerHistory });
 
+    openTask('Results');
+    fireEvent.click(screen.getByRole('button', { name: 'Correct a published result' }));
     fireEvent.change(screen.getByLabelText('Result to correct'), { target: { value: 'Q1' } });
     fireEvent.change(screen.getByLabelText('Why this changed (shown publicly)'), { target: { value: 'Scoreboard error' } });
     await act(async () => {
@@ -1044,7 +1074,9 @@ describe('pregame selling', () => {
   it('shares before the draw with a public visibility confirmation and keeps management available', async () => {
     const onShareBoard = vi.fn(async () => undefined);
     renderWorkspace({ onShareBoard });
+    openTask('Game & settings');
     expect(screen.getByRole('link', { name: 'My boards' })).toHaveAttribute('href', '/dashboard');
+    openSharing();
     fireEvent.click(screen.getByRole('button', { name: 'Share while selling' }));
     expect(screen.getByText(/Everyone with the link can see buyer names and assigned families/)).toBeInTheDocument();
     expect(onShareBoard).not.toHaveBeenCalled();
@@ -1058,11 +1090,12 @@ describe('pregame selling', () => {
 it('blocks sharing while a failed draft save needs recovery', async () => {
   const onShareBoard = vi.fn(async () => undefined);
   renderWorkspace({ onShareBoard, onPublish: vi.fn(async () => { throw new Error('offline'); }) });
+  openTask('Game & settings');
   const title = screen.getByRole('textbox', { name: 'Board name' });
   fireEvent.change(title, { target: { value: 'New name' } });
   fireEvent.blur(title);
-  expect(screen.getByRole('button', { name: 'Share while selling' })).toBeDisabled();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument());
+  openSharing();
   expect(screen.getByRole('button', { name: 'Share while selling' })).toBeDisabled();
   expect(onShareBoard).not.toHaveBeenCalled();
 });
@@ -1070,17 +1103,20 @@ it('blocks sharing while a failed draft save needs recovery', async () => {
 it('shows sharing errors in the dialog and allows retry without leaving the workspace', async () => {
   const onShareBoard = vi.fn().mockRejectedValueOnce(new Error('Connection lost. Try again.')).mockResolvedValueOnce(undefined);
   renderWorkspace({ onShareBoard });
+  openSharing();
   fireEvent.click(screen.getByRole('button', { name: 'Share while selling' }));
   fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Connection lost. Try again.'));
   fireEvent.click(screen.getByRole('button', { name: 'Enable shared board' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  openTask('Game & settings');
   expect(screen.getByRole('link', {name: 'My boards'})).toBeInTheDocument();
 });
 
 it('clears buyers while retaining family allocations', async () => {
   const allocations = Array.from({length: 100}, (_, index) => index === 11 ? 'Mora family' : null);
   const {onApply} = renderWorkspace({board: {...boardWithAssignments(12), allocationLabels: allocations}});
+  openTask('Board tools');
   fireEvent.click(screen.getByRole('button', {name: 'Clear all names'}));
   fireEvent.click(screen.getByRole('button', {name: 'Confirm clear'}));
   await waitFor(() => {
@@ -1092,6 +1128,7 @@ it('clears buyers while retaining family allocations', async () => {
 it('focuses Cancel before enabling public sharing and cancels without sharing', () => {
   const onShareBoard = vi.fn(async () => undefined);
   renderWorkspace({onShareBoard});
+  openSharing();
   fireEvent.click(screen.getByRole('button', {name: 'Share while selling'}));
   const cancel = screen.getByRole('button', {name: 'Cancel'});
   expect(cancel).toHaveFocus();
@@ -1103,6 +1140,7 @@ it('focuses Cancel before enabling public sharing and cancels without sharing', 
 it('can reload after an uncertain share response even when the draft is clean', async () => {
   const onReload = vi.fn(async () => undefined);
   renderWorkspace({ onReload, onShareBoard: vi.fn(async () => {throw new Error('Response lost');}) });
+  openSharing();
   fireEvent.click(screen.getByRole('button', {name: 'Share while selling'}));
   fireEvent.click(screen.getByRole('button', {name: 'Enable shared board'}));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Response lost'));
@@ -1135,6 +1173,7 @@ describe('payout persistence ownership', () => {
     vi.useFakeTimers();
     try {
       const { onPublish, props } = renderWorkspace();
+      openTask('Payout rules');
       fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
       await act(async () => { await vi.advanceTimersByTimeAsync(900); });
       expect(onPublish).not.toHaveBeenCalled();
@@ -1153,6 +1192,7 @@ it('queues board edits made during payout saving behind that revision update', a
     let finish!: (value: any) => void;
     const patch = vi.fn(() => new Promise<any>((resolve) => { finish = resolve; }));
     const { onPublish } = renderWorkspace({ onSavePayoutDescriptions: patch });
+    openTask('Payout rules');
     fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' })); });
     fireEvent.change(screen.getByLabelText('Board name'), { target: { value: 'New title' } });
@@ -1170,6 +1210,7 @@ it('queues board edits made during payout saving behind that revision update', a
 it('retains payout input after an endpoint failure and retries without a draft PUT', async () => {
   const patch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ Q1: '$100' });
   const { onPublish } = renderWorkspace({ onSavePayoutDescriptions: patch });
+  openTask('Payout rules');
   fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' }));
   await screen.findByText('Save failed. Try again.');
@@ -1183,6 +1224,7 @@ it('retains payout input after an endpoint failure and retries without a draft P
 it('keeps published payout edits on the canonical payout endpoint', async () => {
   const patch = vi.fn(async () => ({ Q1: '$100' }));
   const { onPublish } = renderWorkspace({ isPublished: true, board: drawnBoard(100), onSavePayoutDescriptions: patch });
+  openTask('Payout rules');
   fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save payout rules' }));
   await waitFor(() => expect(patch).toHaveBeenCalledWith({ Q1: '$100' }));
@@ -1194,12 +1236,15 @@ it('keeps published payout edits on the canonical payout endpoint', async () => 
 it('saves unsaved payout rules before preview and blocks preview when that save fails', async () => {
   const patch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ Q1: '$100' });
   renderWorkspace({ board: drawnBoard(100), onSavePayoutDescriptions: patch });
+  openTask('Payout rules');
   fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
   expect(screen.getByText('Unsaved payout rules')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Preview and publish' }));
+  closeTask();
+  fireEvent.click(screen.getByRole('button', { name: 'Next: Preview and publish' }));
   await screen.findByText('Save failed. Try again.');
   expect(screen.queryByRole('dialog', { name: 'Private preview — sharing is off' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Preview and publish' }));
+  closeTask();
+  fireEvent.click(screen.getByRole('button', { name: 'Next: Preview and publish' }));
   await screen.findByRole('dialog', { name: 'Private preview — sharing is off' });
   expect(patch).toHaveBeenCalledTimes(2);
 });
@@ -1207,6 +1252,7 @@ it('saves unsaved payout rules before preview and blocks preview when that save 
 
 it('warns before leaving unsaved payout input and clears the warning after save', async () => {
   renderWorkspace();
+  openTask('Payout rules');
   fireEvent.change(screen.getByLabelText('Q1'), { target: { value: '$100' } });
   const unsaved = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(unsaved);
@@ -1225,6 +1271,7 @@ it('keeps family changes disabled after board autosave until the private-note wr
   fireEvent.click(screen.getByRole('button', {name:/^Square 1,/}));
   fireEvent.click(screen.getByRole('radio', {name:'Paid'}));
   fireEvent.click(screen.getByRole('button', {name:'Save'}));
+  openTask('Sellers & links');
   fireEvent.click(screen.getByText('Send families their squares'));
   fireEvent.change(screen.getByLabelText('Responsible family'), {target:{value:'Anthony'}});
   await waitFor(() => expect(onPublish).toHaveBeenCalled(), {timeout:2000});
@@ -1238,13 +1285,13 @@ it('keeps family changes disabled after board autosave until the private-note wr
 it('offers delivery follow-up directly from the game-day island', () => {
   renderWorkspace({ isPublished: true, board: drawnBoard(100), shareCode: 'SHARE', notificationDeliveryIssues: [{ id: 'issue', milestone: 'Q1', notificationKind: 'winner', attemptCount: 3, terminalAt: '2026-09-10T20:00:00Z' }] });
   expandIsland();
-  expect(within(screen.getByRole('region', { name: 'Organizer status' })).getByRole('button', { name: 'Review delivery issue' })).toBeEnabled();
+  expect(within(screen.getByRole('dialog', { name: /Board actions/ })).getByRole('button', { name: 'Review delivery issue' })).toBeEnabled();
 });
 
 
 it('continues directly from the accepted draw into private preview', async () => {
   const { onPublish } = renderWorkspace({ board: boardWithAssignments(100) });
-  fireEvent.click(screen.getByRole('button', { name: 'Prepare to publish' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next: Draw numbers' }));
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Use numbers and continue' })); });
   expect(onPublish).toHaveBeenCalledWith(expect.objectContaining({ board: expect.objectContaining({ topAxis: expect.any(Array) }) }));
   expect(screen.getByRole('dialog', { name: 'Private preview — sharing is off' })).toBeInTheDocument();
@@ -1253,9 +1300,9 @@ it('continues directly from the accepted draw into private preview', async () =>
 
 it('returns the island to board progress after closing Payments', () => {
   renderWorkspace({ board: drawnBoard(100) });
-  fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
+  openPayments();
   fireEvent.click(within(screen.getByRole('dialog', { name: 'Payments' })).getByRole('button', { name: 'Close' }));
-  expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveTextContent('Numbers drawn');
+  expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAccessibleDescription(/Numbers drawn/);
 });
 
 it('updates selected availability without changing names, allocations or private payments', async () => {

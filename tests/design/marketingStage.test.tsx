@@ -65,7 +65,7 @@ describe('marketing chrome does not blur squares', () => {
     render(<MemoryRouter><Homepage /></MemoryRouter>);
     const sample = screen.getByRole('region', { name: 'Interactive sample board' });
     expect(within(sample).getAllByRole('gridcell')).toHaveLength(100);
-    expect(document.querySelector('.g-editorial')).toHaveAttribute('data-base', 'cream');
+    expect(document.querySelector('.g-editorial')).toHaveAttribute('data-base', 'dark');
     const hero = screen.getByTestId('homepage-first-viewport');
     expect(within(hero).getByRole('link', { name: 'Create your free board' }).className).toContain('g-cta');
   });

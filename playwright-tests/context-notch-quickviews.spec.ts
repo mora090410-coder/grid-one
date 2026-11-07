@@ -46,12 +46,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function assertKeyboardResultsQuickView(page: Page, notchLabel: string) {
-  const notch = page.getByRole('region', { name: notchLabel, exact: true });
-  const toggle = notch.getByRole('button', { name: notchLabel, exact: true });
+  const toggle = page.getByRole('button', { name: notchLabel, exact: true });
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
+  const notch = notchLabel === 'Board actions' ? page.getByRole('dialog', { name: /Board actions$/ }) : page.getByRole('region', { name: notchLabel, exact: true });
   const resultsButton = notch.getByRole('button', { name: 'Results', exact: true });
   await resultsButton.focus();
   await page.keyboard.press('Enter');
@@ -72,14 +72,14 @@ async function assertKeyboardResultsQuickView(page: Page, notchLabel: string) {
   await expect(rows.nth(3)).toContainText('DAL 21 · WAS 20 · WAS digit 0 · DAL digit 1');
   await expect(results.getByRole('button', { name: 'View results', exact: true })).toHaveCount(0);
 
-  await notch.locator('.context-notch').evaluate(node => {
+  await (notchLabel === 'Board actions' ? notch : notch.locator('.context-notch')).evaluate(node => {
     node.getAnimations({ subtree: true }).forEach(animation => animation.finish());
   });
 
   const geometry = await results.evaluate(node => {
     const detail = node.getBoundingClientRect();
-    const surface = node.closest('.context-notch')!.getBoundingClientRect();
-    const contents = node.closest('.context-notch-contents')!;
+    const surface = node.closest('.context-notch,.g1-task-dialog')!.getBoundingClientRect();
+    const contents = node.closest('.context-notch-contents,.g1-task-dialog-body')!;
     return {
       detail: { left: detail.left, right: detail.right },
       surface: { left: surface.left, right: surface.right },
@@ -91,7 +91,7 @@ async function assertKeyboardResultsQuickView(page: Page, notchLabel: string) {
   const footerIsTopmost = await close.evaluate(button => {
     const box = button.getBoundingClientRect();
     const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-    return Boolean(hit?.closest('.context-notch'));
+    return Boolean(hit?.closest('.context-notch,.g1-task-dialog'));
   });
   expect(geometry.detail.left).toBeGreaterThanOrEqual(geometry.surface.left);
   expect(geometry.detail.right).toBeLessThanOrEqual(geometry.surface.right);
@@ -182,8 +182,8 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await installPublishedOrganizerBoard(page);
     await page.goto(`/boards/${boardId}`);
-    await assertKeyboardResultsQuickView(page, 'Organizer status');
-    const results = page.getByRole('region', { name: 'Organizer status', exact: true }).getByRole('region', { name: 'Results details' });
+    await assertKeyboardResultsQuickView(page, 'Board actions');
+    const results = page.getByRole('dialog', { name: /Board actions$/ }).getByRole('region', { name: 'Results details' });
     await expect(results.getByRole('button', { name: 'Correct a published result', exact: true })).toBeVisible();
     await page.screenshot({ path: `${evidence}/organizer-results-${width}.png` });
   });

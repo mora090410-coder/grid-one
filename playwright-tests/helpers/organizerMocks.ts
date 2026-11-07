@@ -1,5 +1,20 @@
 import type { Page } from '@playwright/test';
 
+/** Real navigation through the labelled organizer control; no hidden-element activation. */
+export async function openBoardTask(page: Page, label: string) {
+  const current = page.getByRole('dialog');
+  if (await current.count()) await current.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Board actions', exact: true }).click();
+  await page.getByRole('dialog', { name: /Board actions$/ }).getByRole('button', { name: label, exact: true }).click();
+}
+export async function openBoardPayments(page: Page) {
+  await openBoardTask(page, 'Payments');
+  const action = page.getByRole('button', { name: 'Open payments', exact: true });
+  if (await action.count()) await action.click();
+  return page.getByRole('dialog', { name: 'Payments', exact: true });
+}
+
+
 /**
  * Minimal organizer route mocks, copied from `organizer.spec.ts` so the axe
  * sweep can reach `/dashboard`, `/create`, and the draft workspace without the

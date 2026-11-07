@@ -8,7 +8,7 @@ import { quietLink, trackViewDemo } from './cta';
 
 const scenarios = buildScenarioModel({ board: demoBoard, game: demoGame, live: demoLive });
 const next = scenarios.scenarios.find(scenario => scenario.team === demoGame.leftAbbr && scenario.points === 3)!;
-const checked = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(demoLive.retrievedAt));
+
 const current = { left: demoLive.leftScore % 10, top: demoLive.topScore % 10 };
 
 export function ScoreSection() {
@@ -21,7 +21,7 @@ export function ScoreSection() {
           <section className="editorial-score-card g-float" aria-label="Sample score">
             <h3>{demoGame.title}</h3><p className="editorial-small-label">Sample game · Q{demoLive.period} · {demoLive.clock}</p>
             <div className="editorial-score-numbers"><div><span>{demoGame.leftName}</span><strong>{demoLive.leftScore}<i data-score-accent aria-hidden="true" /></strong></div><div><span>{demoGame.topName}</span><strong>{demoLive.topScore}<i data-score-accent aria-hidden="true" /></strong></div></div>
-            <p className="editorial-small-label">{demoLive.sourceName} · Jan 18, 2026<br />Checked {checked} ET</p><p className="editorial-small-label">Score updates about every three minutes</p>
+            <p className="editorial-small-label">Simulated · example score, not a live feed</p><p className="editorial-small-label">Published boards can follow automatic or organizer-entered scores.</p>
           </section>
           <div className="editorial-digit-connection"><p>Use the last digits</p><div className="editorial-digits"><span>KC <strong>{current.left}</strong></span><span>PHI <strong>{current.top}</strong></span></div><svg viewBox="0 0 180 40" aria-hidden="true"><path data-score-trace pathLength="1" d="M1 20 H170 M160 10 L170 20 L160 30" /></svg><p>One matching square</p></div>
           <div className="editorial-match-board g-float"><p className="editorial-small-label">Sample board excerpt · PHI across, KC down</p><table><caption className="sr-only">Current matching square: {demoWinnerNow}, KC {current.left}, PHI {current.top}</caption><thead><tr><th scope="col">KC / PHI</th>{demoBoard.topAxis.slice(0, 3).map(d => <th scope="col" key={d}>{d}</th>)}</tr></thead><tbody>{demoBoard.leftAxis.slice(0, 3).map((digit, row) => <tr key={digit}><th scope="row">{digit}</th>{demoBoard.topAxis.slice(0, 3).map((top, col) => { const match = digit === current.left && top === current.top; return <td key={top} className={match ? 'is-matching' : ''}>{demoBoard.squares[row * 10 + col][0]}{match && <><span>Matching</span><i data-match-accent aria-hidden="true" /></>}</td>; })}</tr>)}</tbody></table><div className="editorial-single-match" role="group" aria-label="Current matching square"><p>KC {current.left} × PHI {current.top}</p><strong>{demoWinnerNow}</strong><span>Currently matching</span><i data-match-accent aria-hidden="true" /></div><p className="editorial-current-result"><strong>{demoWinnerNow}</strong> · Currently matching</p></div>

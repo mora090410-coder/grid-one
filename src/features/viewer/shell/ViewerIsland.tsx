@@ -5,6 +5,7 @@ import { buildViewerScoreModel } from '../score/viewerScoreModel';
 import NotchResults from './NotchResults';
 
 export interface ViewerIslandProps {
+  simulated?: boolean;
   game: GameState;
   board: BoardData;
   live: LiveGameData | null;
@@ -24,12 +25,13 @@ export interface ViewerIslandProps {
 }
 
 /** Public-only adapter. No payment/contact data or fetching enters this surface. */
-const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, board, live, liveStatus, isSynced, selectedPlayer, winsNow, requested, winnerHistory = [], pendingMilestones = [], onFindSquares, onViewSquares, onViewScore, onNextScores }) => {
-  const score = buildViewerScoreModel({ live, liveStatus, isSynced });
+const ViewerIsland: React.FC<ViewerIslandProps> = ({ game, board, live, liveStatus, isSynced, selectedPlayer, winsNow, requested, winnerHistory = [], pendingMilestones = [], onFindSquares, onViewSquares, onViewScore, onNextScores, simulated = false }) => {
+  const sourceScore = buildViewerScoreModel({ live, liveStatus, isSynced });
+  const score = simulated ? { ...sourceScore, authority: { ...sourceScore.authority, label: 'Sample game', detail: 'Simulated · not a live feed' }, freshness: 'Simulated', pollingText: 'Example only · scores do not update' } : sourceScore;
   const stale = score.authority.tone === 'stale';
   const leftLabel = game.leftAbbr || 'AWAY';
   const topLabel = game.topAbbr || 'HOME';
-  const authority = live?.isManual || liveStatus.startsWith('MANUAL') ? score.authority.label : `Automatic · ${score.authority.label}`;
+  const authority = simulated || live?.isManual || liveStatus.startsWith('MANUAL') ? score.authority.label : `Automatic · ${score.authority.label}`;
   const squareNumbers = selectedPlayer
     ? board.squares.flatMap((names, index) => names.includes(selectedPlayer) ? [index + 1] : [])
     : [];

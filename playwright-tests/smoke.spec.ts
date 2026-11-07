@@ -21,7 +21,7 @@ test('landing page leads with the live board and free-first publishing model', a
 test('demo board renders the sample game', async ({ page }) => {
   await page.goto('/demo');
   await expect(page.getByText(/Sunday Football Board/i).first()).toBeVisible();
-  await expect(page.getByText('Score updates about every three minutes')).toBeVisible();
+  await expect(page.getByText('Simulated score · not a live feed')).toBeVisible();
   await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();
 });
 

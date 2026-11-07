@@ -12,7 +12,7 @@ const arrow = 'motion-safe:transition-[translate] motion-safe:duration-[var(--g-
 export function PrimaryCtaLink({ to, children, className = '', trackCreate = false }: { to: string; children: React.ReactNode; className?: string; trackCreate?: boolean }) {
   const onClick = trackCreate ? () => track({ name: 'homepage_primary_action', action: 'create_board', surface: 'homepage' }) : undefined;
   return (
-    <Link to={to} className={`${primaryLink} ${className}`.trim()} onClick={onClick}>
+    <Link to={to} className={`g1-btn-primary ${primaryLink} ${className}`.trim()} onClick={onClick}>
       {children}
       <span aria-hidden="true" className={arrow}>→</span>
     </Link>

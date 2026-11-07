@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page } from '@playwright/test';
 
 const authStorageKey = 'sb-gridone-test-auth-token';
@@ -166,6 +167,7 @@ test('organizer creates a board from one scheduled NFL event', async ({ page }) 
   // Creation lands straight in the workspace: there is no interstitial.
   await expect(page).toHaveURL(new RegExp(`/boards/${createdBoardId}$`));
   await expect(page.getByRole('main', { name: /workspace$/ })).toBeVisible();
+  await openBoardTask(page, 'Game & settings');
   await expect(page.getByLabel('Board name')).toHaveValue('Week 1 fundraiser');
   expect(submitted.game.gameExternalId).toBe(scheduledGame.id);
   expect(submitted.game.kickoffAt).toBe(scheduledGame.kickoffAt);
@@ -350,7 +352,7 @@ test('draft organizer preview opens the private viewer without sharing the board
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(beforePageDown);
 
-  await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
+  await page.getByRole('button', { name: 'Next: Preview and publish', exact: true }).click();
 
   const preview = page.getByRole('dialog', { name: 'Private preview — sharing is off' });
   await expect(preview).toBeVisible();
@@ -450,10 +452,12 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
 
   await page.goto(`/boards/${boardId}`);
   await expect(page.getByRole('main', { name: 'Original title workspace' })).toBeVisible();
+  await openBoardTask(page, 'Game & settings');
   await page.getByLabel('Board name').fill('Latest title');
   await page.getByLabel('Board name').press('Enter');
+  await page.getByRole('dialog', { name: 'Game & settings', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
 
-  await page.getByRole('button', { name: 'Preview and publish', exact: true }).click();
+  await page.getByRole('button', { name: 'Next: Preview and publish', exact: true }).click();
   await page.getByRole('dialog', { name: 'Private preview — sharing is off' }).getByRole('button', { name: 'Review and publish', exact: true }).click();
   const publishDialog = page.getByRole('dialog', { name: 'Publish viewer link' });
   await expect(publishDialog).toBeVisible();

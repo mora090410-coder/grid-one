@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
@@ -90,10 +91,15 @@ for (const width of [390, 1440]) {
     await allocation.getByRole('button', { name: 'Apply to 3', exact: true }).click();
     await expect.poll(() => fixture.row.board.allocationLabels[22]).toBe('Mora family');
     await expect.poll(() => fixture.privateEntries.get(22)?.paid_status).toBe('paid');
+    await openBoardTask(page, 'Share');
     await expect(page.getByRole('button', { name: 'Share while selling', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'Share while selling', exact: true }).click();
     await page.getByRole('button', { name: 'Enable shared board', exact: true }).click();
-    await expect(page.getByRole('link', { name: 'Open shared board', exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Share while selling', exact: true })).toBeHidden();
+    await openBoardTask(page, 'Share');
+    await expect(page.getByRole('dialog', { name: /Board actions$/ })).toContainText('Shared selling board');
+    await expect(page.getByRole('button', { name: 'Open public board', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
 
     await testInfo.attach(`organizer-selling-${width}`, { body: await page.screenshot({ path: testInfo.outputPath(`organizer-selling-${width}.png`), fullPage: true }), contentType: 'image/png' });
 
@@ -149,7 +155,7 @@ for (const width of [390, 1440]) {
     await viewer.getByRole('button', { name: 'Highlight blank squares', exact: true }).click();
     await expect(viewer.getByRole('region', { name: 'Square details', exact: true }).getByRole('listitem')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Prepare to publish', exact: true }).click();
+    await openBoardTask(page, 'Draw numbers');
     await page.getByRole('button', { name: 'Draw with 97 OPEN', exact: true }).click();
     await page.getByRole('button', { name: 'Use numbers and continue', exact: true }).click();
     await page.getByRole('button', { name: 'Review and lock numbers', exact: true }).click();
@@ -169,6 +175,7 @@ for (const width of [390, 1440]) {
     await expect(manage).toHaveAttribute('href', `/boards/${boardId}`);
     await manage.click();
     await expect(page).toHaveURL(new RegExp(`/boards/${boardId}$`));
+    await openBoardTask(page, 'Game & settings');
     await expect(page.getByRole('link', { name: 'My boards', exact: true })).toBeVisible();
   });
 }

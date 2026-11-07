@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { demoBoard, demoLive, DEMO_LABEL } from '../demoData';
 import { trackViewDemo } from './cta';
+import { RollingDigit } from '../../../design/liquid/RollingDigit';
 
 const stages = ['Set up', 'Share', 'Game day'] as const;
 
@@ -45,9 +46,9 @@ export function SampleBoard() {
         <p className="sample-guide">Select a numbered square to see its name and position.</p>
         <p className="sample-axis-label">{gameDay ? 'Philadelphia · last digit of score' : 'Game numbers stay private until locked'}</p>
         <div role="grid" aria-label="Sample football squares" className="sample-grid" data-game-day={gameDay}>
-          <div role="row" className="sample-grid-row sample-axis"><span role="columnheader" aria-label="Kansas City side axis" />{Array.from({ length: 10 }, (_, column) => <span role="columnheader" key={column} data-inspected={column === selectedColumn} aria-label={`Philadelphia column ${column + 1}, ${gameDay ? `digit ${demoBoard.topAxis[column]}` : 'numbers not drawn'}`}><span className="sample-axis-digit">{gameDay ? demoBoard.topAxis[column] : '–'}</span></span>)}</div>
+          <div role="row" className="sample-grid-row sample-axis"><span role="columnheader" aria-label="Kansas City side axis" />{Array.from({ length: 10 }, (_, column) => <span role="columnheader" key={column} data-inspected={column === selectedColumn} aria-label={`Philadelphia column ${column + 1}, ${gameDay ? `digit ${demoBoard.topAxis[column]}` : 'numbers not drawn'}`}><span className="sample-axis-digit">{gameDay ? <RollingDigit value={demoBoard.topAxis[column]} index={column} /> : '–'}</span></span>)}</div>
           {Array.from({ length: 10 }, (_, row) => <div role="row" className="sample-grid-row" key={row}>
-            <span role="rowheader" className="sample-axis" data-inspected={row === selectedRow} aria-label={`Kansas City row ${row + 1}, ${gameDay ? `digit ${demoBoard.leftAxis[row]}` : 'numbers not drawn'}`}><span className="sample-axis-digit">{gameDay ? demoBoard.leftAxis[row] : '–'}</span></span>
+            <span role="rowheader" className="sample-axis" data-inspected={row === selectedRow} aria-label={`Kansas City row ${row + 1}, ${gameDay ? `digit ${demoBoard.leftAxis[row]}` : 'numbers not drawn'}`}><span className="sample-axis-digit">{gameDay ? <RollingDigit value={demoBoard.leftAxis[row]} index={row} /> : '–'}</span></span>
             {Array.from({ length: 10 }, (_, column) => {
               const index = row * 10 + column;
               const name = nameAt(index);

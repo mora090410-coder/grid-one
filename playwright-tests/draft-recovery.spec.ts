@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test } from '@playwright/test';
 import { boardId, ownerId, installOrganizerBoard } from './helpers/organizerMocks';
 
@@ -18,6 +19,7 @@ for (const width of [390, 1440]) {
       return route.fulfill({ json: { ok: true, revision: 2 } });
     });
     await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Game & settings');
     const title = page.getByLabel('Board name');
     await expect(title).toHaveValue('Parkside browser board');
     await title.fill('Unacknowledged browser edit');
@@ -25,6 +27,7 @@ for (const width of [390, 1440]) {
     await title.press('Tab');
     await expect.poll(() => page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || 'null')?.game?.title, recoveryKey)).toBe('Unacknowledged browser edit');
     await page.reload();
+    await openBoardTask(page, 'Game & settings');
     await expect(title).toHaveValue('Unacknowledged browser edit');
     const explicitSave = page.getByRole('button', { name: 'Save recovered changes', exact: true });
     await expect(explicitSave).toBeVisible();

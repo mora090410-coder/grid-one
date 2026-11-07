@@ -55,7 +55,7 @@ for(const width of [320,390,1280]){
 for(const width of [390,1280]) test(`Liquid organizer preserves editing and containment at ${width}`,async({page},info)=>{
  await page.setViewportSize({width,height:900});await installOrganizerBoard(page);await page.goto(`/boards/${boardId}`);
  await expect(page.getByRole('main',{name:'Parkside browser board workspace'})).toBeVisible();
- await expect(page.locator('[data-g1-theme="liquid"]')).toBeVisible();
+ await expect(page.locator('[data-base][data-g1-theme="liquid"]')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
  await page.getByRole('button',{name:'Square 2, unassigned',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Square 2',exact:true})).toBeVisible();

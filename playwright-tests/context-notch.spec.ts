@@ -86,10 +86,10 @@ test('organizer modules preserve payment dialog and draw confirmation; reduced m
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installOrganizerBoard(page);
   await page.goto(`/boards/${boardId}`);
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
+  const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
   await toggle.click();
   await expect(page.getByRole('region', { name: 'Board details' })).toBeVisible();
-  expect(await page.locator('.context-notch').evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
+  expect(await page.getByRole('dialog', { name: /Board actions$/ }).evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
   await page.getByRole('button', { name: 'Payments', exact: true }).first().click();
   await page.getByRole('button', { name: 'Open payments' }).click();
   const payments = page.getByRole('dialog', { name: 'Payments', exact: true });
@@ -99,33 +99,23 @@ test('organizer modules preserve payment dialog and draw confirmation; reduced m
   await toggle.click();
   await page.getByRole('button', { name: 'Board', exact: true }).click();
   await page.screenshot({ path: `${evidence}/organizer-320-reduced.png` });
-  const targets = await page.locator('.context-notch button:visible').evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
+  const targets = await page.locator('.g1-task-dialog[open] button:visible').evaluateAll(nodes => nodes.map(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
   expect(targets.every(box => box.width >= 44 && box.height >= 44)).toBe(true);
-  await page.getByRole('region', { name: 'Organizer status', exact: true }).getByRole('button', { name: 'Prepare to publish' }).click();
+  await page.getByRole('dialog', { name: /Board actions$/ }).getByRole('button', { name: 'Draw numbers', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Use numbers and continue' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('pin is nonmodal; explicit close and forced colors remain usable', async ({ page }) => {
-  await installOrganizerBoard(page);
-  await page.goto(`/boards/${boardId}`);
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
-  const supportsHover = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches);
-  if (supportsHover) {
-    await toggle.hover();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await toggle.click();
-  } else {
-    await toggle.click();
-    await page.getByRole('button', { name: 'Keep open' }).click();
-  }
-  await expect(page.getByRole('button', { name: 'Unpin' })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Board name' }).focus();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+test('organizer modal closes explicitly and remains usable in forced colors', async ({ page }) => {
+  await installOrganizerBoard(page); await page.goto(`/boards/${boardId}`);
+  const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
+  await toggle.hover(); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  const dialog = page.getByRole('dialog', { name: /Board actions$/ });
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
   await page.emulateMedia({ forcedColors: 'active' });
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(toggle).toBeFocused();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(toggle).toBeFocused(); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await page.screenshot({ path: `${evidence}/organizer-forced-colors.png` });
 });
 
@@ -157,14 +147,12 @@ test('assignment reading sweeps on genuine prop changes; merge retracts without 
   expect(reading.values[1]).toBeLessThan(80);
   expect(reading.values[1]).toBeGreaterThan(28);
   expect(reading.values[3]).toBeCloseTo(28);
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
+  const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
   await toggle.evaluate(button => (button as HTMLButtonElement).click());
-  const stagger = await page.locator('.context-notch').evaluate(node => node.getAnimations({ subtree: true }).filter(animation => (animation.effect as KeyframeEffect).target?.hasAttribute('data-notch-cell')).map(animation => animation.effect?.getTiming().delay));
-  expect(stagger).toEqual([0, 45, 90, 135]);
-  await page.locator('.context-notch').evaluate(node => node.getAnimations({ subtree: true }).forEach(animation => animation.finish()));
-  await toggle.evaluate(button => (button as HTMLButtonElement).click());
-  const merge = await page.locator('.context-notch-reveal').evaluate(node => node.getAnimations()[0]?.effect?.getTiming());
-  expect(merge?.duration).toBe(200);
-  expect(merge?.delay).toBe(0);
-  await info.attach('reading-stagger-merge', { body: JSON.stringify({ reading, stagger, merge }), contentType: 'application/json' });
+  const dialog = page.getByRole('dialog', { name: /Board actions$/ });
+  await expect(dialog).toBeVisible();
+  const animation = await dialog.evaluate(node => node.getAnimations().map(a => a.effect?.getTiming().duration));
+  expect(animation.every(duration => Number(duration) <= 300)).toBe(true);
+  await page.keyboard.press('Escape'); await expect(toggle).toBeFocused();
+  await info.attach('reading-and-dialog-motion', { body: JSON.stringify({ reading, animation }), contentType: 'application/json' });
 });

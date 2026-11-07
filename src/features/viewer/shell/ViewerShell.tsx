@@ -125,9 +125,9 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
 
   return (
-    <Base kind="dark" theme={!organizerPreview && !stageChrome ? 'liquid' : undefined} className={stageChrome ? 'demo-stage' : organizerPreview ? '' : `g1-page${selectedPlayer ? ' g1-personalized' : ''}`}>
-      {!organizerPreview && !stageChrome && <GlassGridBackground />}
-      {!organizerPreview && <ViewerIsland key={shareCode || game.title} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
+    <Base kind="dark" theme={!organizerPreview ? 'liquid' : undefined} className={organizerPreview ? '' : `g1-page${stageChrome ? ' g1-demo-page' : ''}${selectedPlayer ? ' g1-personalized' : ''}`}>
+      {!organizerPreview && <GlassGridBackground />}
+      {!organizerPreview && <ViewerIsland key={shareCode || game.title} simulated={stageChrome} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
         winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
         onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
       <MainTag
@@ -137,12 +137,12 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument liquid={!organizerPreview && !stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} surfaceClassName={stageChrome ? 'g-float' : ''} />
+          <ScoreInstrument liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           </div>
           <div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
-          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">No quarter winners yet.</p>}
+          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">{stageChrome ? 'This illustration shows current matching, not confirmed quarter results.' : 'No quarter winners yet.'}</p>}
           </div>
           {selectedPlayer && <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {pendingMilestones.length > 0 && servicesEnabled && (

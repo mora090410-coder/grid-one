@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page } from '@playwright/test';
 
 const authStorageKey = 'sb-gridone-test-auth-token';

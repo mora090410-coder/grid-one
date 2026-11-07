@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
@@ -25,6 +26,7 @@ for (const credited of [false, true]) for (const width of [390, 1440]) {
       await route.fulfill({ json: { url: `${new URL(route.request().url()).origin}/paid?order=44444444-4444-4444-8444-444444444444` } });
     });
     await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Game & settings');
     const plans = page.getByRole('button', { name: 'Season plans', exact: true });
     await expect(plans).toBeVisible();
     await plans.click();

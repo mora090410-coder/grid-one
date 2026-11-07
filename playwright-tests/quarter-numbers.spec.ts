@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
@@ -31,14 +32,18 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
       return route.fulfill({json:{published:true,shareCode:'QQQQQ234',viewerUrl:'/b/QQQQQ234',revision:++revision,tier:'free',used:1,allowance:1}});
     });
     await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Numbers');
     await page.getByRole('radio',{name:'New numbers each quarter',exact:true}).check();
-    await page.getByRole('button',{name:'Prepare to publish',exact:true}).first().click();
+    await page.getByRole('dialog', { name: 'Game numbers', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button',{name:'Next: Draw numbers',exact:true}).first().click();
     // Each quarter tab shows that quarter's draft draw before it is kept.
+    await openBoardTask(page, 'Numbers');
     for (const label of ['1st','2nd','3rd','Final']) {
       await page.getByRole('group',{name:'Quarter numbers',exact:true}).getByRole('button',{name:label,exact:true}).click();
       await expect(page.getByText(`Showing ${label} numbers`,{exact:false}).first()).toBeVisible();
     }
     await testInfo.attach('quarter-organizer-draw', {body:await page.screenshot({path:testInfo.outputPath('quarter-organizer-draw.png'),fullPage:true}),contentType:'image/png'});
+    await page.getByRole('dialog', { name: 'Game numbers', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('button',{name:'Use numbers and continue',exact:true}).click();
     await expect.poll(() => board.isDynamic).toBe(true);
     await expect.poll(() => (['Q1','Q2','Q3','Q4'] as const).every(key => new Set(board.topAxisByQuarter?.[key]).size === 10 && new Set(board.leftAxisByQuarter?.[key]).size === 10)).toBe(true);
@@ -75,6 +80,7 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
     // This is artifact correctness, not a five-second performance SLA.
     const imageExportTimeout = 15_000;
     const downloading = exportMode==='download' ? page.waitForEvent('download', { timeout: imageExportTimeout }) : null;
+    await openBoardTask(page, 'Board tools');
     await page.getByRole('button',{name:'Share board image',exact:true}).click();
     if(downloading) {
       const download=await downloading;
@@ -88,9 +94,11 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
     }
     expect(await page.evaluate(() => (window as any).quarterCanvasText)).toContain('Final numbers · Includes overtime');
     await page.reload();
+    await openBoardTask(page, 'Numbers');
     await expect(page.getByRole('radio',{name:'New numbers each quarter',exact:true})).toBeChecked();
+    await page.getByRole('dialog', { name: 'Game numbers', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
     expect(board).toEqual(beforeReload);
-    await page.getByRole('button',{name:'Preview and publish',exact:true}).first().click();
+    await page.getByRole('button',{name:'Next: Preview and publish',exact:true}).first().click();
     const preview = page.getByRole('dialog',{name:'Private preview — sharing is off',exact:true});
     await expect(preview.getByRole('group',{name:'Quarter numbers',exact:true})).toBeVisible();
     await preview.getByRole('button',{name:'Review and publish',exact:true}).click();

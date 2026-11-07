@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerBoard } from './helpers/organizerMocks';
@@ -15,8 +16,8 @@ for (const width of [320, 390, 1440]) {
   test(`palette A is integrated at home/create and sales controls match at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
-    await expect(page.locator('[data-base]').first()).toHaveCSS('background-color', 'rgb(16, 27, 42)');
-    await expect(page.getByRole('link', { name: 'Create your free board', exact: true }).first()).toHaveCSS('background-color', 'rgb(183, 164, 119)');
+    await expect(page.locator('[data-base]').first()).toHaveCSS('background-color', 'rgb(7, 11, 20)');
+    await expect(page.getByRole('link', { name: 'Create your free board', exact: true }).first()).toHaveCSS('background-color', 'rgb(232, 211, 155)');
     await page.screenshot({ path: info.outputPath(`home-${width}.png`), fullPage: true });
     await page.getByRole('link', { name: 'Create your free board', exact: true }).first().click();
     await expect(page).toHaveURL(/\/create/);
@@ -52,6 +53,7 @@ for (const reduced of [false, true]) {
     await cell.click();
     await expect(cell).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => cell.evaluate(e => new DOMMatrix(getComputedStyle(e).transform).m42)).toBe(reduced ? 0 : -2);
+    await openBoardTask(page, 'Sellers & links');
     await page.getByRole('button', { name: 'Get seller links', exact: true }).click();
     await page.getByRole('button', { name: 'Preview Sample seller’s handoff' }).click();
     const preview = page.getByRole('region', { name: 'Sample seller’s handoff' });

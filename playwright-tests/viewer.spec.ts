@@ -162,6 +162,7 @@ test.describe('viewer shell', () => {
     const islandToggle = page.getByRole('button', { name: /^Score/ });
     await expect(islandToggle).toHaveCount(0);
     await page.getByTestId('viewer-board-grid').scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollTo({ top: document.querySelector('.g1-find-region')!.getBoundingClientRect().bottom + scrollY + 160, behavior: 'instant' }));
     await expect(islandToggle).toBeVisible();
     await islandToggle.click();
     const scoreRegion = page.getByRole('region', { name: 'Score', exact: true });

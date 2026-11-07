@@ -123,11 +123,11 @@ test('published organizer Game Results Share navigate real pre-Final destination
   } }));
   await page.route(`**/api/pools/${boardId}/score`, route => route.fulfill({ json: { score, winnerHistory: history, pendingMilestones: [] } }));
   await page.goto(`/boards/${boardId}`);
-  const notch = page.getByRole('region', { name: 'Organizer status', exact: true });
-  const toggle = notch.getByRole('button', { name: 'Organizer status', exact: true });
+  const notch = page.getByRole('dialog', { name: /Board actions$/ });
+  const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
   await toggle.click();
-  await expect(notch.getByRole('button', { name: 'Payments', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('main').getByRole('button', { name: 'Payments', exact: true })).toBeVisible();
+  await expect(notch.getByRole('button', { name: 'Payments', exact: true })).toBeVisible();
+  await expect(notch.getByText(/paid ·/)).toHaveCount(0);
   for (const destination of [
     { module: 'Game', action: 'View score authority', id: 'organizer-score' },
     { module: 'Results', action: 'Correct a published result', id: 'organizer-corrections' },
@@ -141,8 +141,9 @@ test('published organizer Game Results Share navigate real pre-Final destination
     }
     await notch.getByRole('button', { name: destination.action, exact: true }).click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.locator(`#${destination.id}`)).toBeFocused();
     await expect(page.locator(`#${destination.id}`)).toBeInViewport();
+    await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(toggle).toBeFocused();
   }
   await toggle.click();
   await page.screenshot({ path: `${evidence}/published-organizer-share.png` });

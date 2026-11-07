@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { openBoardPayments } from './helpers/organizerMocks';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
 
 /** Keep server rows outside the page so reload verifies a read, not a React cache. */
@@ -47,10 +48,7 @@ function paymentsFixture() {
 }
 
 async function openPayments(page: Page) {
-  const button = page.getByRole('button', { name: 'Payments', exact: true });
-  await expect(button).toBeVisible();
-  await button.click();
-  const dialog = page.getByRole('dialog', { name: 'Payments', exact: true });
+  const dialog = await openBoardPayments(page);
   await expect(dialog).toBeVisible();
   return dialog;
 }
@@ -143,7 +141,7 @@ test('viewing a square then reopening Payments restores the payment trigger on c
   const reopened = await openPayments(page);
   await reopened.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(reopened).not.toBeVisible();
-  await expect(page.getByRole('button', { name: 'Payments', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Board actions', exact: true })).toBeFocused();
 });
 
 test('failed payment save keeps the persisted status and exposes an error', async ({ page }) => {
@@ -166,16 +164,15 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await paymentsFixture().install(page);
     await page.goto(`/boards/${boardId}`);
-    await expect(page.getByRole('button', { name: 'Payments', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Board actions', exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
+    const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
     const details = page.getByRole('region', { name: 'Board details', exact: true });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    const island = page.locator('.organizer-island');
+    const island = page.locator('.g1-board-island');
     const compact = await island.boundingBox();
-    expect(compact!.height).toBeLessThan(90);
-    const gameSummary = await page.getByText(/^DAL at WAS ·/).boundingBox();
-    expect(gameSummary!.height).toBeLessThanOrEqual(48);
+    expect(compact!.height).toBeLessThan(140);
+    await expect(page.locator('.g1-board-island-reading')).toContainText('Payments browser board');
     const firstSquare = await page.getByRole('button', { name: /^Square 1,/ }).boundingBox();
     expect(compact!.y + compact!.height).toBeLessThan(firstSquare!.y);
     await toggle.click();
@@ -208,114 +205,39 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
     await testInfo.attach('payments-selected', { body: await page.screenshot({ path: testInfo.outputPath(`payments-selected-${viewport.width}.png`) }), contentType: 'image/png' });
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Payments', exact: true })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Board actions', exact: true })).toBeFocused();
   });
 }
 
-test('normal motion morphs through intermediate geometry and reverses smoothly', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
+test('normal motion is bounded to a dialog entrance, not a layout morph', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await paymentsFixture().install(page);
-  await page.goto(`/boards/${boardId}`);
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
-  await expect(toggle).toBeVisible();
-  const samples = await toggle.evaluate(async button => {
-    const island = button.closest('.organizer-island')!;
-    const frames: { time: number; width: number; height: number }[] = [];
-    const capture = (time: number) => { const box = island.getBoundingClientRect(); frames.push({ time, width: box.width, height: box.height }); };
-    capture(0);
-    (button as HTMLButtonElement).click();
-    const start = performance.now();
-    await new Promise<void>(resolve => {
-      const frame = () => { const elapsed = performance.now() - start; capture(elapsed); if (elapsed < 650) requestAnimationFrame(frame); else resolve(); };
-      requestAnimationFrame(frame);
-    });
-    return frames;
-  });
-  const first = samples[0], last = samples.at(-1)!;
-  expect(last.width).toBeGreaterThan(first.width + 50);
-  expect(last.height).toBeGreaterThan(first.height + 100);
-  expect(samples.some(frame => frame.width > first.width + 5 && frame.width < last.width - 5 && frame.height > first.height + 5 && frame.height < last.height - 5)).toBe(true);
-  expect(last.height).toBeLessThan(752);
-  await testInfo.attach('normal-motion-frames', { body: JSON.stringify(samples), contentType: 'application/json' });
-  await toggle.click();
-  await expect.poll(async () => (await page.locator('.organizer-island').boundingBox())!.height).toBeLessThan(90);
-  const { heights: reversed, times: frameTimes } = await toggle.evaluate(async (button, expandedHeight) => {
-    const island = button.closest('.organizer-island')!;
-    const heights: number[] = [island.getBoundingClientRect().height];
-    const times: number[] = [0];
-    (button as HTMLButtonElement).click();
-    const start = performance.now(); let reversed = false;
-    await new Promise<void>(resolve => {
-      const frame = () => {
-        const elapsed = performance.now() - start;
-        const paintedHeight = island.getBoundingClientRect().height;
-        heights.push(paintedHeight);
-        times.push(elapsed);
-        // Reverse an observed in-flight shape, not a wall-clock deadline that
-        // may elapse before React/browser paint on a busy test worker.
-        if (!reversed && paintedHeight > heights[0] + 20 && paintedHeight < expandedHeight - 20) {
-          (button as HTMLButtonElement).click(); reversed = true;
-        }
-        if (elapsed < 750) requestAnimationFrame(frame); else resolve();
-      }; requestAnimationFrame(frame);
-    });
-    return { heights, times };
-  }, last.height);
-  await testInfo.attach('reversed-motion-frames', { body: JSON.stringify({ heights: reversed, times: frameTimes }), contentType: 'application/json' });
-  expect(Math.max(...reversed)).toBeGreaterThan(reversed[0] + 20);
-  expect(reversed.at(-1)!).toBeLessThan(90);
-  // RAF observations are not equally spaced: the RED captured a 279px delta
-  // across 117ms, not a one-frame teleport. Keep the original half-height
-  // bound per nominal 60Hz frame, retaining actual timestamps as evidence.
-  // This checks sampled average rate, not unseen jumps or a no-jank speed SLA.
-  const nominalFrameMs = 1000 / 60;
-  const normalizedSteps = reversed.slice(1).map((height, index) =>
-    Math.abs(height - reversed[index]) / Math.max(1, (frameTimes[index + 1] - frameTimes[index]) / nominalFrameMs));
-  expect(Math.max(...normalizedSteps)).toBeLessThan(last.height * .5);
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await paymentsFixture().install(page); await page.goto(`/boards/${boardId}`);
+  const trigger = page.getByRole('button', { name: 'Board actions', exact: true });
+  const before = await trigger.boundingBox();
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: /Board actions$/ });
+  const animations = await dialog.evaluate(node => node.getAnimations().map(a => ({ duration: a.effect?.getTiming().duration, frames: (a.effect as KeyframeEffect).getKeyframes() })));
+  expect(animations.length).toBeLessThanOrEqual(1);
+  expect(animations.every(a => Number(a.duration) <= 300)).toBe(true);
+  expect(animations.every(a => a.frames.every(f => !('width' in f) && !('height' in f)))).toBe(true);
+  await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
+  expect(await trigger.boundingBox()).toEqual(before);
+  await testInfo.attach('bounded-dialog-motion', { body: JSON.stringify(animations), contentType: 'application/json' });
 });
 
-test('iPad touch hold remains expanded on release and movement cancels hold', async ({ page, browserName, isMobile }, testInfo) => {
+test('iPad touch uses a deliberate tap and pointer cancellation never opens the modal', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 820, height: 1180 });
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await paymentsFixture().install(page);
-  await page.goto(`/boards/${boardId}`);
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
-  await expect(toggle).toBeVisible();
-  await toggle.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 1, clientX: 410, clientY: 40 });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await toggle.dispatchEvent('pointerup', { pointerType: 'touch', pointerId: 1 });
-  await toggle.dispatchEvent('click');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await page.keyboard.press('Escape');
-  await toggle.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 2, clientX: 410, clientY: 40 });
-  await toggle.dispatchEvent('pointermove', { pointerType: 'touch', pointerId: 2, clientX: 410, clientY: 100 });
-  await toggle.dispatchEvent('pointercancel', { pointerType: 'touch', pointerId: 2 });
-  if (browserName === 'webkit' && isMobile) {
-    // Mobile WebKit has no wheel API. The synthetic touch movement/cancel above
-    // still exercises hold cancellation; scroll the real viewport here without
-    // claiming this fixture certifies a physical touch swipe.
-    await page.evaluate(() => window.scrollBy(0, 350));
-  } else {
-    await page.mouse.move(4, 700);
-    await page.mouse.wheel(0, 350);
-  }
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
-  // Observe longer than the hold threshold so a forgotten timer cannot pass.
-  await page.waitForTimeout(650);
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await toggle.click();
-  await expect(page.getByRole('region', { name: 'Board details', exact: true })).toBeVisible();
-  // Responsive spring retargeting may cancel a prior animation; wait for the
-  // actual surface to settle rather than treating a valid retarget as failure.
-  await expect.poll(() => page.locator('.organizer-island').evaluate(element => element.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length)).toBe(0);
-  const expanded = await page.locator('.organizer-island').boundingBox();
-  expect(expanded!.x).toBeGreaterThanOrEqual(0);
-  expect(expanded!.x + expanded!.width).toBeLessThanOrEqual(820);
-  expect(expanded!.y + expanded!.height).toBeLessThanOrEqual(1180);
-  await testInfo.attach('ipad-expanded', { body: await page.screenshot({ path: testInfo.outputPath('ipad-expanded.png') }), contentType: 'image/png' });
+  await paymentsFixture().install(page); await page.goto(`/boards/${boardId}`);
+  const trigger = page.getByRole('button', { name: 'Board actions', exact: true });
+  await trigger.dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 1, clientX: 410, clientY: 40 });
+  await trigger.dispatchEvent('pointermove', { pointerType: 'touch', pointerId: 1, clientX: 410, clientY: 100 });
+  await trigger.dispatchEvent('pointercancel', { pointerType: 'touch', pointerId: 1 });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: /Board actions$/ });
+  await expect(dialog).toBeVisible();
+  await testInfo.attach('ipad-modal', { body: await page.screenshot(), contentType: 'image/png' });
+  await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
 });
 
 test('320px enlarged text keeps the trigger and payment controls reachable', async ({ page }, testInfo) => {
@@ -325,7 +247,7 @@ test('320px enlarged text keeps the trigger and payment controls reachable', asy
   await page.goto(`/boards/${boardId}`);
   // Doubled inherited text size exercises text zoom without changing viewport size.
   await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
-  const toggle = page.getByRole('button', { name: 'Organizer status', exact: true });
+  const toggle = page.getByRole('button', { name: 'Board actions', exact: true });
   await expect(toggle).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await toggle.evaluate(element => element.scrollHeight <= element.clientHeight)).toBe(true);
@@ -333,7 +255,7 @@ test('320px enlarged text keeps the trigger and payment controls reachable', asy
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
   await toggle.click();
-  const notch = page.getByRole('region', { name: 'Organizer status', exact: true });
+  const notch = page.getByRole('dialog', { name: /Board actions$/ });
   await notch.getByRole('button', { name: 'Payments', exact: true }).click();
   await notch.getByRole('button', { name: 'Open payments', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Payments', exact: true });

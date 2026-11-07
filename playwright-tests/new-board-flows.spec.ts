@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
@@ -60,10 +61,12 @@ for (const width of [390, 1440]) {
       await route.fulfill({ json: { revision: row.revision, ...(body.action === 'invite' ? { url: `https://gridone.example/family#${'a'.repeat(64)}` } : {}) } });
     });
     await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Board rules');
     await page.getByText('Help people join', { exact: true }).click();
     await page.getByLabel('What this board supports', { exact: true }).fill('Help Lincoln Baseball get to summer tournaments.');
     await page.getByLabel('Amount per square (optional)', { exact: true }).fill('$20');
     await page.getByLabel('How to join', { exact: true }).fill('Contact the family who shared this board with your square numbers.');
+    await openBoardTask(page, 'Sellers & links');
     await page.getByText('Send families their squares', { exact: true }).click();
     await page.getByRole('combobox', { name: 'Responsible family', exact: true }).selectOption('Anthony');
     await expect.poll(() => row.board.participation.instructions).toBe('Contact the family who shared this board with your square numbers.');

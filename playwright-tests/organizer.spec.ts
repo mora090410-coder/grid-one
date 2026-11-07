@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page } from '@playwright/test';
 
 const authStorageKey = 'sb-gridone-test-auth-token';
@@ -191,14 +192,13 @@ test.describe('organizer workspace contract', () => {
     await page.goto(`/boards/${boardId}`);
 
     await expect(page.getByRole('main', { name: 'Parkside browser board workspace' })).toBeVisible();
-    await expect(page.getByLabel('Board name')).toHaveValue('Parkside browser board');
-    await expect(page.getByRole('button', { name: 'Change game' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Board actions', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Square 1, assigned to Ava' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Square 2, unassigned' })).toBeVisible();
 
     await expect(page.getByRole('region', { name: 'Organizer status' })).toBeVisible();
     // The next step is available without expanding organizer status.
-    await expect(page.getByRole('button', { name: 'Prepare to publish' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Next: Draw numbers' })).toBeVisible();
 
     const overflow = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;
@@ -241,6 +241,7 @@ test.describe('organizer workspace contract', () => {
     await expect(page.getByRole('main', { name: 'Parkside browser board workspace' })).toBeVisible();
     expect(scheduleRequests).toBe(0);
 
+    await openBoardTask(page, 'Game & settings');
     await page.getByRole('button', { name: 'Change game' }).click();
     const sheet = page.getByRole('dialog', { name: 'Pick the game' });
     await expect(sheet).toBeVisible();
@@ -258,22 +259,27 @@ test('payout rules save beside a pending board edit and survive reload without r
   const saved = await installOrganizerBoard(page, true);
   await page.goto(`/boards/${boardId}`);
   await expect(page.getByRole('main', { name: 'Parkside browser board workspace' })).toBeVisible();
+  await openBoardTask(page, 'Payout rules');
   for (const label of ['Q1', 'Halftime', 'Q3', 'Final']) {
     await page.getByRole('textbox', { name: label, exact: true }).fill('$100');
   }
   const notes = 'Test board. Each quarter pays $100; organizer handles payment.';
   await page.getByRole('textbox', { name: 'Board rules', exact: true }).fill(notes);
   await expect(page.getByRole('status').filter({ hasText: 'Unsaved payout rules' })).toBeVisible();
+  await openBoardTask(page, 'Game & settings');
   await page.getByRole('textbox', { name: 'Board name', exact: true }).fill('Payout persistence test');
   await page.getByRole('textbox', { name: 'Board name', exact: true }).press('Tab');
   await expect(page.getByRole('main', { name: 'Payout persistence test workspace' })).toBeVisible();
+  await openBoardTask(page, 'Payout rules');
   await page.getByRole('button', { name: 'Save payout rules', exact: true }).click();
   await expect.poll(() => saved.payouts).toEqual({ Q1: '$100', HALF: '$100', Q3: '$100', FINAL: '$100', notes });
   await expect(page.getByRole('status').filter({ hasText: 'Unsaved payout rules' })).toHaveCount(0);
   expect(saved.conflicts).toBe(0);
   expect(saved.writes).toEqual([{ method: 'PUT', revision: 1 }, { method: 'PATCH', revision: 2 }]);
   await page.reload();
+  await openBoardTask(page, 'Game & settings');
   await expect(page.getByRole('textbox', { name: 'Board name', exact: true })).toHaveValue('Payout persistence test');
+  await openBoardTask(page, 'Payout rules');
   for (const label of ['Q1', 'Halftime', 'Q3', 'Final']) {
     await expect(page.getByRole('textbox', { name: label, exact: true })).toHaveValue('$100');
   }

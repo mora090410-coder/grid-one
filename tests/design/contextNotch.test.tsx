@@ -9,7 +9,7 @@ describe('replacement notch interaction', () => {
   it('selects one attached detail without executing the selected module action', () => {
     const pay = vi.fn();
     render(<OrganizerIsland {...base} onPayments={pay} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
     const payments = screen.getByRole('button', { name: 'Payments' });
     expect(payments).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(payments);
@@ -19,29 +19,24 @@ describe('replacement notch interaction', () => {
     expect(screen.queryByRole('region', { name: 'Board details' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Open payments' }));
     expect(pay).toHaveBeenCalledOnce();
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAttribute('aria-expanded', 'false');
   });
-  it('pins a hover preview and Escape closes with a persistent focus target', () => {
-    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  it('requires deliberate activation and Escape returns focus to the stable trigger', () => {
     render(<OrganizerIsland {...base} />);
-    const trigger = screen.getByRole('button', { name: 'Organizer status' });
+    const trigger = screen.getByRole('button', { name: 'Board actions' });
     fireEvent.mouseEnter(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    trigger.focus();
     fireEvent.click(trigger);
-    expect(screen.getByRole('button', { name: 'Unpin' })).toBeVisible();
-    fireEvent.mouseLeave(screen.getByRole('region', { name: 'Organizer status' }));
-    fireEvent.pointerDown(document.body);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.keyDown(trigger, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(trigger).toHaveFocus();
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    vi.unstubAllGlobals();
   });
   it('published modules omit private payment content and retain the primary callback', () => {
     render(<OrganizerIsland {...base} isPublished liveTrust="Manual score" onPayments={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
-    const region = screen.getByRole('region', { name: 'Organizer status' });
+    fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
+    const region = screen.getByRole('dialog', { name: 'Board actions' });
     expect(within(region).getByRole('button', { name: 'Game' })).toBeVisible();
     expect(within(region).getByRole('button', { name: 'Results' })).toBeVisible();
     expect(within(region).getByRole('button', { name: 'Share' })).toBeVisible();

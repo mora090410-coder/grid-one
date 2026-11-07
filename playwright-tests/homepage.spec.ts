@@ -16,7 +16,7 @@ for (const width of [1440, 320]) {
       expect(await sheet.evaluate(element => element.getBoundingClientRect().top + scrollY)).toBeCloseTo(originalTop, 0);
       expect((await sample.getByRole('status').boundingBox())!.height).toBeCloseTo(inspectorHeight, 0);
       expect(await sample.locator('.sample-stage-copy').evaluate(element => getComputedStyle(element).opacity)).toBe('1');
-      const digits = await sample.getByRole('columnheader').allTextContents();
+      const digits = await sample.getByRole('columnheader').evaluateAll(nodes => nodes.map(node => node.querySelector('.g1-roll > .sr-only')?.textContent ?? node.textContent));
       expect(digits.slice(1)).toEqual(stage === 'Game day' ? ['4', '1', '8', '6', '2', '9', '0', '5', '7', '3'] : Array(10).fill('–'));
       if (stage !== 'Game day') {
         expect(await sample.locator('.sample-axis-digit').evaluateAll(elements => elements.flatMap(element => element.getAnimations()).length)).toBe(0);

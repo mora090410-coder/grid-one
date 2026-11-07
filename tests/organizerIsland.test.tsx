@@ -28,74 +28,51 @@ describe('organizer island summary', () => {
 describe('organizer island disclosure', () => {
   it('opens deliberately, hides collapsed actions, and restores keyboard focus on Escape', () => {
     render(<OrganizerIsland {...base} />);
-    const trigger = screen.getByRole('button', { name: 'Organizer status' });
+    const trigger = screen.getByRole('button', { name: 'Board actions' });
     fireEvent.mouseEnter(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'Draw numbers' })).not.toBeInTheDocument();
     fireEvent.click(trigger);
-    expect(within(screen.getByRole('region', { name: 'Board details' })).getByText('72 of 100 assigned')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Board details' })).toHaveTextContent('72 of 100 assigned');
     expect(screen.getByRole('region', { name: 'Board details' })).toHaveTextContent('Saved');
     fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
     expect(screen.getByText('12 not asked yet')).toBeVisible();
     screen.getByRole('button', { name: 'Draw numbers' }).focus();
-    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(trigger).toHaveFocus();
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
   it('closes before opening a task and gives that task a stable focus return target', () => {
     const callback = vi.fn(() => {
-      expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.getByRole('button', { name: 'Organizer status' })).toHaveFocus();
+      expect(screen.getByRole('button', { name: 'Board actions' })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', { name: 'Board actions' })).toHaveFocus();
     });
     render(<OrganizerIsland {...base} onPayments={callback} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
     fireEvent.click(screen.getByRole('button', { name: 'Payments' }));
     fireEvent.click(screen.getByRole('button', { name: 'Open payments' }));
     expect(callback).toHaveBeenCalledOnce();
   });
-  it('dismisses outside without stealing focus from another control', () => {
-    render(<><OrganizerIsland {...base} /><button>Other task</button></>);
-    const trigger = screen.getByRole('button', { name: 'Organizer status' });
+  it('provides a visible close path and restores the labelled trigger', () => {
+    render(<OrganizerIsland {...base} />);
+    const trigger = screen.getByRole('button', { name: 'Board actions' });
+    trigger.focus();
     fireEvent.click(trigger);
-    const outside = screen.getByRole('button', { name: 'Other task' });
-    outside.focus();
-    fireEvent.pointerDown(outside);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(outside).toHaveFocus();
+    expect(trigger).toHaveFocus();
   });
-});
-
-
-describe('organizer island touch hold', () => {
-  function pointer(target: HTMLElement, type: string, x = 0) {
-    const event = new Event(type, { bubbles: true });
-    Object.assign(event, { pointerType: 'touch', clientX: x, clientY: 0, pointerId: 1 });
-    fireEvent(target, event);
-  }
-  it('opens after a hold and suppresses the release click', () => {
+  it('does not open on hover or hold; an ordinary click opens it', () => {
     vi.useFakeTimers();
     try {
       render(<OrganizerIsland {...base} />);
-      const toggle = screen.getByRole('button', { name: 'Organizer status' });
-      pointer(toggle, 'pointerdown');
-      act(() => vi.advanceTimersByTime(450));
-      expect(toggle).toHaveAttribute('aria-expanded', 'true');
-      pointer(toggle, 'pointerup');
-      fireEvent.click(toggle);
-      expect(toggle).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.click(toggle);
-      expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    } finally { vi.useRealTimers(); }
-  });
-  it.each(['pointerup', 'pointercancel', 'pointermove'])('cancels on %s without blocking scrolling', (type) => {
-    vi.useFakeTimers();
-    try {
-      render(<OrganizerIsland {...base} />);
-      const toggle = screen.getByRole('button', { name: 'Organizer status' });
-      pointer(toggle, 'pointerdown');
-      pointer(toggle, type, 20);
+      const trigger = screen.getByRole('button', { name: 'Board actions' });
+      fireEvent.mouseEnter(trigger);
+      fireEvent.pointerDown(trigger, { pointerType: 'touch' });
       act(() => vi.advanceTimersByTime(500));
-      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
     } finally { vi.useRealTimers(); }
   });
 });
@@ -111,7 +88,7 @@ it('adds actionable issue detail and gates preview readiness', () => {
 it('shows results immediately and reserves sharing controls for Share', () => {
   const copy = vi.fn();
   render(<OrganizerIsland {...base} isPublished primary={null} shareActions={[{ label: 'Copy link', onClick: copy }]} winnerHistory={[]} onResults={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
   fireEvent.click(screen.getByRole('button', { name: 'Results' }));
   expect(screen.getByText('No published results yet.')).toBeVisible();
   expect(screen.queryByRole('button', { name: 'View results' })).not.toBeInTheDocument();
@@ -127,7 +104,7 @@ it('separates published results from pending scores and offers explicit correcti
   render(<OrganizerIsland {...base} isPublished primary={null} onResults={correct}
     winnerHistory={[{ milestone: 'Q1', participantName: 'Old name', openSquare: true, corrected: true, topScore: 3, sideScore: 7, topDigit: 3, sideDigit: 7, resolvedAt: '' }]}
     pendingMilestones={[{ milestone: 'Q2', topScore: 10, sideScore: 14, topDigit: 0, sideDigit: 4, stableSince: '', lastObservedAt: '', successfulReadCount: 1 }]} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Organizer status' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
   fireEvent.click(screen.getByRole('button', { name: 'Results' }));
   const results = screen.getByRole('region', { name: 'Results details' });
   expect(results).toHaveTextContent('OPEN · corrected');

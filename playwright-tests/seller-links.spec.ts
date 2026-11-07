@@ -1,3 +1,4 @@
+import { openBoardTask } from './helpers/organizerMocks';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { boardId, ownerId, scheduledGame, installOrganizerSession, installOrganizerSupport } from './helpers/organizerMocks';
@@ -72,6 +73,7 @@ for (const width of [390, 1440]) {
       ] } });
     });
     await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Sellers & links');
     const card = page.getByRole('region', { name: 'Send seller links' });
     await expect(card).toContainText('2 sellers · 15 squares');
     await card.getByRole('button', { name: 'Get seller links' }).click();

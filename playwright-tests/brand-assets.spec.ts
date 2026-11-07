@@ -17,7 +17,7 @@ test('the head names brand icons and a share image that all load', async ({ page
 });
 
 // Corner Square rebrand: Archivo type and brand ink/chalk text.
-test('pages paint in Archivo with brand text colors and tight headings', async ({ page }) => {
+test('landing and product surfaces use the adopted Inter glass theme', async ({ page }) => {
   await page.goto('/');
   const body = await page.evaluate(() => {
     const style = getComputedStyle(document.body);
@@ -27,12 +27,12 @@ test('pages paint in Archivo with brand text colors and tight headings', async (
   expect(body.color).toBe('rgb(240, 237, 229)');
 
   const heading = page.getByRole('heading', { level: 1 }).first();
-  await expect(heading).toHaveCSS('font-family', /^"?Archivo"?,/);
-  await expect(heading).toHaveCSS('color', 'rgb(240, 237, 229)');
-  await expect.poll(() => heading.evaluate(el => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize))).toBeCloseTo(-0.055, 3);
+  await expect(heading).toHaveCSS('font-family', /^"?Inter"?,/);
+  await expect(heading).toHaveCSS('color', 'rgb(233, 236, 242)');
+  await expect.poll(() => heading.evaluate(el => parseFloat(getComputedStyle(el).letterSpacing) / parseFloat(getComputedStyle(el).fontSize))).toBeCloseTo(-0.045, 3);
   await expect.poll(() => page.evaluate(async () => {
     await document.fonts.ready;
-    return document.fonts.check('700 16px Archivo');
+    return document.fonts.check('400 16px Inter');
   })).toBe(true);
 
   // The adopted acquisition/create scope: editorial ink on warm paper.
