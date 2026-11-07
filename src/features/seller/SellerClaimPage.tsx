@@ -112,7 +112,7 @@ export default function SellerClaimPage() {
         </Glass> : <form onSubmit={claim} className="flex flex-col gap-6">
           <div className="g1-glass g1-buyer-overview" data-g1-blur="true">
             <BoardMap label={`Board map. ${view.label}’s squares are highlighted.`} states={new Map<number,BoardMapState>(view.cells.map(cell=>[cell.index, selected.includes(cell.index) ? 'picked' : cell.available ? 'seller' : 'taken']))}/>
-            <div><p>{open.length} open</p><p>Game numbers appear when the organizer locks the board.</p></div>
+            <div><p>{open.length} available to claim</p><p>Game numbers appear when the organizer locks the board.</p></div>
           </div>
           <div role="group" aria-label={`${view.label}’s squares`} className="g1-buyer-tiles grid grid-cols-4 gap-2 sm:grid-cols-5">
             {view.cells.map((cell) => {
@@ -128,7 +128,7 @@ export default function SellerClaimPage() {
               </button>;
             })}
           </div>
-          {open.length === 0 && <p className="font-ui text-base text-fg-2">All of {view.label}’s squares are taken.</p>}
+          {open.length === 0 && <p className="font-ui text-base text-fg-2">None of {view.label}’s squares are available to claim right now.</p>}
           {open.length > 0 && <p className="font-ui text-sm text-fg-2" aria-live="polite">{selected.length ? `${selected.length} picked.` : 'Tap the squares you want.'} Up to {MAX_CLAIM} at a time.</p>}
           <div className="g1-glass g1-buyer-sheet g1-sheen" data-g1-blur="true">
           <p className="g1-buyer-summary" aria-live="polite">{selected.length ? claimedSquaresText(selected) : 'Pick a square above'}</p>

@@ -69,7 +69,7 @@ describe('SellerLinksCard', () => {
     expect(fetcher.mock.calls[0][1].headers.Authorization).toBe('Bearer jwt');
     expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ action: 'sync' });
     const anthony = within(list).getByRole('listitem', { name: 'Anthony' });
-    expect(within(anthony).getByText('10 squares · 7 not sold yet')).toBeInTheDocument();
+    expect(within(anthony).getByText('10 squares · 7 unclaimed')).toBeInTheDocument();
     fireEvent.click(within(anthony).getByRole('button', { name: 'Share Anthony’s link' }));
     await waitFor(() => expect(share).toHaveBeenCalledWith({
       title: 'Lincoln Board',

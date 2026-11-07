@@ -41,6 +41,8 @@ Board, Organizer, Viewer, Purchaser, Participant, Square, Axis digits, Publish a
 
 Assignment state is `assigned` or `OPEN`. Payment state is `Not asked yet`, `Unpaid`, or `Paid` — and it is always private.
 
+Seller inventory distinguishes **unclaimed** from **available to claim**. An unclaimed square has no recorded buyer (blank or the sole family placeholder); it is not necessarily offered to buyers. The organizer summary says `{n} unclaimed`, with the helper `Unclaimed squares aren’t necessarily available to buyers.` The buyer page says `{n} available to claim`, counting only squares the server marks claimable. These counts may legitimately differ and say nothing about payment status. When none are claimable, say `None of {label}’s squares are available to claim right now.` rather than asserting they are all taken. Wording changes must not change eligibility or reopen inventory.
+
 ## State model
 
 `evaluateOrganizerLifecycle({ board, save, publishIntent })` returns the phase, the one primary action, `hardBlockers`, `advisories`, `canEnterDraw`, and `canPublish`. The island renders the primary action; the reconcile card renders the blockers and advisories. Nothing else decides the phase.

@@ -115,13 +115,14 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
       {!links && <CapsuleButton disabled={busy || !clean} onClick={() => void request({ action: 'sync' })}>{busy ? 'Getting links…' : 'Get seller links'}</CapsuleButton>}
       {!clean && !links && <p className="font-ui text-[14px] text-fg-2">Links are ready once your latest changes save.</p>}
       {links && <>
+        <p className="font-ui text-[14px] text-fg-2">Unclaimed squares aren’t necessarily available to buyers.</p>
         <ul aria-label="Seller links" className="flex flex-col gap-2">
           {links.map((link) => {
             const summary = sellers.find((seller) => seller.label === link.label);
             return <li key={link.code} aria-label={link.label} className="flex flex-col gap-2 rounded-control border border-hairline bg-panel p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="break-words font-ui text-[16px] font-semibold text-fg"><span aria-hidden="true" className="g1-seller-dot" style={{display:'inline-block',marginRight:8,background:`color-mix(in srgb, var(--g1-seller-${sellers.findIndex(seller=>seller.label===link.label) % 6 + 1}) 55%, transparent)`}}/>{link.label}</span>
-                {summary && <span className="font-ui text-[14px] text-fg-2">{summary.total} {summary.total === 1 ? 'square' : 'squares'} · {summary.unsold} not sold yet</span>}
+                {summary && <span className="font-ui text-[14px] text-fg-2">{summary.total} {summary.total === 1 ? 'square' : 'squares'} · {summary.unsold} unclaimed</span>}
               </div>
               <div className="flex flex-wrap gap-2">
                 <CapsuleButton variant="quiet" disabled={busy || !clean} aria-label={`Preview ${link.label}’s handoff`} aria-expanded={previewing === link.code} aria-controls={`seller-handoff-${link.code}`} onClick={() => setPreviewing(value => value === link.code ? null : link.code)}>Preview seller handoff</CapsuleButton>

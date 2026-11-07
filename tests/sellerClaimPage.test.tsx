@@ -73,6 +73,16 @@ describe('liquid buyer pick slice 5', () => {
 });
 
 describe('SellerClaimPage', () => {
+  it.each([0, 1, 2])('labels %s buyer-claimable squares explicitly', async count => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(ok({ ...view, cells: view.cells.map((cell, index) => ({ ...cell, available: index < count })) })));
+    renderPage();
+    expect(await screen.findByText(`${count} available to claim`)).toBeInTheDocument();
+    if (count === 0) {
+      expect(screen.getByText('None of Anthony’s squares are available to claim right now.')).toBeInTheDocument();
+      expect(screen.queryByText('All of Anthony’s squares are taken.')).not.toBeInTheDocument();
+    }
+  });
+
   it('shows only this seller’s squares, then claims with one tap and remembers the buyer', async () => {
     const fetcher = vi.fn()
       .mockResolvedValueOnce(ok(view))
@@ -126,10 +136,10 @@ describe('SellerClaimPage', () => {
     expect(screen.getByRole('link', { name: 'See the whole board' })).toHaveAttribute('href', '/b/ABCDEFGH');
   });
 
-  it('says plainly when every square is spoken for', async () => {
+  it('says plainly when no square is available without assuming every square is claimed', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(ok({ ...view, cells: [{ index: 63, available: false }] })));
     renderPage();
-    expect(await screen.findByText('All of Anthony’s squares are taken.')).toBeInTheDocument();
+    expect(await screen.findByText('None of Anthony’s squares are available to claim right now.')).toBeInTheDocument();
   });
 
   it('explains a dead link without guessing', async () => {

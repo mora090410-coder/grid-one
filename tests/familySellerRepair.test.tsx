@@ -38,6 +38,17 @@ it('saves blank availability, then buyer name, then cleared name using each retu
   expect(record).toMatchObject({ revision: 4, label: 'Maple', cells: [{ index: 12, name: '', availability: 'available' }] });
 });
 
+it('labels unclaimed inventory without implying those squares are offered to buyers', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(http({ links })));
+  render(<SellerLinksCard boardId="test-board" boardTitle="Test" shared clean labels={labels} squares={[["Recorded Buyer"], []]} flush={flush} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Get seller links' }));
+  const river = await screen.findByRole('listitem', { name: 'River' });
+  expect(river).toHaveTextContent('1 square · 1 unclaimed');
+  expect(screen.getByRole('listitem', { name: 'Maple' })).toHaveTextContent('1 square · 0 unclaimed');
+  expect(screen.getByText('Unclaimed squares aren’t necessarily available to buyers.')).toBeInTheDocument();
+  expect(screen.queryByText(/not sold yet/)).not.toBeInTheDocument();
+});
+
 it.each(['flush', 'session', 'fetch', 'body'] as const)('recovers from stalled %s and ignores late results', async stage => {
   vi.useFakeTimers();
   let resolveLate!: (value: any) => void;

@@ -34,6 +34,7 @@ for (const width of [390, 1440]) {
     });
     await page.goto(`/s/${code}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Pick your squares from Anthony' })).toBeVisible();
+    await expect(page.getByText('4 available to claim', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Square 63, taken', includeHidden: true })).toBeDisabled();
     await capture(page, `seller-link-open-${width}`, testInfo);
 
@@ -61,7 +62,7 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await installOrganizerSession(page); await installOrganizerSupport(page);
     const label = (i: number) => (i < 10 ? 'Anthony' : i < 15 ? 'Maria' : null);
-    const row = { id: boardId, owner_id: ownerId, share_code: 'ABCDEFGH', title: 'Lincoln Softball', revision: 3, meta: '', gameExternalId: scheduledGame.id, kickoffAt: scheduledGame.kickoffAt, leftAbbr: 'DAL', leftName: 'Dallas Cowboys', topAbbr: 'WAS', topName: 'Washington Commanders', board: { squares: Array.from({ length: 100 }, (_, i) => (i < 2 ? ['Buyer'] : label(i) ? [label(i)!] : [])), allocationLabels: Array.from({ length: 100 }, (_, i) => label(i)), leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), isDynamic: false, allowOpenSquares: false, participation: {} }, is_activated: true, locked: true, is_shared: true, shared_at: new Date().toISOString(), published_at: null, updated_at: new Date().toISOString(), winner_history: [], pending_milestones: [], notification_delivery_issues: [], payoutDescriptions: {} };
+    const row = { id: boardId, owner_id: ownerId, share_code: 'ABCDEFGH', title: 'Lincoln Softball', revision: 3, meta: '', gameExternalId: scheduledGame.id, kickoffAt: scheduledGame.kickoffAt, leftAbbr: 'DAL', leftName: 'Dallas Cowboys', topAbbr: 'WAS', topName: 'Washington Commanders', board: { squares: Array.from({ length: 100 }, (_, i) => (i < 2 ? ['Buyer'] : i < 10 ? ['Anthony'] : [])), allocationLabels: Array.from({ length: 100 }, (_, i) => label(i)), leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), isDynamic: false, allowOpenSquares: false, participation: {} }, is_activated: true, locked: true, is_shared: true, shared_at: new Date().toISOString(), published_at: null, updated_at: new Date().toISOString(), winner_history: [], pending_milestones: [], notification_delivery_issues: [], payoutDescriptions: {} };
     await page.route(`**/api/pools/${boardId}/score`, route => route.fulfill({ json: { score: null, winnerHistory: [] } }));
     await page.route(`**/api/pools/${boardId}`, route => route.fulfill({ json: row }));
     const requests: unknown[] = [];
@@ -78,14 +79,25 @@ for (const width of [390, 1440]) {
     await expect(card).toContainText('2 sellers · 15 squares');
     await card.getByRole('button', { name: 'Get seller links' }).click();
     const list = card.getByRole('list', { name: 'Seller links' });
-    await expect(list.getByRole('listitem', { name: 'Anthony' })).toContainText('10 squares · 8 not sold yet');
+    await expect(list.getByRole('listitem', { name: 'Anthony' })).toContainText('10 squares · 8 unclaimed');
+    await expect(card.getByText('Unclaimed squares aren’t necessarily available to buyers.', { exact: true })).toBeVisible();
     await expect(card.getByRole('button', { name: 'Copy all links' })).toBeVisible();
     expect(requests).toEqual([{ action: 'sync' }]);
     await card.getByRole('button', { name: 'Update for new sellers' }).click();
     await expect.poll(() => requests.length).toBe(2);
     await expect(card.getByRole('button', { name: 'Update for new sellers' })).toBeEnabled();
-    await expect(list.getByRole('listitem', { name: 'Maria' })).toContainText('5 squares · 5 not sold yet');
+    await expect(list.getByRole('listitem', { name: 'Maria' })).toContainText('5 squares · 5 unclaimed');
     expect(requests).toEqual([{ action: 'sync' }, { action: 'sync' }]);
     await capture(page, `organizer-seller-links-${width}`, testInfo);
+    // A blank allocation can be unclaimed without being offered to buyers.
+    await page.route('**/api/sellers/fedcba9876543210', route => route.fulfill({ json: {
+      title: row.title, label: 'Maria', shareCode: row.share_code, open: true,
+      cells: Array.from({ length: 5 }, (_, i) => ({ index: i + 10, available: false })),
+    } }));
+    await page.goto('/s/fedcba9876543210');
+    await expect(page.getByText('0 available to claim', { exact: true })).toBeVisible();
+    await expect(page.getByText('None of Maria’s squares are available to claim right now.', { exact: true })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Maria’s squares' }).getByRole('button', { disabled: true, includeHidden: true })).toHaveCount(5);
+    await capture(page, `seller-link-not-offered-${width}`, testInfo);
   });
 }
