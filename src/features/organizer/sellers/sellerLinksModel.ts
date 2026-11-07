@@ -1,15 +1,16 @@
+import { sellerSquareUnsold } from '../../../../utils/sellerInventory';
 /** Pure rules for the organizer's "Send seller links" card. */
 export interface SellerSummary { label: string; total: number; unsold: number }
 export interface SellerLink { label: string; code: string; url: string }
 
-/** A seller's square is unsold while its public name is still the seller's own name. */
+/** Unsold means blank or carrying only the family's placeholder; not payment status. */
 export const summarizeSellers = (labels: (string | null | undefined)[], squares: string[][]): SellerSummary[] => {
   const byLabel = new Map<string, SellerSummary>();
   labels.forEach((label, index) => {
     if (!label) return;
     const summary = byLabel.get(label) ?? { label, total: 0, unsold: 0 };
     summary.total += 1;
-    if ((squares[index]?.[0] ?? '') === label) summary.unsold += 1;
+    if (sellerSquareUnsold(squares[index], label)) summary.unsold += 1;
     byLabel.set(label, summary);
   });
   return [...byLabel.values()].sort((a, b) => a.label.localeCompare(b.label));

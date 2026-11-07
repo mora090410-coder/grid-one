@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../../services/supabase';
 import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
 import { track } from '../../instrumentation/track';
@@ -25,31 +25,62 @@ export default function SellerLinksCard({ boardId, boardTitle, shared, labels, s
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
-  const pending = useRef(false);
+  const pending = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setLinks(null); setBusy(false); setError(''); setMessage(''); setConfirming(null); setPreviewing(null);
+    return () => { pending.current?.abort(); pending.current = null; };
+  }, [boardId, shared]);
   const sellers = summarizeSellers(labels, squares);
   const totalSquares = sellers.reduce((sum, seller) => sum + seller.total, 0);
   if (!sellers.length) return null;
 
   const request = async (body: Record<string, string>) => {
     if (pending.current) return;
-    pending.current = true; setBusy(true); setError(''); setMessage('');
+    const controller = new AbortController();
+    pending.current = controller; setBusy(true); setError(''); setMessage('');
+    const timeoutMessage = 'Seller links are taking too long. Try again.';
+    const deadline = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener('abort', () => reject(new Error(timeoutMessage)), { once: true });
+    });
+    const timer = window.setTimeout(() => controller.abort(), 15_000);
     try {
-      const saved = await flush();
-      if (saved.status !== 'clean') throw new Error('Save your latest changes first.');
-      const { data } = await supabase.auth.getSession();
-      if (!data.session?.access_token) throw new Error('Sign in again to get seller links.');
-      const response = await fetch(`/api/pools/${encodeURIComponent(boardId)}/seller-links`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify(body),
-      });
-      const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error || 'Seller links are temporarily unavailable. Please try again.');
-      const next = parseSellerLinks(result);
-      if (!next) throw new Error('Seller links are temporarily unavailable. Please try again.');
+      const operation = async () => {
+        const saved = await flush();
+        controller.signal.throwIfAborted();
+        if (saved.status !== 'clean') throw new Error('Save your latest changes first.');
+        const { data } = await supabase.auth.getSession();
+        controller.signal.throwIfAborted();
+        if (!data.session?.access_token) throw new Error('Sign in again to get seller links.');
+        const response = await fetch(`/api/pools/${encodeURIComponent(boardId)}/seller-links`, {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify(body),
+        });
+        controller.signal.throwIfAborted();
+        const result = await response.json().catch(() => null);
+        controller.signal.throwIfAborted();
+        if (!response.ok) throw new Error(result?.error || 'Seller links are temporarily unavailable. Please try again.');
+        const next = parseSellerLinks(result);
+        if (!next) throw new Error('Seller links are temporarily unavailable. Please try again.');
+        return next;
+      };
+      const next = await Promise.race([operation(), deadline]);
+      if (pending.current !== controller) return;
       setLinks(next);
       if (body.action === 'rotate') setMessage(`${body.label} has a new link. The old one stopped working.`);
     } catch (failure) {
+      if (pending.current !== controller) return;
+      // Rotation may already have committed even if its response was lost.
+      // Never offer a potentially revoked link or automatically rotate again.
+      if (body.action === 'rotate') {
+        setLinks(null);
+        setError('Link replacement could not be confirmed. Get seller links to check the current links before trying again.');
+        return;
+      }
       setError(failure instanceof Error ? failure.message : 'Seller links are temporarily unavailable. Please try again.');
-    } finally { pending.current = false; setBusy(false); setConfirming(null); }
+    } finally {
+      window.clearTimeout(timer);
+      if (pending.current === controller) { pending.current = null; setBusy(false); setConfirming(null); }
+    }
   };
 
   const copy = async (text: string, done: string) => {

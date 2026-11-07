@@ -186,7 +186,7 @@ describe('scoped family database access', () => {
   });
   it('rejects unknown keys, out-of-scope cells, missing names and stale writes', async () => {
     await invite();
-    for (const change of [{index:2,name:'Bill'}, {index:0,name:'Bill',paid_status:'paid'}, {index:0,name:''}, {index:0,name:'Bill',availability:'sold'}]) {
+    for (const change of [{index:2,name:'Bill'}, {index:0,name:'Bill',paid_status:'paid'}, {index:0}, {index:0,name:null}, {index:0,name:'x'.repeat(81)}, {index:0,name:'Bill',availability:'sold'}]) {
       await expect(executeSql(rpc('edit', `, p_token_hash => '${HASH}', p_expected_revision => ${await revision()}, p_changes => ${sqlText(JSON.stringify([change]))}::jsonb`))).rejects.toThrow(/family_invalid_request|family_access_denied/);
     }
     await expect(executeSql(rpc('edit', `, p_token_hash => '${HASH}', p_expected_revision => 0, p_changes => '[{"index":0,"name":"Bill"}]'::jsonb`))).rejects.toThrow(/revision_conflict/);

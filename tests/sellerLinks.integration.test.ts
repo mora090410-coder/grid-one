@@ -192,6 +192,48 @@ describe('seller links', () => {
     expect(JSON.stringify(view)).not.toMatch(/owner|paid|contact|seller_label/i);
   });
 
+  it('allows a scoped family to offer blanks, claim them publicly, and persist the buyer without reopening inventory', async () => {
+    await share();
+    const code = await codeFor('Mora');
+    const hash = 'a'.repeat(64);
+    await executeSql(`SET ROLE service_role; SELECT public.gridone_family_access('invite',p_contest_id=>'${id}',p_owner_id=>'${OWNER_ID}',p_expected_revision=>${await revision()},p_label=>'Mora',p_token_hash=>'${hash}',p_cells=>ARRAY[0,1]);`);
+    const familyEdit = async (changes: unknown[]) => JSON.parse(await queryScalar(`SET ROLE service_role; SELECT public.gridone_family_access('edit',p_token_hash=>'${hash}',p_expected_revision=>${await revision()},p_changes=>${sqlText(JSON.stringify(changes))}::jsonb);`));
+    const cleared = await familyEdit([{index:0,name:'',availability:'available'}]);
+    expect(cleared.cells[0]).toMatchObject({index:0,name:'',availability:'available'});
+    expect(await queryScalar(`SELECT board_data->'squares'->0 FROM public.contests WHERE id='${id}'`)).toBe('[]');
+    expect((await read(code)).cells[0].available).toBe(true);
+    await claim(code,[0],'Real Buyer');
+    expect(await nameAt(0)).toBe('Real Buyer');
+    expect(await queryScalar(`SELECT board_data->'availability'->>0 FROM public.contests WHERE id='${id}'`)).toBe('unavailable');
+    expect((await read(code)).cells[0].available).toBe(false);
+    await expect(claim(code,[0],'Second Buyer')).rejects.toThrow(/seller_square_taken/);
+    await familyEdit([{index:0,name:'Real Buyer',availability:'available'}]);
+    // Availability is independent data, not permission to overwrite a buyer.
+    expect((await read(code)).cells[0].available).toBe(false);
+    await expect(claim(code,[0],'Second Buyer')).rejects.toThrow(/seller_square_taken/);
+    await expect(familyEdit([{index:10,name:'',availability:'available'}])).rejects.toThrow(/family_access_denied/);
+    expect(await nameAt(10)).toBe('Lee');
+    await familyEdit([{index:1,name:'',availability:'unavailable'}]);
+    expect((await read(code)).cells[1].available).toBe(false);
+    await expect(claim(code,[1],'Buyer')).rejects.toThrow(/seller_square_taken/);
+  });
+
+  it('rejects ambiguous name arrays and offers valid blank allocations without overwriting buyers', async () => {
+    for (const names of [['Mora','Actual buyer'], ['']]) {
+      await expect(executeSql(`UPDATE public.contests SET board_data=jsonb_set(board_data,'{squares,0}',${sqlText(JSON.stringify(names))}::jsonb) WHERE id='${id}';`)).rejects.toThrow(/Every square must be unsold or contain one trimmed buyer name/);
+    }
+    await executeSql(`UPDATE public.contests SET board_data=jsonb_set(jsonb_set(board_data,'{squares,0}','["Actual buyer"]'),'{squares,1}','[]') WHERE id='${id}';`);
+    await share(); const code=await codeFor('Mora');
+    expect((await read(code)).cells[0].available).toBe(false);
+    await expect(claim(code,[0],'Replacement')).rejects.toThrow(/seller_square_taken/);
+    // A blank allocation is not an offer until explicitly marked available.
+    expect((await read(code)).cells[1].available).toBe(false);
+    await expect(claim(code,[1],'New Buyer')).rejects.toThrow(/seller_square_taken/);
+    await executeSql(`UPDATE public.contests SET board_data=jsonb_set(board_data,'{availability,1}','"available"') WHERE id='${id}';`);
+    expect((await read(code)).cells[1].available).toBe(true);
+    await claim(code,[1],'New Buyer'); expect(await nameAt(1)).toBe('New Buyer');
+  });
+
   it('claims unsold squares with the buyer name and records an audit event', async () => {
     await share();
     const code = await codeFor('Mora');
@@ -242,6 +284,9 @@ describe('seller links', () => {
     await executeSql(asUser(OWNER_ID, `UPDATE public.contests SET board_data=jsonb_set(board_data,'{squares,0}','["Mora"]') WHERE id='${id}' AND revision=${before};`));
     expect(Number(await revision())).toBe(Number(before) + 1);
     expect(await queryScalar(`SELECT board_data->'allocationLabels'->>0 FROM public.contests WHERE id='${id}'`)).toBe('Mora');
+    // Claiming consumes the offer. A name correction alone must not re-offer it.
+    expect((await read(code)).cells[0].available).toBe(false);
+    await executeSql(asUser(OWNER_ID, `UPDATE public.contests SET board_data=jsonb_set(board_data,'{availability,0}','"available"') WHERE id='${id}' AND revision=${await revision()};`));
     await claim(code, [0], 'Correct buyer');
     expect(await nameAt(0)).toBe('Correct buyer');
     expect(await queryScalar(asUser(OWNER_ID, `SELECT paid_status || '|' || contact_value FROM public.contest_entries WHERE contest_id='${id}' AND cell_index=0;`))).toContain('paid|private@example.test');

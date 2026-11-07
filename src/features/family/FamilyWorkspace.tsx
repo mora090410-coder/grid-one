@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Base, CapsuleButton, Eyebrow, Glass } from '../../design/primitives';
+import { sellerSquareUnsold } from '../../../utils/sellerInventory';
 
 type Availability = 'unspecified' | 'available' | 'unavailable';
 interface FamilyCell { index: number; name: string; availability: Availability }
@@ -55,7 +56,7 @@ export default function FamilyWorkspace() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [changes.length]);
-  const invalid = changes.some(cell => !cell.name.trim() || cell.name.trim().length > 80);
+  const invalid = changes.some(cell => cell.name.trim().length > 80);
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!record || submitting.current || busy || conflict || invalid || changes.length === 0) return;
@@ -102,6 +103,7 @@ export default function FamilyWorkspace() {
             </select>
           </label>
         </div>
+        {cell.availability === 'available' && !sellerSquareUnsold(cell.name.trim() ? [cell.name.trim()] : [], record.label) && <p className="mt-3 font-ui text-sm text-fg-2">A buyer name is recorded. Your buyer link cannot replace it. Clear the name only if this square is yours to sell again.</p>}
       </li>)}</ul>
       <p className="font-ui text-sm text-fg-2">Everyone with the board link sees these names. Mark a square available only if you still have it to sell.</p>
       {saved && <p role="status" className="font-ui text-base text-fg">Changes saved.</p>}

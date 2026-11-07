@@ -1,4 +1,5 @@
 import type { BoardData } from '../../../../types';
+import { sellerSquareUnsold } from '../../../../utils/sellerInventory';
 
 /** Names describe the board record; availability must be explicitly recorded. */
 export function salesCells(board: BoardData) {
@@ -11,6 +12,7 @@ export function salesCells(board: BoardData) {
       blank: names.length === 0,
       family: board.allocationLabels?.[index]?.trim() || '',
       availability: board.availability?.[index] || 'unspecified',
+      buyerRecorded: Boolean(board.allocationLabels?.[index]) && !sellerSquareUnsold(board.squares[index], board.allocationLabels![index]!),
     };
   });
 }

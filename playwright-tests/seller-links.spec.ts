@@ -81,6 +81,11 @@ for (const width of [390, 1440]) {
     await expect(list.getByRole('listitem', { name: 'Anthony' })).toContainText('10 squares · 8 not sold yet');
     await expect(card.getByRole('button', { name: 'Copy all links' })).toBeVisible();
     expect(requests).toEqual([{ action: 'sync' }]);
+    await card.getByRole('button', { name: 'Update for new sellers' }).click();
+    await expect.poll(() => requests.length).toBe(2);
+    await expect(card.getByRole('button', { name: 'Update for new sellers' })).toBeEnabled();
+    await expect(list.getByRole('listitem', { name: 'Maria' })).toContainText('5 squares · 5 not sold yet');
+    expect(requests).toEqual([{ action: 'sync' }, { action: 'sync' }]);
     await capture(page, `organizer-seller-links-${width}`, testInfo);
   });
 }

@@ -24,6 +24,17 @@ it('maps expired and revoked access to a non-enumerating denial',async()=>{
 it('preserves conflicts as conflicts without retrying a write',async()=>{
  rpc.mockResolvedValue({error:{message:'revision_conflict'},data:null});expect((await family(context({action:'edit',revision:4,changes:[{index:12,name:'Bill W',availability:'unavailable'}]}))).status).toBe(409);expect(rpc).toHaveBeenCalledTimes(1);
 });
+it('allows clearing a scoped display name without allowing blank family labels',async()=>{
+ expect((await family(context({action:'edit',revision:4,changes:[{index:12,name:'',availability:'available'}]}))).status).toBe(200);
+ expect(rpc.mock.calls[0][1].p_changes).toEqual([{index:12,name:'',availability:'available'}]);
+ rpc.mockClear();
+ expect((await owner(context({action:'invite',revision:4,label:'',cells:[12]}))).status).toBe(400);
+ expect(rpc).not.toHaveBeenCalled();
+});
+it.each([' ', 'x'.repeat(81), null])('rejects invalid family display name %j before database access',async(name)=>{
+ expect((await family(context({action:'edit',revision:4,changes:[{index:12,name,availability:'available'}]}))).status).toBe(400);
+ expect(rpc).not.toHaveBeenCalled();
+});
 it('requires verified owner identity for invite',async()=>{
  getUser.mockResolvedValue({data:{user:null},error:null});expect((await owner(context({action:'invite',revision:4,label:'Mora',cells:[12]}))).status).toBe(401);expect(rpc).not.toHaveBeenCalled();
 });

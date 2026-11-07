@@ -124,6 +124,7 @@ export default function SalesBoardViewer({ game, board, updatedAt, onRefresh, re
               <span className="break-words font-ui text-base text-fg">{cell.buyer}</span>
               <span className="break-words font-ui text-sm text-fg-2">{cell.family ? `Responsible: ${cell.family}` : 'No family assigned'}</span>
               {cell.availability !== 'unspecified' && <span className="font-ui text-sm text-fg-2">{held.has(cell.index) ? 'Guest selecting · temporarily held' : cell.availability === 'available' ? 'Available' : 'Not available'}</span>}
+              {cell.availability === 'available' && cell.buyerRecorded && <p className="font-ui text-sm text-fg-2">A buyer name is recorded. Contact the family; its buyer link cannot replace this name.</p>}
             </li>)}</ul>}
           </details>
         </section>
