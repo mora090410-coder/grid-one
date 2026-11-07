@@ -104,6 +104,12 @@ beforeEach(() => {
 });
 
 describe('organizer dashboard', () => {
+  it('uses the light wordmark on the dark organizer background', async () => {
+    renderDashboard();
+    await screen.findByRole('heading', { name: 'Your boards' });
+    expect(screen.getByRole('img', { name: 'GridOne' })).toHaveAttribute('src', expect.stringContaining('gridone-lockup-horizontal-white.svg'));
+  });
+
   it('starts another board with only reusable setup and no immediate server mutation', async () => {
     const source = { ...rows[0], settings: { title: 'Old title', gameExternalId: 'old-game', payoutDescriptions: { Q1: '$25 stale' } }, payout_descriptions: { Q1: '$100' } };
     useContests([source]);

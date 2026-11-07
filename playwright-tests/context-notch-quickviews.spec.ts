@@ -55,10 +55,12 @@ async function assertKeyboardResultsQuickView(page: Page, notchLabel: string) {
   const resultsButton = notch.getByRole('button', { name: 'Results', exact: true });
   await resultsButton.focus();
   await page.keyboard.press('Enter');
-  await expect(resultsButton).toBeFocused();
+  const results = notch.getByRole('region', { name: 'Results details' });
+  // Organizer modules reveal and focus their below-grid details; the viewer's
+  // inline quick view retains its existing selected-button focus contract.
+  await expect(notchLabel === 'Board actions' ? results : resultsButton).toBeFocused();
   await expect(resultsButton).toHaveAttribute('aria-pressed', 'true');
 
-  const results = notch.getByRole('region', { name: 'Results details' });
   await expect(results).toBeVisible();
   const rows = results.locator('.context-notch-result');
   await expect(rows).toHaveCount(4);

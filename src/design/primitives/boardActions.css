@@ -26,10 +26,12 @@
 .g1-island-tiles > button { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 96px; padding: 16px; text-align: left; border: 1px solid rgba(255,255,255,.13); border-radius: 18px; background: rgba(255,255,255,.035); overflow-wrap: anywhere; }
 .g1-island-tiles strong { font-size: 1rem; font-weight: 500; }
 .g1-island-tiles small { color: var(--g1-muted); font-size: .8125rem; }
-.g1-island-tiles button[aria-pressed="true"] { border-color: var(--g1-muted); background: rgba(255,255,255,.08); }
+.g1-page .g1-island-tiles button[aria-pressed="true"] { border-color: var(--g1-muted); background: rgba(255,255,255,.08); color: var(--g1-chalk); }
 .g1-island-tiles > .g1-island-next { border-color: var(--g1-gold); background: rgba(232,211,155,.07); color: var(--g1-gold-lit); }
 .g1-island-tiles > .g1-island-next small { color: inherit; }
 .g1-island-detail { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.12); font-size: 1rem; line-height: 1.6; color: var(--g1-muted); }
+.g1-island-detail h3 { margin: 0 0 8px; color: var(--g1-chalk); font-size: 1.125rem; font-weight: 600; }
+.g1-island-detail:focus-visible { outline: 2px solid var(--g1-gold-lit); outline-offset: 4px; border-radius: 12px; }
 .g1-island-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .g1-island-detail-actions button,.g1-island-secondary { min-height: 44px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; color: var(--g1-chalk); font-size: 1rem; }
 .g1-island-secondary { margin-top: 12px; }

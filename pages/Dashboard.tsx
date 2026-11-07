@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
         <Base kind="dark" theme="liquid" className="g1-page g1-organizer-page"><GlassGridBackground />
             <main aria-label="Your boards" className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
                 <a href="/" className="inline-flex min-h-11 w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
-                    <Logo variant="horizontal" size={28} />
+                    <Logo variant="horizontal" tone="white" size={28} />
                 </a>
 
                 {dashboardMessage && (

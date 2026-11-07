@@ -26,9 +26,21 @@ export function BoardActionsIsland({ summary, description, saveLabel, issue, tit
     return () => clearTimeout(timer);
   }, [label, reduced, visibleLabel]);
   const [selected, setSelected] = useState(modules[0].id);
+  const detail = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
   const active = modules.find(module => module.id === selected) ?? modules[0];
+  const selectModule = (moduleId: string) => {
+    flushSync(() => setSelected(moduleId));
+    const panel = detail.current;
+    const sheet = panel?.closest('dialog');
+    if (!panel || !sheet) return;
+    panel.focus({ preventScroll: true });
+    // The result sits below the task grid. Reveal it inside the sheet rather
+    // than scrolling the board behind the modal, accounting for its sticky header.
+    const headerBottom = sheet.querySelector('header')?.getBoundingClientRect().bottom ?? sheet.getBoundingClientRect().top;
+    sheet.scrollTop = Math.max(0, sheet.scrollTop + panel.getBoundingClientRect().top - headerBottom - 16);
+  };
   const invoke = (action: NotchAction) => {
     if (disabled || action.disabled) return;
     flushSync(() => setOpen(false));
@@ -48,10 +60,11 @@ export function BoardActionsIsland({ summary, description, saveLabel, issue, tit
       <div className="g1-island-context"><p>{summary}</p><p>{saveLabel}</p></div>
       <div className="g1-island-tiles" aria-label="Board tasks">
         {primary && <button type="button" className="g1-island-next" aria-label={primary.label} disabled={disabled || primary.disabled} onClick={() => invoke(primary)}><small>Next step</small><strong>{primary.label}</strong></button>}
-        {modules.map(module => <button key={module.id} type="button" disabled={disabled} aria-label={module.label} aria-pressed={active.id === module.id} aria-controls={`${id}-detail`} onClick={() => setSelected(module.id)}><strong>{module.label}</strong>{module.reading && <small>{module.reading}</small>}</button>)}
+        {modules.map(module => <button key={module.id} type="button" disabled={disabled} aria-label={module.label} aria-pressed={active.id === module.id} aria-controls={`${id}-detail`} onClick={() => selectModule(module.id)}><strong>{module.label}</strong>{module.reading && <small>{module.reading}</small>}</button>)}
         {destinations.filter(action => action.label !== primary?.label).map(action => <button key={action.id} type="button" aria-label={action.label} aria-description={action.detail} disabled={disabled || action.disabled} onClick={() => invoke(action)}><strong>{action.label}</strong>{action.detail && <small>{action.detail}</small>}</button>)}
       </div>
-      <section className="g1-island-detail" id={`${id}-detail`} aria-label={`${active.label} details`}>
+      <section ref={detail} tabIndex={-1} className="g1-island-detail" id={`${id}-detail`} aria-label={`${active.label} details`}>
+        <h3>{active.label}</h3>
         {active.detail}
         <div className="g1-island-detail-actions">{active.actions?.map(action => <button type="button" key={action.label} disabled={disabled || action.disabled} onClick={() => invoke(action)}>{action.label}</button>)}</div>
       </section>
