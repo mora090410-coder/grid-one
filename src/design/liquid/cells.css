@@ -29,7 +29,7 @@
     linear-gradient(170deg, rgba(232,211,155,.20), rgba(232,211,155,.04)) padding-box,
     linear-gradient(var(--g1-glass-backing), var(--g1-glass-backing)) padding-box,
     linear-gradient(135deg, #FFF3CF, #E8D39B 30%, rgba(232,211,155,.2) 60%, #E8D39B) border-box;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 4px rgba(232,211,155,.10), 0 0 34px rgba(232,211,155,.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
   position: relative;
   z-index: 1;
 }

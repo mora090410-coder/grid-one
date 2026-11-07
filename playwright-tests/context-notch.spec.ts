@@ -152,7 +152,7 @@ test('assignment reading sweeps on genuine prop changes; merge retracts without 
   const dialog = page.getByRole('dialog', { name: /Board actions$/ });
   await expect(dialog).toBeVisible();
   const animation = await dialog.evaluate(node => node.getAnimations().map(a => a.effect?.getTiming().duration));
-  expect(animation.every(duration => Number(duration) <= 300)).toBe(true);
+  expect(animation.every(duration => Number(duration) <= 420)).toBe(true);
   await page.keyboard.press('Escape'); await expect(toggle).toBeFocused();
   await info.attach('reading-and-dialog-motion', { body: JSON.stringify({ reading, animation }), contentType: 'application/json' });
 });

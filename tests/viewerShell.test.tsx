@@ -52,6 +52,32 @@ const renderShell = (props: Partial<ShellProps> = {}) => render(
   />
 );
 
+describe('final motion: one current-winning light', () => {
+  it('keeps freshness timestamps out of the winner announcement', () => {
+    renderShell();
+    expect(screen.getByText(/Score updates about every three minutes/).closest('[role="status"]')).toBeNull();
+  });
+  it('hands the glow from the on-screen card to the live cell without replaying the sweep', () => {
+    let cardOnScreen = true;
+    const original = Element.prototype.getBoundingClientRect;
+    const boxes = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function(this: Element) {
+      if (this.classList.contains('g1-current-card')) return DOMRect.fromRect({ x: 20, y: cardOnScreen ? 120 : -400, width: 300, height: 150 });
+      return original.call(this);
+    });
+    const view = renderShell();
+    try {
+      expect(view.container.querySelectorAll('.g1-win-focus')).toHaveLength(1);
+      expect(view.container.querySelector('.g1-current-card')).toHaveClass('g1-win-focus');
+      const sweep = view.container.querySelector('.g1-cell--live .g1-win-sweep');
+      expect(sweep).not.toBeNull();
+      cardOnScreen = false; fireEvent.scroll(window);
+      expect(view.container.querySelectorAll('.g1-win-focus')).toHaveLength(1);
+      expect(view.container.querySelector('.g1-cell--live')).toHaveClass('g1-win-focus');
+      expect(view.container.querySelector('.g1-cell--live .g1-win-sweep')).toBe(sweep);
+    } finally { view.unmount(); boxes.mockRestore(); }
+  });
+});
+
 describe('liquid viewport observer race',()=>{
  it('uses current geometry when an older observer record arrives after scrolling',()=>{
   let above=false;
@@ -111,6 +137,7 @@ describe('liquid glass slice 3: public square materials', () => {
     expect(cells[0].querySelector('[data-g1-number]')).toHaveTextContent('1');
     expect(container.querySelectorAll('[data-g1-current="true"]')).toHaveLength(1);
     expect(cells.filter(cell=>cell.tabIndex===0)).toHaveLength(1);
+    expect(container.querySelectorAll('[data-sticky-axis] .g1-roll-strip')).toHaveLength(20);
     expect(container.querySelector('[data-g1-seller="Private seller"]')).toBeNull();
   });
 });
@@ -152,7 +179,7 @@ describe('ViewerShell', () => {
     expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
-    expect(status).toHaveTextContent(/Score updates about every three minutes/);
+    expect(screen.getByText(/Score updates about every three minutes/)).toBeVisible();
     expect(within(firstViewport).getByRole('button', { name: 'Find my squares' })).toBeVisible();
     expect(firstViewport).not.toHaveTextContent(/payout|makes me win/i);
     expect(screen.getByRole('main', { name: 'GridOne Bowl viewer' })).toBeInTheDocument();
@@ -199,7 +226,7 @@ describe('ViewerShell', () => {
     const { rerender } = renderShell({ live: live({ freshness: 'offline' }), selectedPlayer: 'Carrie Moss' });
     const firstViewportStatus = within(screen.getByTestId('viewer-first-viewport')).getByRole('status');
     expect(firstViewportStatus).toHaveTextContent(/Offline · last known/);
-    expect(firstViewportStatus).toHaveTextContent(/Last known · /);
+    expect(within(screen.getByTestId('viewer-first-viewport')).getByText(/Last known · /)).toBeVisible();
     expect(screen.getByText(/Using the last-known score checked .* until scoring reconnects\./)).toBeVisible();
 
     rerender(<ViewerShell game={game} board={board} live={live()} liveStatus="LIVE" isSynced highlights={{ quarterWinners: {}, currentLabel: '' }} winnerHistory={[]} pendingMilestones={[]} selectedPlayer="Carrie Moss" onClearPlayer={vi.fn()} onFindSquares={vi.fn()} highlightedCoords={null} onScenarioFocus={vi.fn()} shareCode="ABCDEFGH" servicesEnabled organizerPreview />);

@@ -19,6 +19,9 @@ describe('liquid primary press', () => {
       const primary = screen.getByRole('button', { name: 'Save changes' });
       fireEvent.pointerDown(primary, { clientX: 20, clientY: 20 });
       expect(primary.querySelectorAll('.g1-ring')).toHaveLength(3);
+      expect(primary.querySelectorAll('.g1-dimple')).toHaveLength(1);
+      for (let tap = 0; tap < 50; tap++) fireEvent.pointerDown(primary);
+      expect(primary.querySelectorAll('.g1-ring,.g1-dimple')).toHaveLength(4);
       fireEvent.pointerDown(screen.getByText('Square'));
       expect(screen.getByText('Square').querySelector('.g1-ring')).toBeNull();
       fireEvent.pointerUp(primary);

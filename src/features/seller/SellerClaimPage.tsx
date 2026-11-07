@@ -121,15 +121,16 @@ export default function SellerClaimPage() {
                 aria-pressed={cell.available ? isSelected : undefined}
                 aria-label={`Square ${cell.index + 1}, ${cell.available ? 'open' : 'taken'}`}
                 onClick={() => setSelected((current) => toggleSquare(current, cell.index))}
-                className={`g1-buyer-tile ${isSelected ? 'g1-cell--picked' : ''} flex min-h-14 flex-col items-center justify-center rounded-control border font-mono tabular-nums transition-[border-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${isSelected ? 'border-action bg-action text-action-text' : cell.available ? 'border-cell-edge bg-panel text-fg hover:bg-panel-hover' : 'border-cell-edge bg-transparent text-fg-3'}`}>
-                <span aria-hidden="true" className="text-[18px]">{cell.index + 1}</span>
-                <span aria-hidden="true" className="font-ui text-[12px]">{cell.available ? (isSelected ? 'Picked' : 'Open') : 'Taken'}</span>
+                className={`g1-buyer-tile g1-fill-cell ${isSelected ? 'g1-cell--picked' : ''} flex min-h-14 flex-col items-center justify-center rounded-control border font-mono tabular-nums transition-[border-color] duration-[var(--g-dur-state)] ease-[var(--g-ease-state)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action ${isSelected ? 'border-action bg-action text-action-text' : cell.available ? 'border-cell-edge bg-panel text-fg hover:bg-panel-hover' : 'border-cell-edge bg-transparent text-fg-3'}`}>
+                <span className="g1-fill" aria-hidden="true" />
+                <span data-g1-pick-number aria-hidden="true" className="g1-fill-label text-[18px]">{cell.index + 1}</span>
+                <span aria-hidden="true" className="g1-fill-label font-ui text-[12px]">{cell.available ? (isSelected ? 'Picked' : 'Open') : 'Taken'}</span>
               </button>;
             })}
           </div>
           {open.length === 0 && <p className="font-ui text-base text-fg-2">All of {view.label}’s squares are taken.</p>}
           {open.length > 0 && <p className="font-ui text-sm text-fg-2" aria-live="polite">{selected.length ? `${selected.length} picked.` : 'Tap the squares you want.'} Up to {MAX_CLAIM} at a time.</p>}
-          <div className="g1-glass g1-buyer-sheet" data-g1-blur="true">
+          <div className="g1-glass g1-buyer-sheet g1-sheen" data-g1-blur="true">
           <p className="g1-buyer-summary" aria-live="polite">{selected.length ? claimedSquaresText(selected) : 'Pick a square above'}</p>
           <CapsuleInput label="Your name, as it shows on the board" value={name} maxLength={80} autoComplete="name" disabled={busy} onChange={(event) => setName(event.target.value)} />
           <CapsuleButton type="submit" size="lg" disabled={!canClaim}>

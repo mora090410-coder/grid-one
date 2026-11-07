@@ -1,9 +1,14 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /** Real navigation through the labelled organizer control; no hidden-element activation. */
 export async function openBoardTask(page: Page, label: string) {
+  const closing = page.locator('dialog[open][data-state="closing"]');
+  if (await closing.count()) await expect(closing).not.toBeVisible();
   const current = page.getByRole('dialog');
-  if (await current.count()) await current.getByRole('button', { name: 'Close', exact: true }).click();
+  if (await current.count()) {
+    await current.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(current).not.toBeVisible();
+  }
   await page.getByRole('button', { name: 'Board actions', exact: true }).click();
   await page.getByRole('dialog', { name: /Board actions$/ }).getByRole('button', { name: label, exact: true }).click();
 }

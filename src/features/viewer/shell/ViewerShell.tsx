@@ -58,6 +58,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   game, board, live, liveStatus, isSynced, highlights, winnerHistory, pendingMilestones, selectedPlayer,
   onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode,   servicesEnabled = true, organizerPreview = false, organizerHref, onShare, stageChrome = false,
 }) => {
+  const [winnerCardVisible, setWinnerCardVisible] = useState(false);
   const scoreRef = useRef<HTMLDivElement>(null);
   const findRef = useRef<HTMLDivElement>(null);
   const personalRef = useRef<HTMLDivElement>(null);
@@ -137,7 +138,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
+          <ScoreInstrument winFocus={winnerCardVisible} onWinnerVisibilityChange={setWinnerCardVisible} liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           </div>
           <div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
@@ -184,7 +185,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <div className="relative z-[1]"><ViewerBoardGrid minimumBoardWidth={!organizerPreview && !stageChrome ? 640 : undefined} selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
+            <div className="relative z-[1]"><ViewerBoardGrid winFocus={!organizerPreview && !winnerCardVisible && isSynced && live?.state === 'in' && !['stale','offline','refreshing','rejected'].includes(live.freshness || '')} minimumBoardWidth={!organizerPreview && !stageChrome ? 640 : undefined} selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>

@@ -24,10 +24,12 @@ export function useLiquidMotion(root: RefObject<HTMLElement | null>, enabled: bo
     };
     const down = (event: PointerEvent) => {
       if (reduced?.matches || !(event.target instanceof Element)) return;
+      move(event);
       const button = event.target.closest<HTMLElement>('.g1-btn-primary');
       if (!button || button.matches(':disabled,[aria-disabled="true"]')) return;
       // Repeated presses restart one bounded effect instead of growing the DOM.
       clear();
+      move(event);
       pressed = button; button.classList.add('is-down');
       const r = button.getBoundingClientRect();
       const x = (event.clientX - r.left) * (button.offsetWidth / (r.width || 1));
@@ -38,13 +40,21 @@ export function useLiquidMotion(root: RefObject<HTMLElement | null>, enabled: bo
         ring.style.cssText = `left:${x}px;top:${y}px;animation-delay:${i * 140}ms`;
         button.append(ring); effects.add(ring);
       }
+      const dimple = document.createElement('span');
+      dimple.className = 'g1-dimple'; dimple.setAttribute('aria-hidden', 'true');
+      dimple.style.cssText = `left:${x}px;top:${y}px`;
+      button.append(dimple); effects.add(dimple);
+      // Optional web haptics are Android-only; never gate an action on support.
+      if (/Android/i.test(navigator.userAgent) && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(8); } catch { /* Haptics can be denied by policy. */ }
+      }
       const timer = setTimeout(() => { effects.forEach(node => node.remove()); effects.clear(); timers.delete(timer); }, 1400);
       timers.add(timer);
     };
     const up = () => { pressed?.classList.remove('is-down'); pressed = null; };
     const move = (event: PointerEvent) => {
       if (reduced?.matches || !(event.target instanceof Element)) return;
-      const card = event.target.closest<HTMLElement>('.g1-sheen');
+      const card = event.target.closest('.g1-cell,[data-cell-index],.g1-fill-cell') ? null : event.target.closest<HTMLElement>('.g1-sheen');
       if (card !== lit) lit?.style.setProperty('--sheen', '0');
       lit = card;
       if (!card || frame) return;

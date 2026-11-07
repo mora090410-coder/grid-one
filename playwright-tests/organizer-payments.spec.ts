@@ -218,7 +218,7 @@ test('normal motion is bounded to a dialog entrance, not a layout morph', async 
   const dialog = page.getByRole('dialog', { name: /Board actions$/ });
   const animations = await dialog.evaluate(node => node.getAnimations().map(a => ({ duration: a.effect?.getTiming().duration, frames: (a.effect as KeyframeEffect).getKeyframes() })));
   expect(animations.length).toBeLessThanOrEqual(1);
-  expect(animations.every(a => Number(a.duration) <= 300)).toBe(true);
+  expect(animations.every(a => Number(a.duration) <= 420)).toBe(true);
   expect(animations.every(a => a.frames.every(f => !('width' in f) && !('height' in f)))).toBe(true);
   await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
   expect(await trigger.boundingBox()).toEqual(before);

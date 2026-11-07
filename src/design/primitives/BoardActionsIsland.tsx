@@ -1,6 +1,7 @@
-import React, { useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { IslandDialog } from './IslandDialog';
+import { useReducedMotion } from './motion';
 import type { NotchAction, NotchModule } from './ContextNotch';
 
 export interface IslandDestination extends NotchAction { id: string; detail?: string }
@@ -13,6 +14,17 @@ export function BoardActionsIsland({ summary, description, saveLabel, issue, tit
   destinations?: IslandDestination[]; disabled?: boolean; onReviewIssue?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const reduced = useReducedMotion();
+  const label = primary?.label || '';
+  const [visibleLabel, setVisibleLabel] = useState(label);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (reduced || !label) { setVisibleLabel(label); setLeaving(false); return; }
+    if (label === visibleLabel) { setLeaving(false); return; }
+    setLeaving(true);
+    const timer = setTimeout(() => { setVisibleLabel(label); setLeaving(false); }, 200);
+    return () => clearTimeout(timer);
+  }, [label, reduced, visibleLabel]);
   const [selected, setSelected] = useState(modules[0].id);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -31,7 +43,7 @@ export function BoardActionsIsland({ summary, description, saveLabel, issue, tit
       <button ref={trigger} type="button" className="g1-board-island-trigger" aria-describedby={`${id}-description`} aria-expanded={open} aria-controls={id} aria-haspopup="dialog" disabled={disabled} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setOpen(true); }}>Board actions <span aria-hidden="true">⌄</span></button>
     </div>
     {issue && onReviewIssue && <button type="button" className="g1-island-error" disabled={disabled} onClick={onReviewIssue}>⚠ {saveLabel} · Review and recover</button>}
-    {primary && <button type="button" className="g1-next-step" aria-label={`Next: ${primary.label}`} disabled={disabled || primary.disabled} onClick={() => invoke(primary)}><span>Next</span><strong>{primary.label}</strong><span aria-hidden="true">→</span></button>}
+    {primary && <button type="button" className="g1-next-step" aria-label={`Next: ${primary.label}`} disabled={disabled || primary.disabled || leaving} onClick={() => invoke(primary)}><span>Next</span><strong className="g1-next-label" data-leaving={leaving ? 'true' : undefined} aria-hidden="true">{reduced ? label : visibleLabel}</strong><span aria-hidden="true">→</span></button>}
     <IslandDialog open={open} onClose={() => setOpen(false)} title={title ? `${title} · Board actions` : 'Board actions'} id={id}>
       <div className="g1-island-context"><p>{summary}</p><p>{saveLabel}</p></div>
       <div className="g1-island-tiles" aria-label="Board tasks">

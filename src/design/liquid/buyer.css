@@ -11,10 +11,10 @@
 .g1-page [data-g1-map-state="picked"], .g1-page [data-g1-map-state="live"] { background: var(--g1-gold-lit); }
 .g1-page .g1-buyer-tiles { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
 .g1-page .g1-buyer-tile { height: 72px; min-height: 72px; border-radius: 16px; border: 1px solid color-mix(in srgb,var(--g1-chalk) 22%,transparent); background: color-mix(in srgb,var(--g1-chalk) 5%,var(--g1-ground)); color: var(--g1-chalk); box-shadow: inset 0 -4px 10px -3px color-mix(in srgb,var(--g1-seller-1) 55%,transparent); }
-.g1-page .g1-buyer-tile > span:first-child { font: 300 24px/1 var(--g1-font); }
+.g1-page .g1-buyer-tile > [data-g1-pick-number] { font: 300 24px/1 var(--g1-font); }
 .g1-page .g1-buyer-tile > span:last-child { font: 400 11px/1.2 var(--g1-font); color: var(--g1-muted); }
 .g1-page .g1-buyer-tile[aria-pressed="true"] { background: color-mix(in srgb,var(--g1-gold-lit) 16%,var(--g1-ground)); border-color: var(--g1-gold-lit); color: var(--g1-chalk); box-shadow: inset 0 1px 0 color-mix(in srgb,var(--g1-gold-hi) 35%,transparent); }
-.g1-page .g1-buyer-tile[aria-pressed="true"] > span:last-child { color: var(--g1-gold-lit); }
+.g1-page .g1-buyer-tile.g1-fill-cell[aria-pressed="true"] > .g1-fill-label { color: var(--g1-midnight); }
 .g1-page .g1-buyer-sheet { padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; bottom: 12px; z-index: 2; }
 .g1-page .g1-buyer-confirmation { padding: 24px 22px; }
 .g1-page .g1-buyer-summary { color: var(--g1-chalk); font-size: 15px; }

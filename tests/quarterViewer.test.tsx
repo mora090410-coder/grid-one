@@ -14,7 +14,8 @@ const live = {period:2,state:'in',topScore:1,leftScore:1,clock:'12:00',isManual:
 describe('quarter viewer and literal review', () => {
   it('personal coordinates and focus use live-quarter axes instead of fixed compatibility axes', () => {
     const focus = vi.fn();
-    render(<YourSquaresSummary board={board()} game={{...INITIAL_GAME,topAbbr:'TOP',leftAbbr:'SIDE'}} live={live} selectedPlayer="Anthony" onViewSquare={focus} />);
+    const { container } = render(<YourSquaresSummary board={board()} game={{...INITIAL_GAME,topAbbr:'TOP',leftAbbr:'SIDE'}} live={live} selectedPlayer="Anthony" onViewSquare={focus} />);
+    expect(container.querySelectorAll('.g1-roll-strip[aria-hidden="true"]')).toHaveLength(2);
     expect(screen.getByText('TOP column 1 × SIDE row 1')).toBeInTheDocument();
     expect(screen.getByText('Winning right now.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button',{name:'View on board top 1 side 1'}));

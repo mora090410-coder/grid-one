@@ -62,7 +62,10 @@ describe('liquid buyer pick slice 5', () => {
     expect(map.querySelectorAll('button')).toHaveLength(0);
     expect(screen.getByText('Game numbers appear when the organizer locks the board.')).toBeVisible();
     expect(screen.getByRole('button',{name:'Pick a square above'})).toBeDisabled();
-    fireEvent.click(screen.getByRole('button',{name:'Square 62, open'}));
+    const pick = screen.getByRole('button',{name:'Square 62, open'});
+    expect(pick.querySelector('.g1-fill')).not.toBeNull();
+    expect(pick.querySelectorAll('.g1-fill-label')).toHaveLength(2);
+    fireEvent.click(pick);
     expect(container.querySelector('[data-g1-map-state="picked"]')).not.toBeNull();
     expect(screen.getByRole('button',{name:'Claim my square'})).toBeDisabled();
     expect(fetcher).toHaveBeenCalledTimes(1);

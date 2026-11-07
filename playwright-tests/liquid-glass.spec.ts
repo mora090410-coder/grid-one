@@ -18,8 +18,11 @@ for(const width of [320,390,1280]){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
   const blurCount=await page.locator('[data-g1-theme="liquid"] *').evaluateAll(nodes=>nodes.filter(n=>getComputedStyle(n).backdropFilter!=='none'&&getComputedStyle(n).backdropFilter!=='').length);
   expect(blurCount).toBeLessThanOrEqual(6);
-  expect(await hero.evaluate(n=>getComputedStyle(n).boxShadow.includes('60px'))).toBe(width<700);
-  expect(await page.locator('.g1-cell--live').evaluate(n=>getComputedStyle(n).boxShadow.includes('34px'))).toBe(width>=700);
+  await hero.scrollIntoViewIfNeeded();
+  await expect(hero).toHaveClass(/g1-win-focus/);
+  await expect(page.locator('.g1-win-focus')).toHaveCount(1);
+  await expect(page.locator('.g1-cell--live')).not.toHaveClass(/g1-win-focus/);
+  await expect(page.locator('.g1-cell--live')).toHaveCSS('animation-name', 'none');
   const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze()).violations;
   await info.attach('axe.json',{body:JSON.stringify(violations,null,2),contentType:'application/json'});
   expect(violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);

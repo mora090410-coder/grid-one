@@ -1,11 +1,24 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import OrganizerIsland from '../src/features/organizer/workspace/OrganizerIsland';
 
 const base = { filled: 24, paid: 10, drawn: false, phase: 'Fill' as const, saveStatus: 'clean', primary: { label: 'Draw numbers', onClick: vi.fn() } };
 
 describe('labelled Board actions Island', () => {
+  it('fades out a completed next step before showing its replacement', () => {
+    vi.useFakeTimers();
+    try {
+      const view = render(<OrganizerIsland {...base} />);
+      view.rerender(<OrganizerIsland {...base} primary={{ label: 'Share the board', onClick: vi.fn() }} />);
+      const next = screen.getByRole('button', { name: 'Next: Share the board' });
+      expect(next).toHaveTextContent('Draw numbers');
+      expect(next).toBeDisabled();
+      act(() => vi.advanceTimersByTime(200));
+      expect(next).toHaveTextContent('Share the board');
+      expect(next).not.toBeDisabled();
+    } finally { vi.useRealTimers(); }
+  });
   it('keeps the next step discoverable outside a deliberately opened modal', () => {
     render(<OrganizerIsland {...base} />);
     const trigger = screen.getByRole('button', { name: 'Board actions' });

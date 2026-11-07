@@ -19,8 +19,8 @@ describe('ScoreInstrument', () => {
     expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
-    expect(status).toHaveTextContent(/Score updates about every three minutes/);
-    expect(status).toHaveTextContent(/Checked/);
+    expect(screen.getByText(/Score updates about every three minutes/)).toBeVisible();
+    expect(screen.getByText(/Checked/)).toBeVisible();
     expect(screen.getAllByText('Q3 · 8:12')).toHaveLength(1);
     expect(screen.queryByText('3rd quarter')).toBeNull();
   });
@@ -28,7 +28,7 @@ describe('ScoreInstrument', () => {
   it('marks stale scores as last known', () => {
     render(<ScoreInstrument game={game} board={board} live={live({ freshness: 'offline' })} liveStatus="LIVE" isSynced />);
     expect(screen.getByRole('status')).toHaveTextContent(/Offline · last known/);
-    expect(screen.getByRole('status')).toHaveTextContent(/Last known · /);
+    expect(screen.getByText(/Last known · /)).toBeVisible();
   });
 
   it('shows dashes before a score exists', () => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { RollingDigit } from '../../../design/liquid/RollingDigit';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
 import { BOARD_ZOOM, boardFitWidth, boardGeometry, buildBoardGridModel, type ViewerBoardCellModel } from './boardGridModel';
 import TeamStripe from '../teams/TeamStripe';
@@ -7,6 +8,7 @@ import type { ViewerQuarter } from '../scenarios/scenarioModel';
 
 interface ViewerBoardGridProps {
   selectedQuarter?: ViewerQuarter;
+  winFocus?: boolean;
   minimumBoardWidth?: number;
   board: BoardData;
   game: Pick<GameState, 'leftName' | 'leftAbbr' | 'topName' | 'topAbbr'>;
@@ -57,6 +59,7 @@ const squareDetail = (cell: ViewerBoardCellModel, topLabel: string, sideLabel: s
 
 const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
   selectedQuarter,
+  winFocus = false,
   minimumBoardWidth = 0,
   board,
   game,
@@ -240,7 +243,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
               </th>
               {model.topAxis.map((digit, index) => (
                 <th key={`top-${index}`} role="columnheader" scope="col" aria-colindex={index + 2} data-sticky-axis="top" aria-label={`${model.topTeamName} top digit ${digit ?? 'unknown'}`} className="sticky top-0 z-30 bg-chyron text-broadcast-white font-mono tabular-nums rounded-cell p-0" style={{ ...axisStyle, height: geometry.axis }}>
-                  {digit}
+                  <RollingDigit value={digit} index={index} />
                 </th>
               ))}
             </tr>
@@ -249,7 +252,7 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
             {model.cells.map((row, rowIndex) => (
               <tr key={`row-${rowIndex}`} role="row" aria-rowindex={rowIndex + 2}>
                 <th role="rowheader" scope="row" aria-colindex={1} data-sticky-axis="side" aria-label={`${model.sideTeamName} side digit ${model.sideAxis[rowIndex] ?? 'unknown'}`} className="sticky left-0 z-20 bg-chyron text-broadcast-white font-mono tabular-nums rounded-cell p-0" style={axisStyle}>
-                  {model.sideAxis[rowIndex]}
+                  <RollingDigit value={model.sideAxis[rowIndex]} index={rowIndex} />
                 </th>
                 {row.map((cell) => {
                   const seller = board.allocationLabels?.[cell.rowIndex * 10 + cell.colIndex] || '';
@@ -278,12 +281,13 @@ const ViewerBoardGrid: React.FC<ViewerBoardGridProps> = ({
                     data-match-emphasis={pulsingIds.has(cell.id) ? 'on' : undefined}
                     data-match-tone={pulsingIds.has(cell.id) ? (cell.states.includes('current') ? 'ink' : 'gold') : undefined}
                     tabIndex={focus.row === cell.rowIndex && focus.col === cell.colIndex ? 0 : -1}
-                    className={`g1-cell ${cell.states.includes('current') ? 'g1-cell--live' : cell.states.includes('resolved') ? 'g1-cell--past' : cell.isOpen ? 'g1-cell--open' : ''} group relative rounded-cell p-0 text-center align-middle font-ui leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
+                    className={`g1-cell${winFocus && cell.states.includes('current') ? ' g1-win-focus' : ''} ${cell.states.includes('current') ? 'g1-cell--live' : cell.states.includes('resolved') ? 'g1-cell--past' : cell.isOpen ? 'g1-cell--open' : ''} group relative rounded-cell p-0 text-center align-middle font-ui leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-action ${stateClass(cell)}`}
                     style={{...cellStyle, '--t': tint} as React.CSSProperties}
                     onFocus={() => setFocus({ row: cell.rowIndex, col: cell.colIndex })}
                     onClick={(event) => { setShowDetail(true); event.currentTarget.focus(); }}
                   >
                     <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden w-max max-w-[220px] -translate-x-1/2 whitespace-normal rounded-control bg-chyron px-2 py-1 font-ui text-[12px] text-broadcast-white shadow-[var(--g-shadow)] [@media(hover:hover)]:group-hover:block">{(cell.names.length ? cell.names.join(', ') : 'OPEN')} · {topLabel} {cell.topDigit ?? '?'} across · {sideLabel} {cell.sideDigit ?? '?'} down</span>
+                    {cell.states.includes('current') && <span key={`${selectedQuarter}-${cell.topDigit}-${cell.sideDigit}`} className="g1-win-sweep" aria-hidden="true" />}
                     <span data-g1-number aria-hidden="true">{cell.rowIndex * 10 + cell.colIndex + 1}{cell.resolvedMilestones.length > 0 && !cell.states.includes('current') ? ` · ${cell.resolvedMilestones.join(', ')}` : ''}</span>
                     <span data-g1-buyer aria-hidden="true">{cell.names.join(', ')}</span>
                     <span className="flex h-full flex-col items-center justify-center gap-0.5 overflow-hidden font-medium">

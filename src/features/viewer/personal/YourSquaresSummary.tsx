@@ -1,4 +1,5 @@
 import React from 'react';
+import { RollingDigit } from '../../../design/liquid/RollingDigit';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { buildScenarioModel, playersForDigits, quarterForLive } from '../scenarios/scenarioModel';
 import { CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
@@ -70,7 +71,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
             <Glass padding="md" className="flex flex-wrap items-center justify-between gap-3">
               <span data-g1-chip data-g1-matching={row.matchesCurrent ? 'true' : undefined} aria-hidden="true">{row.index + 1}</span>
               <div className="flex flex-col gap-1 min-w-0">
-                <span className="font-mono tabular-nums text-[15px] text-fg">{topLabel} column {row.top} × {leftLabel} row {row.left}</span>
+                <span className="font-mono tabular-nums text-[15px] text-fg"><span className="sr-only">{topLabel} column {row.top} × {leftLabel} row {row.left}</span><span aria-hidden="true">{topLabel} column <RollingDigit value={row.top} index={0} /> × {leftLabel} row <RollingDigit value={row.left} index={1} /></span></span>
                 <span className="font-ui text-[14px] text-fg-2">
                   {row.matchesCurrent ? 'Winning right now.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Not one score away yet.'}
                 </span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { BoardData, GameState, LiveGameData } from '../../../../types';
 import { DigitFlow, Eyebrow, Glass, Numeral } from '../../../design/primitives';
 import { buildViewerScoreModel } from './viewerScoreModel';
@@ -24,11 +24,13 @@ export interface ScoreInstrumentProps {
   surfaceClassName?: string;
   liquid?: boolean;
   simulated?: boolean;
+  winFocus?: boolean;
+  onWinnerVisibilityChange?: (visible: boolean) => void;
   selectedPlayer?: string;
   winsNow?: boolean;
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false, simulated = false, selectedPlayer = '', winsNow = false }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false, simulated = false, selectedPlayer = '', winsNow = false, winFocus = false, onWinnerVisibilityChange }) => {
   const sourceScore = buildViewerScoreModel({ live, liveStatus, isSynced });
   const score = simulated ? { ...sourceScore, authority: { ...sourceScore.authority, label: 'Sample game', detail: 'Simulated score · not a live feed' }, freshness: 'Simulated', pollingText: 'Example only · scores do not update' } : sourceScore;
   const Heading = headingLevel;
@@ -38,6 +40,21 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
   const personalWin = Boolean(liquid && selectedPlayer && winsNow && live?.state === 'in' && !stale && live.freshness !== 'rejected' && isSynced);
   const topDigit = live ? live.topScore % 10 : null;
   const sideDigit = live ? live.leftScore % 10 : null;
+  const winnerCard = useRef<HTMLElement>(null);
+  const eligibleWin = Boolean(liquid && live?.state === 'in' && !stale && live.freshness !== 'rejected' && isSynced && hasValidAxes(board));
+  useEffect(() => {
+    const node = winnerCard.current;
+    if (!node || !eligibleWin) { onWinnerVisibilityChange?.(false); return; }
+    const update = () => {
+      const r = node.getBoundingClientRect();
+      onWinnerVisibilityChange?.(r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth && getComputedStyle(node).display !== 'none');
+    };
+    const observer = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(update) : null;
+    observer?.observe(node); update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => { observer?.disconnect(); window.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
+  }, [eligibleWin, personalWin, onWinnerVisibilityChange]);
   const leftLabel = game.leftAbbr || 'AWAY';
   const topLabel = game.topAbbr || 'HOME';
 
@@ -49,8 +66,8 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
         <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
       </div>
 
-      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" padding="lg" className="g1-current-card g1-sheen" data-g1-personal-win={personalWin ? 'true' : undefined} data-g1-blur="true">
-        {personalWin && <span key={`${quarter}-${topDigit}-${sideDigit}`} className="g1-win-sweep" aria-hidden="true" />}
+      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" ref={winnerCard} padding="lg" className={`g1-current-card g1-sheen${winFocus && eligibleWin ? ' g1-win-focus' : ''}`} data-g1-personal-win={personalWin ? 'true' : undefined} data-g1-blur="true">
+        {eligibleWin && <span key={`${quarter}-${topDigit}-${sideDigit}`} className="g1-win-sweep" aria-hidden="true" />}
         <h2 className="g1-label"><span className={personalWin ? 'g1-only-desktop' : undefined}>{live.state === 'post' ? 'Final score matches:' : stale || live.freshness === 'rejected' || !isSynced ? 'Last known' : 'Winning right now'}</span>{personalWin && <span className="g1-only-phone">You’re winning {quarter}</span>}</h2>
         <p className="g1-big-number"><span className={personalWin ? 'g1-only-desktop' : undefined}>{shortName(currentNames, 'Open square')}</span>{personalWin && <span className="g1-only-phone">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</span>}</p>
         <p className="g1-label">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</p>
@@ -67,10 +84,12 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ game, board, live, li
         </div>
       </Glass>
 
-      <div className="flex flex-col gap-1 font-ui text-[15px] text-fg" role="status" aria-live="polite">
+      <div className="flex flex-col gap-1 font-ui text-[15px] text-fg">
+        <div role="status" aria-live="polite" aria-atomic="true">
         <p>{live?.state === 'post' ? 'Final score matches:' : 'Currently matching:'} <strong className="font-medium">{!hasValidAxes(board) ? 'Numbers need review' : live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
         {hasValidAxes(board) && live && live.state !== 'pre' && <p>Square: <strong className="font-mono font-medium">{topLabel} <DigitFlow value={topDigit ?? ''} /> across × {leftLabel} <DigitFlow value={sideDigit ?? ''} /> down</strong></p>}
         <p className="text-fg-2"><strong className="font-medium text-fg">{score.authority.label}</strong> · <span>{score.authority.detail}</span></p>
+        </div>
         <p className="font-mono text-[13px] text-fg-3">{stale ? 'Last known · ' : ''}{score.freshness || 'Checked time unavailable'} · {score.pollingText}</p>
         {score.phaseDetail && <p className="text-fg-3">{score.phaseDetail}</p>}
         {live?.warning && <p className="font-medium text-fg">{live.warning}</p>}
