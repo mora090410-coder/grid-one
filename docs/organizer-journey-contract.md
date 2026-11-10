@@ -230,3 +230,26 @@ numbers are drawn later. These presentation changes retain the 24-hour local dra
 safe auth return, authenticated server save, scan review/fallback, errors, and all
 eight workspace phases. Public viewer links remain read-only; seller claim links
 and optional private family capabilities remain distinct.
+
+## PAR-32 — shared navigation notch
+
+The existing Board actions Island is the organizer navigation control; there is
+no second organizer menu. Its top-center trigger floats below the safe area and
+continues to show board context, a neutral Saved status, explicit error recovery,
+and the separate next-step action. At 640px and wider, navigation opens downward
+into a compact, frosted, single-column panel. Below 640px it remains a bottom
+sheet; narrow viewports and enlarged text use one column. Editor/task sheets keep
+their existing geometry.
+
+One decorative highlight follows enabled navigation buttons on hover or keyboard
+focus. Neither interaction selects a module, opens a task, or writes data. Motion
+is interruptible, and reduced motion disables highlight travel and label nudges.
+Escape, Close, and backdrop dismissal restore focus; the short navigation dialog
+contains both forward and backward keyboard traversal, including Safari.
+
+The dashboard reuses this control as Menu for existing New board, GridOne home,
+and Log out actions. Its inline New board shortcut remains. It does not display a
+fabricated Saved state or placeholder board modules. Board tasks continue through
+their original callbacks, confirmations, revision/permission checks, recovery,
+and unsaved-edit handling. No ownership, payments, assignments, numbers, scoring,
+or public-homepage behavior changes as part of this presentation work.

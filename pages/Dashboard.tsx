@@ -10,6 +10,7 @@ import { hasBoardActivation } from '../utils/boardActivation';
 import { hasValidAxes } from '../utils/boardValidation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
+import { BoardActionsIsland } from '../src/design/primitives/BoardActionsIsland';
 
 interface Contest {
     id: string;
@@ -253,6 +254,13 @@ const Dashboard: React.FC = () => {
 
     return (
         <Base kind="dark" theme="liquid" className="g1-page g1-organizer-page"><GlassGridBackground />
+            <BoardActionsIsland title="Your boards" controlLabel="Menu" description="Create a board, return to GridOne, or log out."
+                summary="Manage your boards"
+                saveLabel="" issue={false} modules={[]} destinations={[
+                    { id: 'create', label: 'New board', detail: 'Start a private draft', onClick: () => navigate('/create') },
+                    { id: 'home', label: 'GridOne home', onClick: () => navigate('/') },
+                    { id: 'logout', label: 'Log out', onClick: () => { void signOut(); } },
+                ]} />
             <main aria-label="Your boards" className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-5 py-10 md:px-8 md:py-14">
                 <a href="/" className="inline-flex min-h-11 w-fit items-center rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">
                     <Logo variant="horizontal" tone="white" size={28} />
@@ -318,7 +326,6 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <Link to="/create" className={CAPSULE_LINK}>New board</Link>
-                        <CapsuleButton variant="ghost" onClick={() => signOut()}>Log out</CapsuleButton>
                     </div>
                 </header>
 
@@ -399,7 +406,7 @@ const Dashboard: React.FC = () => {
 
                 <footer className="mt-6 flex flex-col gap-3 border-t border-hairline pt-6 font-ui text-[13px] text-fg-3 sm:flex-row sm:items-center sm:justify-between">
                     <span>© {new Date().getFullYear()} GridOne.</span>
-                    <span className="flex items-center gap-5">
+                    <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
                         <Link to="/privacy" className={ghostLink}>Privacy</Link>
                         <Link to="/terms" className={ghostLink}>Terms</Link>
                         <a href="mailto:support@getgridone.com" className={ghostLink}>Support</a>
