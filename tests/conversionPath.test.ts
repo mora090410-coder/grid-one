@@ -45,7 +45,8 @@ describe('public conversion path', () => {
   it('turns the demo and article hub into product handoffs', () => {
     const boardView = source('components/BoardView.tsx');
     const hub = source('pages/ArticlesHub.tsx');
-    expect(boardView).toContain('This is a sample board. Ready to run yours?');
+    expect(boardView).toContain('runYourOwnInvitation(');
+    expect(source('src/features/viewer/shell/runYourOwnInvitation.ts')).toContain('This is a sample board. Ready to run yours?');
     expect(boardView).toContain('Create your own board');
     expect(hub).toContain('Football squares guides for organizers');
     expect(hub).toContain('Create your free board');

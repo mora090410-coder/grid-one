@@ -15,6 +15,7 @@ import { demoBoard, demoGame, demoLive } from '../src/features/homepage/demoData
 import ViewerShell from '../src/features/viewer/shell/ViewerShell';
 import '../src/features/viewer/shell/demoStage.css';
 // Loaded only when needed: the public viewer never downloads organizer or seller-sale code.
+import { runYourOwnInvitation } from '../src/features/viewer/shell/runYourOwnInvitation';
 const SalesBoardViewer = React.lazy(() => import('../src/features/viewer/sales/SalesBoardViewer'));
 const loadOrganizerWorkspace = () => import('../src/features/organizer/workspace/OrganizerWorkspace');
 const OrganizerWorkspace = React.lazy(loadOrganizerWorkspace);
@@ -313,6 +314,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
 
     const highlights = useMemo<WinnerHighlights>(() => calculateWinnerHighlights(liveData), [liveData]);
 
+    const runYourOwn = runYourOwnInvitation({ demoMode: Boolean(demoMode), ownsBoard: Boolean(isOwner || ownedPublicBoardId), gameState: liveData?.state });
+
     const shareUrl = shareCode ? `${window.location.origin}/b/${shareCode}` : window.location.href;
 
     const renderMainContent = (previewMode = false) => (
@@ -390,8 +393,8 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
                     {demoMode && <p className="demo-status mx-4 mt-20 font-ui text-sm text-fg-2"><span className="g-pill">Sample board — not a live game</span><br />Sample game · January 18, 2026</p>}
                     {renderMainContent()}
-                    {(demoMode || liveData?.state === 'post') && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
-                        <p className="font-ui text-base text-fg-2">{demoMode ? 'This is a sample board. Ready to run yours?' : 'Bring your next game day together.'}</p>
+                    {runYourOwn && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
+                        <p className="font-ui text-base text-fg-2">{runYourOwn}</p>
                         <CapsuleButton variant="quiet" onClick={() => navigate('/create')}>Create your own board</CapsuleButton>
                     </aside>}
                 </div>
