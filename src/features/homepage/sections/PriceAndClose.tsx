@@ -5,10 +5,15 @@ import { MONEY_BOUNDARY, PRICING } from '../pricing';
 import { quietLink, trackViewDemo } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
 
+const audience = { free: 'One party', gameday: 'A season of games', org: 'Fundraisers and leagues' } as const;
+
 const faq = [
   { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in.' },
   { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Squares and payouts stay between you and your group.` },
   { q: 'When do I pay?', a: 'Building is always free. Your first shared board each season is free. Each board counts once, however often you share it.' },
+  { q: 'Can I collect by Venmo, cash or check?', a: 'Yes. You collect the money your way. GridOne can keep a private paid or unpaid note on each square for you.' },
+  { q: 'Can I run more than one board?', a: 'Yes. Your first published board each season is free. Game Day covers up to 5 published boards and Organization covers up to 50.' },
+  { q: 'Which games can I use?', a: 'Any scheduled NFL game, including playoff games and the big game once both teams are set.' },
   { q: 'Who can edit the board?', a: 'You control the board. You can give a family a private link to add names to its own squares. Viewers can’t edit, and any fix after the numbers lock is shown to everyone.' },
 ];
 
@@ -18,8 +23,9 @@ export function PriceAndClose() {
       <section className="editorial-pricing editorial-section" aria-labelledby="pricing-heading">
         <Reveal keepVisible as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
         <Reveal keepVisible as="section" aria-label="Plans" className="editorial-plans" delay={60}>
-          {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
+          {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><p className="editorial-plan-audience">{audience[tier.id]}</p><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
         </Reveal>
+        <p className="editorial-boundary">Every published board includes live scores, Find my squares, what wins next, winner emails and QR sharing. No percentage of your squares. Ever.</p>
       </section>
       <section className="editorial-faq editorial-section" aria-label="Common questions">
         <Reveal keepVisible className="editorial-faq-list">

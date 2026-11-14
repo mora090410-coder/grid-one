@@ -10,6 +10,8 @@ const currentPricingCopyFiles = [
   'src/features/homepage/sections/OrganizerSection.tsx',
   'src/features/homepage/sections/ScoreSection.tsx',
   'src/features/homepage/sections/Footer.tsx',
+  'src/features/homepage/sections/FundraiserSection.tsx',
+  'src/features/homepage/sections/CompareSection.tsx',
   'pages/Terms.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',

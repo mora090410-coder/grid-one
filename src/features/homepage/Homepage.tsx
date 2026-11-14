@@ -8,6 +8,8 @@ import { Hero } from './sections/Hero';
 import { OrganizerSection } from './sections/OrganizerSection';
 import { PriceAndClose } from './sections/PriceAndClose';
 import { ScoreSection } from './sections/ScoreSection';
+import { FundraiserSection } from './sections/FundraiserSection';
+import { CompareSection } from './sections/CompareSection';
 
 export default function Homepage() {
   return (
@@ -17,6 +19,8 @@ export default function Homepage() {
         <Hero />
         <OrganizerSection />
         <ScoreSection />
+        <FundraiserSection />
+        <CompareSection />
         <PriceAndClose />
       </main>
       <Footer />

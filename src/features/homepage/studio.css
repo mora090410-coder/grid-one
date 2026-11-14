@@ -162,3 +162,27 @@
 .g-editorial [data-score-accent] { background: var(--g-action); }
 .g-editorial .editorial-digit-connection svg { stroke: var(--g-action); }
 .g-editorial .editorial-footer { border-top: 1px solid var(--g-hairline); }
+
+/* Fundraiser and comparison: the many-board buyer, before pricing */
+.editorial-fundraiser-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 48px; align-items: center; }
+.editorial-fundraiser-math { display: flex; flex-direction: column; gap: 14px; padding: 24px; }
+.editorial-fundraiser-math .editorial-kicker { margin-bottom: 0; }
+.editorial-fundraiser-math dl { margin: 0; display: grid; }
+.editorial-fundraiser-math dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-block: 14px; border-top: 1px solid var(--g-hairline); }
+.editorial-fundraiser-math dt { color: var(--g-text-2); font-size: .9375rem; }
+.editorial-fundraiser-math dd { margin: 0; font-family: var(--g-font-mono); font-variant-numeric: tabular-nums; font-size: 1.25rem; }
+.editorial-fundraiser-math .is-total dt { color: var(--g-text); font-weight: 600; }
+.editorial-fundraiser-math .is-total dd { font-family: var(--g-font-display); font-weight: 800; font-size: 2.5rem; letter-spacing: -.04em; }
+.editorial-fundraiser-math > p:last-child { font-size: .875rem; line-height: 1.6; color: var(--g-text-2); }
+.editorial-compare-scroll { margin-top: 32px; overflow-x: auto; }
+.editorial-compare-scroll:focus-visible { outline: 2px solid var(--g-text); outline-offset: 3px; }
+.editorial-compare table { width: 100%; min-width: 660px; border-collapse: collapse; font-size: .9375rem; }
+.editorial-compare th, .editorial-compare td { padding: 14px 16px; text-align: left; vertical-align: top; border-top: 1px solid var(--g-hairline); }
+.editorial-compare thead th, .editorial-compare thead td { border-top: 0; font-family: var(--g-font-mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--g-text-2); }
+.editorial-compare tbody th { font-weight: 500; }
+.editorial-compare tbody td { color: var(--g-text-2); }
+.editorial-compare .is-us { color: var(--g-text); font-weight: 600; }
+.editorial-plan .editorial-plan-audience { margin: 0 0 6px; font-family: var(--g-font-mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--g-text-2); }
+@media (max-width: 1023px) {
+  .editorial-fundraiser-layout { grid-template-columns: minmax(0, 1fr); }
+}
