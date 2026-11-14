@@ -34,8 +34,10 @@ const runCommand = (command: string, args: string[], input?: string, timeoutMs =
     child.stdin.end(input);
   });
 const docker = (args: string[], input?: string, timeoutMs?: number) => runCommand('docker', args, input, timeoutMs);
+// The image's temporary initialization server is socket-only. Probe and run SQL
+// over TCP so readiness cannot pass just before that temporary server shuts down.
 const psqlArgs = (extra: string[]) => ['exec','-e',`PGPASSWORD=${DATABASE_PASSWORD}`,'-i',containerName,
-  'psql','-X','-v','ON_ERROR_STOP=1','-U',DATABASE_USER,'-d',DATABASE_NAME,...extra];
+  'psql','-X','-v','ON_ERROR_STOP=1','-h','127.0.0.1','-U',DATABASE_USER,'-d',DATABASE_NAME,...extra];
 const executeSql = async (sql: string) => { await docker(psqlArgs(['-q']), sql); };
 const queryScalar = async (sql: string) => (await docker(psqlArgs(['-qAt','-c',sql]))).stdout.trim();
 const sqlText = (value: unknown) => `'${String(value ?? '').replaceAll("'", "''")}'`;
