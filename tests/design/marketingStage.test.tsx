@@ -64,7 +64,7 @@ describe('marketing chrome does not blur squares', () => {
   it('renders the compact cinematic sample on the editorial stage with the real create entrance available', () => {
     render(<MemoryRouter><Homepage /></MemoryRouter>);
     const sample = screen.getByRole('region', { name: 'Board film' });
-    expect(sample).toHaveTextContent('Sample board — not a live game');
+    expect(sample).toHaveTextContent('Sample game');
     for (const name of ['Build', 'Share', 'Game day']) expect(within(sample).getByRole('button', { name })).toBeInTheDocument();
     expect(within(sample).getByRole('button', { name: 'Next square' })).toBeEnabled();
     expect(screen.queryByRole('region', { name: 'Interactive sample board' })).not.toBeInTheDocument();

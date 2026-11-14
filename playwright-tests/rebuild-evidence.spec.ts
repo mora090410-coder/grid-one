@@ -75,8 +75,7 @@ for (const width of [1440, 390, 320]) {
       };
       await page.goto('/');
       const sample = page.getByRole('region', { name: 'Board film' });
-      await expect(sample.getByText('Simulated game', { exact: true })).toBeVisible();
-      await expect(sample).toContainText('Sample board — not a live game');
+      await expect(sample.getByText('Sample game', { exact: true })).toBeVisible();
       for (const stage of ['Build', 'Share', 'Game day']) {
         const control = sample.getByRole('button', { name: stage, exact: true });
         await control.click();
@@ -84,7 +83,7 @@ for (const width of [1440, 390, 320]) {
         await expect(sample.locator('button[aria-pressed="true"]')).toHaveCount(1);
         await capture(`home-${stage.toLowerCase().replace(' ', '-')}`);
       }
-      await expect(sample).toContainText('Simulated score, not a live feed.');
+      await expect(sample.getByText('Sample game', { exact: true })).toHaveCount(1);
       for (const control of ['Previous square', 'Next square']) {
         const box = await sample.getByRole('button', { name: control }).boundingBox();
         expect(box!.height).toBeGreaterThanOrEqual(44);

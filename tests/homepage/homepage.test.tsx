@@ -17,7 +17,6 @@ describe('Compact cinematic homepage', () => {
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
     expect(within(hero).getByText(/First published board free each season/)).toBeInTheDocument();
     expect(within(hero).getByText(/No card required/)).toBeInTheDocument();
-    expect(within(hero).getByText(/No account needed to view/)).toBeInTheDocument();
   });
 
   it('retains three explicit cinematic controls without a second full-grid tutorial', () => {
@@ -33,6 +32,16 @@ describe('Compact cinematic homepage', () => {
     expect(screen.queryByRole('region', { name: 'Interactive sample board' })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Comparison table' })).not.toBeInTheDocument();
     expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
+  it('shows one sample label without visible interface narration', () => {
+    renderPage();
+    const film = screen.getByRole('region', { name: 'Board film' });
+    expect(within(film).queryByRole('heading', { name: 'Board film' })).not.toBeInTheDocument();
+    expect(within(film).getAllByText('Sample game', { exact: true })).toHaveLength(1);
+    expect(film).not.toHaveTextContent(/sample board.{0,6}not a live game|simulated score|use the square controls/i);
+    expect(screen.queryByText('One board. Two views.', { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText('Simple pricing', { exact: true })).not.toBeInTheDocument();
   });
 
   it('offers a keyboard-equivalent square inspector when the sample is in Game day', () => {
@@ -107,7 +116,7 @@ describe('Compact cinematic homepage', () => {
   it('labels illustrative evidence without invented customer or import claims', () => {
     const { container } = renderPage();
     const copy = container.textContent!;
-    expect(copy).toMatch(/Sample board|Simulated game/i);
+    expect(copy).toMatch(/Sample game/i);
     expect(copy).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)|no review (?:needed|required)/i);
     expect(copy).not.toMatch(/trusted by \d|\d[\d,]* (?:happy customers|paying customers)|(?:customers|teams) have raised \$/i);
   });

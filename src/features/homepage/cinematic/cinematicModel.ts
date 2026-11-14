@@ -79,13 +79,13 @@ export function pickAnswer(index: number): PickAnswer {
 
 /* ---------- Chapters ---------- */
 
-export interface Chapter { id: string; rail: string; title: string; body: string; fine: string; sceneProgress: number }
+export interface Chapter { id: string; rail: string; title: string; body: string; fine?: string; sceneProgress: number }
 
 /** Three user-directed beats use the same dimensional board, without a long scroll runway. */
 export const CHAPTERS: readonly Chapter[] = [
   { id: 'build', rail: 'Build', title: 'Fill the board, not a spreadsheet.', body: 'Pick an NFL game, add names and track who paid. Payment notes stay private.', fine: 'Already have a paper board? Upload a photo to import it (Beta). Sign in, then review every square before publishing.', sceneProgress: 1.35 },
   { id: 'share', rail: 'Share', title: 'The right link for each person.', body: 'Public viewer link: viewing only. A seller link lets buyers claim that seller’s unsold squares by name until the numbers lock.', fine: 'No account needed to view or claim. Private family editing links are separate; payment notes stay private.', sceneProgress: 2.1 },
-  { id: 'gameday', rail: 'Game day', title: 'Know what to root for.', body: 'KC 17 · PHI 14 · Q3. Taylor M. matches 7 × 4 right now. Use the square controls to explore what wins next.', fine: 'Simulated score, not a live feed. Plain math, never odds or predictions. No confirmed quarter results in this illustration.', sceneProgress: 4.2 },
+  { id: 'gameday', rail: 'Game day', title: 'Know what to root for.', body: 'KC 17 · PHI 14 · Q3', sceneProgress: 4.2 },
 ];
 
 /* ---------- Scroll math ---------- */

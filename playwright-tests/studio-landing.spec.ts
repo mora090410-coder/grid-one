@@ -81,12 +81,13 @@ test('forced cinematic scene switches chapters and distinguishes inspected from 
   const inspector = film(page).locator('[aria-live="polite"]');
   await expect(inspector).toContainText('Square 35 · Taylor M.');
   await expect(inspector).toContainText('Matching right now.');
-  await expect(film(page)).toContainText('You can also tap a tile.');
+  await expect(film(page).getByText('Sample game', { exact: true })).toBeVisible();
+  await expect(film(page)).not.toContainText('tap a tile');
   await film(page).getByRole('button', { name: 'Next square' }).click();
   await expect(inspector).toContainText('Square 36');
   await expect(inspector).not.toContainText('Matching right now.');
-  // The sampled score's matching owner does not change when another square is inspected.
-  await expect(film(page)).toContainText('Taylor M. matches 7 × 4 right now.');
+  // Inspecting another square does not change the sample score.
+  await expect(film(page).getByText('KC 17 · PHI 14 · Q3', { exact: true })).toBeVisible();
   await film(page).getByRole('button', { name: 'Previous square' }).click();
   await expect(inspector).toContainText('Square 35 · Taylor M.');
   await expect(inspector).toContainText('Matching right now.');

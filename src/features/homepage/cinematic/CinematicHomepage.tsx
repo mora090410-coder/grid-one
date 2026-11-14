@@ -144,18 +144,17 @@ export function CinematicHomepage() {
           <p className="cine-lede">Give your team one board to share. Know what’s filled before kickoff.</p>
           <div className="cine-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Try the demo</Link></div>
           <p className="cine-reassurance">First published board free each season</p>
-          <p className="cine-fine">No card required · Sign up when you save<br />No account needed to view</p>
+          <p className="cine-fine">No card required</p>
         </div>
-        <section className="cine-film" id="how" aria-labelledby="cine-film-title">
-          <div className="cine-film-header"><h2 id="cine-film-title">Board film</h2><span>Simulated game</span></div>
+        <section className="cine-film" id="how" aria-label="Board film">
+          <p className="cine-film-header">Sample game</p>
           <div className="cine-stage" ref={stageRef}>
             <canvas ref={canvasRef} className="cine-canvas" aria-hidden="true" />
             <div className="cine-static-board" aria-hidden="true">{SQUARES.map((name, index) => <i key={index} className={chapter === 2 && index === NOW_SQUARE ? 'is-gold' : ''}><span>{chapter === 0 ? index + 1 : initials(name)}</span></i>)}</div>
-            <p className="cine-caption">Sample board — not a live game</p>
           </div>
           <div className="cine-controls" role="group" aria-label="Board film chapters">{CHAPTERS.map((item, index) => <button type="button" key={item.id} aria-pressed={chapter === index} aria-controls="cine-chapter" onClick={() => setChapter(index)}>{item.rail}</button>)}</div>
           <article id="cine-chapter" className="cine-chapter" aria-labelledby="cine-chapter-title">
-            <h3 id="cine-chapter-title">{selected.title}</h3><p>{selected.body}{chapter === 2 && mode === 'cinematic' ? ' You can also tap a tile.' : ''}</p><p className="cine-fine">{selected.fine}</p>
+            <h2 id="cine-chapter-title">{selected.title}</h2><p>{selected.body}</p>{selected.fine && <p className="cine-fine">{selected.fine}</p>}
             {chapter === 2 && <div className="cine-inspector" aria-label="Inspect sample squares">
               <p className="cine-pick" aria-live="polite" aria-atomic="true"><strong>Square {answer.square} · {answer.name}</strong><span>{answer.coordinate}. {answer.answer}</span></p>
               <div className="cine-inspect-actions"><button type="button" disabled={picked === 0} onClick={() => setPicked(value => clamp(value - 1, 0, 99))}>Previous square</button><button type="button" disabled={picked === 99} onClick={() => setPicked(value => clamp(value + 1, 0, 99))}>Next square</button></div>

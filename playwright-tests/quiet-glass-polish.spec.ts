@@ -8,8 +8,8 @@ test('homepage carries the liquid material without simulated-live claims', async
   await expect(page.getByRole('heading', { name: /Your team/ })).toBeVisible();
   await expect(page.getByText(/Checked .* ET/)).toHaveCount(0);
   const film = page.getByRole('region', { name: 'Board film' });
-  await expect(film.getByText('Simulated game', { exact: true })).toBeVisible();
-  await expect(film).toContainText('Simulated score, not a live feed.');
+  await expect(film.getByText('Sample game', { exact: true })).toBeVisible();
+  await expect(film.getByRole('heading', { name: 'Board film', exact: true })).toHaveCount(0);
   await expect(film.getByRole('button', { name: 'Build', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await expect(film.getByRole('button', { name: 'Build', exact: true })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(film.getByRole('button', { name: 'Game day', exact: true })).toHaveAttribute('aria-pressed', 'true');

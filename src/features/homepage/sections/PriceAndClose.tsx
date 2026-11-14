@@ -7,13 +7,13 @@ const audience = { free: 'One party', gameday: 'A season of games', org: 'Fundra
 const faq = [
   { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in. Public viewer links are viewing only.' },
   { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Collect by cash, Venmo or your preferred method; payment notes stay private.` },
-  { q: 'When do I pay?', a: 'Building is always free. Your first shared board each season is free. Each board counts once, however often you share it. Choose a season plan when you need more boards.' },
+  { q: 'When do I pay?', a: 'Building is always free. No card is required to start; sign up when you save. Your first shared board each season is free. Each board counts once, however often you share it. Choose a season plan when you need more boards.' },
 ];
 
 export function PriceAndClose() {
   return <>
     <section className="compact-pricing compact-section" aria-labelledby="pricing-heading">
-      <Reveal keepVisible as="header"><p className="compact-kicker">Simple pricing</p><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
+      <Reveal keepVisible as="header"><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
       <section aria-label="Plans" className="compact-plans">{PRICING.map(tier => <div className="compact-plan" key={tier.id}><div><p className="compact-plan-audience">{audience[tier.id]}</p><h3>{tier.name}</h3><p>{tier.detail.replace(/^\$[\d.]+ (?:once|per season) for /, '')}</p></div><div className="compact-price"><strong>{tier.price}</strong><span>{tier.priceNote}</span></div></div>)}</section>
       <p className="compact-plan-includes">Every published board includes live scores, Find my squares, what wins next, winner emails and QR sharing. No percentage of your squares. Ever.</p>
       <div className="compact-pricing-action"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink></div>
