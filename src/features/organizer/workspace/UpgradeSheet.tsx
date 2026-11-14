@@ -9,12 +9,14 @@ export interface UpgradeSheetProps {
   onOrganizationNameChange: (value: string) => void;
   onClose: () => void;
   onCheckout: () => void;
+  onRetryCheckout?: () => void;
   onTierChange?: (tier: 'gameday' | 'org') => void;
   allowGameDay?: boolean;
+  checkoutAvailable?: boolean;
 }
 
 /** 402 upgrade path to Stripe checkout. */
-export default function UpgradeSheet({ open, tier, error, organizationName, onOrganizationNameChange, onClose, onCheckout, onTierChange, allowGameDay = true }: UpgradeSheetProps) {
+export default function UpgradeSheet({ open, tier, error, organizationName, onOrganizationNameChange, onClose, onCheckout, onRetryCheckout, onTierChange, allowGameDay = true, checkoutAvailable = false }: UpgradeSheetProps) {
   const isOrganization = tier === 'org';
   const organizationNameIsValid = organizationName.trim().length >= 2 && organizationName.trim().length <= 120;
 
@@ -53,6 +55,10 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
           </div>
         )}
 
+        {!checkoutAvailable && <p role="status" className="font-ui text-sm text-fg-2">Paid checkout is temporarily unavailable. Your current boards and plan are unchanged.</p>}
+
+        {!checkoutAvailable && onRetryCheckout && <CapsuleButton type="button" variant="quiet" onClick={onRetryCheckout}>Check checkout again</CapsuleButton>}
+
         {error && (
           <p role="alert" className="font-ui text-[14px] text-tone-cardinal">{error}</p>
         )}
@@ -62,7 +68,7 @@ export default function UpgradeSheet({ open, tier, error, organizationName, onOr
           <CapsuleButton
             type="button"
             onClick={onCheckout}
-            disabled={isOrganization && !organizationNameIsValid}
+            disabled={!checkoutAvailable || (isOrganization && !organizationNameIsValid)}
           >
             {isOrganization ? 'Continue to Organization checkout' : 'Continue to $9.99 checkout'}
           </CapsuleButton>

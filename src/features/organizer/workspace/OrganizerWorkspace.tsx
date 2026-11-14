@@ -111,7 +111,8 @@ export interface OrganizerWorkspaceProps {
   revision: number;
   entryMeta: Record<number, EntryMeta>;
   onEntryMetaChange: (meta: EntryMeta) => void;
-  billing?: { tier: string; used: number; allowance: number } | null;
+  billing?: { tier: string; used: number; allowance: number; checkoutAvailability?: { gameday: boolean; org: boolean } } | null;
+  onRetryCheckout?: () => void;
   onCheckout?: (tier: 'gameday' | 'org', organizationName?: string) => Promise<void>;
 }
 
@@ -148,6 +149,7 @@ export default function OrganizerWorkspace({
   onEntryMetaChange,
   billing,
   onCheckout,
+  onRetryCheckout,
   onApply,
   onPublish,
   onSavePayoutDescriptions,
@@ -628,7 +630,7 @@ export default function OrganizerWorkspace({
   };
 
   const checkout = async () => {
-    if (!upgradeTier) return;
+    if (!upgradeTier || billing?.checkoutAvailability?.[upgradeTier] !== true) return;
     setUpgradeError(null);
     try {
       await onCheckout?.(upgradeTier, upgradeTier === 'org' ? organizationName.trim() : undefined);
@@ -936,6 +938,8 @@ export default function OrganizerWorkspace({
         organizationName={organizationName}
         onOrganizationNameChange={setOrganizationName}
         onClose={() => setUpgradeTier(null)}
+        onRetryCheckout={onRetryCheckout}
+        checkoutAvailable={upgradeTier ? billing?.checkoutAvailability?.[upgradeTier] === true : false}
         onCheckout={() => void checkout()}
       />
 

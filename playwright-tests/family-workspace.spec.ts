@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './helpers/strictApiMocks';
 import AxeBuilder from '@axe-core/playwright';
 
 for (const width of [390, 1440]) {

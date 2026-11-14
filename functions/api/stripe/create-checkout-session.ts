@@ -1,3 +1,4 @@
+import { checkoutConfigured, paidSignupAllowed } from '../../_lib/checkoutAvailability';
 import Stripe from 'stripe';
 import {
   configuredPriceForTier,
@@ -9,8 +10,7 @@ import { adminClient, currentSeason, maskedError, readJsonObject, requireUser, t
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   try {
-    const required = ['STRIPE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
-    if (required.some((key) => !env[key])) {
+    if (!checkoutConfigured(env)) {
       return Response.json({ error: 'Checkout is not configured.' }, { status: 503 });
     }
     const user = await requireUser(request, env, { missing: 'Sign in before checkout.', expired: 'Your session has expired.' });
@@ -52,14 +52,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       .maybeSingle();
     if (!contest) return Response.json({ error: 'You do not own this board.' }, { status: 403 });
 
-    const paidSignupEnabled = String(env.PAID_SIGNUP_ENABLED || '').toLowerCase() === 'true';
-    const smokeContestIds = new Set(
-      String(env.CHECKOUT_SMOKE_CONTEST_IDS || '')
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean),
-    );
-    if (!paidSignupEnabled && !smokeContestIds.has(contest.id)) {
+    if (!paidSignupAllowed(env, contest.id)) {
       return Response.json({
         code: 'PAID_SIGNUP_CLOSED',
         error: 'Paid signup is not open yet.',

@@ -1,3 +1,4 @@
+import { checkoutAvailability } from '../../_lib/checkoutAvailability';
 import { adminClient, currentSeason, isUuid, maskedError, requireUser, type PagesFunction } from '../../_lib/http';
 
 const STATUS_FAILED = 'Billing status is temporarily unavailable. Please try again.';
@@ -6,9 +7,19 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return Response.json({ error: 'Billing status is not configured.' }, { status: 503 });
   const user = await requireUser(request, env, { missing: 'Sign in to check billing status.', expired: 'Your session has expired.' });
   if (user instanceof Response) return user;
-  const orderId = new URL(request.url).searchParams.get('order');
+  const params = new URL(request.url).searchParams;
+  const orderId = params.get('order');
+  const contestId = params.get('contest');
 
   const admin = adminClient(env);
+  // The smoke-check exception must never be discoverable for another organizer's board.
+  if (contestId) {
+    if (!isUuid(contestId)) return Response.json({ error: 'Board not found.' }, { status: 404 });
+    const { data: contest, error } = await admin.from('contests').select('id')
+      .eq('id', contestId).eq('owner_id', user.id).maybeSingle();
+    if (error) return maskedError('Billing board lookup failed', error, STATUS_FAILED);
+    if (!contest) return Response.json({ error: 'Board not found.' }, { status: 404 });
+  }
   let order: any = null;
   if (orderId) {
     // A malformed id can name no order; answer before Postgres sees the cast.
@@ -44,6 +55,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   const allowance = Number(entitlement?.boards_allowance || 1);
   return Response.json({
     tier,
+    checkoutAvailability: checkoutAvailability(env, contestId || undefined),
     allowance,
     used,
     remaining: Math.max(0, allowance - used),

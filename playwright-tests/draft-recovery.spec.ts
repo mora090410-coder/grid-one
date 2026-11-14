@@ -1,5 +1,5 @@
 import { openBoardTask } from './helpers/organizerMocks';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './helpers/strictApiMocks';
 import { boardId, ownerId, installOrganizerBoard } from './helpers/organizerMocks';
 
 for (const width of [390, 1440]) {

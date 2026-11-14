@@ -112,17 +112,21 @@ test('Game day has keyboard-equivalent square inspection and truthful sample lab
   const previous = region.getByRole('button', { name: 'Previous square' });
   for (const control of [next, previous]) await expectTarget(control);
   const inspector = region.locator('[aria-live="polite"]');
-  await expect(inspector).toContainText('Square 35 · Taylor M.');
-  await expect(inspector).toContainText('KC 7 × PHI 4');
-  await expect(inspector).toContainText('Matching right now.');
+  await expect(inspector).toContainText('Square 39');
+  await expect(inspector).toContainText('KC 7 × PHI 7');
+  await expect(inspector).toContainText('Philadelphia field goal (+3) makes it 17–17.');
   const before = await inspector.innerText();
   await next.focus();
   await next.press('Enter');
-  await expect(inspector).toContainText('Square 36');
+  await expect(inspector).toContainText('Square 40');
   await expect(inspector).not.toContainText('Matching right now.');
   await expect.poll(() => inspector.innerText()).not.toBe(before);
   await previous.click();
   await expect.poll(() => inspector.innerText()).toBe(before);
+  for (let i = 0; i < 4; i++) await previous.click();
+  await expect(inspector).toContainText('Square 35 · Taylor M.');
+  await expect(inspector).toContainText('KC 7 × PHI 4');
+  await expect(inspector).toContainText('Matching right now.');
 });
 
 test('the two-view summary changes locally and keeps its sample identity', async ({ page }) => {

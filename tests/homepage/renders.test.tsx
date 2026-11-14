@@ -26,6 +26,8 @@ describe('Compact cinematic homepage, static first', () => {
     fireEvent.click(within(film).getByRole('button', { name: 'Game day' }));
     expect(film).toHaveTextContent(/KC\s*17/);
     expect(film).toHaveTextContent(/PHI\s*14/);
+    expect(film).toHaveTextContent('Philadelphia field goal (+3) makes it 17–17.');
+    for (let i = 0; i < 4; i++) fireEvent.click(within(film).getByRole('button', { name: 'Previous square' }));
     expect(film).toHaveTextContent(/Taylor M\./);
     expect(film).toHaveTextContent(/matching|matches/i);
     expect(film).toHaveTextContent(/sample|simulated/i);

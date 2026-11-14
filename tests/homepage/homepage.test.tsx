@@ -58,6 +58,20 @@ describe('Compact cinematic homepage', () => {
     expect(film).toHaveTextContent(/sample|simulated/i);
   });
 
+  it('opens with a one-score-away example without marking that square as the current match', () => {
+    renderPage();
+    const film = screen.getByRole('region', { name: 'Board film' });
+    const inspector = film.querySelector('.cine-pick')!;
+    expect(inspector).toHaveTextContent('Square 39');
+    expect(inspector).toHaveTextContent('KC 7 × PHI 7');
+    expect(inspector).toHaveTextContent('Philadelphia field goal (+3) makes it 17–17. This square matches.');
+    expect(inspector).not.toHaveTextContent('Matching right now');
+    const squares = film.querySelectorAll('.cine-static-board > i');
+    expect(squares).toHaveLength(100);
+    expect([...squares].filter(square => square.classList.contains('is-gold'))).toEqual([squares[34]]);
+    expect(squares[38]).not.toHaveClass('is-gold');
+  });
+
   it('keeps the canonical three plans and an action beside pricing', () => {
     renderPage();
     const pricing = screen.getByRole('region', { name: 'Your first board is free.' });

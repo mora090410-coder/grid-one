@@ -19,7 +19,7 @@ for (const credited of [false, true]) for (const width of [390, 1440]) {
       tier: 'org', allowance: 50, used: 0, remaining: 50, organizationDisplayName: 'Ravens Fixture Club',
       orderOrganizationDisplayName: 'Ravens Fixture Club', seasonYear: 2026, entitlementStatus: 'active',
       orderStatus: 'paid', paymentConfirmed: true, contestId: boardId, paidAt: '2026-10-14T18:00:00Z', amountPaidCents: credited ? 6901 : 7900, creditCents: credited ? 999 : 0,
-    } : { tier: credited ? 'gameday' : 'free', allowance: credited ? 5 : 1, used: credited ? 1 : 0, remaining: credited ? 4 : 1, seasonYear: 2026, entitlementStatus: 'active' } }));
+    } : { checkoutAvailability: { gameday: true, org: true }, tier: credited ? 'gameday' : 'free', allowance: credited ? 5 : 1, used: credited ? 1 : 0, remaining: credited ? 4 : 1, seasonYear: 2026, entitlementStatus: 'active' } }));
     await page.route('**/api/stripe/create-checkout-session', async route => {
       expect(route.request().postDataJSON()).toEqual({ contestId: boardId, tier: 'org', organizationName: 'Ravens Fixture Club' });
       purchased = true;
@@ -54,5 +54,41 @@ for (const credited of [false, true]) for (const width of [390, 1440]) {
     const receiptA11y = await new AxeBuilder({ page }).analyze();
     expect(receiptA11y.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
     await info.attach('organization-receipt', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  });
+}
+
+for (const status of ['unavailable', 'failed', 'unknown'] as const) {
+  test(`checkout stays disabled when availability is ${status}, without hiding current allowance`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await installOrganizerSession(page); await installOrganizerSupport(page);
+    await page.route(`**/api/pools/${boardId}`, route => route.fulfill({ json: {
+      id: boardId, owner_id: ownerId, share_code: 'BILL2345', title: 'Checkout availability fixture', revision: 1,
+      gameExternalId: scheduledGame.id, kickoffAt: scheduledGame.kickoffAt,
+      leftAbbr: 'DAL', leftName: 'Dallas Cowboys', topAbbr: 'WAS', topName: 'Washington Commanders',
+      board: { leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), squares: Array.from({ length: 100 }, () => []), isDynamic: false },
+      is_activated: false, locked: false, is_shared: false, published_at: null, winner_history: [], pending_milestones: [], notification_delivery_issues: [],
+    } }));
+    let recovered = false;
+    await page.route('**/api/billing/status*', route => route.fulfill({ status: status === 'failed' && !recovered ? 503 : 200, json: {
+      tier: 'free', allowance: 1, used: 0, remaining: 1,
+      ...(recovered ? { checkoutAvailability: { gameday: true, org: true } } : status === 'unavailable' ? { checkoutAvailability: { gameday: false, org: false } } : {}),
+    } }));
+    let checkoutCalls = 0;
+    await page.route('**/api/stripe/create-checkout-session', route => { checkoutCalls++; return route.fulfill({ status: 503, json: { error: 'Unexpected checkout call' } }); });
+    await page.goto(`/boards/${boardId}`);
+    await openBoardTask(page, 'Game & settings');
+    await page.getByRole('button', { name: 'Season plans', exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: 'Choose a plan' });
+    await sheet.getByLabel('Organization name').fill('Ravens Fixture Club');
+    await expect(sheet.getByRole('button', { name: 'Continue to Organization checkout' })).toBeDisabled();
+    await expect(sheet).toContainText('Paid checkout is temporarily unavailable. Your current boards and plan are unchanged.');
+    await expect(sheet).toContainText('$79');
+    recovered = true;
+    await sheet.getByRole('button', { name: 'Check checkout again' }).click();
+    await expect(sheet.getByRole('button', { name: 'Continue to Organization checkout' })).toBeEnabled();
+    await expect(sheet.getByRole('button', { name: 'Check checkout again' })).not.toBeVisible();
+    await sheet.getByRole('button', { name: 'Not now' }).click();
+    await expect(sheet).not.toBeVisible();
+    expect(checkoutCalls).toBe(0);
   });
 }

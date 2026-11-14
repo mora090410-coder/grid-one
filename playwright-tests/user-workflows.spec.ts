@@ -1,5 +1,6 @@
 import { openBoardTask } from './helpers/organizerMocks';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './helpers/strictApiMocks';
 
 const authStorageKey = 'sb-gridone-test-auth-token';
 const ownerId = '11111111-1111-4111-8111-111111111111';
@@ -46,7 +47,7 @@ const installOrganizerSupport = async (page: Page) => {
     contentType: 'application/json',
     body: '[]',
   }));
-  await page.route('**/api/billing/status', (route) => route.fulfill({
+  await page.route(url => url.pathname === '/api/billing/status', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
@@ -117,6 +118,8 @@ const quarterScores = {
 };
 
 test('protected routes preserve the exact destination through sign-in', async ({ page }) => {
+  await installOrganizerSupport(page);
+  await page.route('**/rest/v1/contests*', route => route.fulfill({ json: [] }));
   await page.goto('/dashboard');
   await expect(page).toHaveURL(new RegExp(`/login\\?.*returnTo=${encodeURIComponent('/dashboard').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
 
@@ -132,6 +135,7 @@ test('protected routes preserve the exact destination through sign-in', async ({
   await page.reload();
 
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Your boards', exact: true })).toBeVisible();
 });
 
 test('organizer creates a board from one scheduled NFL event', async ({ page }) => {
