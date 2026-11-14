@@ -218,6 +218,27 @@ describe('PublishSheet', () => {
 });
 
 describe('UpgradeSheet', () => {
+  it('offers a bounded readiness retry and enables checkout after recovery', () => {
+    const retry = vi.fn();
+    const props = { open: true, tier: 'gameday' as const, error: null, organizationName: '', onOrganizationNameChange: vi.fn(), onClose: vi.fn(), onCheckout: vi.fn(), onRetryCheckout: retry };
+    const { rerender } = render(<UpgradeSheet {...props} checkoutAvailable={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Check checkout again' }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    rerender(<UpgradeSheet {...props} checkoutAvailable />);
+    expect(screen.getByRole('button', { name: 'Continue to $9.99 checkout' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Check checkout again' })).not.toBeInTheDocument();
+  });
+
+  it('disables checkout and explains the outage even with a valid organization name', () => {
+    const checkout = vi.fn();
+    render(<UpgradeSheet open tier="org" error={null} organizationName="Ravens Club" onOrganizationNameChange={vi.fn()} onClose={vi.fn()} onCheckout={checkout} checkoutAvailable={false} />);
+    const button = screen.getByRole('button', { name: 'Continue to Organization checkout' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(checkout).not.toHaveBeenCalled();
+    expect(screen.getByText(/Paid checkout is temporarily unavailable/)).toBeInTheDocument();
+  });
+
   it('allows choosing Organization without spending the free allowance first', () => {
     const change = vi.fn();
     render(<UpgradeSheet open tier="gameday" error={null} organizationName="" onOrganizationNameChange={vi.fn()} onClose={vi.fn()} onCheckout={vi.fn()} onTierChange={change} />);
@@ -230,6 +251,7 @@ describe('UpgradeSheet', () => {
     const onChange = vi.fn();
     const { rerender } = render(
       <UpgradeSheet
+        checkoutAvailable
         open
         tier="org"
         error={null}
@@ -246,6 +268,7 @@ describe('UpgradeSheet', () => {
 
     rerender(
       <UpgradeSheet
+        checkoutAvailable
         open
         tier="org"
         error={null}
@@ -264,6 +287,7 @@ describe('UpgradeSheet', () => {
   it('shows gameday copy and pricing without an org name field', () => {
     render(
       <UpgradeSheet
+        checkoutAvailable
         open
         tier="gameday"
         error={null}

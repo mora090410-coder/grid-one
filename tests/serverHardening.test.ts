@@ -192,7 +192,7 @@ describe('request bodies are bounded objects', () => {
 
   it('returns 400 when a checkout body is null', async () => {
     mocks.clients.push(authClient());
-    const response = await createCheckout({ request: post('https://x.test/api/stripe/create-checkout-session', 'null'), env: { ...env, STRIPE_SECRET_KEY: 'sk' } });
+    const response = await createCheckout({ request: post('https://x.test/api/stripe/create-checkout-session', 'null'), env: { ...env, STRIPE_SECRET_KEY: 'sk', STRIPE_WEBHOOK_SECRET: 'whsec' } });
     expect(response.status).toBe(400);
   });
 });
@@ -494,7 +494,7 @@ describe('one season source of truth', () => {
     mocks.clients.push(authClient(), admin);
     await createCheckout({
       request: post('https://x.test/api/stripe/create-checkout-session', JSON.stringify({ contestId: ID, tier: 'gameday' })),
-      env: { ...env, STRIPE_SECRET_KEY: 'sk', STRIPE_GAMEDAY_PRICE_ID: 'price_gameday', PAID_SIGNUP_ENABLED: 'true', GRIDONE_SEASON: '2027' },
+      env: { ...env, STRIPE_SECRET_KEY: 'sk', STRIPE_WEBHOOK_SECRET: 'whsec', STRIPE_GAMEDAY_PRICE_ID: 'price_gameday', PAID_SIGNUP_ENABLED: 'true', GRIDONE_SEASON: '2027' },
     });
     expect(admin.calls).toContainEqual(['eq', ['season_year', 2027]]);
     expect(admin.calls).not.toContainEqual(['eq', ['season_year', 2026]]);

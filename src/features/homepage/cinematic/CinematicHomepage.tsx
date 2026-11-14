@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SiteHeader } from '../../site/SiteHeader';
 import { quietLink, trackViewDemo } from '../sections/cta';
 import { PrimaryCtaLink } from '../sections/PrimaryCtaLink';
-import { CHAPTERS, NOW_SQUARE, SQUARES, initials, pickAnswer, clamp } from './cinematicModel';
+import { CHAPTERS, LIVE_SCORE, NOW_SQUARE, SQUARES, initials, pickAnswer, clamp, squareFor } from './cinematicModel';
 import type { BoardScene } from './boardScene';
 import './cinematic.css';
 
@@ -12,7 +12,8 @@ export function CinematicHomepage() {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [chapter, setChapter] = useState(2);
-  const [picked, setPicked] = useState(NOW_SQUARE);
+  // Show a Philadelphia field goal immediately; gold still marks only NOW_SQUARE.
+  const [picked, setPicked] = useState(() => squareFor(LIVE_SCORE.kc, LIVE_SCORE.phi + 3));
   const [motionAllowed, setMotionAllowed] = useState(false);
   const [mode, setMode] = useState<'static' | 'cinematic'>('static');
   const [settled, setSettled] = useState(false);

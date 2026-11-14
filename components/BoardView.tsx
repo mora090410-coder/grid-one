@@ -43,7 +43,7 @@ import { useGuestSync } from '../src/features/guest/useGuestSync';
 import type { GuestSnapshot } from '../src/features/guest/guestInviteTypes';
 import { subscribeGuestInvalidations } from '../src/features/guest/guestInviteService';
 
-type BillingSummary = { tier: string; used: number; allowance: number };
+type BillingSummary = { tier: string; used: number; allowance: number; checkoutAvailability?: { gameday: boolean; org: boolean } };
 
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const { shareCode: routeShareCode, boardId: routeBoardId } = useParams<{ shareCode?: string; boardId?: string }>();
@@ -126,6 +126,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
     const { entryMetaByIndex, setEntryMetaByIndex, reloadEntries, hasLoadedEntries, isLoading: entriesLoading, error: entriesError } = useContestEntries(ownerDataPoolId);
     const [billing, setBilling] = useState<BillingSummary | null>(null);
+    const [billingCheck, setBillingCheck] = useState(0);
     const [ownedPublicBoardId, setOwnedPublicBoardId] = useState<string | null>(null);
     useEffect(() => {
         let cancelled = false;
@@ -252,7 +253,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                 if (!cancelled) setBilling(null);
                 return;
             }
-            const response = await fetch('/api/billing/status', {
+            const response = await fetch(`/api/billing/status?contest=${encodeURIComponent(ownerDataPoolId)}`, {
                 headers: { Authorization: `Bearer ${token}` },
                 cache: 'no-store',
             });
@@ -266,7 +267,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             // The board stays usable when the neutral plan summary is unavailable.
         });
         return () => { cancelled = true; };
-    }, [ownerDataPoolId]);
+    }, [ownerDataPoolId, billingCheck]);
 
     useEffect(() => {
         if (!selectionStorageKey || !dataReady || loadingPool || poolError) return;
@@ -441,6 +442,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         [meta.cell_index]: meta,
                     }))}
                     billing={billing}
+                    onRetryCheckout={() => setBillingCheck(check => check + 1)}
                     onCheckout={(tier, organizationName) => {
                         if (!activePoolId) throw new Error('Save this board before upgrading.');
                         return createCheckoutSession(activePoolId, tier, organizationName);

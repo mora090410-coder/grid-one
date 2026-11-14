@@ -14,7 +14,7 @@
 npx vitest run --project unit
 ```
 
-97 files under `tests/`, jsdom environment, `tests/setup.ts`, no network, no containers. This is the layer that must stay green on every commit. It covers four kinds of thing:
+The unit project runs under `tests/` with a jsdom environment and `tests/setup.ts`, without network calls or containers. This is the layer that must stay green on every commit. It covers four kinds of thing:
 
 - **Pure models.** `organizerLifecycle`, `draftSaveModel`, `manualScoringModel`, `scenarioModel`, `viewerScoreModel`, `viewerIdentityModel`, `milestoneViewModel`, `boardGridModel`, `winnerLogic`, `retry`, `playerNameMatching`, `numberDraw`.
 - **Rendered components** through Testing Library with semantic queries only — `tests/viewer/`, `tests/organizer/`, `tests/homepage/`, `tests/site/`, `viewerShell`, `viewerBoardGrid`, `manualScoringPanel`, `scheduledGamePicker`, `findSquaresModal`, `dashboard`, `createContest`.
@@ -37,7 +37,7 @@ Requires Docker. If Docker is unavailable, record the blocker and run every othe
 npx playwright test --project=chromium
 ```
 
-`playwright-tests/` against the Vite dev server, with Supabase and API routes mocked in the page. `chromium` is the release project (66 tests); `webkit`, `phone-chromium`, and `phone-webkit` exist for targeted checks.
+`playwright-tests/` runs against the Vite dev server, with Supabase and API routes mocked in the page. `chromium` is the release project; `webkit`, `phone-chromium`, and `phone-webkit` exist for targeted checks. Record the actual counts from the release output rather than treating this document as a test inventory. Passing browser mocks do not certify hosted database policies, provider feeds, email delivery, or payment settlement.
 
 - `accessibility-contract.spec.ts` is the executable half of `docs/accessibility-contract.md`: focus order and visibility, 44×44 target geometry, field-linked auth errors, the organizer selection mode and range-assign bar, Reconcile blockers vs advisories, the draw and publish confirmations, save conflict, the viewer's first viewport and score-authority states, the find-my-squares dialog focus loop, one keyboard tab stop into the board grid, 320/390 overflow, reduced motion, and forced colors.
 - `homepage.spec.ts`, `viewer.spec.ts`, `organizer.spec.ts`, `site.spec.ts`, `scheduled-game-picker.spec.ts`, `user-workflows.spec.ts`, `smoke.spec.ts` cover the routes end to end.

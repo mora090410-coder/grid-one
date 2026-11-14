@@ -11,7 +11,7 @@ Control names document the current accessible interface and should agree with im
 
 The organizer is a volunteer, not an administrator. The current workspace is one page rather than a wizard, with the board visible and the current phase and next action in a status island. This is a production mechanism, not a ban on alternative journeys. Explore improvements by organizer success, clarity, recovery, and trust; keep unchanged production controls until an approved, reversible implementation coordinates contracts, tests, and rendered accessibility/integrity evidence. Privacy, payment independence, publication, and score-authority boundaries remain binding.
 
-Building, editing, previewing, and redrawing are free and reversible. **Publication is the trust boundary.** Before it, nothing is public and almost everything is editable. After it, the viewer record is stable and change happens only through an audited, viewer-visible correction.
+Building, editing, previewing, and redrawing a private draft are free and reversible. **Sharing and locking are distinct trust boundaries.** Sharing while selling makes buyer names and public family allocations visible to anyone with the viewer link and consumes one season board. Drawn numbers stay private until the organizer locks them. Locking publishes the axes and stabilizes the viewer record; subsequent corrections are governed by the audited correction rules below. Private payment statuses, seller attribution, contact details and organizer notes stay private at every stage.
 
 ## Composition
 

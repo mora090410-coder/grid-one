@@ -79,16 +79,18 @@ test('forced cinematic scene switches chapters and distinguishes inspected from 
     await expect(page.locator('.cine')).toHaveAttribute('data-mode', 'cinematic');
   }
   const inspector = film(page).locator('[aria-live="polite"]');
-  await expect(inspector).toContainText('Square 35 · Taylor M.');
-  await expect(inspector).toContainText('Matching right now.');
+  await expect(inspector).toContainText('Square 39');
+  await expect(inspector).toContainText('Philadelphia field goal (+3) makes it 17–17.');
   await expect(film(page).getByText('Sample game', { exact: true })).toBeVisible();
   await expect(film(page)).not.toContainText('tap a tile');
   await film(page).getByRole('button', { name: 'Next square' }).click();
-  await expect(inspector).toContainText('Square 36');
+  await expect(inspector).toContainText('Square 40');
   await expect(inspector).not.toContainText('Matching right now.');
   // Inspecting another square does not change the sample score.
   await expect(film(page).getByText('KC 17 · PHI 14 · Q3', { exact: true })).toBeVisible();
   await film(page).getByRole('button', { name: 'Previous square' }).click();
+  await expect(inspector).toContainText('Square 39');
+  for (let i = 0; i < 4; i++) await film(page).getByRole('button', { name: 'Previous square' }).click();
   await expect(inspector).toContainText('Square 35 · Taylor M.');
   await expect(inspector).toContainText('Matching right now.');
 });
@@ -106,7 +108,7 @@ test('forced cinematic WebGL context loss preserves a usable truthful static fal
     await expect(control).toHaveAttribute('aria-pressed', 'true');
   }
   await film(page).getByRole('button', { name: 'Next square' }).click();
-  await expect(film(page).locator('[aria-live="polite"]')).toContainText('Square 36');
+  await expect(film(page).locator('[aria-live="polite"]')).toContainText('Square 40');
   await expect(film(page)).not.toContainText('tap a tile');
 });
 

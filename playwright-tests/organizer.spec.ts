@@ -1,5 +1,6 @@
 import { openBoardTask } from './helpers/organizerMocks';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './helpers/strictApiMocks';
 
 const authStorageKey = 'sb-gridone-test-auth-token';
 const ownerId = '11111111-1111-4111-8111-111111111111';
@@ -130,7 +131,7 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
       }),
     });
   });
-  await page.route('**/api/billing/status', (route) => route.fulfill({
+  await page.route(url => url.pathname === '/api/billing/status', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
@@ -150,10 +151,12 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
 
 test.describe('organizer workspace contract', () => {
   test('create route previews before account creation', async ({ page }) => {
+    await page.route('**/api/nfl/games?**', route => route.fulfill({ json: { games: [scheduledGame] } }));
     await page.goto('/create');
 
     await expect(page).toHaveURL(/\/create/);
     await expect(page.getByRole('region', { name: 'Board preview' })).toBeVisible();
+    await expect(page.getByRole('radio', { name: /Dallas Cowboys at Washington Commanders/ })).toBeVisible();
   });
 
   test('dashboard lists the organizer boards and links into the workspace', async ({ page }) => {

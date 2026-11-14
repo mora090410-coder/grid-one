@@ -60,6 +60,14 @@ describe.sequential('retired activation endpoint', () => {
   });
 });
 describe.sequential('tiered checkout session endpoint', () => {
+  it('refuses checkout without webhook configuration before creating any session or order', async () => {
+    const f = checkoutFixture();
+    const response = await createCheckout({ request: f.request, env: { ...env, STRIPE_WEBHOOK_SECRET: '' } });
+    expect(response.status).toBe(503);
+    expect(f.stripe.checkout.sessions.create).not.toHaveBeenCalled();
+    expect(f.admin.rpc).not.toHaveBeenCalled();
+  });
+
   it('creates the exact $9.99 Game Day checkout at the free limit', async () => {
     const f = checkoutFixture({ tier: 'gameday' });
     expect((await createCheckout({ request: f.request, env })).status).toBe(200);
@@ -126,6 +134,39 @@ describe.sequential('tiered checkout session endpoint', () => {
   });
 });
 describe.sequential('billing status endpoint', () => {
+  it('refuses readiness for a board that is not owned, even if allowlisted', async () => {
+    const contestId = '44444444-4444-4444-8444-444444444444';
+    const admin = adminClient([{ data: null }]);
+    mocks.clients.push({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) } }, admin);
+    const response = await billingStatus({ request: new Request(`https://example.test/api/billing/status?contest=${contestId}`, { headers: { Authorization: 'Bearer token' } }), env: { ...env, PAID_SIGNUP_ENABLED: 'false', CHECKOUT_SMOKE_CONTEST_IDS: contestId } });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Board not found.' });
+    expect(admin.from).toHaveBeenCalledTimes(1);
+  });
+  it('returns the smoke exception only after matching the current owner and board', async () => {
+    const contestId = '44444444-4444-4444-8444-444444444444';
+    const admin = adminClient([{ data: { id: contestId } }, { data: null }]);
+    mocks.clients.push({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) } }, admin);
+    const response = await billingStatus({ request: new Request(`https://example.test/api/billing/status?contest=${contestId}`, { headers: { Authorization: 'Bearer token' } }), env: { ...env, PAID_SIGNUP_ENABLED: 'false', CHECKOUT_SMOKE_CONTEST_IDS: contestId } });
+    const result = await response.json();
+    expect(result).toMatchObject({ remaining: 1, checkoutAvailability: { gameday: true, org: true } });
+    const query = admin.from.mock.results[0].value;
+    expect(query.eq).toHaveBeenCalledWith('owner_id', 'user-1');
+    expect(query.eq).toHaveBeenCalledWith('id', contestId);
+    expect(JSON.stringify(result)).not.toContain(contestId);
+  });
+
+  it('keeps active allowance readable but reports checkout unavailable without webhook configuration', async () => {
+    mocks.clients.push({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) } }, adminClient([
+      { data: { id: 'e', status: 'active', tier: 'gameday', boards_allowance: 5 } }, { count: 1 },
+    ]));
+    const response = await billingStatus({ request: new Request('https://example.test/api/billing/status', { headers: { Authorization: 'Bearer token' } }), env: { ...env, STRIPE_WEBHOOK_SECRET: '' } });
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result).toMatchObject({ allowance: 5, remaining: 4, checkoutAvailability: { gameday: false, org: false } });
+    expect(JSON.stringify(result)).not.toContain('STRIPE');
+  });
+
   it('returns allowance, organization and canonical payment summary', async () => {
     mocks.clients.push({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) } }, adminClient([
       { data: { id: '44444444-4444-4444-8444-444444444444', contest_id: 'board-1', season_year: 2026, status: 'paid', price_cents: 6901, credit_cents: 999, organization_display_name: 'Ravens Club' } },
