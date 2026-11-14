@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 
 /*
  * Corner Square rebrand guards. Gold means winner: it may fill the logo
- * corner and winning squares, and nothing else. The name is always GridOne.
+ * corner and winning squares. The approved compact homepage alone also has one
+ * gold headline accent; support labels, focus, and selected states remain neutral.
+ * The name is always GridOne.
  */
 const filesUnder = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
   const path = join(dir, name);
@@ -14,9 +16,13 @@ const source = [...filesUnder('src'), ...filesUnder('components'), ...filesUnder
   .filter((path) => /\.(tsx?|css|html)$/.test(path) && !path.startsWith('src/assets/'));
 
 describe('brand sweep', () => {
-  it('never uses gold for text, edges, rings, outlines, or strokes', () => {
+  it('reserves gold outside matching tiles for the approved homepage headline only', () => {
     const offenders = source.flatMap((path) => {
-      const text = readFileSync(path, 'utf8');
+      const raw = readFileSync(path, 'utf8');
+      // Anthony-approved concept: only this exact homepage headline declaration.
+      // All other gold text, support labels, focus rings, and selected states stay guarded.
+      const accent = '.g1-homepage .cine .cine-title span { color: var(--g-gold); }';
+      const text = path === 'src/features/homepage/cinematic/cinematic.css' ? raw.replace(accent, '') : raw;
       const hits = [
         ...text.matchAll(/\b(?:text|border|ring|outline|decoration|stroke|shadow)-(?:tone-)?gold\b(?!-deep)/g),
         ...text.matchAll(/(?:^|[;{\s])(?:color|outline(?:-color)?|stroke|border(?:-color)?):[^;]*var\(--g-gold\)/g),

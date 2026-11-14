@@ -79,15 +79,13 @@ export function pickAnswer(index: number): PickAnswer {
 
 /* ---------- Chapters ---------- */
 
-export interface Chapter { id: string; rail: string; number: string; title: string; body: string; fine: string; tele: string[]; tone: 'light' | 'dark' }
+export interface Chapter { id: string; rail: string; title: string; body: string; fine: string; sceneProgress: number }
 
+/** Three user-directed beats use the same dimensional board, without a long scroll runway. */
 export const CHAPTERS: readonly Chapter[] = [
-  { id: 'build', rail: 'Build', number: '01 · Build', tone: 'light', title: 'Fill the board, not a spreadsheet.', body: 'Pick the NFL game. Tap squares to add names. Mark who paid. Only you see payment notes.', fine: 'Already have a paper board? Upload a photo to import it (Beta). Sign in, then review every square before publishing.', tele: ['100 squares', `${NAMED_COUNT} filled`, `${100 - NAMED_COUNT} open`] },
-  { id: 'share', rail: 'Share', number: '02 · Share', tone: 'light', title: 'One link. Every phone.', body: 'Drop it in the group chat. People open it and see the board. No app, no account, no “which version is right?”', fine: 'Running a fundraiser? Give each seller a link. Buyers claim that seller’s unsold squares by name, until the numbers lock. Families can get a private link for their own squares.', tele: ['One viewer link · viewing only'] },
-  { id: 'draw', rail: 'Draw', number: '03 · Draw', tone: 'dark', title: 'Numbers drawn at random. Locked when you publish.', body: 'GridOne draws the 0 to 9 numbers for each side. Use one set for the whole game, or new numbers each quarter.', fine: 'Once you publish, the numbers can’t change.', tele: ['PHI across', 'KC down'] },
-  { id: 'kickoff', rail: 'Kickoff', number: '04 · Kickoff', tone: 'dark', title: 'The score runs itself.', body: 'Scores come in on their own, about every 3 minutes. The last digit of each score points to one square. That square is matching now.', fine: 'Score looks wrong? Set it by hand. Your score stays in charge until you switch back.', tele: ['Simulated · example score, not a live feed', `KC ${LIVE_SCORE.kc}`, `PHI ${LIVE_SCORE.phi}`, 'Q3 · 6:42', `Taylor M. matches ${LIVE_SCORE.kc % 10} × ${LIVE_SCORE.phi % 10}`] },
-  { id: 'sweat', rail: 'Sweat', number: '05 · The sweat', tone: 'dark', title: 'Everyone knows what to root for.', body: 'Viewers see every next score, for both teams, and whose square it lands on. A field goal suddenly matters to the whole room.', fine: 'Plain math on the score. Never odds or predictions.', tele: [`${CANDIDATES.size} squares are one score away`, '+2 +3 +6 +7 +8'] },
-  { id: 'final', rail: 'Final', number: '06 · Final', tone: 'dark', title: 'Results called. Record kept.', body: 'Each quarter’s result is saved for good. Winners who verified their email get a note. You settle up your way.', fine: 'Final includes overtime. An open square stays open, with no rollover.', tele: ['Q1 J. Rivera', 'Q2 Maya T.', 'Q3 Taylor M.', 'Final Priya S.'] },
+  { id: 'build', rail: 'Build', title: 'Fill the board, not a spreadsheet.', body: 'Pick an NFL game, add names and track who paid. Payment notes stay private.', fine: 'Already have a paper board? Upload a photo to import it (Beta). Sign in, then review every square before publishing.', sceneProgress: 1.35 },
+  { id: 'share', rail: 'Share', title: 'The right link for each person.', body: 'Public viewer link: viewing only. A seller link lets buyers claim that seller’s unsold squares by name until the numbers lock.', fine: 'No account needed to view or claim. Private family editing links are separate; payment notes stay private.', sceneProgress: 2.1 },
+  { id: 'gameday', rail: 'Game day', title: 'Know what to root for.', body: 'KC 17 · PHI 14 · Q3. Taylor M. matches 7 × 4 right now. Use the square controls to explore what wins next.', fine: 'Simulated score, not a live feed. Plain math, never odds or predictions. No confirmed quarter results in this illustration.', sceneProgress: 4.2 },
 ];
 
 /* ---------- Scroll math ---------- */
@@ -126,13 +124,13 @@ export interface Keyframe {
 
 /** Hero, then one camera move per chapter. */
 export const KEYFRAMES: readonly Keyframe[] = [
-  { az: -24, el: 38, desktop: [0.73, 0.52, 0.38, 0.78], phone: [0.5, 1.0, 0.84, 0.34], bg: ['#05090D', '#13212E'], beam: 0.25, bands: 0.6, env: 0.6, hemi: 0.5, key: 0.65, flood: 0.25, rim: 0.85 },
-  { az: 0, el: 60, desktop: [0.7, 0.5, 0.44, 0.82], phone: [0.5, 0.27, 0.9, 0.42], bg: ['#DCE5EE', '#F6F7F5'], beam: 0, bands: 0.5, env: 0.55, hemi: 0.62, key: 0.5, flood: 0, rim: 0 },
-  { az: 14, el: 28, desktop: [0.7, 0.58, 0.36, 0.5], phone: [0.5, 0.34, 0.6, 0.3], bg: ['#C3D3E3', '#EEF2F5'], beam: 0, bands: 0.5, env: 0.55, hemi: 0.62, key: 0.5, flood: 0, rim: 0 },
-  { az: -30, el: 26, desktop: [0.71, 0.52, 0.4, 0.7], phone: [0.5, 0.27, 0.74, 0.36], bg: ['#13212E', '#4A5670'], beam: 0, bands: 0.5, env: 0.6, hemi: 0.5, key: 0.6, flood: 0.1, rim: 0.5 },
-  { az: 0, el: 56, desktop: [0.7, 0.5, 0.44, 0.82], phone: [0.5, 0.27, 0.9, 0.42], bg: ['#04070A', '#0E1823'], beam: 0.8, bands: 0.7, env: 0.6, hemi: 0.42, key: 0.55, flood: 0.55, rim: 0.9 },
-  { az: 22, el: 40, desktop: [0.71, 0.5, 0.41, 0.8], phone: [0.5, 0.27, 0.76, 0.4], bg: ['#04070A', '#111D29'], beam: 0.55, bands: 0.6, env: 0.6, hemi: 0.45, key: 0.6, flood: 0.4, rim: 0.85 },
-  { az: -14, el: 46, desktop: [0.71, 0.5, 0.42, 0.8], phone: [0.5, 0.27, 0.8, 0.42], bg: ['#05090D', '#13212E'], beam: 0.3, bands: 0.55, env: 0.6, hemi: 0.5, key: 0.65, flood: 0.25, rim: 0.8 },
+  { az: -24, el: 38, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#05090D', '#13212E'], beam: 0.25, bands: 0.6, env: 0.6, hemi: 0.5, key: 0.65, flood: 0.25, rim: 0.85 },
+  { az: 0, el: 60, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#070B14', '#15212B'], beam: 0, bands: 0.5, env: 0.55, hemi: 0.62, key: 0.5, flood: 0, rim: 0 },
+  { az: 14, el: 28, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#070B14', '#15212B'], beam: 0, bands: 0.5, env: 0.55, hemi: 0.62, key: 0.5, flood: 0, rim: 0 },
+  { az: -30, el: 26, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#13212E', '#4A5670'], beam: 0, bands: 0.5, env: 0.6, hemi: 0.5, key: 0.6, flood: 0.1, rim: 0.5 },
+  { az: 0, el: 56, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#04070A', '#0E1823'], beam: 0.8, bands: 0.7, env: 0.6, hemi: 0.42, key: 0.55, flood: 0.55, rim: 0.9 },
+  { az: 22, el: 40, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#04070A', '#111D29'], beam: 0.55, bands: 0.6, env: 0.6, hemi: 0.45, key: 0.6, flood: 0.4, rim: 0.85 },
+  { az: -14, el: 46, desktop: [0.5, 0.52, 0.84, 0.8], phone: [0.5, 0.52, 0.88, 0.82], bg: ['#05090D', '#13212E'], beam: 0.3, bands: 0.55, env: 0.6, hemi: 0.5, key: 0.65, flood: 0.25, rim: 0.8 },
 ];
 
 export type BoardMode = 'live' | 'setup' | 'sweat' | 'final';

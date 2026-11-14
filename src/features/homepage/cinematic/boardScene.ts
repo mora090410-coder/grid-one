@@ -6,7 +6,7 @@ import {
 
 /**
  * The cinematic board: 100 glass tiles, 20 number tiles and a tray, drawn with three.js.
- * Imperative and self-contained: the React layer only feeds it scroll progress and pointer state.
+ * Imperative and self-contained: the React layer feeds it user-selected chapter progress and pointer state.
  * Gold is used only for matching and result squares.
  */
 
@@ -34,15 +34,17 @@ const roundedRect = (w: number, h: number, r: number) => {
 
 type AtlasKind = 'light' | 'dark' | 'cand' | 'gold';
 const PALETTE: Record<AtlasKind, [string, string, string, string]> = {
-  light: ['#FFFFFF', '#13212E', '#5B6670', 'rgba(19,33,46,.16)'],
-  dark: ['#22364A', '#F6F7F5', '#B4BEC6', 'rgba(246,247,245,.16)'],
-  cand: ['#22364A', '#F6F7F5', '#F6F7F5', '#F6F7F5'],
-  gold: ['#E3A91C', '#13212E', '#13212E', '#E3A91C'],
+  light: ['#26343F', '#E4EAF0', '#B7C3CD', 'rgba(220,234,245,.12)'],
+  dark: ['#1E2C36', '#E9EEF1', '#B4BEC6', 'rgba(246,247,245,.12)'],
+  cand: ['#263945', '#F6F7F5', '#F6F7F5', '#F6F7F5'],
+  gold: ['#D8BA70', '#13212E', '#13212E', '#E3A91C'],
 };
 
 export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse: boolean }): BoardScene {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
@@ -71,7 +73,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
   Object.assign(key.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 50 });
   key.shadow.bias = -0.0008; key.shadow.radius = 4;
   scene.add(key);
-  const flood = new THREE.DirectionalLight(0xc4deff, 0); flood.position.set(8, 14, -10); scene.add(flood);
+  const flood = new THREE.DirectionalLight(0xe4eaf0, 0); flood.position.set(8, 14, -10); scene.add(flood);
 
   const board = new THREE.Group(); scene.add(board);
 
@@ -134,13 +136,13 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
   const drawAxis = () => {
     const g = axisCanvas.getContext('2d')!; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (let row = 0; row < 2; row++) for (let k = 0; k < 10; k++) {
-      g.fillStyle = '#24384C'; g.fillRect(k * AX, row * AX, AX, AX);
+      g.fillStyle = '#25343E'; g.fillRect(k * AX, row * AX, AX, AX);
       g.fillStyle = '#F6F7F5'; g.font = `600 ${AX * 0.56}px "Geist Mono", monospace`;
       g.fillText(String((row ? LEFT_AXIS : TOP_AXIS)[k]), k * AX + AX / 2, row * AX + AX * 0.54);
     }
     axisTex.needsUpdate = true;
     const q = blankCanvas.getContext('2d')!;
-    q.fillStyle = '#E4E9ED'; q.fillRect(0, 0, AX, AX); q.fillStyle = '#44515C'; q.textAlign = 'center'; q.textBaseline = 'middle';
+    q.fillStyle = '#26343F'; q.fillRect(0, 0, AX, AX); q.fillStyle = '#B7C3CD'; q.textAlign = 'center'; q.textBaseline = 'middle';
     q.font = `600 ${AX * 0.5}px "Geist Mono", monospace`; q.fillText('?', AX / 2, AX * 0.54);
     blankTex.needsUpdate = true;
   };
@@ -150,17 +152,17 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
   const physical = (options: THREE.MeshPhysicalMaterialParameters) => keep(new THREE.MeshPhysicalMaterial({ roughness: 0.42, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.18, ...options }));
   const dark = atlases.get('dark')!.tex;
   const M = {
-    side: physical({ color: 0x2c4660, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06 }),
-    blank: physical({ color: 0xf1f3f3, roughness: 0.55 }),
-    light: physical({ map: atlases.get('light')!.tex, color: 0xf2f4f4, roughness: 0.5 }),
-    dark: physical({ map: dark, roughness: 0.3, clearcoat: 0.35 }),
+    side: physical({ color: 0x34434e, metalness: 0.42, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.2 }),
+    blank: physical({ color: 0x2c3b46, roughness: 0.48, metalness: 0.18 }),
+    light: physical({ map: atlases.get('light')!.tex, roughness: 0.46, metalness: 0.12 }),
+    dark: physical({ map: dark, roughness: 0.46, clearcoat: 0.18 }),
     cand: physical({ map: atlases.get('cand')!.tex, roughness: 0.34, emissive: 0xffffff, emissiveMap: atlases.get('cand')!.tex, emissiveIntensity: 0.22 }),
-    lane: physical({ map: dark, roughness: 0.34, emissive: 0xffffff, emissiveMap: dark, emissiveIntensity: 0.6 }),
-    gold: keep(new THREE.MeshBasicMaterial({ map: atlases.get('gold')!.tex, toneMapped: false })),
+    lane: physical({ map: dark, roughness: 0.34, emissive: 0xffffff, emissiveMap: dark, emissiveIntensity: 0.16 }),
+    gold: physical({ map: atlases.get('gold')!.tex, metalness: 0.28, roughness: 0.4, clearcoat: 0.5 }),
     axisTop: physical({ map: blankTex, roughness: 0.5 }),
     axisBottom: physical({ map: axisTex, roughness: 0.34 }),
-    slab: physical({ color: 0x070d14, roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.12 }),
-    rim: keep(new THREE.MeshBasicMaterial({ color: 0xa9cdf5, toneMapped: false, transparent: true, opacity: 0.8 })),
+    slab: physical({ color: 0x101820, roughness: 0.4, metalness: 0.55, clearcoat: 0.28, clearcoatRoughness: 0.25 }),
+    rim: keep(new THREE.MeshBasicMaterial({ color: 0x788c9c, toneMapped: false, transparent: true, opacity: 0.5 })),
   };
   M.slab.envMapIntensity = 0.22;
   const envMaterials = [M.side, M.blank, M.light, M.dark, M.cand, M.axisTop, M.axisBottom, M.lane];
@@ -231,7 +233,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
     const body = physical({ color: 0x0c151e, roughness: 0.3, metalness: 0.4 });
     const bodyGeo = keep(new THREE.ExtrudeGeometry(roundedRect(2.3, 4.7, 0.34), { depth: 0.16, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04, bevelSegments: 3, curveSegments: 10 }));
     const screenGeo = keep(new THREE.PlaneGeometry(2.04, 4.36));
-    const count = 7;
+    const count = 3;
     for (let k = 0; k < count; k++) {
       const phone = new THREE.Group(), shell = new THREE.Mesh(bodyGeo, body), face = new THREE.Mesh(screenGeo, screen);
       shell.castShadow = true; face.position.z = 0.21; phone.add(shell, face);
@@ -258,11 +260,11 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
       // Camera: orbit the board, then shift the frame so the board sits where the layout leaves room.
       const fa = phone ? A.phone : A.desktop, fb = phone ? B.phone : B.desktop, frame = fa.map((v, j) => lerp(v, fb[j], t));
       const az = lerp(A.az, B.az, t) * PI / 180, el = lerp(A.el, B.el, t) * PI / 180;
-      const tanV = Math.tan(camera.fov * PI / 360), tanH = tanV * camera.aspect, span = 13.2;
+      const tanV = Math.tan(camera.fov * PI / 360), tanH = tanV * camera.aspect, span = lerp(13.2, 17.2, windowed(s, 1.4, 2.45, 0.35));
       const r = Math.max(span / (2 * tanH * frame[2]), span / (2 * tanV * frame[3]) * Math.max(0.5, Math.sin(el)));
       camera.position.set(r * Math.cos(el) * Math.sin(az), r * Math.sin(el), r * Math.cos(el) * Math.cos(az));
       camera.lookAt(0, 0, 0);
-      camera.setViewOffset(width, height, -(frame[0] - 0.5) * width, -(frame[1] - 0.5) * height, width, height);
+      camera.setViewOffset(width, height, -(frame[0] - 0.5) * width, -(frame[1] - 0.5 + 0.055 * windowed(s, 1.4, 2.45, 0.35)) * height, width, height);
       camera.updateProjectionMatrix();
 
       // The hero keeps its dark backdrop until its copy has scrolled away.
@@ -270,7 +272,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
       const top = rgb[i0][0].map((v, j) => Math.round(lerp(v, rgb[i0 + 1][0][j], tb))) as [number, number, number];
       const bottom = rgb[i0][1].map((v, j) => Math.round(lerp(v, rgb[i0 + 1][1][j], tb))) as [number, number, number];
       hemi.intensity = lerp(A.hemi, B.hemi, t) * PI; key.intensity = lerp(A.key, B.key, t) * PI; flood.intensity = lerp(A.flood, B.flood, t) * PI;
-      const env = lerp(A.env, B.env, t); envMaterials.forEach(m => { m.envMapIntensity = env; });
+      const env = lerp(A.env, B.env, t); envMaterials.forEach(m => { m.envMapIntensity = env * 0.55; });
       M.rim.opacity = lerp(A.rim, B.rim, t); rim.visible = M.rim.opacity > 0.01;
       groundMaterial.opacity = lerp(0.16, 0.3, clamp(top[0] / 200));
 
@@ -291,7 +293,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
         if (row === nowRow || column === nowColumn) y += 0.13 * laneW;
         if (CANDIDATES.has(i)) y += 0.34 * sweatW;
         if (results.has(i)) y += ({ [RESULTS.Q1]: 0.3, [RESULTS.Q2]: 0.45, [RESULTS.Q3]: 0.6, [RESULTS.Final]: 0.8 } as Record<number, number>)[i] * finalW;
-        u.hover += (((i === hover || i === pick) && s < 0.2 ? 0.32 : 0) - u.hover) * 0.25; y += u.hover;
+        u.hover = (i === hover || i === pick) && mode !== 'setup' ? 0.2 : 0; y += u.hover;
         mesh.position.set(u.home.x + u.dir.x * bell, y + u.dir.y * bell, u.home.z + u.dir.z * bell);
         const topMaterial = s >= fillAt && s >= 1 ? M.light : M.blank;
         let bottomMaterial: THREE.Material = M.dark;

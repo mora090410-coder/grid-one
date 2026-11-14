@@ -17,7 +17,7 @@ for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
     await expect(page.locator('[data-base]').first()).toHaveCSS('background-color', 'rgb(7, 11, 20)');
-    await expect(page.getByRole('link', { name: 'Create your free board', exact: true }).first()).toHaveCSS('background-color', 'rgb(232, 211, 155)');
+    await expect(page.getByRole('link', { name: 'Create your free board', exact: true }).first()).toHaveCSS('background-color', 'rgb(233, 236, 242)');
     await page.screenshot({ path: info.outputPath(`home-${width}.png`), fullPage: true });
     await page.getByRole('link', { name: 'Create your free board', exact: true }).first().click();
     await expect(page).toHaveURL(/\/create/);

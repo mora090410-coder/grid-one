@@ -90,7 +90,7 @@ The implementation may use a semantic table with managed roving focus or a valid
 
 ## Touch and pointer
 
-- Primary controls and board controls are at least 44×44 CSS pixels — asserted on the organizer status toggle, the homepage `Create your free board` / `See a live board` / `Sign in` controls, and the sign-in form's submit.
+- Primary controls and board controls are at least 44×44 CSS pixels — asserted on the organizer status toggle, the homepage `Create your free board` / `Try the demo` / `Sign in` controls, and the sign-in form's submit.
 - Dense grid cells may be smaller because the board is a precision instrument; the selected-detail sheet and the pan/zoom controls carry the accessible touch interaction.
 - No essential action depends on hover.
 - Tap, drag/pan, and scroll gestures do not conflict with page scrolling.
@@ -159,7 +159,7 @@ A blocker and an advisory must never look or sound alike. The organizer's `Befor
 ## Motion and sensory safety
 
 - `prefers-reduced-motion` removes non-essential transforms, parallax, score rolls, and cinematic choreography; `src/design/primitives/motion.ts` collapses every duration to `--g-dur-reduced`.
-- Reduced motion preserves all content and state — asserted: with reduced motion forced, the homepage `Scores update themselves.` heading and `Create your free board` link and the viewer's `Find my squares` button all remain reachable.
+- Reduced motion preserves all content and state — asserted: with reduced motion forced, the homepage `Know what to root for.` heading and `Create your free board` link and the viewer's `Find my squares` button all remain reachable.
 - No content flashes above safe thresholds. Motion is interruptible and never required to progress. No autoplaying sound.
 
 ### Current Reveal implementation contract
@@ -173,7 +173,7 @@ Current scroll reveals (`src/design/primitives/Reveal.tsx`, with the `[data-reve
 
 A reveal may therefore hide only what a reader has not yet reached. It may never gate a landmark, a heading a reader can already see, an error, a status message, or anything focusable that is reachable by `Tab` before the reveal fires.
 
-The editorial homepage hero does not use `data-reveal`. Its one-shot entrance (`data-enter`) keeps opacity above zero so the first paint and the primary actions stay available, and it is omitted under reduced motion and without JavaScript. Below-the-fold introductions for the organizer, score, and pricing chapters use `Reveal`. The FAQ questions use `keepVisible`, so they rise without ever reaching `opacity: 0`. The homepage does not use parallax, count-ups, or fill choreography. `playwright-tests/homepage.spec.ts` verifies its readable 320/390 layouts, 200% text, blocked fonts, no-JavaScript promise/actions, and that reduced motion leaves every section finished with no reveal or entrance attribute. `playwright-tests/studio-landing.spec.ts` verifies that the single score explanation loads GSAP only on intersection, plays once per mounted visit, keeps all content visible if the import fails, and requests no GSAP under reduced motion. The shared Reveal contract above continues to apply to other routes.
+The compact cinematic homepage hero does not use `data-reveal`. A bounded Board film offers three native chapter buttons (Build, Share, Game day), preserving visible text and controls without WebGL and under reduced motion. The canvas is `aria-hidden`; Previous square / Next square buttons are the keyboard equivalent of picking a tile, with the selected name, coordinates, and arithmetic in a polite live region. Selection is not presented as a winning result. Reduced motion requests no three.js code and removes the static board's perspective transform. Optional WebGL starts after first paint, pauses offscreen or when hidden, and falls back to the static board if the context is lost or warm-up is too slow. Pricing uses `Reveal` with `keepVisible`; FAQ summaries remain native, keyboard-operable details controls. No mandatory scroll choreography or repeated full sample board separates the hero from pricing. `playwright-tests/homepage.spec.ts` verifies 320/390 reflow, 200% text, blocked fonts, no-JavaScript promise/actions, keyboard chapter and square controls, and compact phone page height. `playwright-tests/studio-landing.spec.ts` verifies missing WebGL, reduced motion, and FAQ keyboard behavior. The shared Reveal contract above continues to apply to other routes.
 
 ## Loading, stale, offline, and recovery
 

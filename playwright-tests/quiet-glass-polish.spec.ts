@@ -7,8 +7,12 @@ test('homepage carries the liquid material without simulated-live claims', async
   await expect(page.locator('.g1-homepage[data-g1-theme="liquid"]')).toBeVisible();
   await expect(page.getByRole('heading', { name: /Your team/ })).toBeVisible();
   await expect(page.getByText(/Checked .* ET/)).toHaveCount(0);
-  await expect(page.getByText('Simulated · example score, not a live feed')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Set up/ })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  const film = page.getByRole('region', { name: 'Board film' });
+  await expect(film.getByText('Simulated game', { exact: true })).toBeVisible();
+  await expect(film).toContainText('Simulated score, not a live feed.');
+  await expect(film.getByRole('button', { name: 'Build', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(film.getByRole('button', { name: 'Build', exact: true })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(film.getByRole('button', { name: 'Game day', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const violations = (await new AxeBuilder({ page }).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze()).violations;
   expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
   await page.screenshot({ path: info.outputPath('quiet-homepage-desktop.png'), fullPage: true });

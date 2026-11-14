@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -6,8 +6,11 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf
 const homepageCorpus = () => [
   'src/features/homepage/Homepage.tsx',
   'src/features/homepage/pricing.ts',
-  ...readdirSync(resolve(process.cwd(), 'src/features/homepage/sections')).map((f) => `src/features/homepage/sections/${f}`),
-  ...readdirSync(resolve(process.cwd(), 'src/features/homepage/cinematic')).map((f) => `src/features/homepage/cinematic/${f}`),
+  'src/features/homepage/cinematic/CinematicHomepage.tsx',
+  'src/features/homepage/cinematic/cinematicModel.ts',
+  'src/features/homepage/sections/CompactWorkflow.tsx',
+  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/sections/Footer.tsx',
 ].map(source).join('\n');
 
 const exactPricing = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';
@@ -23,16 +26,22 @@ describe('public conversion path', () => {
   it('answers landing-page objections and closes with a second conversion point', () => {
     const homepage = homepageCorpus();
     for (const copy of [
-      'One viewer link for your group to find their squares and follow game day.',
+      'Give your team one board to share. Know what’s filled before kickoff.',
       'Viewers open the link without creating an account',
       'Do viewers need an account?',
       'Does GridOne collect square money?',
       'When do I pay?',
-      'Who can edit the board?',
-      'Ready to build the board?',
+      'Public viewer link: viewing only.',
+      'that seller’s unsold squares by name until the numbers lock',
+      'Private family editing links are separate; payment notes stay private.',
+      'Your first board is free.',
       'organization naming, shared dashboard, and one organization receipt',
       exactBoundary,
     ]) expect(homepage).toContain(copy);
+    // The second conversion point must be rendered beside pricing, not just
+    // survive in an unused legacy section included by a directory-wide scan.
+    expect(source('src/features/homepage/Homepage.tsx')).toContain('<PriceAndClose />');
+    expect(source('src/features/homepage/sections/PriceAndClose.tsx')).toMatch(/<PrimaryCtaLink to="\/create" trackCreate>Create your free board<\/PrimaryCtaLink>/);
   });
 
   it('keeps create intent through signup and reassures the organizer', () => {

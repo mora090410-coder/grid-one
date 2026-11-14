@@ -19,7 +19,7 @@ for (const width of [1440, 320]) {
     const failures = await page.evaluate(async () => {
       const failures = new Set<string>();
       const inspect = () => {
-        for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .sample-stage-copy, .sample-detail')) {
+        for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-pricing, .compact-faq')) {
           if (!element.textContent?.trim()) continue;
           if (element.dataset.reveal === 'pending') failures.add(`${element.className}: pending fade`);
           for (let node: HTMLElement | null = element; node; node = node.parentElement) {
@@ -28,7 +28,7 @@ for (const width of [1440, 320]) {
         }
       };
       inspect();
-      for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal]')) {
+      for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-pricing, .compact-faq')) {
         element.scrollIntoView({ block: 'center', behavior: 'instant' });
         const start = performance.now();
         do {
@@ -74,13 +74,17 @@ for (const width of [1440, 390, 320]) {
         await page.screenshot({ path: resolve(evidence, `${name}-${width}-${reducedMotion}.png`), fullPage: true, animations: 'disabled' });
       };
       await page.goto('/');
-      const sample = page.getByRole('region', { name: 'Interactive sample board' });
-      await expect(sample.getByRole('gridcell')).toHaveCount(100);
-      await capture('home-setup');
-      for (const stage of ['Share', 'Game day']) {
-        await sample.getByRole('button', { name: stage, exact: true }).click();
+      const sample = page.getByRole('region', { name: 'Board film' });
+      await expect(sample.getByText('Simulated game', { exact: true })).toBeVisible();
+      await expect(sample).toContainText('Sample board — not a live game');
+      for (const stage of ['Build', 'Share', 'Game day']) {
+        const control = sample.getByRole('button', { name: stage, exact: true });
+        await control.click();
+        await expect(control).toHaveAttribute('aria-pressed', 'true');
+        await expect(sample.locator('button[aria-pressed="true"]')).toHaveCount(1);
         await capture(`home-${stage.toLowerCase().replace(' ', '-')}`);
       }
+      await expect(sample).toContainText('Simulated score, not a live feed.');
       for (const control of ['Previous square', 'Next square']) {
         const box = await sample.getByRole('button', { name: control }).boundingBox();
         expect(box!.height).toBeGreaterThanOrEqual(44);

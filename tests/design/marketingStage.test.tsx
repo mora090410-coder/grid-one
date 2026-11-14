@@ -61,10 +61,13 @@ describe('marketing chrome does not blur squares', () => {
     expect(demo).not.toMatch(/filter:\s*blur/);
   });
 
-  it('renders an editorial paper sample with the real create entrance available', () => {
+  it('renders the compact cinematic sample on the editorial stage with the real create entrance available', () => {
     render(<MemoryRouter><Homepage /></MemoryRouter>);
-    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
-    expect(within(sample).getAllByRole('gridcell')).toHaveLength(100);
+    const sample = screen.getByRole('region', { name: 'Board film' });
+    expect(sample).toHaveTextContent('Sample board — not a live game');
+    for (const name of ['Build', 'Share', 'Game day']) expect(within(sample).getByRole('button', { name })).toBeInTheDocument();
+    expect(within(sample).getByRole('button', { name: 'Next square' })).toBeEnabled();
+    expect(screen.queryByRole('region', { name: 'Interactive sample board' })).not.toBeInTheDocument();
     expect(document.querySelector('.g-editorial')).toHaveAttribute('data-base', 'dark');
     const hero = screen.getByTestId('homepage-first-viewport');
     expect(within(hero).getByRole('link', { name: 'Create your free board' }).className).toContain('g-cta');

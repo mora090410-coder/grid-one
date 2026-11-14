@@ -10,12 +10,12 @@ const expectTouchTarget = async (locator: Locator) => {
   }).toBeGreaterThanOrEqual(44);
 };
 
-test('landing page leads with the live board and free-first publishing model', async ({ page }) => {
+test('landing page leads with a cinematic sample and free-first publishing model', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
-  await expect(page.getByText(/One viewer link for your group to find their squares and follow game day/i)).toBeVisible();
+  await expect(page.getByText('Give your team one board to share. Know what’s filled before kickoff.', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
-  await expect(page.getByText('First published board free')).toBeAttached();
+  await expect(page.getByText('First published board free each season', { exact: true })).toBeAttached();
 });
 
 test('demo board renders the sample game', async ({ page }) => {

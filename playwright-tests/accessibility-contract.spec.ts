@@ -347,10 +347,18 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
 
   test('representative public controls have visible focus and 44 by 44 geometry', async ({ page }) => {
     await page.goto('/');
+    const footerLinks = page.getByRole('contentinfo').getByRole('link');
+    await expect(footerLinks).toHaveCount(6);
     for (const control of [
       page.getByRole('link', { name: 'Create your free board' }).first(),
       page.getByRole('link', { name: 'Try the demo' }).first(),
+      page.getByRole('region', { name: 'From setup to game day.' }).getByRole('link', { name: /Read the fundraiser guide/ }),
+      page.getByRole('region', { name: 'From setup to game day.' }).getByRole('link', { name: /Explore the sample board/ }),
+      ...await footerLinks.all(),
     ]) {
+      const label = await control.innerText();
+      const box = await control.boundingBox();
+      expect(box?.width, `${label} target width`).toBeGreaterThanOrEqual(44);
       await expectTouchTarget(control);
       await control.focus();
       await expect(control).toBeFocused();
@@ -785,7 +793,10 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('reduced-motion keeps public content and state reachable', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 3, name: 'Everyone knows what to root for.' })).toBeVisible();
+    const film = page.getByRole('region', { name: 'Board film' });
+    await film.getByRole('button', { name: 'Game day', exact: true }).click();
+    await expect(film.getByRole('button', { name: 'Next square' })).toBeVisible();
+    await expect(film).toContainText(/matching|matches/i);
     await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
     await page.goto('/demo');
     await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();

@@ -1,38 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Reveal } from '../../../design/primitives';
 import { MONEY_BOUNDARY, PRICING } from '../pricing';
-import { quietLink, trackViewDemo } from './cta';
 import { PrimaryCtaLink } from './PrimaryCtaLink';
 
 const audience = { free: 'One party', gameday: 'A season of games', org: 'Fundraisers and leagues' } as const;
-
 const faq = [
-  { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in.' },
-  { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Squares and payouts stay between you and your group.` },
-  { q: 'When do I pay?', a: 'Building is always free. Your first shared board each season is free. Each board counts once, however often you share it.' },
-  { q: 'Can I collect by Venmo, cash or check?', a: 'Yes. You collect the money your way. GridOne can keep a private paid or unpaid note on each square for you.' },
-  { q: 'Can I run more than one board?', a: 'Yes. Your first published board each season is free. Game Day covers up to 5 published boards and Organization covers up to 50.' },
-  { q: 'Which games can I use?', a: 'Any scheduled NFL game, including playoff games and the big game once both teams are set.' },
-  { q: 'Who can edit the board?', a: 'You control the board. You can give a family a private link to add names to its own squares. Viewers can’t edit, and any fix after the numbers lock is shown to everyone.' },
+  { q: 'Do viewers need an account?', a: 'No. Viewers open the link without creating an account. Only the organizer signs in. Public viewer links are viewing only.' },
+  { q: 'Does GridOne collect square money?', a: `No. ${MONEY_BOUNDARY} Collect by cash, Venmo or your preferred method; payment notes stay private.` },
+  { q: 'When do I pay?', a: 'Building is always free. Your first shared board each season is free. Each board counts once, however often you share it. Choose a season plan when you need more boards.' },
 ];
 
 export function PriceAndClose() {
-  return (
-    <>
-      <section className="editorial-pricing editorial-section" aria-labelledby="pricing-heading">
-        <Reveal keepVisible as="header" className="editorial-intro"><p className="editorial-kicker">2026 season</p><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
-        <Reveal keepVisible as="section" aria-label="Plans" className="editorial-plans" delay={60}>
-          {PRICING.map(tier => <div className="editorial-plan g-float" key={tier.id}><div><p className="editorial-plan-audience">{audience[tier.id]}</p><h3>{tier.name}</h3><p>{tier.detail}</p></div><p className={tier.id === 'free' ? 'editorial-price is-free' : 'editorial-price'}><strong>{tier.price}</strong><span>{tier.priceNote}</span></p></div>)}
-        </Reveal>
-        <p className="editorial-boundary">Every published board includes live scores, Find my squares, what wins next, winner emails and QR sharing. No percentage of your squares. Ever.</p>
-      </section>
-      <section className="editorial-faq editorial-section" aria-label="Common questions">
-        <Reveal keepVisible className="editorial-faq-list">
-          {faq.map(item => <details key={item.q}><summary className="min-h-11"><span>{item.q}</span><span aria-hidden="true" className="editorial-faq-marker"><span>+</span><span>−</span></span></summary><p>{item.a}</p></details>)}
-        </Reveal>
-        <div className="editorial-close"><h2>Ready to build the board?</h2><div className="editorial-close-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Try the demo</Link></div></div>
-      </section>
-    </>
-  );
+  return <>
+    <section className="compact-pricing compact-section" aria-labelledby="pricing-heading">
+      <Reveal keepVisible as="header"><p className="compact-kicker">Simple pricing</p><h2 id="pricing-heading">Your first board is free.</h2></Reveal>
+      <section aria-label="Plans" className="compact-plans">{PRICING.map(tier => <div className="compact-plan" key={tier.id}><div><p className="compact-plan-audience">{audience[tier.id]}</p><h3>{tier.name}</h3><p>{tier.detail.replace(/^\$[\d.]+ (?:once|per season) for /, '')}</p></div><div className="compact-price"><strong>{tier.price}</strong><span>{tier.priceNote}</span></div></div>)}</section>
+      <p className="compact-plan-includes">Every published board includes live scores, Find my squares, what wins next, winner emails and QR sharing. No percentage of your squares. Ever.</p>
+      <div className="compact-pricing-action"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink></div>
+    </section>
+    <section className="compact-faq compact-section" aria-labelledby="faq-heading"><h2 id="faq-heading">A few things to know</h2><div className="editorial-faq-list">{faq.map(item => <details key={item.q}><summary><span>{item.q}</span><span aria-hidden="true">+</span></summary><p>{item.a}</p></details>)}</div><p className="compact-money">{MONEY_BOUNDARY}</p></section>
+  </>;
 }

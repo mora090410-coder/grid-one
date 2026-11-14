@@ -39,7 +39,7 @@ describe('cinematic homepage model', () => {
     expect(pickAnswer(far).answer).not.toMatch(/odds|likely|chance/i);
   });
 
-  it('maps scroll to hero, six chapters, then holds', () => {
+  it('retains the legacy scroll interpolation helper without using it for chapter navigation', () => {
     const layout = { stageTop: 0, filmTop: 900, filmEnd: 6000 };
     expect(progressFromScroll(0, layout)).toBe(0);
     expect(progressFromScroll(450, layout)).toBeCloseTo(0.5);
@@ -49,7 +49,7 @@ describe('cinematic homepage model', () => {
   });
 
   it('shows one chapter card at a time', () => {
-    for (let k = 1; k <= 6; k++) {
+    for (let k = 1; k <= CHAPTERS.length; k++) {
       const shown = CHAPTERS.map((_, index) => cardVisibility(k, index + 1).opacity);
       expect(shown.filter(opacity => opacity > 0)).toEqual([1]);
     }
@@ -60,6 +60,8 @@ describe('cinematic homepage model', () => {
     expect(goldSquares(boardMode(2))).toEqual([]);
     expect(goldSquares(boardMode(4))).toEqual([NOW_SQUARE]);
     expect(goldSquares(boardMode(6))).toEqual([RESULTS.Q1, RESULTS.Q2, RESULTS.Q3, RESULTS.Final]);
-    expect(KEYFRAMES).toHaveLength(CHAPTERS.length + 1);
+    expect(CHAPTERS).toHaveLength(3);
+    expect(CHAPTERS.map(chapter => chapter.sceneProgress)).toEqual([1.35, 2.1, 4.2]);
+    expect(KEYFRAMES).toHaveLength(7);
   });
 });

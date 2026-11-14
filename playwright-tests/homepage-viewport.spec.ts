@@ -18,7 +18,7 @@ for (const width of [1024, 1280, 1440]) {
       hero.getByRole('link', { name: 'Try the demo' }),
       hero.getByText('First published board free each season'),
       hero.getByText('No account needed to view'),
-      hero.getByText('For watch parties, office pools, friends, and fundraisers.'),
+      hero.getByText('Football squares for team fundraisers'),
     ];
     const boxes = await Promise.all(required.map(async locator => ({ text: await locator.innerText(), box: await locator.boundingBox() })));
     await info.attach('first-viewport-geometry', { body: JSON.stringify(boxes, null, 2), contentType: 'application/json' });

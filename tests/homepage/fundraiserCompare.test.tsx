@@ -1,44 +1,48 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
-describe('fundraiser buyer and comparison', () => {
-  it('speaks to many-board fundraisers after the game-day story and before pricing', () => {
+describe('Compact fundraiser workflow', () => {
+  it('shows the illustrative organizer summary before pricing, without a generic comparison table', () => {
     renderPage();
-    const fundraiser = screen.getByRole('heading', { name: 'Every seller gets a board. One flat price. Zero percent of your squares.' });
-    const score = screen.getByRole('heading', { name: 'Everyone knows what to root for.' });
+    const summary = screen.getByRole('region', { name: 'From setup to game day.' });
     const plans = screen.getByRole('region', { name: 'Plans' });
-    expect(score.compareDocumentPosition(fundraiser) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(fundraiser.compareDocumentPosition(plans) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Start your fundraiser boards' })).toHaveAttribute('href', '/create');
-    expect(screen.getByRole('link', { name: 'Read the fundraiser guide' })).toHaveAttribute('href', '/articles/football-squares-fundraiser');
+    expect(summary.compareDocumentPosition(plans) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(within(summary).getByRole('button', { name: 'Organizer view' }));
+    expect(summary).toHaveTextContent('Family A');
+    expect(summary).toHaveTextContent('4 squares open');
+    expect(summary).toHaveTextContent('Family B');
+    expect(summary).toHaveTextContent('2 squares open');
+    expect(summary).toHaveTextContent(/sample|illustration|illustrative/i);
+    expect(screen.queryByRole('region', { name: 'Comparison table' })).not.toBeInTheDocument();
   });
 
-  it('labels the example math as an example and quotes only the real Organization price', () => {
+  it('switches the same compact summary into game day and back without creating data', () => {
     renderPage();
-    const math = screen.getByRole('region', { name: 'Example, not a promise' });
-    expect(within(math).getByText('$79')).toBeInTheDocument();
-    expect(within(math).getByText(/never takes a cut/)).toBeInTheDocument();
-    expect(math.textContent).not.toMatch(/raise|guarantee/i);
+    const summary = screen.getByRole('region', { name: 'From setup to game day.' });
+    const organizer = within(summary).getByRole('button', { name: 'Organizer view' });
+    const game = within(summary).getByRole('button', { name: 'Game day view' });
+    fireEvent.click(game);
+    expect(game).toHaveAttribute('aria-pressed', 'true');
+    expect(organizer).toHaveAttribute('aria-pressed', 'false');
+    expect(summary).toHaveTextContent(/score|matching/i);
+    fireEvent.click(organizer);
+    expect(organizer).toHaveAttribute('aria-pressed', 'true');
+    expect(summary).toHaveTextContent('Family A');
   });
 
-  it('compares in an accessible table with GridOne first', () => {
+  it('separates public viewing from scoped seller claims in the sharing chapter', () => {
     renderPage();
-    const table = within(screen.getByRole('region', { name: 'Comparison table' })).getByRole('table');
-    const headers = within(table).getAllByRole('columnheader').map(cell => cell.textContent);
-    expect(headers).toEqual(['GridOne', 'Paper sheet', 'Free sites', 'Per-grid sites']);
-    expect(within(table).getByRole('rowheader', { name: 'A link for each seller' })).toBeInTheDocument();
-  });
-
-  it('names who each plan is for and answers payment-method and game questions', () => {
-    renderPage();
-    const plans = screen.getByRole('region', { name: 'Plans' });
-    for (const label of ['One party', 'A season of games', 'Fundraisers and leagues']) expect(within(plans).getByText(label)).toBeInTheDocument();
-    expect(screen.getByText('No percentage of your squares. Ever.', { exact: false })).toBeInTheDocument();
-    for (const q of ['Can I collect by Venmo, cash or check?', 'Can I run more than one board?', 'Which games can I use?']) expect(screen.getByText(q).closest('details')?.open).toBe(false);
+    const film = screen.getByRole('region', { name: 'Board film' });
+    fireEvent.click(within(film).getByRole('button', { name: 'Share' }));
+    expect(film).toHaveTextContent(/viewer.*viewing only|viewer.*view only/i);
+    expect(film).toHaveTextContent(/seller.*unsold squares/i);
+    expect(film).toHaveTextContent(/(?:before|until).*numbers lock/i);
+    expect(screen.getAllByRole('link', { name: /fundraiser guide/i }).some(link => link.getAttribute('href') === '/articles/football-squares-fundraiser')).toBe(true);
+    expect(screen.getAllByRole('link').some(link => link.getAttribute('href') === '/demo')).toBe(true);
   });
 });
