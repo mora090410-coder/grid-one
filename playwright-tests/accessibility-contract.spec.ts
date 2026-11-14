@@ -785,7 +785,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
   test('reduced-motion keeps public content and state reachable', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 2, name: 'Know what to root for.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: 'Everyone knows what to root for.' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
     await page.goto('/demo');
     await expect(page.getByRole('button', { name: /Find my squares/i })).toBeVisible();

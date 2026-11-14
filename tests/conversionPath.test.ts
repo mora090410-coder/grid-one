@@ -7,6 +7,7 @@ const homepageCorpus = () => [
   'src/features/homepage/Homepage.tsx',
   'src/features/homepage/pricing.ts',
   ...readdirSync(resolve(process.cwd(), 'src/features/homepage/sections')).map((f) => `src/features/homepage/sections/${f}`),
+  ...readdirSync(resolve(process.cwd(), 'src/features/homepage/cinematic')).map((f) => `src/features/homepage/cinematic/${f}`),
 ].map(source).join('\n');
 
 const exactPricing = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';

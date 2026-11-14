@@ -32,6 +32,8 @@ describe('brand sweep', () => {
       'src/features/viewer/personal/YourSquaresSummary.tsx',
       'src/index.css',
       'src/design/tokens.css',
+      // The cinematic homepage's static board and answer card show the matching square in gold.
+      'src/features/homepage/cinematic/cinematic.css',
     ]);
     const offenders = source.filter((path) => /\bbg-gold\b|background(?:-color)?:[^;]*var\(--g-gold\)/.test(readFileSync(path, 'utf8')) && !allowed.has(path));
     expect(offenders).toEqual([]);

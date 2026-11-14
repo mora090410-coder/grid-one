@@ -186,3 +186,4 @@
 @media (max-width: 1023px) {
   .editorial-fundraiser-layout { grid-template-columns: minmax(0, 1fr); }
 }
+.editorial-try-board { margin-top: 32px; max-width: 760px; }

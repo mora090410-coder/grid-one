@@ -10,7 +10,7 @@ describe('fundraiser buyer and comparison', () => {
   it('speaks to many-board fundraisers after the game-day story and before pricing', () => {
     renderPage();
     const fundraiser = screen.getByRole('heading', { name: 'Every seller gets a board. One flat price. Zero percent of your squares.' });
-    const score = screen.getByRole('heading', { name: 'Know what to root for.' });
+    const score = screen.getByRole('heading', { name: 'Everyone knows what to root for.' });
     const plans = screen.getByRole('region', { name: 'Plans' });
     expect(score.compareDocumentPosition(fundraiser) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(fundraiser.compareDocumentPosition(plans) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

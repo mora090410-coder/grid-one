@@ -3,22 +3,20 @@ import './studio.css';
 import { Base } from '../../design/primitives';
 import GlassGridBackground from '../../design/liquid/GlassGridBackground';
 import '../../design/liquid/homepage.css';
+import { CinematicHomepage } from './cinematic/CinematicHomepage';
 import { Footer } from './sections/Footer';
-import { Hero } from './sections/Hero';
-import { OrganizerSection } from './sections/OrganizerSection';
-import { PriceAndClose } from './sections/PriceAndClose';
-import { ScoreSection } from './sections/ScoreSection';
+import { TrySampleSection } from './sections/TrySampleSection';
 import { FundraiserSection } from './sections/FundraiserSection';
 import { CompareSection } from './sections/CompareSection';
+import { PriceAndClose } from './sections/PriceAndClose';
 
 export default function Homepage() {
   return (
     <Base kind="dark" theme="liquid" className="g1-page g1-homepage g-editorial marketing-stage overflow-x-clip">
       <GlassGridBackground />
       <main data-testid="homepage">
-        <Hero />
-        <OrganizerSection />
-        <ScoreSection />
+        <CinematicHomepage />
+        <TrySampleSection />
         <FundraiserSection />
         <CompareSection />
         <PriceAndClose />

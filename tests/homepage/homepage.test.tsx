@@ -27,12 +27,15 @@ describe('Homepage', () => {
       vi.unstubAllGlobals();
     }
   });
-  it('welcomes different groups and keeps setup to three steps', () => {
+  it('welcomes different groups and tells the game day in six chapters', () => {
     renderPage();
     expect(screen.getByText('For watch parties, office pools, friends, and fundraisers.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'The chaos' })).not.toBeInTheDocument();
-    const steps = screen.getByRole('list', { name: 'The GridOne difference' });
-    expect(within(steps).getAllByRole('listitem')).toHaveLength(3);
+    const film = screen.getByRole('region', { name: 'How a game day plays out' });
+    expect(within(film).getAllByRole('article').map(card => within(card).getByRole('heading', { level: 3 }).textContent)).toEqual([
+      'Fill the board, not a spreadsheet.', 'One link. Every phone.', 'Numbers drawn at random. Locked when you publish.',
+      'The score runs itself.', 'Everyone knows what to root for.', 'Results called. Record kept.',
+    ]);
   });
   it('puts identity, promise, one primary action, and viewing reassurance in the hero', () => {
     renderPage();
@@ -144,8 +147,8 @@ describe('Homepage', () => {
 
   it('tells the organizer, game-day, then pricing story without retired demonstrations', () => {
     const { container } = renderPage();
-    const organizer = screen.getByRole('heading', { name: 'Set up. Fill squares. Share.' });
-    const score = screen.getByRole('heading', { name: 'Know what to root for.' });
+    const organizer = screen.getByRole('heading', { name: 'Fill the board, not a spreadsheet.' });
+    const score = screen.getByRole('heading', { name: 'Everyone knows what to root for.' });
     const pricing = screen.getByRole('region', { name: 'Plans' });
     expect(organizer.compareDocumentPosition(score) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(score.compareDocumentPosition(pricing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -184,15 +187,16 @@ describe('Homepage', () => {
 
   it('explains automatic matching with an explicit Final and overtime qualification', () => {
     renderPage();
-    const explanation = screen.getByRole('region', { name: 'Know what to root for.' });
-    expect(within(explanation).getByText('Find your squares, follow the live score, and see which next scores would make you win.')).toBeInTheDocument();
-    expect(within(explanation).getByText(/Quarter winners are tracked automatically. Final includes overtime./)).toBeInTheDocument();
+    const kickoff = screen.getByRole('article', { name: 'The score runs itself.' });
+    expect(within(kickoff).getByText(/The last digit of each score points to one square. That square is matching now./)).toBeInTheDocument();
+    const final = screen.getByRole('article', { name: 'Results called. Record kept.' });
+    expect(within(final).getByText('Final includes overtime. An open square stays open, with no rollover.')).toBeInTheDocument();
+    expect(within(screen.getByRole('article', { name: 'Everyone knows what to root for.' })).getByText('Plain math on the score. Never odds or predictions.')).toBeInTheDocument();
   });
 
   it('describes reviewed photo import without a speed or paid-plan promise', () => {
     renderPage();
-    expect(screen.getByText('Already have a paper board?')).toBeInTheDocument();
-    expect(screen.getByText('Upload a photo to import it (Beta). Sign in, then review every square before publishing.')).toBeInTheDocument();
+    expect(screen.getByText('Already have a paper board? Upload a photo to import it (Beta). Sign in, then review every square before publishing.')).toBeInTheDocument();
     expect(screen.queryByText(/digitizes it in seconds/i)).not.toBeInTheDocument();
   });
 
@@ -216,7 +220,7 @@ describe('Homepage', () => {
   it('labels sample evidence and avoids unsupported import and customer claims', () => {
     const { container } = renderPage();
     const copy = container.textContent!;
-    expect(screen.getByText('Sample board — not a live game')).toBeInTheDocument();
+    expect(screen.getAllByText('Sample board — not a live game').length).toBeGreaterThan(0);
     expect(copy).not.toMatch(/digitizes it in seconds|(?:perfect|100% accurate) (?:scan|scanning|import)|no review (?:needed|required)/i);
     // Target unsupported evidence claims, not expressive vocabulary. These
     // checks are regression guards, not proof that every possible claim is true.

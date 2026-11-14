@@ -170,7 +170,7 @@ Game day should feel like a broadcast graphic on a quiet phone: one number that 
 - Live green means an in-progress NFL game and nothing else.
 - No state relies on color alone.
 
-**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from cardinal, live, or turf (never gold), sitting on a section's vertical mid-edge. The older marketing stage used brand ink; the November organizer-first adoption below supersedes it on the homepage and create entrance. Explanatory content remains static; one optional GSAP sequence emphasizes score → last digits → matching square, with no pinning or scrubbing. All content is present before the animation loads; reduced motion renders the finished explanation. Tints are capped at 20% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
+**Ambient tone.** A long page may carry color as *light* rather than as chromatic UI: one large, soft, low-alpha ground tint per section, drawn from cardinal, live, or turf (never gold), sitting on a section's vertical mid-edge. The older marketing stage used brand ink; the November organizer-first adoption below supersedes it on the homepage and create entrance. Explanatory content is complete as static text before any animation loads; the cinematic homepage film below is the one scroll-driven exception. Tints are capped at 20% of their brand color so body text over one still meets AA; they are never a gradient, never a corner, and never carry meaning.
 
 ## Current type
 
@@ -189,6 +189,13 @@ State ease 200ms `cubic-bezier(0.2, 0, 0, 1)`. Soft spring ~450ms, no overshoot,
 **Reveal is visible by default.** Scroll-entry reveals use `Reveal`, whose *resting* CSS state is finished content: no transform, no opacity change, no transition. The hidden start state is applied only from a `useLayoutEffect` — before paint, so nothing flashes — and only when JS is running, `IntersectionObserver` exists, and motion is allowed. A server render, a no-JS browser, a browser without an observer, and a reduced-motion reader all see the completed page immediately. Reveals animate opacity and `translateY` only, so they can never shift layout. Focusable regions may use `keepVisible`, which rises without dropping opacity.
 
 **Page-load entrance and digits.** The homepage hero may run one staggered entrance. It never starts at `opacity: 0`, never uses `data-reveal` above the fold, and is skipped under reduced motion and without JavaScript. Changing scores, counts, and drawn numbers roll only the digits that changed. A matching square may take a brief inset emphasis. Board cells do not scale, and the 10×10 geometry stays fixed.
+
+**Cinematic homepage film (adopted 2026-11-14).** The homepage hero and its six-chapter film (Build, Share, Draw, Kickoff, Sweat, Final) run over one sticky three.js stage: the 10×10 board as glass tiles, one camera move per chapter, scroll-scrubbed with smoothing and no scroll hijacking. It is the only pinned, scrubbed sequence in the product. Rules:
+- The page renders complete and static first (`data-mode="static"`): every chapter is readable text, and a CSS 10×10 stands in for the board. The 3D code (`src/features/homepage/cinematic/boardScene.ts`, three.js) is loaded only after first paint, and only with WebGL and without reduced motion.
+- A device that draws the warm-up frames slower than about 45ms each falls back to the static page before anyone scrolls (`data-settled` marks the decision).
+- The canvas is decorative (`aria-hidden`). Chapter cards carry all meaning. The keyboard and screen-reader way to explore a board is the sample board section after the film.
+- Gold appears only on matching and result tiles, never as light, glow or tint. Board geometry is fixed; tiles may lift, flip and scatter but cells never resize.
+- Scenario tiles are plain arithmetic on the sample score, never odds. Every chapter is labelled as an illustration.
 
 **Parallax is capped.** Scroll-driven parallax moves vertically only, never horizontally (horizontal transforms change page overflow), is clamped to 40px of travel, and is inert under reduced motion and below the `md` breakpoint.
 

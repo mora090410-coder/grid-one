@@ -5,6 +5,8 @@ for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
+    // The page may still be choosing between the 3D film and the static page; wait so geometry is final.
+    await expect(page.locator('.cine')).toHaveAttribute('data-settled', 'true', { timeout: 15000 });
     const sample = page.getByRole('region', { name: 'Interactive sample board' });
     const sheet = sample.locator('.sample-board-sheet');
     await sample.scrollIntoViewIfNeeded();
@@ -87,8 +89,9 @@ const opacityOf = (locator: Locator) => locator.evaluate((element) => getCompute
  */
 const SECTION_HEADINGS: Array<[string, RegExp]> = [
   ['hero', /^Your team\.\s*One board\.\s*Less chasing\.$/],
-  ['score', /^Know what to root for\.$/],
-  ['organizer', /^Set up\. Fill squares\. Share\.$/],
+  ['organizer', /^Fill the board, not a spreadsheet\.$/],
+  ['score', /^Everyone knows what to root for\.$/],
+  ['fundraiser', /^Every seller gets a board\. One flat price\. Zero percent of your squares\.$/],
   ['pricing', /^Your first board is free\.$/],
   ['close', /^Ready to build the board\?$/],
 ];
@@ -151,11 +154,14 @@ test('phone first viewport holds identity, actions, and group examples', async (
   expect(await overflow(page)).toBe(0);
 });
 
-test('desktop first viewport holds the same and the demo card', async ({ page }) => {
+test('desktop first viewport holds the same and the labelled sample board', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
   await firstViewport(page, 720);
-  await expect(page.getByRole('region', { name: 'Interactive sample board', exact: true })).toBeVisible();
+  const caption = page.getByTestId('homepage-first-viewport').getByText('Sample board — not a live game', { exact: true });
+  await expect(caption).toBeVisible();
+  const box = await caption.boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(720);
   expect(await overflow(page)).toBe(0);
 });
 
@@ -210,6 +216,9 @@ test('reduced motion shows every section finished, without scrolling', async ({ 
 test('demo handoff leads to a personal board preview', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Try the demo' }).first().click();
+  await expect(page).toHaveURL(/\/demo/);
+  // The lazy demo route can keep the homepage on screen for a moment while it loads.
+  await expect(page.getByTestId('homepage')).toHaveCount(0);
   await expect(page.getByText('Sample board — not a live game', { exact: true })).toBeVisible();
   await expect(page.getByText('This is a sample board. Ready to run yours?')).toBeVisible();
   await page.getByRole('button', { name: 'Create your own board' }).click();
@@ -263,7 +272,7 @@ for (const rootFontPercent of [100, 200]) {
     await expect(hero).toBeVisible();
     await page.addStyleTag({ content: `html { font-size: ${rootFontPercent}% !important; }` });
     for (const name of ['Interactive sample board']) {
-      const region = hero.getByRole('region', { name, exact: true });
+      const region = page.getByRole('region', { name, exact: true });
       await expect(region).toBeVisible();
       await region.scrollIntoViewIfNeeded();
       const box = await region.boundingBox();

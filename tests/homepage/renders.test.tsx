@@ -6,24 +6,27 @@ import Homepage from '../../src/features/homepage/Homepage';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
-describe('Static homepage product examples', () => {
-  it('makes names, open squares, and preparation state readable without interactive controls', () => {
-    renderPage();
-    const organizer = screen.getByRole('region', { name: 'Sample organizer workspace' });
-    expect(within(organizer).getAllByText('Taylor M.').length).toBeGreaterThan(0);
-    expect(within(organizer).getAllByText('OPEN').length).toBeGreaterThan(0);
-    expect(within(organizer).getByText('Numbers not drawn')).toBeInTheDocument();
-    expect(organizer.querySelector('a, button, input, select, textarea, [tabindex]')).toBeNull();
+describe('Cinematic homepage, static first', () => {
+  it('renders a complete static page before any 3D code loads', () => {
+    const { container } = renderPage();
+    expect(container.querySelector('.cine')).toHaveAttribute('data-mode', 'static');
+    const film = screen.getByRole('region', { name: 'How a game day plays out' });
+    expect(within(film).getAllByRole('article')).toHaveLength(6);
+    expect(film.querySelector('a, button, input, select, textarea')).toBeNull();
   });
 
-  it('explains the score digits and current matching participant as ordinary content', () => {
+  it('states the sample game numbers as ordinary text', () => {
     renderPage();
-    const score = screen.getByRole('region', { name: 'How the score matches a square' });
-    for (const text of ['17', '14', '7', '4', 'Taylor M.']) {
-      expect(within(score).getAllByText(text, { exact: true }).length).toBeGreaterThan(0);
-    }
-    expect(score).toHaveTextContent('Currently matching');
-    expect(score.querySelector('button, input, select, textarea')).toBeNull();
+    const kickoff = screen.getByRole('article', { name: 'The score runs itself.' });
+    for (const text of ['KC 17', 'PHI 14', 'Taylor M. matches 7 × 4']) expect(within(kickoff).getByText(text)).toBeInTheDocument();
+    const final = screen.getByRole('article', { name: 'Results called. Record kept.' });
+    for (const text of ['Q1 J. Rivera', 'Q2 Maya T.', 'Q3 Taylor M.', 'Final Priya S.']) expect(within(final).getByText(text)).toBeInTheDocument();
+  });
+
+  it('keeps the hands-on sample board for keyboard and screen-reader visitors', () => {
+    renderPage();
+    const sample = screen.getByRole('region', { name: 'Interactive sample board' });
+    expect(within(sample).getAllByRole('gridcell')).toHaveLength(100);
   });
 
   it('keeps one main, one h1, and unique ids across all examples', () => {
