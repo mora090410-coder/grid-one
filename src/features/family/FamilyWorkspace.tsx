@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Base, CapsuleButton, Eyebrow, Glass } from '../../design/primitives';
+import FamilySellerShareCard from './FamilySellerShareCard';
 import { sellerSquareUnsold } from '../../../utils/sellerInventory';
 
 type Availability = 'unspecified' | 'available' | 'unavailable';
@@ -86,6 +87,7 @@ export default function FamilyWorkspace() {
     {error && <p role="alert" className="rounded-control border border-hairline bg-panel p-4 font-ui text-base text-fg">{error}</p>}
     {!record && busy && <p role="status" className="font-ui text-base text-fg-2">Opening your squares…</p>}
     {!record && validToken && !busy && <CapsuleButton onClick={() => void load()}>Try again</CapsuleButton>}
+    {record && <FamilySellerShareCard token={token.current} revision={record.revision} disabled={busy || conflict || changes.length > 0} />}
     {record && <form onSubmit={save} className="flex flex-col gap-6">
       <Glass padding="lg" className="flex flex-col gap-3"><h2 className="font-display text-[32px] text-fg">Your {draft.length} {draft.length === 1 ? 'square' : 'squares'}</h2>
         <p className="break-words font-ui text-base text-fg">Responsible family: {record.label}</p>

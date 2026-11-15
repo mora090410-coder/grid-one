@@ -9,6 +9,7 @@ const http = (body: unknown, init: { ok?: boolean; status?: number } = {}) => ({
 const familyFetcher = (...results: Array<ReturnType<typeof http> | Error>) => {
   const queue = [...results];
   return vi.fn(async (url: string) => {
+    if (url === '/api/family/seller-link') return http({ state: 'not_shared', availableCount: 0 });
     if (url === '/api/family/guest-link') return http({ code: 'SHARING_UNAVAILABLE' }, { ok: false, status: 404 });
     const next = queue.shift();
     if (next instanceof Error) throw next;

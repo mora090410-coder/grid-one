@@ -6,6 +6,11 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const token = 'a'.repeat(64);
     let record = { title: 'Lincoln Baseball', revision: 1, label: 'Anthony', cells: Array.from({ length: 8 }, (_, i) => ({ index: i + 12, name: i < 2 ? 'Bill W' : 'Anthony', availability: 'unspecified' })) };
+    await page.route('**/api/family/seller-link', async route => {
+      expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
+      expect(route.request().postDataJSON()).toEqual({ action: 'read' });
+      await route.fulfill({ json: { state: 'not_shared', availableCount: 6 } });
+    });
     await page.route('**/api/family', async route => {
       expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
       const body = route.request().postDataJSON();

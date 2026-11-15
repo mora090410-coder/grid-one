@@ -160,6 +160,7 @@ describe('seller links', () => {
   afterAll(async () => { if (containerStarted) await docker(['rm','--force',containerName]); }, 60_000);
   beforeEach(async () => {
     id = randomUUID();
+    familyHash = randomUUID().replaceAll('-', '').repeat(2);
     // Squares 0-9 belong to Mora, 10-19 to Lee; everything else is unassigned.
     const label = (i: number) => (i < 10 ? 'Mora' : i < 20 ? 'Lee' : null);
     const board = {
@@ -170,6 +171,62 @@ describe('seller links', () => {
       participation: { squarePrice: '$20', instructions: 'Venmo me.' },
     };
     await executeSql(`INSERT INTO public.contests(id,owner_id,title,season_year,game_external_id,game_starts_at,side_team_name,side_team_abbr,top_team_name,top_team_abbr,board_data) VALUES('${id}','${OWNER_ID}','Seller board',2026,'401772999','2026-09-13T17:00:00Z','Chicago Bears','CHI','Green Bay Packers','GB',${sqlText(JSON.stringify(board))}::jsonb);`);
+  });
+
+  let familyHash: string;
+  const inviteFamily = async (cells = Array.from({ length: 10 }, (_, i) => i)) => executeSql(`SET ROLE service_role; SELECT public.gridone_family_access('invite',p_contest_id=>'${id}',p_owner_id=>'${OWNER_ID}',p_expected_revision=>${await revision()},p_label=>'Mora',p_token_hash=>'${familyHash}',p_cells=>ARRAY[${cells.join(',')}]);`);
+  const familyLink = async (action = 'read') => JSON.parse(await queryScalar(`SET ROLE service_role; SELECT public.gridone_family_seller_link('${familyHash}','${action}');`));
+
+  it('family sharing reads without creation and concurrent creation reuses one exact seller link', async () => {
+    await share(); await inviteFamily();
+    expect(await familyLink()).toEqual({ state: 'not_created', availableCount: 9 });
+    const before = await revision();
+    const [first, second] = await Promise.all([familyLink('create'), familyLink('create')]);
+    expect(first).toEqual(second); expect(first.state).toBe('active');
+    expect(await revision()).toBe(before);
+    expect(await queryScalar(`SELECT count(*) FROM public.seller_links WHERE contest_id='${id}'`)).toBe('1');
+    expect(await queryScalar(`SELECT count(*) FROM public.contest_audit_events WHERE contest_id='${id}' AND event_type='family.seller_link_created'`)).toBe('1');
+    expect((await read(first.code)).cells).toHaveLength(10);
+    await claim(first.code, [0], 'Buyer'); expect((await familyLink()).availableCount).toBe(8);
+    await expect(claim(first.code, [10], 'Buyer')).rejects.toThrow(/seller_access_denied/);
+    expect((await sync()).find(link => link.label === 'Mora')?.code).toBe(first.code);
+  });
+
+  it('family sharing recovers an organizer-created stable code and never rotates it', async () => {
+    await share(); const code = await codeFor('Mora'); await inviteFamily();
+    expect((await familyLink('create')).code).toBe(code);
+    expect((await familyLink()).code).toBe(code);
+  });
+
+  it('family sharing rejects subset, expanded, reassigned, revoked and expired capabilities', async () => {
+    await share(); await inviteFamily([0,1]);
+    await expect(familyLink('create')).rejects.toThrow(/family_access_denied/);
+    await executeSql(`UPDATE public.family_board_access SET cells=ARRAY[0,1,2,3,4,5,6,7,8,9] WHERE token_hash='${familyHash}';`);
+    expect((await familyLink()).state).toBe('not_created');
+    await executeSql(`UPDATE public.contests SET board_data=jsonb_set(board_data,'{allocationLabels,0}','"Lee"') WHERE id='${id}';`);
+    await expect(familyLink('create')).rejects.toThrow(/family_access_denied/);
+    await executeSql(`UPDATE public.contests SET board_data=jsonb_set(board_data,'{allocationLabels,0}','"Mora"') WHERE id='${id}'; UPDATE public.family_board_access SET revoked_at=now() WHERE token_hash='${familyHash}';`);
+    await expect(familyLink()).rejects.toThrow(/family_access_denied/);
+    await executeSql(`UPDATE public.family_board_access SET revoked_at=NULL,expires_at=now()-interval '1 minute' WHERE token_hash='${familyHash}';`);
+    await expect(familyLink()).rejects.toThrow(/family_access_denied/);
+  });
+
+  it('family sharing respects unshared, locked and sold-out states without creating codes', async () => {
+    await inviteFamily(); expect(await familyLink('create')).toEqual({ state: 'not_shared', availableCount: 9 });
+    await share();
+    await executeSql(`UPDATE public.contests SET board_data=jsonb_set(board_data,'{availability}',${sqlText(JSON.stringify(Array(100).fill('unavailable')))}::jsonb) WHERE id='${id}';`);
+    expect(await familyLink('create')).toEqual({ state: 'no_available', availableCount: 0 });
+    const board = JSON.parse(await queryScalar(`SELECT board_data FROM public.contests WHERE id='${id}'`));
+    const finalized = { ...board, leftAxis: [0,1,2,3,4,5,6,7,8,9], topAxis: [9,8,7,6,5,4,3,2,1,0] };
+    await executeSql(`SET ROLE service_role; SELECT * FROM public.gridone_publish_board('${id}','${OWNER_ID}',${await revision()},${VALID_SIDE_AXIS},${VALID_TOP_AXIS},${sqlText(JSON.stringify(board.squares))}::jsonb,${sqlText(JSON.stringify(finalized))}::jsonb,${sqlText(JSON.stringify(matchup))}::jsonb,true);`);
+    expect((await familyLink('create')).state).toBe('locked');
+    expect(await queryScalar(`SELECT count(*) FROM public.seller_links WHERE contest_id='${id}'`)).toBe('0');
+  });
+
+  it('family sharing RPC is service-only and rejects malformed inputs', async () => {
+    await expect(queryScalar(`SET ROLE anon; SELECT public.gridone_family_seller_link('${familyHash}','read');`)).rejects.toThrow(/permission denied/);
+    await expect(queryScalar(`SET ROLE authenticated; SELECT public.gridone_family_seller_link('${familyHash}','read');`)).rejects.toThrow(/permission denied/);
+    await expect(queryScalar(`SET ROLE service_role; SELECT public.gridone_family_seller_link('bad','create');`)).rejects.toThrow(/family_invalid_request/);
   });
 
   it('refuses links until the board is shared', async () => {
@@ -331,7 +388,10 @@ describe('seller links', () => {
     await share();
     const code = await codeFor('Mora');
     expect((await read(code)).open).toBe(true);
+    await inviteFamily();
+    expect(await familyLink('create')).toEqual({ state: 'active', code, availableCount: 9 });
     await claim(code, [4], 'Quarter Buyer');
+    expect((await familyLink()).availableCount).toBe(8);
     expect(await nameAt(4)).toBe('Quarter Buyer');
   });
 
