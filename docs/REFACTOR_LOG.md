@@ -1174,3 +1174,10 @@ parent capture command.
 Removed the visible film title, repeated sample disclaimers, and redundant section labels. A single “Sample game” label distinguishes the film from live scoring. The film keeps its accessible region name, three chapter controls, square inspector, and static fallback. Signup and payment details remain available. No product, pricing, access, or deployment-settings changes.
 
 Verified: typecheck and build passed; design lint 0 errors (5 existing warnings); 1,345 units and 230 Chromium tests passed. Reviewed the rendered 390px layout. Database integration and physical-device testing were not run.
+
+## 2026-11-15 — Viewer identity and result clarity (local-only)
+
+- Moved Find squares into the score identity region, with selected count and the first ten square numbers; retains existing accessible dialog and focus return.
+- Current arithmetic matches now say match rather than winner; confirmed history explicitly identifies confirmation, pending states sit with results and current pending milestone also appears beside score context.
+- Floating score is suppressed while the grid would occupy its overlay zone. Scoring, axes, canonical results, notifications and permissions are unchanged.
+- Verification: observed three intended RED unit failures; 54 focused viewer tests pass; TypeScript and build pass. Mocked Chromium phone/desktop layout and keyboard checks pass using pre-existing /tmp/chromium. Full unit rerun and final halftime fixture verification recorded in docs/viewer-polish-plan.md. No production interaction, commit, push or deployment.

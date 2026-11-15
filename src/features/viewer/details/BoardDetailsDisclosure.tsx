@@ -28,7 +28,7 @@ const ResultRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameStat
             <li key={`${winner.milestone}-${winner.resolvedAt}-${winner.resolutionVersion || 1}`} className="flex flex-col gap-1">
               <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="font-ui text-[15px] text-fg">
-                  <span className="font-medium">{milestoneLabel(winner.milestone)}</span> ·{' '}
+                  <span className="font-medium">{milestoneLabel(winner.milestone)}</span> · Confirmed ·{' '}
                   {isOpenSquare ? (
                     <>
                       Open square
@@ -58,7 +58,7 @@ const ResultRecord: React.FC<{ winnerHistory: WinnerResolution[]; game: GameStat
         })}
       </ol>
     ) : (
-      <p className="font-ui text-[15px] text-fg-2">No quarter winners yet.</p>
+      <p className="font-ui text-[15px] text-fg-2">No confirmed results yet.</p>
     )}
   </Glass>
 );

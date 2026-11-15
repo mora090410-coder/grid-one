@@ -17,7 +17,7 @@ describe('YourSquaresSummary', () => {
     const oneAway: BoardData = { ...board, squares: board.squares.map((names, index) => index === 34 ? ['Dana Ruiz'] : names) };
     render(<YourSquaresSummary board={oneAway} game={game} live={live} selectedPlayer="Dana Ruiz" onViewSquare={vi.fn()} />);
     const region = screen.getByRole('region', { name: 'Dana Ruiz square summary' });
-    expect(within(region).getByText('Not winning right now. Next winning score: KC Safety +2.')).toBeVisible();
+    expect(within(region).getByText('No current match. Next matching score: KC Safety +2.')).toBeVisible();
   });
 
   it('shows one detailed list with the current match status first', () => {
@@ -25,7 +25,7 @@ describe('YourSquaresSummary', () => {
     render(<YourSquaresSummary board={board} game={game} live={live} selectedPlayer="Carrie Moss" onViewSquare={onViewSquare} />);
     const region = screen.getByRole('region', { name: 'Carrie Moss square summary' });
     expect(within(region).getByText('2 squares')).toBeInTheDocument();
-    const winsNow = within(region).getByText('You’re winning right now.');
+    const winsNow = within(region).getByText('Your square matches the current score.');
     // Gold means winner, but never as text: the line is ink with a gold square.
     expect(winsNow.className).toContain('text-fg');
     expect(winsNow.className).not.toContain('text-gold');
@@ -105,4 +105,10 @@ describe('BoardDetailsDisclosure', () => {
     expect(screen.getByText(/Official final score corrected/)).toBeInTheDocument();
     expect(screen.getByText(/Previously Ann Lee/)).toBeInTheDocument();
   });
+});
+
+it('labels selected matches last-known when the feed is not synchronized', () => {
+  render(<YourSquaresSummary board={board} game={game} live={live} selectedPlayer="Carrie Moss" isSynced={false} onViewSquare={vi.fn()} />);
+  expect(screen.getByText('Your square matches the last-known score.')).toBeVisible();
+  expect(screen.queryByText('Your square matches the current score.')).toBeNull();
 });

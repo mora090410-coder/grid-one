@@ -36,10 +36,11 @@ export interface YourSquaresSummaryProps {
   game: Pick<GameState, 'leftAbbr' | 'topAbbr'>;
   live: LiveGameData | null;
   selectedPlayer: string;
+  isSynced?: boolean;
   onViewSquare: (coords: { left: number; top: number } | null) => void;
 }
 
-const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, live, selectedPlayer, onViewSquare }) => {
+const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, live, selectedPlayer, isSynced = true, onViewSquare }) => {
   const [expanded, setExpanded] = React.useState(false);
   const listId = React.useId();
   React.useEffect(() => setExpanded(false), [selectedPlayer]);
@@ -49,7 +50,8 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
   const visibleRows = expanded ? rows : rows.slice(0, 4);
   const currentQuarter = quarterForLive(live);
   const currentNames = live ? playersForDigits(board, live.topScore % 10, live.leftScore % 10, currentQuarter) : [];
-  const winsNow = currentNames.includes(selectedPlayer);
+  const lastKnown = live && !live.isManual && (!isSynced || ['stale', 'offline', 'refreshing', 'rejected'].includes(live.freshness || ''));
+  const winsNow = Boolean(live && live.state !== 'pre' && currentNames.includes(selectedPlayer));
   // The one answer a returning buyer wants: what score would make me win next.
   const nextWin = rows.find((row) => row.nextLabels.length)?.nextLabels[0] ?? null;
   const topLabel = game.topAbbr || 'Top';
@@ -63,7 +65,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
       </div>
       <p className={`flex items-center gap-2 font-ui text-[17px] font-medium ${winsNow ? 'text-fg' : 'text-fg-2'}`}>
         {winsNow && <span aria-hidden="true" data-winner-mark className="inline-block size-2.5 shrink-0 bg-gold" />}
-        {!hasValidAxes(board) ? 'Numbers need review before matching your squares.' : winsNow ? 'You’re winning right now.' : nextWin ? `Not winning right now. Next winning score: ${nextWin}.` : 'Not winning right now.'}
+        {!hasValidAxes(board) ? 'Numbers need review before matching your squares.' : !live || live.state === 'pre' ? 'Waiting for score.' : live.state === 'post' ? (winsNow ? 'Your square matches the final score. See confirmed results.' : 'No final score match. See confirmed results.') : lastKnown ? (winsNow ? 'Your square matches the last-known score.' : 'No last-known score match.') : winsNow ? 'Your square matches the current score.' : nextWin ? `No current match. Next matching score: ${nextWin}.` : 'No current score match.'}
       </p>
       <ul id={listId} className="flex flex-col gap-2" aria-label="Your squares">
         {visibleRows.map((row) => (
@@ -73,7 +75,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="font-mono tabular-nums text-[15px] text-fg"><span className="sr-only">{topLabel} column {row.top} × {leftLabel} row {row.left}</span><span aria-hidden="true">{topLabel} column <RollingDigit value={row.top} index={0} /> × {leftLabel} row <RollingDigit value={row.left} index={1} /></span></span>
                 <span className="font-ui text-[14px] text-fg-2">
-                  {row.matchesCurrent ? 'Winning right now.' : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Not one score away yet.'}
+                  {row.matchesCurrent ? (lastKnown ? 'Matches the last-known score.' : live?.state === 'post' ? 'Matches the final score.' : 'Matches the current score.') : row.nextLabels.length ? `Next score: ${row.nextLabels[0]}` : 'Not one score away yet.'}
                 </span>
               </div>
               {hasValidAxes(board) && row.top !== null && row.left !== null && (

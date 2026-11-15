@@ -202,7 +202,7 @@ describe('ViewerBoardGrid Slice 7', () => {
     expect(detail).toHaveTextContent('Tap a square to see the full name.');
     const grid = screen.getByRole('grid', { name: /football squares board/i });
     fireEvent.click(within(grid).getByRole('gridcell', { name: /Ann Lee, coordinate row 3 column 2/i }));
-    expect(detail).toHaveTextContent('Ann Lee · WAS 4 across · DAL 7 down · Winning now');
+    expect(detail).toHaveTextContent('Ann Lee · WAS 4 across · DAL 7 down · Current score match');
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
     expect(detail).toHaveTextContent('OPEN · WAS 1 across · DAL 7 down');
   });

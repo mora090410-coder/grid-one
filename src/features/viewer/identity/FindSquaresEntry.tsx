@@ -3,17 +3,19 @@ import { CapsuleButton, CapsuleTag, Eyebrow } from '../../../design/primitives';
 
 export interface FindSquaresEntryProps {
   selectedPlayer: string;
+  squareNumbers?: number[];
   onFindSquares: () => void;
   onClearPlayer: () => void;
 }
 
-const FindSquaresEntry: React.FC<FindSquaresEntryProps> = ({ selectedPlayer, onFindSquares, onClearPlayer }) => (
+const FindSquaresEntry: React.FC<FindSquaresEntryProps> = ({ selectedPlayer, squareNumbers = [], onFindSquares, onClearPlayer }) => (
   <section className="flex flex-col gap-3" aria-label="Find squares">
     {selectedPlayer ? (
       <div className="flex flex-wrap items-center justify-between gap-3" aria-live="polite">
         <div className="flex flex-col gap-1">
           <Eyebrow>Selected name</Eyebrow>
           <CapsuleTag tone="turf">{selectedPlayer}</CapsuleTag>
+          {squareNumbers.length > 0 && <p className="font-ui text-sm text-fg-2 break-words">{squareNumbers.length} {squareNumbers.length === 1 ? 'square' : 'squares'} · {squareNumbers.slice(0, 10).join(', ')}{squareNumbers.length > 10 ? ` (+${squareNumbers.length - 10} more)` : ''}</p>}
         </div>
         <div className="flex items-center gap-2">
           <CapsuleButton variant="quiet" onClick={onFindSquares}>Choose another name</CapsuleButton>

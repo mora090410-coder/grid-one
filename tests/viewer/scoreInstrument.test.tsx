@@ -43,3 +43,9 @@ it('preserves meaningful provider phase details', () => {
   render(<ScoreInstrument game={game} board={board} live={live({ detail: 'Halftime' })} liveStatus="LIVE" isSynced />);
   expect(screen.getByText('Halftime')).toBeVisible();
 });
+
+it('describes a halftime match as pending, never as a winner', () => {
+  render(<ScoreInstrument game={game} board={board} live={live({ period: 2, clock: '0:00', detail: 'Halftime' })} liveStatus="LIVE" isSynced liquid selectedPlayer="Carrie Moss" winsNow pendingMilestones={[{ milestone: 'Q2', topScore: 14, sideScore: 21, topDigit: 4, sideDigit: 1, stableSince: '', lastObservedAt: '', successfulReadCount: 1 }]} />);
+  expect(screen.queryByText(/winning/i)).not.toBeInTheDocument();
+  expect(screen.getByText('Halftime · pending confirmation')).toBeInTheDocument();
+});

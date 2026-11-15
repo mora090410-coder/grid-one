@@ -59,6 +59,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   onClearPlayer, onFindSquares, highlightedCoords, onScenarioFocus, locked = false, shareCode,   servicesEnabled = true, organizerPreview = false, organizerHref, onShare, stageChrome = false,
 }) => {
   const [winnerCardVisible, setWinnerCardVisible] = useState(false);
+  const boardRef = useRef<HTMLElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
   const findRef = useRef<HTMLDivElement>(null);
   const personalRef = useRef<HTMLDivElement>(null);
@@ -79,7 +80,9 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
     const update = (scoreBottom = target.getBoundingClientRect().bottom) => {
       const find = findRef.current?.getBoundingClientRect();
       const overlapsFind = find && find.top < 130 && find.bottom > 0;
-      setScoreAboveViewport(scoreBottom <= 0 && !overlapsFind);
+      const grid = boardRef.current?.querySelector('[role="grid"]')?.getBoundingClientRect();
+      const overlapsGrid = grid && grid.height > 0 && grid.top < 130 && grid.bottom > 0;
+      setScoreAboveViewport(scoreBottom <= 0 && !overlapsFind && !overlapsGrid);
     };
     // Observer records can be queued before the latest scroll. Read current
     // viewport geometry so an older entry cannot hide the return control.
@@ -138,14 +141,12 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
         <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
           {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
           <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument winFocus={winnerCardVisible} onWinnerVisibilityChange={setWinnerCardVisible} liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
+          <ScoreInstrument identityAction={<div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} squareNumbers={board.squares.flatMap((names, index) => selectedPlayer && names.includes(selectedPlayer) ? [index + 1] : [])} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>} pendingMilestones={pendingMilestones} winFocus={winnerCardVisible} onWinnerVisibilityChange={setWinnerCardVisible} liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
           </div>
-          <div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>
           <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
-          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">{stageChrome ? 'This illustration shows current matching, not confirmed quarter results.' : 'No quarter winners yet.'}</p>}
-          </div>
-          {selectedPlayer && <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
+          {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">{stageChrome ? 'This illustration shows current matching, not confirmed quarter results.' : 'No confirmed results yet.'}</p>}
+
           {pendingMilestones.length > 0 && servicesEnabled && (
             <Glass as="section" padding="md" className="flex flex-col gap-2" aria-labelledby="pending-results-title">
               <h2 id="pending-results-title" className="font-ui text-[15px] font-medium text-fg">Pending confirmation</h2>
@@ -156,11 +157,13 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
               </ul>
             </Glass>
           )}
+          </div>
+          {selectedPlayer && <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary isSynced={isSynced} board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
           {!isFinal && <div ref={scenariosRef} className="g1-scenarios-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
-          <WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} />
+          {showNotification && <div className="g1-notifications-region"><WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} /></div>}
         </div>
 
-        <section className={`g1-board-region relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
+        <section ref={boardRef} className={`g1-board-region relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
           {stageChrome && <div className="demo-board-light" aria-hidden="true" />}
           <div className="relative z-[1] flex items-end justify-between gap-3">
             <div className="flex flex-col gap-1">

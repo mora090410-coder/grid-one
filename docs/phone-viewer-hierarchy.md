@@ -53,7 +53,7 @@ A name is selected through the `Find my squares` dialog. In the current stack, `
 - pointer activation of buttons inside focusable viewer destinations keeps focus on the actual control without scrolling the section between press and release; keyboard navigation and the notch's explicit section-focus handoff are unchanged,
 - each coordinate as `{away team} column {digit} × {home team} row {digit}`,
 - `View on board top {n} side {n}` per square, which centers the grid without stealing focus first,
-- the current result — `Winning right now.` / `Not winning right now.`,
+- the current result — `Matches the current score.` / `No current score match.`,
 - and, when nothing upcoming matches, `Not one score away yet.`
 
 `FindSquaresEntry` then shows `Selected name` with `Choose another name` and `Clear`. `WinnerEmailDisclosure` (`Get winner emails`) appears **after** the personal answer, never before it.
@@ -97,7 +97,7 @@ Any stale-family state prefixes the timestamp line with `Last known · `. When n
 - **Fit is the default.** At 100% the board fills its box, so a phone shows all 100 squares with readable labels (at least 10px) instead of a desktop board shrunk to fit. Zoom widens the board inside its scrolling box, from 100% to 250%. The size math lives in `boardGeometry` in `board/boardGridModel.ts`.
 - **Controls** live in one row, a group named `Board controls`: `Zoom out`, `Current zoom`, and `Zoom in` always; `Fit`, `Center current result`, and `Center selected square` only while zoomed in, where centering has somewhere to move. Centering moves the viewport on explicit activation only.
 - **Team key.** A line above the board reads `Top · {top abbr} →` and `Side · {side abbr} ↓`. The side team's digits are the first column; there is no separate rotated side label.
-- **Tapped square.** Tapping or arrowing to a square spells out, under the board, the full name(s), both digits, and `Winning now` or `Past winner` where true. Before any tap it reads `Tap a square to see the full name.`
+- **Tapped square.** Tapping or arrowing to a square spells out, under the board, the full name(s), both digits, and `Current score match` or `Past winner` where true. Before any tap it reads `Tap a square to see the full name.`
 - **Axes are sticky.** Top and side digits stay oriented while the board pans.
 - **State is never color alone.** The current result is marked `NOW`; open squares read `OPEN`; resolved winners and corrections carry text.
 - The grid is read-only and never implies editability.
@@ -193,3 +193,7 @@ The guest invitation route displays only the participant's offered squares in a 
 ## Inline notch quick views — September 21
 
 Game shows the score and period alongside authority and freshness. Results shows Q1, Halftime, Q3, and Final in place, including canonical published names or OPEN, scores, digits, and correction indicators; pending and unconfirmed results never imply a winner. An empty history explicitly says no results are published. Reading this summary requires no navigation. The viewer keeps its name selector and Your squares summary. Organizer sharing actions belong to Share; an explicit correction action appears only when a published result exists. Existing disclosure keyboard, focus, reduced-motion and scroll behavior remains authoritative.
+
+## Viewer audit clarity update (2026-11-15)
+
+Find squares is rendered directly after identity inside the score region, before the match and score panels, so CSS auto-placement cannot put it after the board. A selection shows its count and first ten square numbers. Current arithmetic matches are not called winners; published history explicitly says Confirmed. Pending milestones stay with the results block and the current pending milestone appears next to score context. The floating score hides while it would cover the board grid. This does not change scoring, confirmation, or payout authority.

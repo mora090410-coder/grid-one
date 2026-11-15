@@ -17,7 +17,7 @@ describe('quarter viewer and literal review', () => {
     const { container } = render(<YourSquaresSummary board={board()} game={{...INITIAL_GAME,topAbbr:'TOP',leftAbbr:'SIDE'}} live={live} selectedPlayer="Anthony" onViewSquare={focus} />);
     expect(container.querySelectorAll('.g1-roll-strip[aria-hidden="true"]')).toHaveLength(2);
     expect(screen.getByText('TOP column 1 × SIDE row 1')).toBeInTheDocument();
-    expect(screen.getByText('Winning right now.')).toBeInTheDocument();
+    expect(screen.getByText('Matches the current score.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button',{name:'View on board top 1 side 1'}));
     expect(focus).toHaveBeenCalledWith({top:1,left:1});
   });

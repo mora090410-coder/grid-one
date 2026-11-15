@@ -52,7 +52,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const squareDetail = (cell: ViewerBoardCellModel, topLabel: string, sideLabel: string) => {
   const who = cell.names.length ? cell.names.join(', ') : cell.isOpen ? 'OPEN' : 'No name yet';
   const parts = [who, `${topLabel} ${cell.topDigit ?? '?'} across`, `${sideLabel} ${cell.sideDigit ?? '?'} down`];
-  if (cell.states.includes('current')) parts.push('Winning now');
+  if (cell.states.includes('current')) parts.push('Current score match');
   if (cell.states.includes('resolved')) parts.push('Past winner');
   return parts.join(' · ');
 };

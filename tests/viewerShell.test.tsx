@@ -145,7 +145,7 @@ describe('liquid glass slice 3: public square materials', () => {
 describe('liquid glass slice 4: board-first live layout', () => {
   it('shows a real current-match summary and counts only public allocations', () => {
     const { container } = renderShell({ board:{...board,allocationLabels:Array.from({length:100},(_,i)=>i<25?'Jamie':null)} });
-    expect(screen.getByRole('heading', {name:'Winning right now'})).toBeVisible();
+    expect(screen.getByRole('heading', {name:'Current score match'})).toBeVisible();
     expect(container.querySelector('.g1-current-card')).toHaveTextContent('Carrie Moss');
     expect(screen.getByRole('region', {name:'Sellers'})).toHaveTextContent('Jamie');
     expect(screen.getByRole('region', {name:'Sellers'})).toHaveTextContent('25');
@@ -156,7 +156,7 @@ describe('liquid buyer game day slice 6', () => {
   it('personalizes the winning card and square map from the existing viewer identity', () => {
     const {container}=renderShell({selectedPlayer:'Carrie Moss'});
     expect(container.querySelector('.g1-current-card[data-g1-personal-win="true"]')).not.toBeNull();
-    expect(screen.getByRole('heading',{name:/You’re winning Q3/})).toBeVisible();
+    expect(screen.getByRole('heading',{name:/Your square matches Q3/})).toBeVisible();
     expect(screen.getByRole('img',{name:'Board map. Your squares and the current matching square.'})).toBeInTheDocument();
     expect(container.querySelectorAll('[data-g1-chip]')).toHaveLength(2);
     expect(container.querySelector('[data-g1-chip]')).toHaveTextContent('15');
@@ -194,7 +194,7 @@ describe('ViewerShell', () => {
     expect(summary.compareDocumentPosition(scenarios)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(scenarios.compareDocumentPosition(winnerEmail)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(summary).getByText('2 squares')).toBeVisible();
-    expect(within(summary).getByText('You’re winning right now.')).toBeVisible();
+    expect(within(summary).getByText('Your square matches the current score.')).toBeVisible();
     expect(within(summary).getByRole('button', { name: /View on board top 4 side 1/ })).toBeInTheDocument();
     expect(screen.getByText('Next score: KC Safety +2')).toBeVisible();
     expect(screen.getByText('Just math on the score. Not odds or predictions.')).toBeVisible();
@@ -260,7 +260,7 @@ describe('ViewerShell', () => {
   it('renders the final record with resolved winners and no scenarios', () => {
     const winnerHistory: WinnerResolution[] = [{ milestone: 'FINAL', sideScore: 21, topScore: 14, sideDigit: 1, topDigit: 4, participantName: 'Carrie Moss', resolvedAt: '2026-09-13T22:00:00.000Z' }];
     renderShell({ live: live({ state: 'post' }), liveStatus: 'FINAL', winnerHistory, selectedPlayer: 'Carrie Moss' });
-    expect(screen.getByRole('region', { name: 'Final record' })).toHaveTextContent(/Final · Carrie Moss/);
+    expect(screen.getByRole('region', { name: 'Final record' })).toHaveTextContent(/Final · Confirmed · Carrie Moss/);
     expect(screen.queryByText('What score changes the next result?')).toBeNull();
   });
 
@@ -307,7 +307,7 @@ it('shows the floating score only after the main score scrolls above the viewpor
 
 it('shows the confirmed Q1 winner during Q2', () => {
   renderShell({ live: live({ period: 2 }), winnerHistory: [{ milestone: 'Q1', topDigit: 0, sideDigit: 0, participantName: 'Demo Family', resolvedAt: '2026-09-10T01:00:00Z' }] });
-  expect(screen.getByRole('region', { name: 'Completed results' })).toHaveTextContent('Q1 · Demo Family');
+  expect(screen.getByRole('region', { name: 'Completed results' })).toHaveTextContent('Q1 · Confirmed · Demo Family');
   expect(screen.queryByRole('region', { name: 'Final record' })).toBeNull();
 });
 
@@ -341,4 +341,17 @@ describe('ViewerShell quarter-by-quarter numbers', () => {
     fireEvent.click(screen.getByRole('button', { name: /View on board top 5 side 6/ }));
     expect(target).toHaveFocus();
   });
+});
+
+it('keeps identity selection inside the score region and shows selected square numbers', () => {
+  const { container } = renderShell({ selectedPlayer: 'Carrie Moss' });
+  const score = container.querySelector('.g1-score-region')!;
+  expect(within(score as HTMLElement).getByRole('button', { name: 'Choose another name' })).toBeInTheDocument();
+  expect(within(score as HTMLElement).getByText('2 squares · 15, 35')).toBeInTheDocument();
+});
+
+it('groups pending and empty confirmed results without saying there are no winners', () => {
+  renderShell({ pendingMilestones: [{ milestone: 'Q2', topScore: 14, sideScore: 21, topDigit: 4, sideDigit: 1, stableSince: '', lastObservedAt: '', successfulReadCount: 1 }] });
+  expect(screen.queryByText('No quarter winners yet.')).not.toBeInTheDocument();
+  expect(within(screen.getByLabelText('Published results')).getByRole('heading', { name: 'Pending confirmation' })).toBeInTheDocument();
 });
