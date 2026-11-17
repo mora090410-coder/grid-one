@@ -36,7 +36,7 @@ export const userClient = (env: { VITE_SUPABASE_URL: string; VITE_SUPABASE_ANON_
 export const jsonResponse = (body: unknown, status = 200, headers?: Record<string, string>) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers },
   });
 
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

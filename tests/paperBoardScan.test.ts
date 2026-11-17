@@ -49,7 +49,7 @@ const scanRequest = (
   body: JSON.stringify({ image }),
 });
 
-const validImage = 'data:image/png;base64,QUJDRA==';
+const validImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -145,6 +145,16 @@ describe('paper-board scan endpoint', () => {
     expect(providerFetch).not.toHaveBeenCalled();
   });
 
+  it('rejects a file whose bytes do not agree with its declared image format', async () => {
+    const providerFetch = vi.fn(async () => Response.json({ candidates: [] }));
+    vi.stubGlobal('fetch', providerFetch);
+    const response = await scanBoard({
+      request: scanRequest(validImage.replace('image/png', 'image/jpeg')), env,
+    });
+    expect(response.status).toBe(400);
+    expect(providerFetch).not.toHaveBeenCalled();
+  });
+
   it('normalizes provider output into a 100-cell board', async () => {
     const providerFetch = vi.fn(async (..._args: any[]) => new Response(JSON.stringify({
       candidates: [{
@@ -222,4 +232,18 @@ describe('paper-board scan endpoint', () => {
     expect(response.status).toBe(status);
     expect((await response.json() as any).error).toContain(message);
   });
+});
+
+it('logs only the numeric provider status when a paper scan is rejected', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({
+      error: { message: 'internal provider diagnostic' },
+    }, { status: 403 })));
+    const response = await scanBoard({ request: scanRequest(validImage), env });
+    expect(response.status).toBe(502);
+    expect(log.mock.calls).toEqual([['Scan provider rejected the request:', 403]]);
+  } finally {
+    log.mockRestore();
+  }
 });

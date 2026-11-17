@@ -11,6 +11,9 @@ export const EMAIL_LINK_HEADERS = {
   'Cache-Control': 'no-store',
   'Referrer-Policy': 'no-referrer',
   'X-Robots-Tag': 'noindex',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': "frame-ancestors 'none'",
 } as const;
 
 /** A redirect that keeps the signed link out of caches and referrers. */

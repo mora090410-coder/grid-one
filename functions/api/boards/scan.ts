@@ -1,10 +1,5 @@
 import { BOARD_SCAN_PROMPT, parseScannedBoard } from '../../_lib/scanBoard';
-import { readJsonObject, requireUser, type PagesFunction } from '../../_lib/http';
-
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
-  status,
-  headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-});
+import { jsonResponse as json, readJsonObject, requireUser, type PagesFunction } from '../../_lib/http';
 
 const IMAGE_LIMIT_MESSAGE = 'Upload a JPG, PNG, or WebP image under 6 MB.';
 const MAX_BASE64_IMAGE_CHARS = 8_000_000;
@@ -14,6 +9,18 @@ const MAX_SCAN_BODY_BYTES = MAX_BASE64_IMAGE_CHARS + 64 * 1024;
 // 30 seconds. The limit only exists so a hung provider call cannot wait forever.
 const PROVIDER_TIMEOUT_MS = 90_000;
 const PROVIDER_UNAVAILABLE = 'The scan provider is unavailable.';
+
+const matchesImageSignature = (mime: string, encoded: string): boolean => {
+  // The route already bounds the payload and checks the base64 alphabet.
+  // Check padding and decode a small prefix rather than allocating a second full-size buffer.
+  const firstPad = encoded.indexOf('=');
+  if (encoded.length < 16 || encoded.length % 4 !== 0) return false;
+  if (firstPad !== -1 && (encoded.length - firstPad > 2 || !/^=+$/.test(encoded.slice(firstPad)))) return false;
+  const prefix = atob(encoded.slice(0, 16));
+  if (mime === 'image/jpeg') return prefix.startsWith('\xff\xd8\xff');
+  if (mime === 'image/png') return prefix.startsWith('\x89PNG\r\n\x1a\n');
+  return mime === 'image/webp' && prefix.startsWith('RIFF') && prefix.slice(8, 12) === 'WEBP';
+};
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const user = await requireUser(request, env, { missing: 'Sign in before importing a board.', expired: 'Your session has expired.' });
@@ -25,7 +32,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const match = typeof body.image === 'string'
     ? body.image.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/)
     : null;
-  if (!match || match[2].length > MAX_BASE64_IMAGE_CHARS) {
+  if (!match || match[2].length > MAX_BASE64_IMAGE_CHARS || !matchesImageSignature(match[1], match[2])) {
     return json({ error: IMAGE_LIMIT_MESSAGE }, 400);
   }
 
@@ -50,14 +57,15 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       }),
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
+    if (!providerResponse.ok) {
+      // Do not read or log arbitrary provider diagnostics; they may contain sensitive data.
+      await providerResponse.body?.cancel().catch(() => undefined);
+      console.error('Scan provider rejected the request:', providerResponse.status);
+      return json({ error: PROVIDER_UNAVAILABLE }, 502);
+    }
     raw = await providerResponse.json();
-  } catch (error) {
-    console.error('Scan provider request failed:', error);
-    return json({ error: PROVIDER_UNAVAILABLE }, 502);
-  }
-  if (!providerResponse.ok) {
-    // Provider error text can name keys, quotas or projects; keep it in logs only.
-    console.error('Scan provider rejected the request:', providerResponse.status, raw?.error?.message);
+  } catch {
+    console.error('Scan provider request failed.');
     return json({ error: PROVIDER_UNAVAILABLE }, 502);
   }
   const text = raw?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('');

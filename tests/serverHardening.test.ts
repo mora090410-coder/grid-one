@@ -409,7 +409,7 @@ describe('public share-code reads never authenticate', () => {
 
 describe('external providers have timeouts and stay private', () => {
   const scanEnv = { ...env, GEMINI_API_KEY: 'gemini-secret-key', OCR_MODEL: 'gemini-test' };
-  const image = JSON.stringify({ image: 'data:image/png;base64,QUJDRA==' });
+  const image = JSON.stringify({ image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=' });
 
   it('sends the Gemini key in a header with a timeout signal', async () => {
     const fetchMock = vi.fn(async (..._args: any[]) => new Response(JSON.stringify({ candidates: [] }), { status: 200 }));
