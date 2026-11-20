@@ -349,6 +349,8 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await page.goto('/');
     const footerLinks = page.getByRole('contentinfo').getByRole('link');
     await expect(footerLinks).toHaveCount(6);
+    // Establish keyboard modality before moving focus to each representative control.
+    await page.keyboard.press('Tab');
     for (const control of [
       page.getByRole('link', { name: 'Create your free board' }).first(),
       page.getByRole('link', { name: 'Try the demo' }).first(),
@@ -362,6 +364,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
       await expectTouchTarget(control);
       await control.focus();
       await expect(control).toBeFocused();
+      await expect(control.and(page.locator(':focus-visible'))).toBeFocused();
       await expect.poll(() => control.evaluate((element) => {
         const style = getComputedStyle(element);
         return [style.outlineStyle, style.outlineWidth, style.boxShadow].join('|');
@@ -527,9 +530,11 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(preview).toBeVisible();
 
     const shareTrigger = preview.getByRole('button', { name: 'Share', exact: true });
-    await expect(shareTrigger).toBeVisible();
-    await shareTrigger.focus();
-    await page.keyboard.press('Enter');
+    // Wait for the preview's initial focus before moving it to Share. The
+    // sheet can be visible before its focus effect has finished.
+    await expect(preview.getByTestId('preview-scroll').locator(':focus')).toHaveCount(1);
+    await expect(shareTrigger).toBeEnabled();
+    await shareTrigger.press('Enter');
 
     const share = page.getByRole('dialog', { name: 'Share link' });
     await expect(share).toBeVisible();
@@ -657,9 +662,9 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
       if (!heading || !status || !find || !details) return false;
       const position = Node.DOCUMENT_POSITION_FOLLOWING;
       return Boolean(
-        heading.compareDocumentPosition(status) & position
-        && status.compareDocumentPosition(find) & position
-        && find.compareDocumentPosition(details) & position
+        heading.compareDocumentPosition(find) & position
+        && find.compareDocumentPosition(status) & position
+        && status.compareDocumentPosition(details) & position
       );
     });
     expect(firstViewportOrder).toBe(true);

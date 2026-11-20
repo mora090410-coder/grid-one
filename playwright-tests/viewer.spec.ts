@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { scrollPastViewerScore } from './helpers/scrollPastViewerScore';
 
 const publishedBoard = {
   leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -162,7 +163,7 @@ test.describe('viewer shell', () => {
     const islandToggle = page.getByRole('button', { name: /^Score/ });
     await expect(islandToggle).toHaveCount(0);
     await page.getByTestId('viewer-board-grid').scrollIntoViewIfNeeded();
-    await page.evaluate(() => window.scrollTo({ top: document.querySelector('.g1-find-region')!.getBoundingClientRect().bottom + scrollY + 160, behavior: 'instant' }));
+    await scrollPastViewerScore(page);
     await expect(islandToggle).toBeVisible();
     await islandToggle.click();
     const scoreRegion = page.getByRole('region', { name: 'Score', exact: true });
@@ -197,7 +198,7 @@ for (const width of [320, 390, 1440]) {
     } }));
     await page.route('**/api/pools/ABCDEFGH/score', route => route.fulfill({ json: { score, winnerHistory, pendingMilestones: [] } }));
     await page.goto('/b/ABCDEFGH');
-    await expect(page.getByRole('region', { name: 'Completed results' })).toContainText('Q1 · Ann');
+    await expect(page.getByRole('region', { name: 'Completed results' })).toContainText('Q1 · Confirmed · Ann');
     await expect(page.getByRole('button', { name: /^Score/ })).toHaveCount(0);
     await page.getByTestId('viewer-first-viewport').getByRole('button', { name: 'Find my squares' }).click();
     const dialog = page.getByRole('dialog', { name: 'Find my squares' });
