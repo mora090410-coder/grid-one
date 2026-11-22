@@ -1181,3 +1181,14 @@ Verified: typecheck and build passed; design lint 0 errors (5 existing warnings)
 - Current arithmetic matches now say match rather than winner; confirmed history explicitly identifies confirmation, pending states sit with results and current pending milestone also appears beside score context.
 - Floating score is suppressed while the grid would occupy its overlay zone. Scoring, axes, canonical results, notifications and permissions are unchanged.
 - Verification: observed three intended RED unit failures; 54 focused viewer tests pass; TypeScript and build pass. Mocked Chromium phone/desktop layout and keyboard checks pass using pre-existing /tmp/chromium. Full unit rerun and final halftime fixture verification recorded in docs/viewer-polish-plan.md. No production interaction, commit, push or deployment.
+
+## 2026-11-21 — Hark-inspired homepage and game-day viewer (review only)
+
+- Adopted the selected score-first homepage and personalized game-day viewer directions. The homepage keeps the cinematic board, fallback and chapters, but makes the product promise and a single labeled sample result clearer. The signed-out published viewer puts the score and selected squares in the same surface, keeps keyboard focus on the name-picker control, and separates scenarios from confirmed or pending results. The embedded organizer layout, scoring and authority, published axes, off-platform money boundary, and access contracts are unchanged.
+- Tested the actual local preview at phone and desktop widths. A ten-pass journey sweep covered CTAs, demo handoff, chapter controls, square inspection, FAQ, keyboard focus, personalized summary, exact square navigation, zoom and fit, scenario disclosure and selection clearing. Also passed 50 browser checks across five WebGL/fallback cases and 30 across three viewer phase/grid cases. The repeat fixtures use sample data and are not production or physical-device verification.
+- TypeScript, unit tests, build, and design lint passed (five existing design warnings). Focused accessibility/brand checks passed. Broad Chromium was attempted but did not finish cleanly; isolate renderer crashes from any remaining assertions before release. WebKit host libraries and Docker were unavailable. Local only; no commit, push or deployment.
+
+### Release qualification follow-up (local-only)
+
+- The persistent Find button keeps its press animation contained when a name selection changes it from the primary to quiet style. On a 320px test board the old ripple could briefly increase document width to 325px. Containment preserves the focused button, and the spec now asserts normal page width and one current match without reintroducing a duplicate winner card.
+- Added repeatable signed-out published-link fixtures for reload, remembered name, both number modes, and exact square focus. The release tests use simulated data and do not contact production.

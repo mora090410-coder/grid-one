@@ -21,20 +21,18 @@ The composition, component boundaries, and disclosure mechanisms below are the c
 
 ## Composition
 
-`ViewerShell` renders on a `<Base kind="dark">` ground: a `ViewerIsland` pinned above only while the main score is scrolled out of view, then a `main` named `{board title} viewer` in two columns — the first column is the phone stack, the second is the board.
+The published game-day viewer and sample board use an ink masthead above a warm, high-contrast reading surface. The score and selected squares share one result panel. The organizer’s embedded preview retains its existing layout. The floating `ViewerIsland` only appears when the score scrolls away and does not obscure the grid.
 
-| Order | Component | Accessible name |
+| Phone order | Component | Accessible name |
 |---|---|---|
-| — | `shell/ViewerIsland` | island `Score` — collapsed score chyron, shown only after the main score scrolls above the viewport |
-| 1 | `score/ScoreInstrument` | region `Score`; carries the `h1` (an `h2` in organizer preview) |
-| 2 | `identity/FindSquaresEntry` | region `Find squares` |
-| 3 | `details/BoardDetailsDisclosure` `CompletedResults` or `FinalRecord` | heading `Completed results` during live play, `Final record` after the game |
-| 4 | `personal/YourSquaresSummary` | region `{name} square summary`, only once a name is selected |
-| 5 | `Pending confirmation` block | heading `Pending confirmation`, only when milestones await confirmation |
-| 6 | `scenarios/ScenarioDisclosure` | region `Next scores that match your squares` |
-| 7 | `notifications/WinnerEmailDisclosure` | form `winner email` |
-| — | `board/ViewerBoardGrid` | grid `Football squares board, Top team {away}, Side team {home}`, in the board column under heading `Board` |
-| — | `details/BoardDetailsDisclosure` | `Payouts` region after the grid, only when payouts or rules are published |
+| 1 | `score/ScoreInstrument` and `identity/FindSquaresEntry` | The board heading, score and authority, then the name controls (displayed first inside the panel before a name is selected) |
+| 1 | `personal/YourSquaresSummary` | Region `{name} square summary`, inside the score panel once a name is selected |
+| 2 | `FinalRecord`, when final | Heading `Final record`; the official record is above the grid in Final |
+| 3 | `board/ViewerBoardGrid` | Grid `Football squares board, Top team {top team}, Side team {side team}`, under heading `Board` |
+| 4 | `scenarios/ScenarioDisclosure` | Next-score arithmetic, when applicable |
+| 5 | `CompletedResults` and pending confirmation, before Final | Confirmed and pending milestone outcomes, kept separate from scenarios |
+| 6 | `notifications/WinnerEmailDisclosure` | Form `winner email`, when eligible |
+| — | `Payouts` | After the grid, only when published |
 
 The first column carries `data-testid="viewer-first-viewport"`, and the accessibility spec asserts that on a 390×844 phone the `Find my squares` button lands inside it.
 
@@ -42,21 +40,21 @@ The first column carries `data-testid="viewer-first-viewport"`, and the accessib
 
 ### Unpersonalized
 
-No name selected. The current stack is score, `Find my squares`, completed results (or Final record), any pending confirmations, scenarios when applicable, then the board. There is no `Your squares` region, no personal result, and no winner-email form. `ScenarioDisclosure` shows `What score changes the next result?` for the board as a whole.
+No name selected. The board identity, `Find my squares`, score and authority appear before the grid. Before Final, scoring scenarios and confirmed or pending milestone outcomes follow the grid in separate regions. There is no `Your squares` region, no personal result, and no winner-email form. `ScenarioDisclosure` shows `What score changes the next result?` for the board as a whole.
 
 ### Personalized
 
-A name is selected through the `Find my squares` dialog. In the current stack, `YourSquaresSummary` follows `FindSquaresEntry` and the completed-results/Final-record block and shows:
+A name is selected through the `Find my squares` dialog. `YourSquaresSummary` sits next to score context inside the same panel and shows:
 
 - the count (`1 square`, `{n} squares`),
 - one detailed list, initially limited to four squares with the current match first; Show all squares exposes the full list,
 - pointer activation of buttons inside focusable viewer destinations keeps focus on the actual control without scrolling the section between press and release; keyboard navigation and the notch's explicit section-focus handoff are unchanged,
-- each coordinate as `{away team} column {digit} × {home team} row {digit}`,
+- each coordinate using the published top team as the column and side team as the row,
 - `View on board top {n} side {n}` per square, which centers the grid without stealing focus first,
 - the current result — `Matches the current score.` / `No current score match.`,
 - and, when nothing upcoming matches, `Not one score away yet.`
 
-`FindSquaresEntry` then shows `Selected name` with `Choose another name` and `Clear`. `WinnerEmailDisclosure` (`Get winner emails`) appears **after** the personal answer, never before it.
+The name controls show `Choose another name` and `Clear`. The same opener remains available when the selection changes, preserving focus on close. `WinnerEmailDisclosure` (`Get winner emails`) appears **after** the personal answer, never before it.
 
 ### Final record
 
@@ -89,7 +87,7 @@ Any stale-family state prefixes the timestamp line with `Last known · `. When n
 
 ## Exact grid contract
 
-`ViewerBoardGrid` is a real `role="grid"` named `Football squares board, Top team {away}, Side team {home}` — a precision instrument in a controlled viewport, not a page-width table. Column and row headers name the team and digit (`{team} top digit {n}`, `{team} side digit {n}`).
+`ViewerBoardGrid` is a real `role="grid"` named `Football squares board, Top team {top team}, Side team {side team}` — a precision instrument in a controlled viewport, not a page-width table. Column and row headers name the team and digit (`{team} top digit {n}`, `{team} side digit {n}`).
 
 - **One tab stop.** Exactly one `gridcell` is in the page tab sequence at a time; `Tab` enters at the selected or first meaningful cell.
 - **Arrow keys** move one cell. `Home` / `End` move within the row.

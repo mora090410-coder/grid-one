@@ -153,10 +153,10 @@ describe('liquid glass slice 4: board-first live layout', () => {
 });
 
 describe('liquid buyer game day slice 6', () => {
-  it('personalizes the winning card and square map from the existing viewer identity', () => {
+  it('personalizes the glance and square map from the existing viewer identity without a second match card', () => {
     const {container}=renderShell({selectedPlayer:'Carrie Moss'});
-    expect(container.querySelector('.g1-current-card[data-g1-personal-win="true"]')).not.toBeNull();
-    expect(screen.getByRole('heading',{name:/Your square matches Q3/})).toBeVisible();
+    expect(container.querySelector('.g1-current-card')).toBeNull();
+    expect(within(screen.getByTestId('game-day-glance')).getByText('Your square matches the current score.')).toBeVisible();
     expect(screen.getByRole('img',{name:'Board map. Your squares and the current matching square.'})).toBeInTheDocument();
     expect(container.querySelectorAll('[data-g1-chip]')).toHaveLength(2);
     expect(container.querySelector('[data-g1-chip]')).toHaveTextContent('15');
@@ -168,6 +168,16 @@ describe('liquid buyer game day slice 6', () => {
 });
 
 describe('ViewerShell', () => {
+  it('pairs the public score and personal square action in one glance before the board', () => {
+    renderShell({ selectedPlayer: 'Carrie Moss' });
+    const glance = screen.getByTestId('game-day-glance');
+    const summary = within(glance).getByRole('region', { name: 'Carrie Moss square summary' });
+    expect(within(glance).getByRole('img', { name: 'Philadelphia 14' })).toBeVisible();
+    expect(within(summary).getByRole('button', { name: 'View on board top 4 side 1' })).toBeVisible();
+    expect(summary.compareDocumentPosition(screen.getByRole('grid'))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(within(glance).queryByLabelText('Published results')).not.toBeInTheDocument();
+  });
+
   it('renders the unpersonalized stack: identity, score, trust, one primary action, no me language', () => {
     renderShell({ selectedPlayer: '' });
     const firstViewport = screen.getByTestId('viewer-first-viewport');
@@ -175,7 +185,7 @@ describe('ViewerShell', () => {
     expect(within(firstViewport).getByText('KC at PHI')).toBeVisible();
     expect(within(firstViewport).getByRole('img', { name: 'Kansas City 21' })).toBeInTheDocument();
     expect(within(firstViewport).getByRole('img', { name: 'Philadelphia 14' })).toBeInTheDocument();
-    const status = within(firstViewport).getByRole('status');
+    const status = within(within(firstViewport).getByTestId('game-day-glance')).getByRole('status');
     expect(status).toHaveTextContent(/Currently matching/);
     expect(status).toHaveTextContent('Carrie Moss');
     expect(status).toHaveTextContent('PHI 4 across × KC 1 down');
@@ -224,7 +234,7 @@ describe('ViewerShell', () => {
 
   it('shows stale last-known copy and hides winner email in preview or without a durable participant', () => {
     const { rerender } = renderShell({ live: live({ freshness: 'offline' }), selectedPlayer: 'Carrie Moss' });
-    const firstViewportStatus = within(screen.getByTestId('viewer-first-viewport')).getByRole('status');
+    const firstViewportStatus = within(screen.getByTestId('game-day-glance')).getByRole('status');
     expect(firstViewportStatus).toHaveTextContent(/Offline · last known/);
     expect(within(screen.getByTestId('viewer-first-viewport')).getByText(/Last known · /)).toBeVisible();
     expect(screen.getByText(/Using the last-known score checked .* until scoring reconnects\./)).toBeVisible();

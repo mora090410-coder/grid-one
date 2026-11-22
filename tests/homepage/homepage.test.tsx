@@ -44,6 +44,23 @@ describe('Compact cinematic homepage', () => {
     expect(screen.queryByText('Simple pricing', { exact: true })).not.toBeInTheDocument();
   });
 
+  it('keeps the example score and current match independent of the square being inspected', () => {
+    renderPage();
+    const film = within(screen.getByRole('region', { name: 'Board film' }));
+    const summary = film.getByTestId('homepage-sample-score');
+    expect(summary).toHaveTextContent('KC 17 · PHI 14');
+    expect(summary).toHaveTextContent('Taylor M. matches now');
+    expect(summary).toHaveTextContent('PHI 4 × KC 7');
+    fireEvent.click(film.getByRole('button', { name: 'Next square' }));
+    expect(film.getByText(/Square 36/)).toBeInTheDocument();
+    expect(summary).toHaveTextContent('Taylor M. matches now');
+    fireEvent.click(film.getByRole('button', { name: 'Share' }));
+    expect(summary).toHaveTextContent('Sample game');
+    expect(summary).not.toHaveTextContent('Taylor M. matches now');
+    fireEvent.click(film.getByRole('button', { name: 'Game day' }));
+    expect(summary).toHaveTextContent('Taylor M. matches now');
+  });
+
   it('offers a keyboard-equivalent square inspector when the sample is in Game day', () => {
     renderPage();
     const film = screen.getByRole('region', { name: 'Board film' });

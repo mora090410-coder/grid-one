@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CANDIDATES, CHAPTERS, KEYFRAMES, LEFT_AXIS, NOW_SQUARE, RESULTS, SQUARES, TOP_AXIS,
-  boardMode, cardVisibility, goldSquares, nextScoreSquares, pickAnswer, progressFromScroll, squareFor,
+  boardMode, cardVisibility, goldSquares, nextScoreSquares, pickAnswer, progressFromScroll, scenePixelRatio, squareFor,
 } from '../../src/features/homepage/cinematic/cinematicModel';
 
 describe('cinematic homepage model', () => {
@@ -52,6 +52,15 @@ describe('cinematic homepage model', () => {
     for (let k = 1; k <= CHAPTERS.length; k++) {
       const shown = CHAPTERS.map((_, index) => cardVisibility(k, index + 1).opacity);
       expect(shown.filter(opacity => opacity > 0)).toEqual([1]);
+    }
+  });
+
+  it('bounds the WebGL backing buffer independently of the art layout', () => {
+    expect(scenePixelRatio(390, 225, 3)).toBe(2);
+    expect(scenePixelRatio(390, 225, 1)).toBe(1);
+    for (const [width, height] of [[1200, 550], [1600, 600]]) {
+      const ratio = scenePixelRatio(width, height, 3);
+      expect(width * height * ratio ** 2).toBeCloseTo(400_000, 1);
     }
   });
 

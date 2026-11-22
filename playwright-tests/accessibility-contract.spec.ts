@@ -645,7 +645,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(firstViewport.getByRole('button', { name: 'Find my squares' })).toBeVisible();
     await expect(firstViewport.getByText(/Using the last-known score checked .+ until scoring reconnects\./i)).toBeVisible();
 
-    const firstViewportOrder = await firstViewport.evaluate((root) => {
+    const publishedHierarchy = await page.getByRole('main', { name: /Published Week 1 viewer/i }).evaluate((root) => {
       const heading = root.querySelector('h1');
       const status = root.querySelector('[role="status"]');
       // Read the button's words the way a screen reader does: skip the decorative aria-hidden arrow.
@@ -654,15 +654,16 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
         .map((node) => node.textContent ?? '').join('').trim();
       const find = Array.from(root.querySelectorAll('button')).find((button) => spokenText(button) === 'Find my squares');
       const details = Array.from(root.querySelectorAll('summary')).find((summary) => summary.textContent?.includes('All possible next scores'));
-      if (!heading || !status || !find || !details) return false;
-      const position = Node.DOCUMENT_POSITION_FOLLOWING;
-      return Boolean(
-        heading.compareDocumentPosition(status) & position
-        && status.compareDocumentPosition(find) & position
-        && find.compareDocumentPosition(details) & position
-      );
+      const grid = root.querySelector('[role="grid"]');
+      const results = root.querySelector('.g1-results-region');
+      // The narrow hierarchy reads in screen order: orient and find, scan the
+      // board, then explore possible scores and published results.
+      if (!heading || !status || !find || !grid || !details || !results) return false;
+      const chain = [heading, status, find, grid, details, results];
+      return chain.slice(1).every((element, index) =>
+        Boolean(chain[index].compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING));
     });
-    expect(firstViewportOrder).toBe(true);
+    expect(publishedHierarchy).toBe(true);
 
     const findButtonBox = await firstViewport.getByRole('button', { name: 'Find my squares' }).boundingBox();
     expect(findButtonBox?.y ?? 845).toBeLessThan(844);
@@ -691,7 +692,14 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
       ],
     });
     await page.goto('/b/ABCDEFGH');
-    await expect(page.getByRole('heading', { name: 'Final record' })).toBeVisible();
+    const finalRecord = page.getByRole('heading', { name: 'Final record' });
+    await expect(finalRecord).toBeVisible();
+    const grid = page.getByRole('grid', { name: /Football squares board/i });
+    await expect(grid).toBeVisible();
+    expect(await grid.evaluate((element) => {
+      const finalRecord = element.closest('main')?.querySelector('.g1-results-region--final');
+      return Boolean(finalRecord && finalRecord.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })).toBe(true);
     await expect(page.getByRole('heading', { name: 'What score changes the next result?' })).toHaveCount(0);
     await expect(page.getByText(/Safety \+2|Field goal \+3|Touchdown \+6/)).toHaveCount(0);
   });

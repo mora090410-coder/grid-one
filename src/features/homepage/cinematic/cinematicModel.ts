@@ -90,6 +90,10 @@ export const CHAPTERS: readonly Chapter[] = [
 
 /* ---------- Scroll math ---------- */
 
+/** Cover the wider hero with CSS pixels, not an unbounded WebGL backing buffer. */
+export const scenePixelRatio = (width: number, height: number, ratio: number) =>
+  Math.min(ratio || 1, 2, Math.sqrt(400_000 / Math.max(1, width * height)));
+
 export const clamp = (x: number, min = 0, max = 1) => Math.min(max, Math.max(min, x));
 export const smooth = (x: number) => x * x * (3 - 2 * x);
 export const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);

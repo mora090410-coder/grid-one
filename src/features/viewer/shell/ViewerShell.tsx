@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardData, GameState, LiveGameData, PendingMilestone, WinnerHighlights, WinnerResolution } from '../../../../types';
-import { Base, CapsuleButton, Eyebrow, Glass } from '../../../design/primitives';
+import { Base, CapsuleButton, Eyebrow, Glass, Logo } from '../../../design/primitives';
 import ViewerBoardGrid from '../board/ViewerBoardGrid';
 import GlassGridBackground from '../../../design/liquid/GlassGridBackground';
 import { summarizeSellers } from '../../organizer/sellers/sellerLinksModel';
@@ -15,6 +15,7 @@ import WinnerEmailDisclosure from '../notifications/WinnerEmailDisclosure';
 import BoardDetailsDisclosure, { CompletedResults, FinalRecord } from '../details/BoardDetailsDisclosure';
 import { playersForDigits, quarterForLive, squareIndexForDigits, type ViewerQuarter } from '../scenarios/scenarioModel';
 import { hasValidAxes } from '../../../../utils/boardValidation';
+import './gameDayGlance.css';
 
 const VIEWER_QUARTER_LABEL = { Q1: '1st', Q2: '2nd', Q3: '3rd', Final: 'Final' } as const;
 
@@ -127,23 +128,14 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
   };
 
   const MainTag: 'section' | 'main' = organizerPreview ? 'section' : 'main';
+  const personalSummary = selectedPlayer ? (
+    <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
+      <YourSquaresSummary isSynced={isSynced} board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} />
+    </div>
+  ) : null;
 
-  return (
-    <Base kind="dark" theme={!organizerPreview ? 'liquid' : undefined} className={organizerPreview ? '' : `g1-page${stageChrome ? ' g1-demo-page' : ''}${selectedPlayer ? ' g1-personalized' : ''}`}>
-      {!organizerPreview && <GlassGridBackground />}
-      {!organizerPreview && <ViewerIsland key={shareCode || game.title} simulated={stageChrome} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
-        winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
-        onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
-      <MainTag
-        className={`g1-live-layout mx-auto grid w-full max-w-6xl gap-10 px-4 pt-6 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
-        aria-label={`${game.title || 'GridOne board'} viewer`}
-      >
-        <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
-          {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
-          <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
-          <ScoreInstrument identityAction={<div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} squareNumbers={board.squares.flatMap((names, index) => selectedPlayer && names.includes(selectedPlayer) ? [index + 1] : [])} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>} pendingMilestones={pendingMilestones} winFocus={winnerCardVisible} onWinnerVisibilityChange={setWinnerCardVisible} liquid={!organizerPreview} simulated={stageChrome} selectedPlayer={selectedPlayer} winsNow={winsNow} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} headingLevel={organizerPreview ? 'h2' : 'h1'} />
-          </div>
-          <div ref={resultsRef} className="g1-results-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
+  const resultsRegion = (
+    <div ref={resultsRef} className={`g1-results-region${isFinal ? ' g1-results-region--final' : ''}`} tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll} aria-label="Published results">
           {isFinal ? <FinalRecord winnerHistory={winnerHistory} game={game} /> : <CompletedResults winnerHistory={winnerHistory} game={game} />}
           {!isFinal && winnerHistory.length === 0 && <p className="font-ui text-[14px] text-fg-2">{stageChrome ? 'This illustration shows current matching, not confirmed quarter results.' : 'No confirmed results yet.'}</p>}
 
@@ -158,12 +150,10 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
             </Glass>
           )}
           </div>
-          {selectedPlayer && <div ref={personalRef} className="g1-personal-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><YourSquaresSummary isSynced={isSynced} board={board} game={game} live={live} selectedPlayer={selectedPlayer} onViewSquare={viewSquare} /></div>}
-          {!isFinal && <div ref={scenariosRef} className="g1-scenarios-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>}
-          {showNotification && <div className="g1-notifications-region"><WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} /></div>}
-        </div>
-
-        <section ref={boardRef} className={`g1-board-region relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
+  );
+  const scenarioRegion = !isFinal && <div ref={scenariosRef} className="g1-scenarios-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}><ScenarioDisclosure board={board} game={game} live={live} selectedPlayer={selectedPlayer} servicesEnabled={servicesEnabled} onScenarioFocus={setFocus} /></div>;
+  const boardRegion = (
+    <section ref={boardRef} className={`g1-board-region relative flex min-w-0 flex-col gap-4${stageChrome ? ' demo-board-stage' : ''}`} aria-labelledby="viewer-board-title" data-board-locked={locked}>
           {stageChrome && <div className="demo-board-light" aria-hidden="true" />}
           <div className="relative z-[1] flex items-end justify-between gap-3">
             <div className="flex flex-col gap-1">
@@ -172,7 +162,7 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {onShare ? <CapsuleButton variant="quiet" onClick={onShare}>Share</CapsuleButton> : null}
-              <span className="lg:hidden"><CapsuleButton variant="quiet" onClick={onFindSquares}>Find</CapsuleButton></span>
+              {organizerPreview && <span className="lg:hidden"><CapsuleButton variant="quiet" onClick={onFindSquares}>Find</CapsuleButton></span>}
             </div>
           </div>
           {board.isDynamic && <div className="flex flex-col gap-2">
@@ -188,10 +178,57 @@ const ViewerShell: React.FC<ViewerShellProps> = ({
           {isEmpty && !organizerPreview ? (
             <Glass padding="lg" className="text-center font-ui text-[15px] text-fg-2">This board has no assignments yet.</Glass>
           ) : (
-            <div className="relative z-[1]"><ViewerBoardGrid winFocus={!organizerPreview && !winnerCardVisible && isSynced && live?.state === 'in' && !['stale','offline','refreshing','rejected'].includes(live.freshness || '')} minimumBoardWidth={!organizerPreview && !stageChrome ? 640 : undefined} selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
+            <div className="relative z-[1]"><ViewerBoardGrid winFocus={!organizerPreview && !winnerCardVisible && isSynced && live?.state === 'in' && !['stale','offline','refreshing','rejected'].includes(live.freshness || '')} selectedQuarter={selectedQuarter} board={board} game={game} highlights={highlights} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} live={live} selectedPlayer={selectedPlayer} highlightedCoords={selectedQuarter === activeQuarter ? boardFocus : null} viewSquareRequest={viewSquareRequest} showOpenSquares={board.allowOpenSquares === true} chrome={stageChrome ? 'stage' : 'default'} /></div>
           )}
           <BoardDetailsDisclosure game={game} board={board} winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} final={false} />
         </section>
+  );
+
+  return (
+    <Base kind="dark" theme={!organizerPreview ? 'liquid' : undefined} className={organizerPreview ? '' : `g1-page g1-viewer-editorial${stageChrome ? ' g1-demo-page' : ''}${selectedPlayer ? ' g1-personalized' : ''}`}>
+      {!organizerPreview && <GlassGridBackground />}
+      {!organizerPreview && (
+        <header className="g1-viewer-masthead">
+          <div><a href="/" aria-label="GridOne home"><Logo variant="horizontal" tone="white" size={27} /></a></div>
+        </header>
+      )}
+      {!organizerPreview && <ViewerIsland key={shareCode || game.title} simulated={stageChrome} requested={scoreAboveViewport} game={game} board={board} live={live} liveStatus={liveStatus} isSynced={isSynced} selectedPlayer={selectedPlayer} yourSquares={yourSquares} winsNow={winsNow}
+        winnerHistory={winnerHistory} pendingMilestones={pendingMilestones} onFindSquares={onFindSquares}
+        onViewScore={() => visit(scoreRef)} onViewSquares={() => visit(personalRef)} onViewResults={() => visit(resultsRef)} onNextScores={() => visit(scenariosRef)} />}
+      <MainTag
+        className={`g1-live-layout mx-auto grid w-full max-w-6xl gap-10 px-4 pt-6 pb-16 md:px-6 lg:grid-cols-[minmax(320px,440px)_1fr]`}
+        aria-label={`${game.title || 'GridOne board'} viewer`}
+      >
+        <div data-testid="viewer-first-viewport" className="g1-first-viewport flex min-w-0 flex-col gap-8">
+          {organizerHref && <a href={organizerHref} className="inline-flex min-h-11 items-center self-start rounded-control px-3 font-ui text-sm text-fg underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action">Manage board</a>}
+          <div ref={scoreRef} className="g1-score-region" tabIndex={-1} onMouseDown={focusViewerControlWithoutScroll}>
+            <ScoreInstrument
+              identityAction={<div ref={findRef} className="g1-find-region"><FindSquaresEntry selectedPlayer={selectedPlayer} squareNumbers={board.squares.flatMap((names, index) => selectedPlayer && names.includes(selectedPlayer) ? [index + 1] : [])} onFindSquares={onFindSquares} onClearPlayer={onClearPlayer} /></div>}
+              glancePersonal={!organizerPreview ? personalSummary : null}
+              pendingMilestones={pendingMilestones}
+              winFocus={winnerCardVisible}
+              onWinnerVisibilityChange={setWinnerCardVisible}
+              liquid={!organizerPreview}
+              simulated={stageChrome}
+              selectedPlayer={selectedPlayer}
+              winsNow={winsNow}
+              game={game}
+              board={board}
+              live={live}
+              liveStatus={liveStatus}
+              isSynced={isSynced}
+              headingLevel={organizerPreview ? 'h2' : 'h1'}
+            />
+          </div>
+          {organizerPreview ? (
+            <>{resultsRegion}{personalSummary}{scenarioRegion}</>
+          ) : (
+            <>{isFinal && resultsRegion}{boardRegion}{scenarioRegion}{!isFinal && resultsRegion}</>
+          )}
+          {showNotification && <div className="g1-notifications-region"><WinnerEmailDisclosure shareCode={shareCode} participantId={selectedParticipant?.id} displayName={selectedPlayer} enabled={showNotification} /></div>}
+        </div>
+
+        {organizerPreview && boardRegion}
         {!organizerPreview && !stageChrome && board.allocationLabels?.some(Boolean) && <Glass as="section" className="g1-sellers-region" data-g1-blur="true" aria-label="Sellers">
           <h2 className="g1-label">Sellers</h2>
           <ul>{summarizeSellers(board.allocationLabels, board.squares).map((seller,index)=><li key={seller.label} className="g1-seller-row"><span aria-hidden="true" className="g1-seller-dot" style={{background:`color-mix(in srgb, var(--g1-seller-${index % 6 + 1}) 55%, transparent)`}}/><span>{seller.label}</span><span>{seller.total}</span></li>)}</ul>

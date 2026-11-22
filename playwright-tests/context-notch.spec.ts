@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { boardId, installOrganizerBoard } from './helpers/organizerMocks';
+import { scrollToUncoveredScoreNotch } from './helpers/viewerScroll';
 
 // All outbound traffic is denied; individual fixtures registered later win.
 test.beforeEach(async ({ page }) => {
@@ -18,8 +19,7 @@ async function viewer(page: Page, final = false) {
   await page.goto('/b/ABCDEFGH');
   await expect(page.getByRole('heading', { name: 'Notch fixture' })).toBeVisible();
   await page.getByText('All possible next scores', { exact: true }).click();
-  await page.getByRole('heading', { name: 'Board', exact: true }).scrollIntoViewIfNeeded();
-  await page.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: document.querySelector('.g1-find-region')!.getBoundingClientRect().bottom + scrollY + 160, behavior: 'instant' }); });
+  await scrollToUncoveredScoreNotch(page);
   await expect(page.getByRole('button', { name: 'Score', exact: true })).toBeVisible();
 }
 

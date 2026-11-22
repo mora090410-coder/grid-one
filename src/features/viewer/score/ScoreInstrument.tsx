@@ -15,6 +15,8 @@ const shortName = (names: string[], empty = 'Unassigned') => {
 
 export interface ScoreInstrumentProps {
   identityAction?: React.ReactNode;
+  /** Public-only personal content, kept in the same surface as the score. */
+  glancePersonal?: React.ReactNode;
   pendingMilestones?: PendingMilestone[];
   game: GameState;
   board: BoardData;
@@ -33,7 +35,7 @@ export interface ScoreInstrumentProps {
   winsNow?: boolean;
 }
 
-const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ identityAction, pendingMilestones = [], game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false, simulated = false, selectedPlayer = '', winsNow = false, winFocus = false, onWinnerVisibilityChange }) => {
+const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ identityAction, glancePersonal, pendingMilestones = [], game, board, live, liveStatus, isSynced, headingLevel = 'h1', surfaceClassName = '', liquid = false, simulated = false, selectedPlayer = '', winsNow = false, winFocus = false, onWinnerVisibilityChange }) => {
   const sourceScore = buildViewerScoreModel({ live, liveStatus, isSynced });
   const score = simulated ? { ...sourceScore, authority: { ...sourceScore.authority, label: 'Sample game', detail: 'Simulated score · not a live feed' }, freshness: 'Simulated', pollingText: 'Example only · scores do not update' } : sourceScore;
   const Heading = headingLevel;
@@ -46,6 +48,7 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ identityAction, pendi
   const sideDigit = live ? live.leftScore % 10 : null;
   const winnerCard = useRef<HTMLElement>(null);
   const eligibleWin = Boolean(liquid && live?.state === 'in' && !stale && live.freshness !== 'rejected' && isSynced && hasValidAxes(board));
+  const showedPersonal = Boolean(liquid && glancePersonal);
   useEffect(() => {
     const node = winnerCard.current;
     if (!node || !eligibleWin) { onWinnerVisibilityChange?.(false); return; }
@@ -58,41 +61,34 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ identityAction, pendi
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     return () => { observer?.disconnect(); window.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
-  }, [eligibleWin, personalWin, onWinnerVisibilityChange]);
+  }, [eligibleWin, personalWin, showedPersonal, onWinnerVisibilityChange]);
   const leftLabel = game.leftAbbr || 'AWAY';
   const topLabel = game.topAbbr || 'HOME';
 
-  return (
-    <section className={`flex flex-col gap-4${liquid ? ' g1-score-section' : ''}`} aria-labelledby="viewer-score-title">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>{game.dates || 'Game date pending'}</Eyebrow>
-        <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] text-fg">{game.title || 'Football squares'}</Heading>
-        <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
-      </div>
-
-      {identityAction}
-      {liquid && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" ref={winnerCard} padding="lg" className={`g1-current-card g1-sheen${winFocus && eligibleWin ? ' g1-win-focus' : ''}`} data-g1-personal-win={personalWin ? 'true' : undefined} data-g1-blur="true">
+  const currentMatch = liquid && !showedPersonal && live && live.state !== 'pre' && hasValidAxes(board) && <Glass as="section" ref={winnerCard} padding="lg" className={`g1-current-card g1-sheen${winFocus && eligibleWin ? ' g1-win-focus' : ''}`} data-g1-personal-win={personalWin ? 'true' : undefined} data-g1-blur="true">
         {eligibleWin && <span key={`${quarter}-${topDigit}-${sideDigit}`} className="g1-win-sweep" aria-hidden="true" />}
         <h2 className="g1-label"><span className={personalWin ? 'g1-only-desktop' : undefined}>{live.state === 'post' ? 'Final score matches:' : stale || live.freshness === 'rejected' || !isSynced ? 'Last-known score match' : 'Current score match'}</span>{personalWin && <span className="g1-only-phone">Your square matches {quarter}</span>}</h2>
         <p className="g1-big-number"><span className={personalWin ? 'g1-only-desktop' : undefined}>{shortName(currentNames, 'Open square')}</span>{personalWin && <span className="g1-only-phone">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</span>}</p>
         <p className="g1-label">Square {squareIndexForDigits(board, live.topScore % 10, live.leftScore % 10, quarter) + 1}</p>
-      </Glass>}
-      <Glass as="div" padding="lg" data-g1-blur={liquid ? 'true' : undefined} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${liquid ? 'g1-sheen' : ''} ${surfaceClassName}`.trim()} aria-label="Score">
+      </Glass>;
+  const scoreboard = (
+      <Glass as="div" padding="lg" data-g1-blur={liquid ? 'true' : undefined} className={`g1-viewer-scoreline grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4 ${liquid ? 'g1-sheen' : ''} ${surfaceClassName}`.trim()} aria-label="Score">
         <div className="flex flex-col gap-2 min-w-0">
           <span className="flex items-center gap-1.5 min-w-0"><TeamStripe abbr={game.leftAbbr} /><span className="min-w-0 break-words"><Eyebrow>{game.leftName || leftLabel}</Eyebrow></span></span>
           {live ? <Numeral value={live.leftScore} size="lg" label={`${game.leftName || leftLabel} ${live.leftScore}`} /> : <span role="img" aria-label={`${game.leftName || leftLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}
         </div>
-        <span className="font-mono text-[13px] text-fg-3 pb-2">{score.periodLabel}</span>
+        <span className="g1-viewer-period font-mono text-[13px] text-fg-3 pb-2">{score.periodLabel}</span>
         <div className="flex flex-col items-end gap-2 min-w-0 text-right">
           <span className="flex items-center justify-end gap-1.5 min-w-0"><span className="min-w-0 break-words"><Eyebrow>{game.topName || topLabel}</Eyebrow></span><TeamStripe abbr={game.topAbbr} /></span>
           {live ? <Numeral value={live.topScore} size="lg" label={`${game.topName || topLabel} ${live.topScore}`} /> : <span role="img" aria-label={`${game.topName || topLabel} score not yet available`} className="font-mono text-[36px] text-fg-3">—</span>}
         </div>
       </Glass>
-
+  );
+  const context = (
       <div className="g1-score-context flex flex-col gap-1 font-ui text-[15px] text-fg">
         <div role="status" aria-live="polite" aria-atomic="true">
-        <p>{live?.state === 'post' ? 'Final score matches:' : score.authority.tone === 'stale' ? 'Last-known score matches:' : 'Currently matching:'} <strong className="font-medium">{!hasValidAxes(board) ? 'Numbers need review' : live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
-        {hasValidAxes(board) && live && live.state !== 'pre' && <p>Square: <strong className="font-mono font-medium">{topLabel} <DigitFlow value={topDigit ?? ''} /> across × {leftLabel} <DigitFlow value={sideDigit ?? ''} /> down</strong></p>}
+        <p className={showedPersonal && winsNow ? 'sr-only' : undefined}>{live?.state === 'post' ? 'Final score matches:' : score.authority.tone === 'stale' ? 'Last-known score matches:' : 'Currently matching:'} <strong className="font-medium">{!hasValidAxes(board) ? 'Numbers need review' : live && live.state !== 'pre' ? shortName(currentNames, 'Open square') : 'Waiting for score'}</strong></p>
+        {hasValidAxes(board) && live && live.state !== 'pre' && <p className={showedPersonal && winsNow ? 'sr-only' : undefined}>Square: <strong className="font-mono font-medium">{topLabel} <DigitFlow value={topDigit ?? ''} /> across × {leftLabel} <DigitFlow value={sideDigit ?? ''} /> down</strong></p>}
         {pending && <p className="text-fg-2">{milestoneLabel(pending.milestone)} · pending confirmation</p>}
         <p className="text-fg-2"><strong className="font-medium text-fg">{score.authority.label}</strong> · <span>{score.authority.detail}</span></p>
         </div>
@@ -100,6 +96,30 @@ const ScoreInstrument: React.FC<ScoreInstrumentProps> = ({ identityAction, pendi
         {score.phaseDetail && <p className="text-fg-3">{score.phaseDetail}</p>}
         {live?.warning && <p className="font-medium text-fg">{live.warning}</p>}
       </div>
+  );
+
+  return (
+    <section className={`flex flex-col gap-4${liquid ? ' g1-score-section g1-score-section--glance' : ''}`} aria-labelledby="viewer-score-title">
+      <div className="g1-viewer-identity flex flex-col gap-2">
+        {simulated ? <div className="g1-viewer-sample">
+          <span>Sample board — not a live game</span>
+          <p>Sample game · January 18, 2026</p>
+        </div> : <Eyebrow>{game.dates || 'Game date pending'}</Eyebrow>}
+        <Heading id="viewer-score-title" className="font-display text-[34px] leading-[1.05] text-fg">{game.title || 'Football squares'}</Heading>
+        <p className="font-ui text-[15px] text-fg-2">{leftLabel} at {topLabel}</p>
+      </div>
+
+      {liquid ? (
+        <div className={`g1-viewer-glance${showedPersonal ? ' g1-viewer-glance--personal' : ''}`} data-testid="game-day-glance">
+          {scoreboard}
+          {context}
+          {glancePersonal}
+          {identityAction}
+          {currentMatch}
+        </div>
+      ) : (
+        <>{identityAction}{scoreboard}{context}</>
+      )}
     </section>
   );
 };

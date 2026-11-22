@@ -13,7 +13,7 @@ const expectTouchTarget = async (locator: Locator) => {
 test('landing page leads with a cinematic sample and free-first publishing model', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
-  await expect(page.getByText('Give your team one board to share. Know what’s filled before kickoff.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Football squares for team fundraisers.', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
   await expect(page.getByText('First published board free each season', { exact: true })).toBeAttached();
 });
@@ -37,9 +37,15 @@ test('representative landing controls expose names, touch geometry, and keyboard
   await expectTouchTarget(demo);
 
   const signIn = page.getByRole('link', { name: 'Sign in' }).first();
+  // Programmatic focus alone does not establish keyboard focus modality.
+  await page.keyboard.press('Tab');
   await signIn.focus();
-  await expect(signIn).toBeFocused();
-  await expect.poll(() => signIn.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe('none');
+  await expect(signIn.and(page.locator(':focus-visible'))).toBeFocused();
+  await expect.poll(() => signIn.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return (style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) > 0)
+      || style.boxShadow !== 'none';
+  })).toBe(true);
 });
 
 test('find-squares dialog traps focus, closes with Escape, and returns focus', async ({ page }) => {

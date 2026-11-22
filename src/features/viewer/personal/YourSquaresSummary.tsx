@@ -79,7 +79,7 @@ const YourSquaresSummary: React.FC<YourSquaresSummaryProps> = ({ board, game, li
                 </span>
               </div>
               {hasValidAxes(board) && row.top !== null && row.left !== null && (
-                <CapsuleButton variant="quiet" className="shrink-0 whitespace-nowrap" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
+                <CapsuleButton variant="quiet" className="g1-viewer-on-board shrink-0 whitespace-nowrap" onClick={() => onViewSquare({ top: row.top as number, left: row.left as number })}>
                   <span aria-hidden="true">View on board</span>
                   <span className="sr-only">View on board top {row.top} side {row.left}</span>
                 </CapsuleButton>

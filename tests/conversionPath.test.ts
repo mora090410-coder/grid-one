@@ -21,7 +21,7 @@ describe('public conversion path', () => {
     for (const path of ['index.html', 'App.tsx', 'src/features/viewer/details/BoardDetailsDisclosure.tsx']) {
       expect(source(path), path).toContain(exactBoundary);
     }
-    expect(source('components/BoardView.tsx')).toContain('Sample board — not a live game');
+    expect(source('src/features/viewer/score/ScoreInstrument.tsx')).toContain('Sample board — not a live game');
   });
   it('answers landing-page objections and closes with a second conversion point', () => {
     const homepage = homepageCorpus();

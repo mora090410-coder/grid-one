@@ -208,3 +208,32 @@ test('phone hero remains readable without web fonts', async ({ page }) => {
   expect(box!.y + box!.height).toBeLessThanOrEqual(844);
   expect(await overflow(page)).toBe(0);
 });
+
+test('the score-first cinema tells one truthful story and keeps its actions before the art', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    await settle(page);
+    const hero = page.getByTestId('homepage-first-viewport');
+    const sample = hero.getByTestId('homepage-sample-score');
+    await expect(sample.getByText('Sample game', { exact: true })).toBeVisible();
+    await expect(hero.getByText('Sample game', { exact: true })).toHaveCount(1);
+    await expect(sample.getByText('KC 17 · PHI 14', { exact: true })).toBeVisible();
+    await expect(sample.getByText('Taylor M. matches now', { exact: true })).toBeVisible();
+    await expect(sample.getByText('PHI 4 × KC 7', { exact: true })).toBeVisible();
+    const create = hero.getByRole('link', { name: 'Create your free board', exact: true });
+    const demo = hero.getByRole('link', { name: 'Try the demo', exact: true });
+    await expect(create).toHaveAttribute('href', '/create');
+    await expect(demo).toHaveAttribute('href', '/demo');
+    for (const link of [create, demo]) {
+      expect((await link.boundingBox())!.y).toBeLessThan((await sample.boundingBox())!.y);
+      await expectTarget(link);
+    }
+    await film(page).getByRole('button', { name: 'Share', exact: true }).click();
+    await expect(sample).not.toContainText('Taylor M. matches now');
+    await film(page).getByRole('button', { name: 'Game day', exact: true }).click();
+    await expect(sample).toContainText('Taylor M. matches now');
+    expect(await overflow(page)).toBe(0);
+  }
+});

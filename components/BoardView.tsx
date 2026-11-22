@@ -391,7 +391,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
             {/* Demo mode never loads a pool, so loadingPool stays true there */}
             {(demoMode || !loadingPool) && !isCommissionerMode && (
                 <div className="flex-1 flex flex-col relative z-50 w-full max-w-[1440px] mx-auto min-h-0">
-                    {demoMode && <p className="demo-status mx-4 mt-20 font-ui text-sm text-fg-2"><span className="g-pill">Sample board — not a live game</span><br />Sample game · January 18, 2026</p>}
                     {renderMainContent()}
                     {runYourOwn && <aside aria-label="Run your own board" className="mx-4 my-8 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6">
                         <p className="font-ui text-base text-fg-2">{runYourOwn}</p>

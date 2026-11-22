@@ -14,15 +14,29 @@ for(const width of [320,390,1280]){
   await page.setViewportSize({width,height:900});await installViewer(page);await page.goto('/b/LIQUID01');
   await page.getByRole('button',{name:'Find my squares',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:'Maria L.',exact:true}).click();
-  const hero=page.locator('[data-g1-personal-win="true"]');await expect(hero).toBeVisible();
+  const summary=page.getByRole('region',{name:'Maria L. square summary',exact:true});
+  await expect(summary.getByText('Your square matches the current score.',{exact:true})).toBeVisible();
+  await expect(summary.locator('[data-g1-matching="true"]')).toHaveCount(1);
+  await expect(summary.locator('[data-g1-matching="true"]')).toHaveText('71');
+  await expect(page.locator('.g1-current-card')).toHaveCount(0);
+  const grid=page.getByRole('grid',{name:/Football squares board/i});
+  const match=grid.getByRole('gridcell',{name:/Maria L.*coordinate row 8 column 1.*top digit 0.*side digit 7/i});
+  await expect(grid.getByRole('gridcell')).toHaveCount(100);
+  await expect(grid.locator('[data-current="true"]')).toHaveCount(1);
+  await expect(match).toHaveAttribute('data-current','true');
+  // The dialog restores focus to the same button. It changes from primary to
+  // quiet and must still clip any press ripple left over from opening.
+  await expect(page.getByRole('button',{name:'Choose another name',exact:true})).toHaveCSS('overflow-x','hidden');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
   const blurCount=await page.locator('[data-g1-theme="liquid"] *').evaluateAll(nodes=>nodes.filter(n=>getComputedStyle(n).backdropFilter!=='none'&&getComputedStyle(n).backdropFilter!=='').length);
   expect(blurCount).toBeLessThanOrEqual(6);
-  await hero.scrollIntoViewIfNeeded();
-  await expect(hero).toHaveClass(/g1-win-focus/);
+  // The summary identifies the match without a second animated highlight.
+  // The one animated emphasis belongs to this exact cell.
+  await match.scrollIntoViewIfNeeded();
+  await expect(match).toHaveClass(/g1-win-focus/);
   await expect(page.locator('.g1-win-focus')).toHaveCount(1);
-  await expect(page.locator('.g1-cell--live')).not.toHaveClass(/g1-win-focus/);
-  await expect(page.locator('.g1-cell--live')).toHaveCSS('animation-name', 'none');
+  await expect(match).toHaveCSS('animation-name','g1-breathe');
+  await expect(summary).toHaveCSS('animation-name','none');
   const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze()).violations;
   await info.attach('axe.json',{body:JSON.stringify(violations,null,2),contentType:'application/json'});
   expect(violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
@@ -46,13 +60,19 @@ for(const width of [320,390,1280]){
    });
    expect(activated).toBeGreaterThan(0);
   }
-  await expect(hero).toHaveCSS('background-color','rgb(20, 30, 49)');
-  await expect(hero).toHaveCSS('background-image','none');
-  await expect(hero).toHaveCSS('backdrop-filter','none');
+  await expect(summary).toHaveCSS('background-color','rgb(255, 252, 247)');
+  await expect(summary).toHaveCSS('background-image','none');
+  await expect(summary).toHaveCSS('backdrop-filter','none');
+  await expect(match).toHaveAttribute('data-current','true');
+  await expect(match).toHaveCSS('animation-name','none');
+  await expect(match.locator('.g1-win-sweep')).toHaveCSS('display','none');
+  const choose=page.getByRole('button',{name:'Choose another name',exact:true});
   await page.keyboard.press('Tab');
-  await page.getByRole('button',{name:'Choose another name'}).focus();
-  await expect(page.getByRole('button',{name:'Choose another name'})).toHaveCSS('outline-width','2px');
-  await expect(page.getByRole('button',{name:'Choose another name'})).toHaveCSS('outline-offset','2px');
+  await choose.focus();
+  await expect(choose.and(page.locator(':focus-visible'))).toBeFocused();
+  await expect(choose).toHaveCSS('outline-style','solid');
+  await expect(choose).toHaveCSS('outline-width','2px');
+  await expect(choose).toHaveCSS('outline-offset','2px');
  });
 }
 for(const width of [390,1280]) test(`Liquid organizer preserves editing and containment at ${width}`,async({page},info)=>{

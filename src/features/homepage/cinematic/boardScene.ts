@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   CANDIDATES, KEYFRAMES, LEFT_AXIS, NAMED_COUNT, NOW_SQUARE, RESULTS, SQUARES, TOP_AXIS,
-  boardMode, clamp, easeOut, goldSquares, hexToRgb, initials, lerp, seededRandom, smooth, windowed,
+  boardMode, clamp, easeOut, goldSquares, hexToRgb, initials, lerp, scenePixelRatio, seededRandom, smooth, windowed,
 } from './cinematicModel';
 
 /**
@@ -69,7 +69,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
   // r155+ lights are physical; multiply by PI to keep the tuned look.
   const hemi = new THREE.HemisphereLight(0xdfe9f5, 0x0a121a, 0.55 * PI); scene.add(hemi);
   const key = new THREE.DirectionalLight(0xffffff, 0.7 * PI); key.position.set(-7, 16, 9); key.castShadow = true;
-  key.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
+  key.shadow.mapSize.set(1024, 1024);
   Object.assign(key.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 50 });
   key.shadow.bias = -0.0008; key.shadow.radius = 4;
   scene.add(key);
@@ -251,7 +251,7 @@ export function createBoardScene(canvas: HTMLCanvasElement, { coarse }: { coarse
   return {
     resize(w, h, pixelRatio) {
       width = w; height = h;
-      renderer.setPixelRatio(Math.min(pixelRatio || 1, 2));
+      renderer.setPixelRatio(scenePixelRatio(w, h, pixelRatio));
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
     },
