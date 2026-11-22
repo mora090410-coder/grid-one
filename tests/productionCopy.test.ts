@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 
 const liveCopyFiles = [
   'src/features/homepage/Homepage.tsx',
-  'src/features/homepage/pricing.ts',
+  'src/features/homepage/disclosures.ts',
   'src/features/homepage/demoData.ts',
   'src/features/homepage/cinematic/CinematicHomepage.tsx',
   'src/features/homepage/sections/Footer.tsx',
   'src/features/homepage/cinematic/cinematicModel.ts',
   'src/features/homepage/sections/TrySampleSection.tsx',
-  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/sections/FreeAccessClose.tsx',
   'src/features/site/SiteHeader.tsx',
   'src/features/site/SiteFooter.tsx',
   'src/features/site/SitePage.tsx',
@@ -31,7 +31,6 @@ const liveCopyFiles = [
   'src/features/organizer/workspace/PublishedSheet.tsx',
   'src/features/organizer/workspace/ReconcileCard.tsx',
   'src/features/organizer/workspace/SquareSheet.tsx',
-  'src/features/organizer/workspace/UpgradeSheet.tsx',
   'src/features/organizer/workspace/entryMetaService.ts',
   'src/features/organizer/workspace/publishBoard.ts',
   'src/features/organizer/workspace/renamePublishedSquare.ts',
@@ -49,7 +48,6 @@ const liveCopyFiles = [
   'pages/ForgotPassword.tsx',
   'pages/ResetPassword.tsx',
   'pages/NotFound.tsx',
-  'pages/Paid.tsx',
   'pages/CreateContest.tsx',
   'pages/Privacy.tsx',
   'pages/Terms.tsx',
@@ -85,10 +83,9 @@ describe('production-facing copy', () => {
     expect(corpus).not.toMatch(/· rev \$\{save\.revision\}/);
   });
 
-  it('keeps pricing, no-money, OPEN, and score-trust language exact', () => {
-    expect(corpus).toContain('1 published board per account per season');
-    expect(corpus).toContain('$9.99 once for up to 5 published boards in the 2026 season');
-    expect(corpus).toContain('$79 per season for up to 50 published boards');
+  it('keeps free access, no-money, OPEN, and score-trust language exact', () => {
+    expect(corpus).toContain('Every board is free.');
+    expect(corpus).not.toMatch(/\$9\.99|\$79|first (?:published )?board is free/i);
     expect(corpus).toContain('does not collect square money, hold funds, settle payments, or pay winners');
     expect(corpus).toContain('OPEN');
     expect(corpus).toContain('source and freshness');

@@ -29,7 +29,7 @@ describe('ManualScoringPanel', () => {
     const onEnableManualScoring = vi.fn();
     render(
       <ManualScoringPanel
-        isActivated
+        isPublished
         game={baseGame({ useManualScores: false })}
         scoreSaveStatus="idle"
         onEnableAutomaticScoring={vi.fn()}
@@ -54,7 +54,7 @@ describe('ManualScoringPanel', () => {
 
     render(
       <ManualScoringPanel
-        isActivated
+        isPublished
         game={baseGame({
           useManualScores: true,
           manualGameState: 'in',
@@ -99,7 +99,7 @@ describe('ManualScoringPanel', () => {
     const onSaveManualScore = vi.fn();
     render(
       <ManualScoringPanel
-        isActivated
+        isPublished
         game={baseGame({
           useManualScores: true,
           kickoffAt: '2027-06-01T18:00:00.000Z',
@@ -125,7 +125,7 @@ describe('ManualScoringPanel', () => {
     const onEnableManualScoring = vi.fn();
     render(
       <ManualScoringPanel
-        isActivated
+        isPublished
         game={baseGame({ useManualScores: true, manualGameState: 'post', manualQuarterScores: quarterScores })}
         scoreSaveStatus="saving"
         onEnableAutomaticScoring={vi.fn()}

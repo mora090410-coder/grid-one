@@ -34,10 +34,10 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Focused Organization purchase SQL regression
+      - name: Focused free lifecycle and historical settlement SQL regression
         run: |
           docker pull postgres:17
-          npx vitest run --project integration tests/organizationPurchase.integration.test.ts
+          npx vitest run --project integration tests/pregameSharing.integration.test.ts tests/organizationPurchase.integration.test.ts
 
       - name: Unit tests
         run: npm run test:unit
@@ -56,3 +56,9 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
+
+      - name: Free organizer and public board browser regression
+        if: github.event_name == 'pull_request'
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/pregame-selling.spec.ts playwright-tests/organizer.spec.ts

@@ -6,14 +6,10 @@ Football-squares board builder and live game-day viewer. An organizer builds a 1
 
 - The organizer creates an account and builds or imports a board
 - Building, editing, and previewing unlimited draft boards is **free**
-- The Free tier includes **1 published board per account per season**
-- **Game Day is $9.99 once** for up to 5 published boards in the 2026 season
-- **Organization is $79 per season** for up to 50 published boards plus organization naming, a shared dashboard, and one organization receipt
-- Payment gates published-board count only; every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing
+- Creating, sharing, and publishing boards are free with no seasonal board allowance
+- Every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing
 - Each published board provides one viewer link; anyone can follow it, only the organizer can change it
 - GridOne never collects square money, holds funds, or pays winners
-
-The ladder is written once, in `src/features/homepage/pricing.ts`. Change it there, in Stripe, and nowhere else.
 
 ## Tech stack
 
@@ -22,7 +18,6 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 - **API:** Cloudflare Pages Functions in `functions/api/`
 - **Scheduled work:** two one-minute Cloudflare cron Workers in `workers/` — score refresh and notification retry
 - **Auth & data:** Supabase (PostgreSQL + Row Level Security), migrations in `supabase/migrations/`
-- **Payments:** Stripe Checkout + webhook activation
 - **NFL schedule and scoring:** server-side ESPN lookups, validated and cached before persistence
 - **Paper-board import:** server-side Gemini OCR with organizer review
 
@@ -82,12 +77,6 @@ Create `.env.local` with the following variables:
 | `VITE_SUPABASE_URL` | Supabase project URL (e.g. `https://xxxx.supabase.co`) |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only, never expose to the browser) |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (frontend) |
-| `STRIPE_SECRET_KEY` | Stripe secret key (Cloudflare Functions only) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_GAMEDAY_PRICE_ID` | Verified one-time $9.99 Game Day price ID (server-side only) |
-| `STRIPE_ORG_PRICE_ID` | Verified $79 Organization price ID (server-side only) |
-| `PAID_SIGNUP_ENABLED` | Checkout kill switch; keep `false` until both approved prices are configured |
 | `GEMINI_API_KEY` | Server-only Gemini key for paper-board import |
 | `OCR_MODEL` | Gemini model used only for paper-board import |
 | `PUBLIC_SITE_URL` | Canonical site URL — `https://www.getgridone.com` in production |
@@ -145,7 +134,7 @@ Supabase and Cloudflare dashboards before relying on anything below.
   `name = "gridone"` is the Wrangler config name, not the Pages project) is Git-connected and
   builds production from `main` (`npm ci && npm run build`, output directory
   `dist`). `git push origin main` therefore deploys both the site and the Pages
-  Functions in `functions/`. There is no manual deploy step.
+  Functions in `functions/` when automatic production deployments are enabled. Verify the exact SHA in Cloudflare and on the public site.
 - **Node version.** `.node-version` pins `22`, which Cloudflare Pages reads; keep
   the `NODE_VERSION` environment variable on the Pages project in step with it.
   Wrangler 4 needs Node 20 or newer.
@@ -164,12 +153,11 @@ Supabase and Cloudflare dashboards before relying on anything below.
   `wrangler.*.toml` files; override them per environment if the endpoint moves.
 - **Database.** Migrations in `supabase/migrations/` are applied by hand through
   the Supabase dashboard SQL editor. Nothing in the repo records which have been
-  applied — verify the complete sequence through `038` (intentional `004` gap),
+  applied — verify the complete sequence to the reviewed candidate (intentional `004` gap),
   including both `035` then `036`, before relying on the integrated candidate.
   See `docs/audit-release-preflight.md`. No migration or deployment is authorized
-  merely by these instructions. Migration 038 blocks old checkout-creation APIs;
-  disable paid signup, apply the reviewed migration, deploy matching API/webhook,
-  verify old orders and credit-aware orders, then separately approve reopening.
+  merely by these instructions. Preserve historical orders and migration records;
+  never substitute a production database for disposable integration fixtures.
 
 ## Notes
 

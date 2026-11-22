@@ -45,6 +45,4 @@ GridOne helps organizers build and share a digital football squares board with o
 ## Notes
 - GridOne is organizer-first.
 - Everyone can follow a published board from one link; only the organizer can change it.
-- The first published board is free each season.
-- Game Day is $9.99 once for up to 5 published boards in the 2026 season.
-- Organization is $79 per season for up to 50 published boards plus organization naming, one dashboard, and one organization receipt.
+- Create, publish and share boards for free. GridOne does not collect square money, hold funds, settle payments, or pay winners.

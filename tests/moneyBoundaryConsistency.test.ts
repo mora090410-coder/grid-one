@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MONEY_BOUNDARY } from '../src/features/homepage/pricing';
+import { MONEY_BOUNDARY } from '../src/features/homepage/disclosures';
 
 // Public, organizer and transactional disclosures must use the same boundary.
 // Context such as private notes, organizer responsibilities and legal terms stays intact.

@@ -46,11 +46,6 @@ const installOrganizerSupport = async (page: Page) => {
     contentType: 'application/json',
     body: '[]',
   }));
-  await page.route('**/api/billing/status', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
-  }));
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -445,7 +440,7 @@ test('organizer flushes the latest draft before publishing the viewer link', asy
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3, tier: 'free', used: 1, allowance: 1 }),
+      body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3 }),
     });
   });
   await installOrganizerSupport(page);

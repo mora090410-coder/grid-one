@@ -6,7 +6,6 @@ import { supabase } from '../services/supabase';
 import usePoolData from '../hooks/usePoolData';
 import { BoardData, GameState, PayoutDescriptions } from '../types';
 import { Base, CapsuleButton, CapsuleTag, Eyebrow, Glass, IslandRings, Logo, SquareOne } from '../src/design/primitives';
-import { hasBoardActivation } from '../utils/boardActivation';
 import { hasValidAxes } from '../utils/boardValidation';
 import { ghostLink } from '../src/features/homepage/sections/cta';
 import { projectBoardTemplate } from '../src/features/organizer/repeat/boardTemplateModel';
@@ -22,25 +21,9 @@ interface Contest {
     board_data?: BoardData | null;
     published_at?: string | null;
     shared_at?: string | null;
-    board_activations?: { id: string } | Array<{ id: string }> | null;
-}
-
-interface BillingSummary {
-    tier: 'free' | 'gameday' | 'org' | 'legacy';
-    allowance: number;
-    used: number;
-    organizationDisplayName?: string | null;
 }
 
 const CAPSULE_LINK = 'inline-flex items-center justify-center gap-2 rounded-capsule bg-action px-5 h-11 font-ui text-[15px] font-semibold leading-none text-action-text transition-[color,background-color,border-color,scale] hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action focus-visible:ring-offset-2 focus-visible:ring-offset-ground motion-safe:active:scale-[0.98]';
-
-const tierLabel = (summary: BillingSummary): string =>
-    summary.organizationDisplayName
-    || (summary.tier === 'org'
-        ? 'Organization'
-        : summary.tier === 'gameday'
-            ? 'Game Day'
-            : 'Free');
 
 /** Squares carrying a name. Older rows have no board_data at all. */
 const filledCount = (board: BoardData | null | undefined): number => {
@@ -69,7 +52,6 @@ const Dashboard: React.FC = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [dashboardMessage, setDashboardMessage] = useState<string | null>(null);
     const [dashboardLoadError, setDashboardLoadError] = useState<string | null>(null);
-    const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const [showMigratedToast, setShowMigratedToast] = useState(false);
@@ -162,7 +144,7 @@ const Dashboard: React.FC = () => {
         try {
             const { data, error } = await supabase
                 .from('contests')
-                .select('id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at, board_activations(id)')
+                .select('id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at')
                 .eq('owner_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -179,27 +161,6 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         if (user) void fetchContests();
     }, [user, fetchContests]);
-
-    useEffect(() => {
-        if (!user) return;
-        let cancelled = false;
-        void supabase.auth.getSession().then(async ({ data }) => {
-            const token = data.session?.access_token;
-            if (!token) return;
-            const response = await fetch('/api/billing/status', {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store',
-            });
-            if (!response.ok) return;
-            const result = await response.json() as BillingSummary;
-            if (!cancelled) setBillingSummary(result);
-        }).catch(() => {
-            // Board access remains available if the neutral plan summary is unavailable.
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, [user]);
 
     const handleDelete = async (e: React.MouseEvent, contestId: string) => {
         e.preventDefault();
@@ -318,11 +279,6 @@ const Dashboard: React.FC = () => {
                     <div className="flex flex-col gap-3">
                         <Eyebrow>Organizer</Eyebrow>
                         <h1 className="font-display text-[40px] leading-[1] text-fg md:text-[52px]">Your boards</h1>
-                        {billingSummary && (
-                            <CapsuleTag className="self-start">
-                                {billingSummary.used} of {billingSummary.allowance} published · {tierLabel(billingSummary)}
-                            </CapsuleTag>
-                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <Link to="/create" className={CAPSULE_LINK}>New board</Link>
@@ -341,7 +297,7 @@ const Dashboard: React.FC = () => {
                         {contests.map((contest) => {
                             const filled = filledCount(contest.board_data);
                             const drawn = numbersDrawn(contest.board_data);
-                            const published = hasBoardActivation(contest.board_activations) || Boolean(contest.published_at);
+                            const published = Boolean(contest.published_at);
                             const confirming = deleteConfirmId === contest.id;
                             const boardName = contest.title?.trim() || 'Untitled board';
                             return (

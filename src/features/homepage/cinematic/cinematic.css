@@ -11,7 +11,7 @@
 .cine-lede { margin-top: 20px; font-size: clamp(1rem,2.1vw,1.5rem); line-height: 1.5; color: var(--g-text-2); }
 .cine-actions { margin-top: 24px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; }
 .g1-homepage .cine .cine-actions a { min-height: 48px; height: auto; padding: 12px 22px; border-radius: var(--g-radius-capsule); font-size: 1rem; }
-.g1-homepage .cine-actions .g-cta, .g1-homepage .compact-pricing-action .g-cta { background: var(--g-text); color: var(--g-ink); }
+.g1-homepage .cine-actions .g-cta, .g1-homepage .compact-free-access-action .g-cta { background: var(--g-text); color: var(--g-ink); }
 .g1-homepage .cine-actions .g-chip { color: var(--g-text); background: transparent; border-color: transparent; text-decoration: underline; text-underline-offset: .28em; }
 .cine-reassurance { margin-top: 12px; font-size: .8125rem; color: var(--g-text-2); }
 .cine-fine { font-size: .8125rem; line-height: 1.5; color: var(--g-text-2); }
@@ -96,4 +96,4 @@
 }
 
 /* The shared base resets outlines, so both primary and quiet links own a visible ring. */
-.g1-homepage .cine-actions a:focus-visible, .g1-homepage .compact-pricing-action a:focus-visible { outline: 2px solid var(--g-text); outline-offset: 4px; }
+.g1-homepage .cine-actions a:focus-visible, .g1-homepage .compact-free-access-action a:focus-visible { outline: 2px solid var(--g-text); outline-offset: 4px; }

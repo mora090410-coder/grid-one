@@ -56,7 +56,7 @@ function sellingFixture() {
         return;
       }
       row.published_at = new Date().toISOString(); row.revision++;
-      await route.fulfill({ json: { published: true, shareCode: row.share_code, viewerUrl: '/b/ABCDEFGH', revision: row.revision, tier: 'free', used: 1, allowance: 1 } });
+      await route.fulfill({ json: { published: true, shareCode: row.share_code, viewerUrl: '/b/ABCDEFGH', revision: row.revision } });
     });
   };
   return { row, install, privateEntries, publicReads: () => publicReads };

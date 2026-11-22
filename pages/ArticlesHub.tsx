@@ -128,7 +128,7 @@ export const ArticlesHub: React.FC = () => {
       <Glass padding="lg" className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="font-display text-[28px] leading-[1.1] text-fg">Ready to run your board?</h2>
-          <p className="font-ui text-[17px] leading-[1.6] text-fg-2">Build and preview for free. Your first published board is free.</p>
+          <p className="font-ui text-[17px] leading-[1.6] text-fg-2">Create and publish boards for free.</p>
         </div>
         <PrimaryCtaLink to="/create">Create your free board</PrimaryCtaLink>
       </Glass>

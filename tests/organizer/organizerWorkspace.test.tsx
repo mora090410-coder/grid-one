@@ -137,7 +137,6 @@ function renderWorkspace(overrides: Overrides = {}) {
     onReload,
     onOpenViewer: vi.fn(),
     onLogout: vi.fn(),
-    isActivated: true,
     isPublished: false,
     shareCode: null,
     ...overrides,
@@ -436,7 +435,7 @@ describe('OrganizerWorkspace publish', () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4, tier: 'gameday', used: 2, allowance: 5 }),
+      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4 }),
     });
     const { onReload } = renderWorkspace({ board: drawnBoard(100) });
 
@@ -484,11 +483,11 @@ describe('OrganizerWorkspace publish', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('opens the plan sheet when the account is out of published boards', async () => {
+  it('keeps publish errors in the publish sheet without a paywall', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: false,
-      status: 402,
-      json: async () => ({ upgradeTo: 'gameday', error: 'Free plan allows one published board.' }),
+      status: 503,
+      json: async () => ({ error: 'Publishing is temporarily unavailable.' }),
     });
     renderWorkspace({ board: drawnBoard(100) });
 
@@ -497,15 +496,16 @@ describe('OrganizerWorkspace publish', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Publish viewer link' }));
     });
 
-    expect(await screen.findByRole('heading', { name: 'Choose a plan' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Continue to \$9\.99 checkout/ })).toBeInTheDocument();
+    const sheet = screen.getByRole('dialog', { name: 'Publish viewer link' });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('Publishing is temporarily unavailable.');
+    expect(screen.queryByRole('dialog', { name: 'Choose a plan' })).not.toBeInTheDocument();
   });
 
   it('keeps the published sheet on screen through a reload that flips isPublished', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4, tier: 'gameday', used: 2, allowance: 5 }),
+      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4 }),
     });
     const onReload = vi.fn(async () => {});
     const view = renderWorkspace({ board: drawnBoard(100), onReload });
@@ -534,7 +534,7 @@ describe('OrganizerWorkspace publish', () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4, tier: 'gameday', used: 2, allowance: 5 }),
+      json: async () => ({ published: true, shareCode: 'abc123', viewerUrl: '/b/abc123', revision: 4 }),
     });
     let releaseSave: (() => void) | null = null;
     const onPublish = vi.fn(() => new Promise<string>((resolve) => { releaseSave = () => resolve('pool-1'); }));

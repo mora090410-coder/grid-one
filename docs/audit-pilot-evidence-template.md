@@ -6,11 +6,11 @@ Experiment owner/date: UNSET
 Approval and readiness evidence: UNSET — all release gates must be resolved first
 Target: organizer independently planning at least two near-term NFL boards, with authority to choose the tool
 Channel: separately approved warm introduction; community posting only after rules/admin approval
-Offer: existing free first board with short assisted setup, truthful paid capacity and no-money-handling disclosure
-Action: save/share/finalize a genuine board; real group viewers use it through Final; observe a second genuine game and legitimate paid need
+Offer: free organizer account and boards with optional short assisted setup and no-money-handling disclosure
+Action: save/share/finalize a genuine board; real group viewers use it through Final; observe a second genuine game
 Cap: proposed 30 days / two game dates, 20 operator hours, $100 incremental cash, no ads/new services/subsidies; requires Anthony approval
-Signal: completed organizer workflow, independent viewer tasks, return and verified paid entitlement, not likes or verbal purchase intent
-Decision: one bounded correction within the cap for execution problems; continue only with genuine use/repeat/payment and credible low-cost access. Otherwise pivot, stop or label inconclusive/pause; no automatic new feature cycle.
+Signal: completed organizer workflow, independent viewer tasks, verified sign-up and actual repeat use, not likes or verbal return intent
+Decision: one bounded correction within the cap for execution problems; continue only with genuine use and repeat use and credible low-cost access. Otherwise pivot, stop or label inconclusive/pause; no automatic new feature cycle.
 
 Per-organizer record (duplicate only after consent):
 
@@ -27,10 +27,9 @@ Per-organizer record (duplicate only after consent):
   Email opt-in/delivery evidence where separately approved:
   Return intention (distinct from actual dated repeat):
   Actual repeat-game use:
-  Genuine paid need / declined reason:
-  Purchase plus correct entitlement/receipt evidence, or unknown/not attempted:
+  Organizer sign-up observed or unverified:
   Support minutes and named incremental costs:
-  Willingness to return/pay (reported, not counted as action):
+  Willingness to return (reported, not counted as action):
   Stop/iterate decision, evidence and operator:
 
 Aggregate report: show denominators, dates, missing observations and consent limitations. Do not infer zero customers from missing data; do not infer unique viewers, visitor conversion, cohort retention or CAC from anonymous client-event counts. A successful run must meet the metrics contract and finish without unresolved integrity failures.

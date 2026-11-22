@@ -25,7 +25,7 @@ describe('pregame board persistence', () => {
     vi.stubGlobal('fetch', vi.fn(async (url, init) => {
       if (!init?.method) return response({ ...stored, shared_at: null });
       requests.push({ url: String(url), body: JSON.parse(String(init.body)) });
-      return response({ shared: true, sharedAt: stored.shared_at, shareCode: 'ABCDEFGH', revision: 4, tier: 'free', used: 1, allowance: 1 });
+      return response({ shared: true, sharedAt: stored.shared_at, shareCode: 'ABCDEFGH', revision: 4 });
     }));
     const { result } = renderHook(() => usePoolData());
     await act(async () => { await result.current.loadPoolData(id); });
@@ -36,13 +36,13 @@ describe('pregame board persistence', () => {
     expect(result.current.revision).toBe(4);
     expect(result.current.board).toMatchObject(board);
   });
-  it('keeps an unshared board private after a failed share and returns upgrade context', async () => {
+  it('keeps an unshared board private after a failed share and returns the server failure', async () => {
     vi.stubGlobal('fetch', vi.fn(async (_url, init) => init?.method
-      ? response({ error: 'Choose a plan', code: 'PUBLISH_ALLOWANCE_EXHAUSTED', upgradeTo: 'gameday' }, 402)
+      ? response({ error: 'Board changed', code: 'REVISION_CONFLICT' }, 409)
       : response({ ...stored, shared_at: null })));
     const { result } = renderHook(() => usePoolData());
     await act(async () => { await result.current.loadPoolData(id); });
-    await act(async () => { await expect(result.current.shareBoard(id)).rejects.toMatchObject({ upgradeTo: 'gameday' }); });
+    await act(async () => { await expect(result.current.shareBoard(id)).rejects.toMatchObject({ message: 'Board changed', code: 'REVISION_CONFLICT' }); });
     expect(result.current.isShared).toBe(false);
     expect(result.current.revision).toBe(3);
   });

@@ -41,7 +41,7 @@ const installOrganizerSession = async (page: Page) => {
 /**
  * Every network the organizer surfaces touch is answered here, so the suite
  * never needs the functions server: the board row, its score, publishing, the
- * organizer-only plan summary, owner entry metadata, and the NFL schedule.
+ * owner-only entry metadata, and the NFL schedule.
  */
 const installOrganizerBoard = async (page: Page, persistEdits = false) => {
   const saved = {
@@ -75,7 +75,7 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
   } : {
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ published: true, shareCode: 'SHARE123', viewerUrl: '/b/SHARE123', revision: 2, tier: 'free', used: 1, allowance: 1 }),
+    body: JSON.stringify({ published: true, shareCode: 'SHARE123', viewerUrl: '/b/SHARE123', revision: 2 }),
   }));
   await page.route(`**/api/pools/${boardId}`, (route) => {
     const method = route.request().method();
@@ -130,11 +130,6 @@ const installOrganizerBoard = async (page: Page, persistEdits = false) => {
       }),
     });
   });
-  await page.route('**/api/billing/status', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
-  }));
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -168,7 +163,6 @@ test.describe('organizer workspace contract', () => {
         settings: { leftAbbr: 'DAL', topAbbr: 'WAS' },
         board_data: { leftAxis: Array(10).fill(null), topAxis: Array(10).fill(null), squares: Array.from({ length: 100 }, (_, index) => (index === 0 ? ['Ava'] : [])) },
         published_at: null,
-        board_activations: [],
       }]),
     }));
 
@@ -177,7 +171,7 @@ test.describe('organizer workspace contract', () => {
     const main = page.getByRole('main', { name: 'Your boards' });
     await expect(main).toBeVisible();
     await expect(main.getByRole('heading', { level: 1, name: 'Your boards' })).toBeVisible();
-    await expect(main.getByText('0 of 1 published · Free')).toBeVisible();
+    await expect(main.getByText(/published · /)).toHaveCount(0);
     await expect(main.getByRole('link', { name: 'New board' }).first()).toBeVisible();
 
     await main.getByRole('link', { name: 'Parkside browser board', exact: true }).click();

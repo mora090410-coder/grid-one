@@ -152,7 +152,7 @@ const Login: React.FC = () => {
                         {isSignUp ? 'Create your organizer account' : (isAdoptDraft ? 'Sign in to save your draft' : 'Welcome back')}
                     </h1>
                     <p className="font-ui text-[16px] leading-[1.5] text-fg-2">
-                        {isSignUp && createIntent ? 'Start the board now. Your first published board is free, and viewers will not need an account.' : isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
+                        {isSignUp && createIntent ? 'Start the board now. Publishing is free, and viewers will not need an account.' : isSignUp ? 'Build your board, edit it freely, and publish when it is ready.' : 'Sign in to manage your GridOne boards and share links.'}
                     </p>
                 </div>
 

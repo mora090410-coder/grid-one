@@ -12,8 +12,8 @@ const Privacy: React.FC = () => {
       path="/privacy"
       lede={
         <>
-          <span className="mb-3 block font-mono text-[13px] text-fg-3">Last updated: July 28, 2026</span>
-          GridOne is built around organizer-controlled boards and read-only viewer links. We collect what is needed to run the board, authenticate organizers, process plan payments, deliver verified emails, and protect the service.
+          <span className="mb-3 block font-mono text-[13px] text-fg-3">Last updated: November 22, 2026</span>
+          GridOne is built around organizer-controlled boards and read-only viewer links. We collect what is needed to run the board, authenticate organizers, deliver verified emails, and protect the service.
         </>
       }
     >
@@ -29,6 +29,7 @@ const Privacy: React.FC = () => {
           <li><strong>Board data:</strong> Board names, purchaser labels, square assignments, and game scores you enter.</li>
           <li><strong>Uploaded images:</strong> When you upload a board image for beta scanning, we process it to extract purchaser labels and positions. Images are processed temporarily and are not stored as board records.</li>
           <li><strong>Usage data:</strong> Basic analytics like page views to improve the service.</li>
+          <li><strong>Past software purchases:</strong> If you previously purchased a GridOne software plan, we may retain transaction records for accounting, support, or payment disputes. No payment is required to use GridOne now.</li>
         </ul>
       </section>
 
@@ -68,14 +69,14 @@ const Privacy: React.FC = () => {
           <li>Current scores and winning squares.</li>
         </ul>
         <p>
-          Only you (the organizer) can edit board data. We use Supabase for data storage and Stripe for payments—both follow industry-standard security practices.
+          The organizer controls the board. A family or seller link only allows the actions and squares assigned to that link. Public viewer links do not grant edit access. We use Supabase for data storage and authentication.
         </p>
       </section>
 
       <section>
         <h2>5. Your Rights</h2>
         <p>
-          You can delete your account and all associated board data at any time by contacting us. You can also delete individual boards from your dashboard.
+          Contact us to request deletion of your account and associated data. You can delete eligible unpublished drafts from your dashboard.
         </p>
       </section>
 

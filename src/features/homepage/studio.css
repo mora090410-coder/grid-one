@@ -68,18 +68,6 @@
 .editorial-personal dt { font-size: .875rem; color: var(--g-text-2); }
 .editorial-personal dd { margin-top: 8px; font-size: 1rem; line-height: 1.6; }
 .editorial-sample-link { margin-top: 32px; }
-.editorial-pricing { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 64px; border-top: 1px solid var(--g-hairline); }
-.editorial-pricing h2 { font-size: clamp(2rem, 3.5vw, 3rem); }
-.editorial-plans { display: flex; flex-direction: column; gap: 14px; }
-.editorial-plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 24px; padding: 22px 24px; transition: border-color var(--g-dur-state) var(--g-ease-state), translate var(--g-dur-state) var(--g-ease-state), box-shadow var(--g-dur-state) var(--g-ease-state); }
-@media (prefers-reduced-motion: no-preference) {
-  .editorial-plan:hover { translate: 0 -2px; border-color: var(--g-white); }
-}
-.editorial-plan h3 { font-size: 1.125rem; font-weight: 500; }
-.editorial-plan div p { margin-top: 10px; font-size: .9375rem; color: var(--g-text-2); line-height: 1.6; }
-.editorial-price { text-align: right; display: flex; flex-direction: column; gap: 8px; }
-.editorial-price strong { font: 400 2.25rem/1 var(--g-font-mono); }
-.editorial-price span { font-size: .875rem; color: var(--g-text-2); }
 .editorial-faq { padding-top: 0; }
 .editorial-faq-list { max-width: 820px; }
 .editorial-faq details { border-bottom: 1px solid var(--g-hairline); }
@@ -105,7 +93,6 @@
   .editorial-workspace { grid-area: auto; }
   .editorial-score-explanation { grid-template-columns: minmax(0, 1fr); max-width: 600px; }
   .editorial-digit-connection svg { rotate: 90deg; width: 40px; margin: 0 auto 12px; }
-  .editorial-pricing { grid-template-columns: 1fr; gap: 32px; }
   .editorial-faq { padding-top: 0; }
 }
 @media (max-width: 599px) {
@@ -119,14 +106,11 @@
   .editorial-score-card { padding: 20px 16px; }
   .editorial-score-numbers { grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr)); }
   .editorial-viewer-answers { grid-template-columns: 1fr; gap: 36px; }
-  .editorial-plan { grid-template-columns: 1fr; gap: 16px; }
-  .editorial-price { text-align: left; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 12px; }
   .editorial-faq { padding-top: 0; }
   .editorial-footer-guides { grid-template-columns: 1fr; gap: 28px; }
   .editorial-close-actions a { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .editorial-plan { translate: none; }
   [data-score-accent] { transform: none !important; }
   [data-score-trace] { stroke-dashoffset: 0 !important; }
   [data-match-accent] { opacity: 1 !important; }
@@ -154,7 +138,6 @@
 
 .g-editorial .editorial-section { padding-block: var(--g-editorial-space); padding-inline: var(--g-editorial-gutter); }
 .g-editorial .editorial-intro h2, .g-editorial .editorial-close h2 { font-weight: 800; }
-.g-editorial .editorial-plan { background: transparent; border-radius: 0; border-width: 0 0 1px; box-shadow: none; padding-inline: 0; }
 .g-editorial .editorial-kicker { color: var(--g-action); font-weight: 700; }
 .g-editorial .editorial-faq { padding-top: 0; }
 .g-editorial .editorial-match-board .is-matching { background: var(--g-editorial-ink); color: var(--g-paper-raised); box-shadow: none; }
@@ -163,7 +146,7 @@
 .g-editorial .editorial-digit-connection svg { stroke: var(--g-action); }
 .g-editorial .editorial-footer { border-top: 1px solid var(--g-hairline); }
 
-/* Fundraiser and comparison: the many-board buyer, before pricing */
+/* Fundraiser and comparison */
 .editorial-fundraiser-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 48px; align-items: center; }
 .editorial-fundraiser-math { display: flex; flex-direction: column; gap: 14px; padding: 24px; }
 .editorial-fundraiser-math .editorial-kicker { margin-bottom: 0; }
@@ -182,7 +165,6 @@
 .editorial-compare tbody th { font-weight: 500; }
 .editorial-compare tbody td { color: var(--g-text-2); }
 .editorial-compare .is-us { color: var(--g-text); font-weight: 600; }
-.editorial-plan .editorial-plan-audience { margin: 0 0 6px; font-family: var(--g-font-mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--g-text-2); }
 @media (max-width: 1023px) {
   .editorial-fundraiser-layout { grid-template-columns: minmax(0, 1fr); }
 }

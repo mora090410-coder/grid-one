@@ -19,7 +19,7 @@ for (const width of [1440, 320]) {
     const failures = await page.evaluate(async () => {
       const failures = new Set<string>();
       const inspect = () => {
-        for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-pricing, .compact-faq')) {
+        for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-free-access, .compact-faq')) {
           if (!element.textContent?.trim()) continue;
           if (element.dataset.reveal === 'pending') failures.add(`${element.className}: pending fade`);
           for (let node: HTMLElement | null = element; node; node = node.parentElement) {
@@ -28,7 +28,7 @@ for (const width of [1440, 320]) {
         }
       };
       inspect();
-      for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-pricing, .compact-faq')) {
+      for (const element of document.querySelectorAll<HTMLElement>('main [data-reveal], .cine-hero-copy, .cine-chapter, .compact-flow-copy, .compact-example-content, .compact-free-access, .compact-faq')) {
         element.scrollIntoView({ block: 'center', behavior: 'instant' });
         const start = performance.now();
         do {

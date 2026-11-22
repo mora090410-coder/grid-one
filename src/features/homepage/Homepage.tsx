@@ -6,7 +6,7 @@ import { CinematicHomepage } from './cinematic/CinematicHomepage';
 import { Footer } from './sections/Footer';
 import { CompactWorkflow } from './sections/CompactWorkflow';
 import './compact.css';
-import { PriceAndClose } from './sections/PriceAndClose';
+import { FreeAccessClose } from './sections/FreeAccessClose';
 
 export default function Homepage() {
   return (
@@ -14,7 +14,7 @@ export default function Homepage() {
       <main data-testid="homepage">
         <CinematicHomepage />
         <CompactWorkflow />
-        <PriceAndClose />
+        <FreeAccessClose />
       </main>
       <Footer />
     </Base>

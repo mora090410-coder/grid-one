@@ -7,11 +7,11 @@ import Homepage from '../../src/features/homepage/Homepage';
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
 describe('Compact fundraiser workflow', () => {
-  it('shows the illustrative organizer summary before pricing, without a generic comparison table', () => {
+  it('shows the illustrative organizer summary before the free-access section, without a generic comparison table', () => {
     renderPage();
     const summary = screen.getByRole('region', { name: 'From setup to game day.' });
-    const plans = screen.getByRole('region', { name: 'Plans' });
-    expect(summary.compareDocumentPosition(plans) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const freeAccess = screen.getByRole('region', { name: 'Every board is free.' });
+    expect(summary.compareDocumentPosition(freeAccess) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(within(summary).getByRole('button', { name: 'Organizer view' }));
     expect(summary).toHaveTextContent('Family A');
     expect(summary).toHaveTextContent('4 squares open');

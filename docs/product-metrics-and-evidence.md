@@ -19,7 +19,7 @@ A board qualifies only when all of the following are true:
 4. Q1, Q2, Q3, and Final are durably resolved exactly once, including any audited corrections.
 5. The board reaches Final without an unresolved integrity, publication, or score-authority failure.
 
-A purchase, activation, publication, page view, or notification by itself does not count as a successful run.
+Activation, publication, page view, or notification by itself does not count as a successful run.
 
 ## Why this metric
 
@@ -36,7 +36,6 @@ Do not count upcoming games in the denominator. Define the grace period before i
 
 Segment only when sample size is sufficient:
 
-- Free, Game Day, Organization
 - First board vs repeat board
 - Automatic vs manual score authority
 - Organizer cohort/source when collected with consent
@@ -44,6 +43,8 @@ Segment only when sample size is sufficient:
 Never publish percentages from tiny cohorts without displaying the denominator.
 
 ## Leading organizer outcomes
+
+Measure genuine verified organizer sign-ups separately from active use. Track the number of organizers who publish a first board and those who return to publish another. Count related conversion only from permitted, trustworthy aggregate evidence; anonymous client events cannot establish identity or retention.
 
 1. Draft created → first square assigned
 2. First assignment → reconciliation-ready
@@ -53,8 +54,6 @@ Never publish percentages from tiny cohorts without displaying the denominator.
 6. Median active time from first edit to publish
 7. Blocker recovery rate by phase
 8. First published board → repeat board
-9. Free allowance exhausted → Game Day checkout started/completed
-10. Game Day allowance exhausted → Organization checkout started/completed
 
 These diagnose the journey; none replaces the north star.
 
@@ -78,7 +77,7 @@ The product benchmark remains: a representative phone viewer should find their s
 - Duplicate or missing milestone resolution
 - Duplicate, missing, bounced, or exhausted notification delivery
 - Published viewer unavailable during game window
-- Checkout paid without correct entitlement, or entitlement without verified payment
+- Accidental creation, sharing, or publishing paywall
 - Public/private data-boundary violation: zero tolerance
 - Unrecoverable organizer mutation conflict or data loss: zero tolerance
 - Crash-free viewer and organizer sessions
@@ -126,7 +125,7 @@ Permitted event data:
 - route/surface and lifecycle phase;
 - success/failure code;
 - device class, viewport bucket, and coarse performance timings;
-- tier and scoring authority where relevant.
+- scoring authority where relevant.
 
 Prohibited analytics payloads:
 
@@ -139,7 +138,7 @@ Prohibited analytics payloads:
 - full URLs containing secrets or personal query values;
 - free-form error text when it could contain user data.
 
-Prefer server-derived outcome events for publication, checkout, milestone, delivery, and Final qualification. Use client events only for interaction questions the domain database cannot answer.
+Prefer server-derived outcome events for publication, milestone, delivery, and Final qualification. Use client events only for interaction questions the domain database cannot answer.
 
 ## Proposed event families
 

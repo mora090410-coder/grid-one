@@ -7,7 +7,6 @@ import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../_lib/publicBoardVisibility';
-import { hasBoardActivation } from '../../../utils/boardActivation';
 import {
   PayoutDescriptionsValidationError,
   validatePayoutDescriptions,
@@ -160,7 +159,7 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (ownerId) {
       const { data, error } = await admin
         .from('contests')
-        .select('id, share_code, owner_id, title, status, revision, updated_at, score_test_mode, settings, board_data, payout_descriptions, shared_at, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+        .select('id, share_code, owner_id, title, status, revision, updated_at, score_test_mode, settings, board_data, payout_descriptions, shared_at, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
         .eq('id', id)
         .eq('owner_id', ownerId)
         .maybeSingle();
@@ -246,7 +245,8 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
         topAbbr: data.top_team_abbr || data.settings?.topAbbr || null,
         topName: data.top_team_name || data.settings?.topName || null,
         board: data.board_data,
-        is_activated: hasBoardActivation(data.board_activations),
+        // Legacy clients use this flag as lifecycle readiness, never as a purchase check.
+        is_activated: Boolean(data.shared_at || data.published_at),
         locked: Boolean(data.published_at),
         published_at: data.published_at,
         shared_at: data.shared_at,

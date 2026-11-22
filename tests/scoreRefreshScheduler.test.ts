@@ -202,7 +202,6 @@ const activeContest = (id: string) => ({
   game_starts_at: '2025-09-28T20:25:00.000Z',
   side_team_abbr: 'DAL',
   top_team_abbr: 'WSH',
-  board_activations: [{ id: `activation-${id}` }],
   contest_score_state: [{ scoring_mode: 'automatic', milestones_finalized_at: null }],
 });
 
@@ -318,6 +317,10 @@ describe.sequential('cron score refresh endpoint', () => {
 
     const body = await response.json();
     expect(body).toMatchObject({ active: 2, refreshed: 2, failed: 0, pollSeconds: 180 });
+    // A billing FK join silently drops every newly published free board.
+    const contestQuery = admin.from.mock.results[0].value;
+    expect(contestQuery.select).toHaveBeenCalledWith(expect.not.stringContaining('board_activations'));
+    expect(contestQuery.not).toHaveBeenCalledWith('published_at', 'is', null);
     // One upstream scoreboard call regardless of how many boards are live.
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const leaseCalls = admin.rpcCalls.filter(call => call.name === 'gridone_acquire_score_refresh_lease_v2');

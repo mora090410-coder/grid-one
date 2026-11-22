@@ -15,7 +15,7 @@ test('landing page leads with a cinematic sample and free-first publishing model
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Your team. One board. Less chasing.');
   await expect(page.getByText('Football squares for team fundraisers.', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Create your free board' }).first()).toBeVisible();
-  await expect(page.getByText('First published board free each season', { exact: true })).toBeAttached();
+  await expect(page.getByText('Create and publish boards for free', { exact: true })).toBeAttached();
 });
 
 test('demo board renders the sample game', async ({ page }) => {

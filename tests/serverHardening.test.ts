@@ -8,22 +8,14 @@ const mocks = vi.hoisted(() => {
     if (!client) throw new Error('No scripted Supabase client remains.');
     return client;
   });
-  const stripeInstances: any[] = [];
-  const Stripe = vi.fn(function StripeMock() {
-    const instance = stripeInstances.shift();
-    if (!instance) throw new Error('No scripted Stripe instance remains.');
-    return instance;
-  });
-  (Stripe as any).createFetchHttpClient = vi.fn(() => ({}));
   return {
-    clients, createClient, stripeInstances, Stripe,
+    clients, createClient,
     fetchScheduledGameById: vi.fn(),
     fetchScheduledGames: vi.fn(),
   };
 });
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: mocks.createClient }));
-vi.mock('stripe', () => ({ default: mocks.Stripe }));
 vi.mock('../functions/_lib/espnNfl', async (importOriginal) => ({
   ...await importOriginal<typeof import('../functions/_lib/espnNfl')>(),
   fetchScheduledGameById: mocks.fetchScheduledGameById,
@@ -38,9 +30,6 @@ import { onRequestPost as correctMilestone } from '../functions/api/pools/[id]/m
 import { onRequestPost as manualScore } from '../functions/api/pools/[id]/score/manual';
 import { onRequestPost as scanBoard } from '../functions/api/boards/scan';
 import { onRequestPost as subscribe } from '../functions/api/boards/[shareCode]/subscribe';
-import { onRequestGet as billingStatus } from '../functions/api/billing/status';
-import { onRequestPost as createCheckout } from '../functions/api/stripe/create-checkout-session';
-import { onRequestPost as stripeWebhook } from '../functions/api/stripe/webhook';
 import { onRequestPost as openSquares } from '../functions/api/pools/[id]/open-squares';
 import { onRequestGet as nflGames } from '../functions/api/nfl/games';
 
@@ -92,7 +81,6 @@ beforeAll(() => {
 
 beforeEach(() => {
   mocks.clients.length = 0;
-  mocks.stripeInstances.length = 0;
   vi.clearAllMocks();
 });
 afterEach(() => {
@@ -108,49 +96,6 @@ describe('board CORS remnants are gone', () => {
     expect(response.status).toBe(401);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-  });
-});
-
-describe('allowance errors share one copy table', () => {
-  const publishWith = async (message: string) => {
-    const admin = scriptedAdmin([{ data: {
-      id: ID, share_code: 'ABCDEFGH', owner_id: USER.id, revision: 4, settings: {},
-      board_data: { leftAxis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], topAxis: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0], squares: Array.from({ length: 100 }, (_, i) => [`B${i}`]) },
-      side_team_abbr: 'CHI', top_team_abbr: 'GB',
-    }, error: null }], [{ data: null, error: { message } }]);
-    mocks.clients.push(authClient(), admin);
-    return publishBoard({ request: post(`https://example.test/api/pools/${ID}/publish`, JSON.stringify({ revision: 4 })), env, params: { id: ID } });
-  };
-  const shareWith = async (message: string) => {
-    mocks.clients.push(authClient(), scriptedAdmin([], [{ data: null, error: { message } }]));
-    return shareBoard({ request: post(`https://example.test/api/pools/${ID}/share`, JSON.stringify({ revision: 4 })), env, params: { id: ID } });
-  };
-
-  it('tells an exhausted Organization organizer the 50-board limit with no upgrade', async () => {
-    const body = await (await publishWith('PUBLISH_ALLOWANCE_EXHAUSTED:org:50:50')).json();
-    expect(body).toEqual({
-      code: 'PUBLISH_ALLOWANCE_EXHAUSTED',
-      error: 'Your Organization plan has published all 50 boards for this season.',
-      tier: 'org', used: 50, allowance: 50, upgradeTo: null,
-    });
-  });
-
-  it('names the inactive plan instead of the Game Day limit', async () => {
-    const org = await (await publishWith('PUBLISH_ENTITLEMENT_INACTIVE:org:3:50')).json();
-    expect(org).toMatchObject({ code: 'PUBLISH_ENTITLEMENT_INACTIVE', upgradeTo: 'org' });
-    expect(org.error).toMatch(/Organization plan is no longer active/);
-    const gameday = await (await publishWith('PUBLISH_ENTITLEMENT_INACTIVE:gameday:2:5')).json();
-    expect(gameday).toMatchObject({ upgradeTo: 'gameday' });
-    expect(gameday.error).toMatch(/Game Day plan is no longer active/);
-  });
-
-  it('gives share and publish the same answer for the same allowance edge', async () => {
-    for (const message of ['PUBLISH_ALLOWANCE_EXHAUSTED:gameday:5:5', 'PUBLISH_ALLOWANCE_EXHAUSTED:org:50:50', 'PUBLISH_ENTITLEMENT_INACTIVE:org:1:50']) {
-      const published = await (await publishWith(message)).json();
-      const shared = await shareWith(message);
-      expect(shared.status).toBe(402);
-      expect(await shared.json()).toEqual(published);
-    }
   });
 });
 
@@ -190,11 +135,6 @@ describe('request bodies are bounded objects', () => {
     expect(JSON.stringify(await response.json())).not.toMatch(/JSON|position|Unexpected/);
   });
 
-  it('returns 400 when a checkout body is null', async () => {
-    mocks.clients.push(authClient());
-    const response = await createCheckout({ request: post('https://x.test/api/stripe/create-checkout-session', 'null'), env: { ...env, STRIPE_SECRET_KEY: 'sk' } });
-    expect(response.status).toBe(400);
-  });
 });
 
 describe('route ids are validated before Postgres', () => {
@@ -216,13 +156,6 @@ describe('route ids are validated before Postgres', () => {
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
 
-  it('treats a malformed checkout order id as not found', async () => {
-    const admin = scriptedAdmin();
-    mocks.clients.push(authClient(), admin);
-    const response = await billingStatus({ request: new Request('https://x.test/api/billing/status?order=1%27', { headers: { Authorization: 'Bearer token' } }), env });
-    expect(response.status).toBe(404);
-    expect(admin.from).not.toHaveBeenCalledWith('checkout_orders');
-  });
 });
 
 describe('milestone correction success path', () => {
@@ -489,35 +422,6 @@ describe('one season source of truth', () => {
     expect(insert).toHaveBeenCalledWith(expect.objectContaining({ season_year: 2027 }));
   });
 
-  it('looks up checkout entitlements in the configured season', async () => {
-    const admin = scriptedAdmin([{ data: { id: ID, owner_id: USER.id, season_year: 2027 }, error: null }, { data: null, error: null }]);
-    mocks.clients.push(authClient(), admin);
-    await createCheckout({
-      request: post('https://x.test/api/stripe/create-checkout-session', JSON.stringify({ contestId: ID, tier: 'gameday' })),
-      env: { ...env, STRIPE_SECRET_KEY: 'sk', STRIPE_GAMEDAY_PRICE_ID: 'price_gameday', PAID_SIGNUP_ENABLED: 'true', GRIDONE_SEASON: '2027' },
-    });
-    expect(admin.calls).toContainEqual(['eq', ['season_year', 2027]]);
-    expect(admin.calls).not.toContainEqual(['eq', ['season_year', 2026]]);
-  });
-});
-
-describe('stripe webhook price mismatch', () => {
-  it('logs a paid checkout that does not match the configured price', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    mocks.stripeInstances.push({
-      webhooks: { constructEventAsync: vi.fn(async () => ({
-        id: 'evt_1', type: 'checkout.session.completed',
-        data: { object: { id: 'cs_test_mismatch', payment_status: 'paid', client_reference_id: ID, metadata: { order_id: ID, tier: 'gameday' } } },
-      })) },
-      checkout: { sessions: { listLineItems: vi.fn(async () => ({ data: [{ price: 'price_other', amount_total: 100, currency: 'usd' }] })) } },
-    });
-    const response = await stripeWebhook({
-      request: new Request('https://x.test/api/stripe/webhook', { method: 'POST', headers: { 'stripe-signature': 'sig' }, body: '{}' }),
-      env: { ...env, STRIPE_SECRET_KEY: 'sk', STRIPE_WEBHOOK_SECRET: 'whsec', STRIPE_GAMEDAY_PRICE_ID: 'price_gameday' },
-    });
-    expect(response.status).toBe(200);
-    expect(error).toHaveBeenCalledWith(expect.stringMatching(/price mismatch/i), expect.objectContaining({ sessionId: 'cs_test_mismatch', eventId: 'evt_1' }));
-  });
 });
 
 describe('NFL schedule edge cache', () => {

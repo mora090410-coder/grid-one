@@ -61,8 +61,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe.sequential('automatic score service activation boundary', () => {
-  it('rejects an unactivated organizer board before reading score state', async () => {
+describe.sequential('automatic score service publication boundary', () => {
+  it('rejects an unpublished organizer board before reading score state', async () => {
     const admin = adminClient({
       id: '11111111-1111-4111-8111-111111111111',
       owner_id: 'owner-1',
@@ -80,31 +80,33 @@ describe.sequential('automatic score service activation boundary', () => {
       params: { id: '11111111-1111-4111-8111-111111111111' },
     });
 
-    expect(response.status).toBe(402);
+    expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining('Publish this board'),
+      error: expect.stringContaining('Draw and lock'),
     });
     expect(admin.tables).toEqual(['contests']);
     expect(admin.rpc).not.toHaveBeenCalled();
   });
 
-  it('does not let an unactivated published share code bypass the service gate', async () => {
+  it('allows a published public board with no billing activation to read scores', async () => {
     const admin = adminClient({
       id: 'board-1',
       owner_id: 'owner-1',
       status: 'published',
+      published_at: '2026-09-13T17:00:00Z',
       board_activations: [],
     });
     mocks.clients.push(admin);
 
     const response = await onRequestGet({
       request: new Request('https://example.test/api/pools/ABCDEFGH/score'),
-      env,
+      env: { ...env, LIVE_SCORING_ENABLED: 'false' },
       params: { id: 'ABCDEFGH' },
     });
 
-    expect(response.status).toBe(402);
-    expect(admin.tables).toEqual(['public_board_snapshots']);
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: 'Automatic score is unavailable.' });
+    expect(admin.tables).toEqual(['public_board_snapshots', 'contest_score_state', 'public_board_snapshots']);
     expect(admin.rpc).not.toHaveBeenCalled();
   });
 });

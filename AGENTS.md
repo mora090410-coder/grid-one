@@ -26,12 +26,11 @@ Read the material that governs the current uncertainty or affected surface; do n
 
 `docs/REFACTOR_LOG.md` is the append-only execution record. Append within the authorized write scope; do not rewrite existing entries. If it is protected for a task, keep the report in that task's approved output location instead.
 
+Dated plans, release reports, audits, and marketing drafts are historical evidence, not instructions to restore paid plans or checkout. Current product direction lives in `PRODUCT.md`.
+
 ## Product contracts that may not drift
 
-- Free: 1 published board per account per season.
-- Game Day: $9.99 once for up to 5 published boards in the 2026 season.
-- Organization: $79 per season for up to 50 published boards plus the documented organization features.
-- The ladder is written once, in `src/features/homepage/pricing.ts`. `tests/pricingCopyConsistency.test.ts` enforces it across the customer-facing corpus.
+- GridOne is free to use. Do not add checkout, paid plans, monetization copy, or an allowance that blocks creating, sharing, or publishing boards. Organizers still sign in; opening a public viewer link does not require an account.
 - GridOne never collects square money, holds funds, adjudicates off-platform payment, or pays winners.
 - One signed-in organizer owns each board; public viewers cannot edit. Optional private family links may edit scoped names/availability before finalization, with database-enforced revision, revocation, and scope checks. Public seller links (Anthony-approved 2026-09-23) let anyone holding one claim that seller's unsold squares by name before the numbers lock; the database enforces scope, lock, and one-winner races, and nothing else is editable through them.
 - Manual score authority is canonical until deliberately returned to automatic; stale automatic data never overwrites manual or newer state.
@@ -45,8 +44,8 @@ Read the material that governs the current uncertainty or affected surface; do n
 - Prefer feature-local components, hooks, models, and services. Promote something into `src/design/primitives/` only when two real features share the behavior.
 - Business rules belong in pure modules (`*Model.ts`, `lifecycle/`, `utils/`) that test without a browser. Components render; they do not decide.
 - Production styling uses the `--g-*` tokens and Tailwind aliases in `src/index.css`; retain that coherent baseline for unchanged surfaces. Proposals may explore different materials, type, color or geometry. Integrate an adopted direction through coordinated tokens rather than accidental one-off values or a parallel `--gridone-*` system.
-- Browser and server are separate security boundaries. Never move service-role, Stripe-secret, scoring-provider, Gemini, email, cron, or notification secrets into browser code.
-- There are no feature flags in this app. The `FeatureVariant` union in `src/features/instrumentation/eventSchema.ts` keeps its historical variant literals for analytics continuity only — do not rename them, and do not read them as evidence that a flag still exists.
+- Browser and server are separate security boundaries. Never move service-role, scoring-provider, Gemini, email, cron, or notification secrets into browser code.
+- There are no feature flags in this app. The `FeatureVariant` union in `src/features/instrumentation/eventSchema.ts` keeps its historical variant literals for analytics continuity only — do not rename them, and do not read them as evidence that a flag or paid plan still exists.
 
 ## Editing discipline
 

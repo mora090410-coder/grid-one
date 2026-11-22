@@ -3,9 +3,9 @@ import { hasValidAxes, isValidAxis } from '../../../../utils/boardValidation';
 import { projectQuarterAxes, validDraftAxisMode } from '../../../../utils/quarterAxes';
 import { getAxisForQuarter } from '../../../../utils/winnerLogic';
 import { photoOrientationResolved } from '../../../../utils/photoOrientation';
-import { allowanceErrorResponse } from '../../../_lib/pricingTiers';
-import { adminClient, isUuid, maskedError, requireUser, type PagesFunction } from '../../../_lib/http';
+import { adminClient, isUuid, maskedError, readJsonObject, requireUser, type PagesFunction } from '../../../_lib/http';
 
+const MAX_LIFECYCLE_BODY_BYTES = 4096;
 const PUBLISH_FAILED = 'The board could not be published. Please try again.';
 
 export const onRequestPost: PagesFunction = async ({ request, env, params }) => {
@@ -20,8 +20,9 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
   // Missing allowOpenSquares means "no open-square opt-in". The revision the
   // organizer last loaded is required so publication never locks names
   // (family, guest, or seller-link edits) the organizer has not seen.
-  const parsed: unknown = await request.json().catch(() => ({}));
-  const body = (parsed && typeof parsed === 'object' ? parsed : {}) as { allowOpenSquares?: unknown; revision?: unknown };
+  const parsed = await readJsonObject(request, MAX_LIFECYCLE_BODY_BYTES);
+  if (parsed instanceof Response && parsed.status === 413) return parsed;
+  const body = parsed instanceof Response ? {} : parsed;
   if (
     Object.prototype.hasOwnProperty.call(body, 'allowOpenSquares')
     && typeof body.allowOpenSquares !== 'boolean'
@@ -105,7 +106,7 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     gameStartsAt: contest.game_starts_at || null,
     gameDate: contest.game_starts_at || contest.settings?.dates,
   };
-  const { data: publishedRows, error: publishError } = await admin.rpc('gridone_publish_board', {
+  const { data: publishedRows, error: publishError } = await admin.rpc('gridone_publish_free_board', {
     p_contest_id: contest.id,
     p_owner_id: user.id,
     p_expected_revision: expectedRevision,
@@ -126,8 +127,6 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
       code: 'REVISION_CONFLICT',
       error: 'Guest claims changed this board. Reload the latest board before locking numbers.',
     }, { status: 409 });
-    const allowance = allowanceErrorResponse(message);
-    if (allowance) return allowance;
     if (/scheduled NFL game|axis|100 squares|open square|purchaser name/i.test(message)) {
       return Response.json({ error: message }, { status: 409 });
     }
@@ -145,8 +144,5 @@ export const onRequestPost: PagesFunction = async ({ request, env, params }) => 
     shareCode: published.share_code,
     viewerUrl: `/b/${published.share_code}`,
     revision: published.next_revision,
-    tier: published.tier,
-    used: Number(published.used),
-    allowance: Number(published.allowance),
   });
 };

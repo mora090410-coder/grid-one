@@ -151,7 +151,7 @@ export function CinematicHomepage() {
           <h1 id="homepage-title" className="cine-title studio-hero-title">Your team. One board. <br /><span>Less chasing.</span></h1>
           <p className="cine-lede">Football squares for team fundraisers.</p>
           <div className="cine-actions"><PrimaryCtaLink to="/create" trackCreate>Create your free board</PrimaryCtaLink><Link to="/demo" onClick={trackViewDemo} className={quietLink}>Try the demo</Link></div>
-          <p className="cine-reassurance">First published board free each season</p>
+          <p className="cine-reassurance">Create and publish boards for free</p>
           <p className="cine-fine">No card required</p>
         </div>
         <section className="cine-film" id="how" aria-label="Board film">

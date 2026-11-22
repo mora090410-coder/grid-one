@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const currentPricingCopyFiles = [
-  'src/features/homepage/pricing.ts',
+const currentCopyFiles = [
+  'src/features/homepage/disclosures.ts',
   'src/features/homepage/Homepage.tsx',
-  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/sections/FreeAccessClose.tsx',
   'src/features/homepage/cinematic/CinematicHomepage.tsx',
   'src/features/homepage/cinematic/cinematicModel.ts',
   'src/features/homepage/sections/TrySampleSection.tsx',
@@ -13,58 +13,27 @@ const currentPricingCopyFiles = [
   'src/features/homepage/sections/FundraiserSection.tsx',
   'src/features/homepage/sections/CompareSection.tsx',
   'pages/Terms.tsx',
+  'pages/Privacy.tsx',
+  'pages/Login.tsx',
+  'pages/ArticlesHub.tsx',
   'pages/HowToRunSquares.tsx',
   'pages/RunYourPoolAlternative.tsx',
   'seo/publicRouteMetadata.ts',
   'index.html',
   'public/llms.txt',
-  'README.md',
-  'PRODUCT.md',
-  'docs/marketing/gridone-launch-social-pack-2026-04-19.md',
 ];
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 
-// Surfaces that quote GridOne's own prices. The server charges from PAID_TIERS;
-// every price a customer reads must be one of those amounts (or the $0 free tier).
-const gridOnePriceSurfaces = [
-  ...currentPricingCopyFiles.filter((path) => !path.endsWith('.md')),
-  'src/features/organizer/workspace/UpgradeSheet.tsx',
-];
-
-describe('launch pricing copy', () => {
-  it('quotes only the prices the server actually charges', async () => {
-    const { PAID_TIERS, ORGANIZATION_UPGRADE } = await import('../functions/_lib/pricingTiers');
-    const charged = new Set([...Object.values(PAID_TIERS), ORGANIZATION_UPGRADE].map((tier) => {
-      const dollars = tier.amountCents / 100;
-      return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
-    }));
-    expect([...charged].sort()).toEqual(['$69.01', '$79', '$9.99']);
-    for (const path of gridOnePriceSurfaces) {
-      const quoted = read(path).match(/\$\d+(?:\.\d{2})?/g) ?? [];
-      for (const price of quoted) {
-        expect({ path, price, known: price === '$0' || charged.has(price) }).toEqual({ path, price, known: true });
-      }
+describe('free-only public copy', () => {
+  it('does not advertise retired prices, plan tiers, or payment processing', () => {
+    for (const path of currentCopyFiles) {
+      expect(read(path), path).not.toMatch(/\$9\.99|\$79\b|\$69\.01|season (?:plan|pass)|first (?:published )?board is free|Stripe checkout|processed securely via Stripe/i);
     }
   });
 
-  it('keeps current customer copy on the approved three-tier ladder', () => {
-    const corpus = currentPricingCopyFiles
-      .map((path) => `${path}\n${read(path)}`)
-      .join('\n');
-
-    expect(corpus).not.toMatch(/(?:^|[^\d])4\.99(?:[^\d]|$)/i);
-    expect(corpus).not.toMatch(/(?:^|[^\d])14\.99(?:[^\d]|$)/i);
-    expect(corpus).not.toMatch(/\b20\s+boards?\b/i);
-    expect(corpus).not.toMatch(/introductory\s+2026\s+season\s+pass/i);
-
-    expect(read('PRODUCT.md')).toContain('The Free tier includes **1 published board per account per season**.');
-    expect(read('PRODUCT.md')).toContain('The **Game Day** tier is **$9.99 once** for up to 5 published boards');
-    expect(read('PRODUCT.md')).toContain('The **Organization** tier is **$79 per season** for up to 50 published boards');
-  });
-
   it('keeps reviewed Beta import and the money boundary explicit in landing copy', () => {
-    const landing = currentPricingCopyFiles
+    const landing = currentCopyFiles
       .filter((path) => path.startsWith('src/features/homepage/'))
       .map(read)
       .join('\n');

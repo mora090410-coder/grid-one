@@ -44,7 +44,7 @@ export const RunYourPoolAlternative: React.FC = () => {
                         <Link to="/create" className={primaryLink}>
                             Create your free board
                         </Link>
-                        <p className="font-ui text-[14px] leading-[1.6] text-fg-3">Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.</p>
+                        <p className="font-ui text-[14px] leading-[1.6] text-fg-3">Create and publish boards for free.</p>
                     </div>
 
                     <ArticleCTA
