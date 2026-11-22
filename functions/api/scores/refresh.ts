@@ -64,7 +64,7 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const now = Date.now();
   const { data: contests, error: contestsError } = await admin
     .from('contests')
-    .select('id, published_at, status, game_external_id, game_starts_at, side_team_abbr, top_team_abbr, board_activations!inner(id), contest_score_state(scoring_mode, milestones_finalized_at)')
+    .select('id, published_at, status, game_external_id, game_starts_at, side_team_abbr, top_team_abbr, contest_score_state(scoring_mode, milestones_finalized_at)')
     .not('game_external_id', 'is', null)
     .not('published_at', 'is', null)
     .in('status', ['published', 'live', 'final'])

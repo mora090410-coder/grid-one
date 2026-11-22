@@ -30,7 +30,6 @@ Building, editing, previewing, and redrawing are free and reversible. **Publicat
 | Tools | `BoardToolsCard` | `Board tools` |
 | Seller links | `sellers/SellerLinksCard` | region `Send seller links`; `Get seller links`, list `Seller links`, `Share {label}’s link`, `New link for {label}`, `Copy all links`, `Update for new sellers` |
 | Preview → publish | `PreviewSheet` → `PublishSheet` → `PublishedSheet` | dialogs `Private preview — sharing is off`, `Publish viewer link`, `Published` |
-| Upgrade | `UpgradeSheet` | `Season plans` header action before allowance exhaustion; dialog `Choose a plan`, `Season plan` radio group, `Continue to Organization checkout` |
 | Game day | `gameday/SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard` | `Public board`, `Score authority`, `Correct a published result`, `Review delivery issue`, `Final record` |
 
 Board state lives in `useWorkspaceDraft`. Selection lives in `selection.ts`. The draw lives in `secureDraw.ts`. Publication lives in `publishBoard.ts`.
@@ -87,9 +86,9 @@ Primary action once the axes are committed: **`Preview and publish`** (or **`Rev
 
 ### 5. Go Live
 
-`Review and publish` opens the modal `Publish viewer link` (`aria-modal="true"`). Initial focus is on `Cancel` — the least destructive action. The dialog summarizes, in this order: `Board name`, `Matchup`, `Kickoff`, `Squares` as `{n} assigned · {n} OPEN`, `Top axis`, `Side axis`, `What becomes public`, `What remains private`, and the entitlement line `{n} of {n} published this season · {tier}`. `Open squares stay OPEN on the shared board.` when any remain.
+`Review and publish` opens the modal `Publish viewer link` (`aria-modal="true"`). Initial focus is on `Cancel` — the least destructive action. The dialog summarizes, in this order: `Board name`, `Matchup`, `Kickoff`, `Squares` as `{n} assigned · {n} OPEN`, `Top axis`, `Side axis`, `What becomes public`, `What remains private`. `Open squares stay OPEN on the shared board.` when any remain.
 
-The confirming button is **`Publish viewer link`**. Publication is atomic (`010_atomic_board_publish.sql`) and mints the share code. If the tier allowance is spent, `UpgradeSheet` (`Choose a plan`) offers `Game Day · up to 5 boards` and `Organization · up to 50 boards`, with `Organization name` where it applies, and `Not now`.
+The confirming button is **`Publish viewer link`**. Publication is atomic (`041_free_only_board_lifecycle.sql`) and mints the share code. Sharing and publication do not require an allowance or paid plan.
 
 Success opens the `Published` sheet: `Copy link`, `Open public board`, the QR code, and `Manage board`. The island's primary action becomes `Copy link`.
 
@@ -159,7 +158,7 @@ Presentation components hold no business rules. Every rule above is testable wit
 | Save, conflict, recovery | `tests/draftSaveModel.test.ts`, `tests/organizerPersistence.test.tsx` |
 | Square and block assignment | `tests/organizer/` |
 | Draw exactness | `tests/numberDraw.test.ts` |
-| Publication and entitlement | `tests/publishEntitlementEndpoint.test.ts`, `tests/postgresPricingTiers.integration.test.ts` |
+| Free publication and sharing | Owner and revision checks plus disposable-Postgres lifecycle coverage |
 | Open squares | `tests/openSquaresOrganizerContract.test.ts`, `tests/openSquaresEndpoint.test.ts` |
 | Manual scoring | `tests/manualScoringMode.test.ts`, `tests/manualScoringPanel.test.tsx`, `tests/manualScoringUiState.test.ts` |
 | Corrections | `tests/milestoneConfirmation.test.ts`, `tests/publishedSquareRename.integration.test.ts` |
@@ -171,7 +170,7 @@ Presentation components hold no business rules. Every rule above is testable wit
 
 Sharing and finalization are separate. The permanent IDs 1–100 identify positions before and after the 0–9 game axes are drawn. `Select squares` permits arbitrary selections including diagonals. One `Allocate squares` editor supplies `Name for these squares`, payment status, and `Apply to {n}`. Initial allocation sets the public displayed name and responsible person or family. Later name edits preserve existing responsibility, including pre-existing allocation-only squares. The single-square editor shows responsibility without another buyer/family mode. Historical private seller metadata is retained and never copied into public allocation. Clearing displayed names preserves responsibility. Allocated names count as filled; payment status remains independent and never blocks publication.
 
-The visible selling summary contains secondary `Share while selling` before sharing, or `Copy link` and `Open shared board` afterward. The next draw/preview action is visible without expanding Organizer status. `My boards` returns to `/dashboard` throughout. Dirty, failed, or conflicted saves block first sharing. `Share while selling` confirms public names and allocations, private payment/contact notes, and use of one seasonal allowance. `Enable shared board` calls the revision-checked owner endpoint. All 100 squares may be unsold when sharing; finalization still requires a buyer and explicit OPEN acknowledgment.
+The visible selling summary contains secondary `Share while selling` before sharing, or `Copy link` and `Open shared board` afterward. The next draw/preview action is visible without expanding Organizer status. `My boards` returns to `/dashboard` throughout. Dirty, failed, or conflicted saves block first sharing. `Share while selling` confirms public names and allocations, and private payment/contact notes. `Enable shared board` calls the revision-checked owner endpoint. All 100 squares may be unsold when sharing; finalization still requires a buyer and explicit OPEN acknowledgment.
 
 For already shared boards, `Preview final board` leads to `Review and lock numbers` then `Lock game numbers`. Participants do not see draft axes; the same URL transitions only after final publication. `Manage board` closes success into the organizer workspace. Existing finalized-board edit/correction boundaries remain intact.
 
@@ -206,7 +205,7 @@ Payment-only writes preserve all other private metadata and public board fields.
 
 OrganizerIsland now uses shared ContextNotch in the reserved top strip. Board / Payments / Share select one attached detail before publication; Game / Results / Share replace those modules after publication. Assignment ring means assigned squares out of 100, never payment completion. Payments details retain paid/unpaid/not-asked square counts and the private-note disclosure, opening the existing sheet via Open payments. After publication Payments remains a workspace action, not a game-day module.
 
-Existing organizerIslandModel issue priority and lifecycle labels/disabled callbacks remain authoritative. Before publication the lifecycle primary action remains below the selected detail. After publication only actionable score or delivery issues retain a global review action; Copy link and Open public board belong inside Share. Share never publishes, enables sharing, or copies automatically. Game shows the score, period and authority inline with an explicit score-authority action. Results shows all four milestone summaries inline; published records expose an explicitly labeled Correct a published result action targeting the existing correction surface. Empty and pending results never imply a winner. Hover preview is now supported only on fine hover pointers, with explicit pin/unpin/close; optional cancellable touch hold remains. Existing confirmations, entitlement gates and private metadata boundaries are unchanged.
+Existing organizerIslandModel issue priority and lifecycle labels/disabled callbacks remain authoritative. Before publication the lifecycle primary action remains below the selected detail. After publication only actionable score or delivery issues retain a global review action; Copy link and Open public board belong inside Share. Share never publishes, enables sharing, or copies automatically. Game shows the score, period and authority inline with an explicit score-authority action. Results shows all four milestone summaries inline; published records expose an explicitly labeled Correct a published result action targeting the existing correction surface. Empty and pending results never imply a winner. Hover preview is now supported only on fine hover pointers, with explicit pin/unpin/close; optional cancellable touch hold remains. Existing confirmations and private metadata boundaries remain in effect.
 
 
 ## Guest claim links (local implementation; default off, legacy)

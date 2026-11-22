@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => {
     getSession: vi.fn(async () => ({ data: { session: null as { access_token: string } | null } })),
     from: vi.fn(),
     deleteEq: vi.fn(),
-    deleteResult: vi.fn(async () => ({ data: [{ id: 'board-1' }], error: null })),
+    deleteResult: vi.fn(async () => ({ data: [{ id: 'board-2' }], error: null })),
   };
 });
 
@@ -52,8 +52,7 @@ const rows = [
     settings: { leftAbbr: 'KC', topAbbr: 'BUF' },
     board_data: boardWithSquares(['Ann', 'Ben', 'Cara']),
     status: 'draft',
-    published_at: null,
-    board_activations: [{ id: 'activation-1' }],
+    published_at: '2026-01-02T00:00:00.000Z',
   },
   {
     id: 'board-2',
@@ -63,7 +62,6 @@ const rows = [
     board_data: null,
     status: 'draft',
     published_at: null,
-    board_activations: [],
   },
 ];
 
@@ -98,7 +96,7 @@ beforeEach(() => {
   mocks.deleteEq.mockReset();
   mocks.deleteEq.mockReturnValue({ select: mocks.deleteResult });
   mocks.deleteResult.mockReset();
-  mocks.deleteResult.mockResolvedValue({ data: [{ id: 'board-1' }], error: null });
+  mocks.deleteResult.mockResolvedValue({ data: [{ id: 'board-2' }], error: null });
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })));
   useContests([]);
 });
@@ -147,11 +145,11 @@ describe('organizer dashboard', () => {
     await screen.findByRole('link', { name: 'Chiefs Fundraiser' });
     const query = mocks.from.mock.results[0].value;
     expect(query.select).toHaveBeenCalledWith(
-      'id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at, board_activations(id)',
+      'id, title, created_at, settings, payout_descriptions, board_data, status, published_at, shared_at',
     );
   });
 
-  it('tags an activated board Published and an untouched board Draft', async () => {
+  it('tags a finalized board Published and an untouched board Draft', async () => {
     useContests(rows);
     renderDashboard();
 
@@ -173,25 +171,25 @@ describe('organizer dashboard', () => {
     useContests(rows);
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete Chiefs Fundraiser' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Booster Draft' }));
     expect(mocks.deleteEq).not.toHaveBeenCalled();
 
-    const confirm = await screen.findByRole('button', { name: 'Confirm deletion of Chiefs Fundraiser' });
+    const confirm = await screen.findByRole('button', { name: 'Confirm deletion of Booster Draft' });
     expect(confirm).toHaveTextContent('Confirm?');
 
     fireEvent.click(confirm);
-    await waitFor(() => expect(mocks.deleteEq).toHaveBeenCalledWith('id', 'board-1'));
-    await waitFor(() => expect(screen.queryByRole('link', { name: 'Chiefs Fundraiser' })).not.toBeInTheDocument());
+    await waitFor(() => expect(mocks.deleteEq).toHaveBeenCalledWith('id', 'board-2'));
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Booster Draft' })).not.toBeInTheDocument());
   });
 
   it('keeps a board visible when deletion affects no records', async () => {
     mocks.deleteResult.mockResolvedValue({ data: [], error: null });
     useContests(rows);
     renderDashboard();
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete Chiefs Fundraiser' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion of Chiefs Fundraiser' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Booster Draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion of Booster Draft' }));
     expect(await screen.findByText('The board could not be deleted. Reload your boards and try again.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Chiefs Fundraiser' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Booster Draft' })).toBeInTheDocument();
   });
 
   it.each([
@@ -217,22 +215,21 @@ describe('organizer dashboard', () => {
     links.forEach((link) => expect(link).toHaveAttribute('href', '/create'));
   });
 
-  it('states the published allowance and plan once billing resolves', async () => {
-    mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token-1' } } });
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ tier: 'gameday', allowance: 5, used: 2 }),
-    })));
+  it('renders without a billing request and keeps the new-board action available', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
     useContests(rows);
     renderDashboard();
 
-    expect(await screen.findByText('2 of 5 published · Game Day')).toBeInTheDocument();
+    expect(await screen.findByText('Published')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'New board' })).toHaveAttribute('href', '/create');
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).startsWith('/api/billing'))).toBe(false);
   });
 });
 
 
 it('distinguishes a shared selling board from finalized numbers and offers Manage board', async () => {
-  useContests([{ ...rows[0], shared_at: '2026-09-04T12:00:00Z' }]);
+  useContests([{ ...rows[0], published_at: null, shared_at: '2026-09-04T12:00:00Z' }]);
   renderDashboard();
   expect(await screen.findByText('Selling squares')).toBeInTheDocument();
   expect(screen.queryByText('Published')).not.toBeInTheDocument();
@@ -240,8 +237,8 @@ it('distinguishes a shared selling board from finalized numbers and offers Manag
 });
 
 
-it('does not offer deletion of a shared board whose link and allowance must survive', async () => {
-  useContests([{ ...rows[0], shared_at: '2026-09-04T12:00:00Z' }]);
+it('does not offer deletion of a shared board whose link and record must survive', async () => {
+  useContests([{ ...rows[0], published_at: null, shared_at: '2026-09-04T12:00:00Z' }]);
   renderDashboard();
   await screen.findByText('Selling squares');
   expect(screen.queryByRole('button', { name: 'Delete Chiefs Fundraiser' })).not.toBeInTheDocument();

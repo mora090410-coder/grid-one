@@ -1,9 +1,7 @@
 import { supabase } from '../../../../services/supabase';
 import { track } from '../../instrumentation/track';
 
-export type PublishResult =
-  | { published: true; shareCode: string; viewerUrl: string; revision: number; tier: string; used: number; allowance: number }
-  | { published: false; upgradeTo: 'gameday' | 'org'; message: string };
+export type PublishResult = { published: true; shareCode: string; viewerUrl: string; revision: number };
 
 /** The board moved past the revision the organizer published from. */
 export class PublishRevisionConflictError extends Error {
@@ -35,11 +33,8 @@ export async function publishBoard(poolId: string, options: { allowOpenSquares: 
       ? { revision: options.revision, allowOpenSquares: true }
       : { revision: options.revision }),
   });
-  const result = await response.json().catch(() => ({}));
+  const result = await response.json().catch(() => null) ?? {};
 
-  if (response.status === 402 && (result.upgradeTo === 'gameday' || result.upgradeTo === 'org')) {
-    return { published: false, upgradeTo: result.upgradeTo, message: result.error };
-  }
   if (response.status === 409 && result.code === 'REVISION_CONFLICT') {
     throw new PublishRevisionConflictError(
       result.error || 'This board changed since you last loaded it. Reload to review the latest names before locking numbers.',
@@ -48,6 +43,15 @@ export async function publishBoard(poolId: string, options: { allowOpenSquares: 
   }
   if (!response.ok) throw new Error(result.error || 'The board could not be published.');
 
+  if (result.published !== true
+    || typeof result.shareCode !== 'string'
+    || !/^[a-z0-9]+$/i.test(result.shareCode)
+    || result.viewerUrl !== `/b/${result.shareCode}`
+    || !Number.isInteger(result.revision)
+    || result.revision < 1) {
+    throw new Error('Publishing could not be confirmed. Reload the board before trying again.');
+  }
+
   track({ name: 'organizer_phase_completed', phase: 'publish' });
 
   return {
@@ -55,8 +59,5 @@ export async function publishBoard(poolId: string, options: { allowOpenSquares: 
     shareCode: result.shareCode,
     viewerUrl: result.viewerUrl,
     revision: result.revision,
-    tier: result.tier,
-    used: result.used,
-    allowance: result.allowance,
   };
 }

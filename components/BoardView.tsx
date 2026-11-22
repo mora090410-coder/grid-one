@@ -30,7 +30,6 @@ const ShareModal = React.lazy(() => import('./board/ShareModal'));
 import FindSquaresModal from './board/FindSquaresModal';
 import { calculateWinnerHighlights } from '../utils/winnerLogic';
 import { restoreViewerIdentitySelection, selectViewerIdentity, serializeViewerIdentitySelection } from '../src/features/viewer/identity/viewerIdentityModel';
-import { createCheckoutSession } from '../services/stripe';
 import { Base, CapsuleButton, Eyebrow } from '../src/design/primitives';
 
 // Custom Hooks
@@ -43,7 +42,6 @@ import { useGuestSync } from '../src/features/guest/useGuestSync';
 import type { GuestSnapshot } from '../src/features/guest/guestInviteTypes';
 import { subscribeGuestInvalidations } from '../src/features/guest/guestInviteService';
 
-type BillingSummary = { tier: string; used: number; allowance: number };
 
 const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }) => {
     const { shareCode: routeShareCode, boardId: routeBoardId } = useParams<{ shareCode?: string; boardId?: string }>();
@@ -58,13 +56,13 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     const {
         game, setGame, board, setBoard, activePoolId, setActivePoolId, shareCode,
         ownerId, loadingPool, dataReady, loadPoolData, error: poolError, revision,
-        isActivated, isLocked, isPublished, isShared, updatedAt, refreshing, refreshError, shareBoard, winnerHistory, pendingMilestones,
+        isLocked, isPublished, isShared, updatedAt, refreshing, refreshError, shareBoard, winnerHistory, pendingMilestones,
         notificationDeliveryIssues, updatePool, updatePayoutDescriptions, updatePublishedOpenSquares, publishPool
     } = poolData;
 
     const auth = useAuth();
     const isOwner = Boolean(auth.user && ownerId && auth.user.id === ownerId);
-    const boardServicesEnabled = Boolean(demoMode || (isPublished && (isActivated || !isOwner)));
+    const boardServicesEnabled = Boolean(demoMode || isPublished);
     const scoringBoardRef = routeShareCode || routeBoardId || (auth.user ? activePoolId : null) || shareCode;
     const liveScoring = useLiveScoring(
         game,
@@ -125,7 +123,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     // Owner-only data never loads on a public viewer route.
     const ownerDataPoolId = isCommissionerMode ? activePoolId : null;
     const { entryMetaByIndex, setEntryMetaByIndex, reloadEntries, hasLoadedEntries, isLoading: entriesLoading, error: entriesError } = useContestEntries(ownerDataPoolId);
-    const [billing, setBilling] = useState<BillingSummary | null>(null);
     const [ownedPublicBoardId, setOwnedPublicBoardId] = useState<string | null>(null);
     useEffect(() => {
         let cancelled = false;
@@ -242,33 +239,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
     }, [loadPoolData, urlPoolId]);
 
     useEffect(() => {
-        let cancelled = false;
-        setBilling(null);
-        // The plan summary is an organizer-only fact; public viewers never ask for it.
-        if (!ownerDataPoolId) return;
-        void supabase.auth.getSession().then(async ({ data }) => {
-            const token = data.session?.access_token;
-            if (!token) {
-                if (!cancelled) setBilling(null);
-                return;
-            }
-            const response = await fetch('/api/billing/status', {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store',
-            });
-            if (!response.ok) {
-                if (!cancelled) setBilling(null);
-                return;
-            }
-            const result = await response.json() as BillingSummary;
-            if (!cancelled) setBilling(result);
-        }).catch(() => {
-            // The board stays usable when the neutral plan summary is unavailable.
-        });
-        return () => { cancelled = true; };
-    }, [ownerDataPoolId]);
-
-    useEffect(() => {
         if (!selectionStorageKey || !dataReady || loadingPool || poolError) return;
         if (hydratedSelectionKey.current === selectionStorageKey) return;
 
@@ -353,7 +323,7 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         servicesEnabled={boardServicesEnabled}
                         organizerPreview={previewMode && isOwner}
                         organizerHref={!previewMode && ownedPublicBoardId ? `/boards/${ownedPublicBoardId}` : undefined}
-                        onShare={activePoolId && isActivated ? () => setShowShareModal(true) : undefined}
+                        onShare={activePoolId && isShared ? () => setShowShareModal(true) : undefined}
                         stageChrome={demoMode && !previewMode}
                     />
                 )}
@@ -439,11 +409,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         ...current,
                         [meta.cell_index]: meta,
                     }))}
-                    billing={billing}
-                    onCheckout={(tier, organizationName) => {
-                        if (!activePoolId) throw new Error('Save this board before upgrading.');
-                        return createCheckoutSession(activePoolId, tier, organizationName);
-                    }}
                     onApply={(g, b) => { setGame(g); setBoard(b); }}
                     onPublish={handlePublish}
                     onSavePayoutDescriptions={(descriptions) => {
@@ -465,7 +430,6 @@ const BoardViewContent: React.FC<{ demoMode?: boolean }> = ({ demoMode = false }
                         if (shareCode) window.open(`/b/${shareCode}`, '_blank', 'noopener,noreferrer');
                     }}
                     onLogout={handleLogout}
-                    isActivated={isActivated}
                     isPublished={isPublished}
                     isShared={isShared}
                     onShareBoard={() => shareBoard(activePoolId || '')}

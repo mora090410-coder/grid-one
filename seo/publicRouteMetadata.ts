@@ -1,4 +1,3 @@
-import { PRICING } from '../src/features/homepage/pricing';
 
 export const SITE_NAME = 'GridOne';
 export const SITE_URL = 'https://www.getgridone.com';
@@ -62,7 +61,7 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
   {
     path: '/',
     title: 'Football Squares for Team Fundraisers | GridOne',
-    description: 'Your team. One board. Less chasing. Create a football-squares board, preview before signup, and share a viewer link. First published board free each season.',
+    description: 'Your team. One board. Less chasing. Create a football-squares board, preview before signup, and share a viewer link. Create and publish boards for free.',
     type: 'website',
     schema: [
       organization,
@@ -77,13 +76,7 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
         applicationCategory: 'SportsApplication',
         operatingSystem: 'Any',
         description: 'Run football squares and Super Bowl squares online for fundraisers, office pools, watch parties, and community groups.',
-        offers: PRICING.map((tier) => ({
-          '@type': 'Offer',
-          name: tier.name,
-          price: tier.price.replace('$', ''),
-          priceCurrency: 'USD',
-          description: tier.detail,
-        })),
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       },
     ],
   },
@@ -111,12 +104,6 @@ export const PUBLIC_ROUTE_METADATA: PublicRouteMetadata[] = [
     '/reset-password',
     'Choose a new password | GridOne',
     'Set a new password for your GridOne organizer account.',
-    { noIndex: true },
-  ),
-  websiteRoute(
-    '/paid',
-    'Checkout status | GridOne',
-    'Confirming your GridOne plan payment and published-board allowance.',
     { noIndex: true },
   ),
   websiteRoute(

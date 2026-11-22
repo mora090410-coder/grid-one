@@ -2,7 +2,6 @@ import {
   findVisiblePublicBoard,
   publicBoardNotFoundResponse,
 } from '../../../_lib/publicBoardVisibility';
-import { hasBoardActivation } from '../../../../utils/boardActivation';
 import {
   applyProviderScore,
   fetchExactEventScore,
@@ -31,9 +30,6 @@ import {
 // fresh; this only fires when the cron has stumbled for several minutes.
 const PUBLIC_REFRESH_GRACE_MS = 5 * 60_000;
 const PUBLIC_CACHE_CONTROL = 'public, s-maxage=30, stale-while-revalidate=60';
-
-export const hasActivatedBoardServices = (contest: { board_activations?: unknown } | null | undefined) =>
-  hasBoardActivation(contest?.board_activations);
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -152,7 +148,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     // The organizer path only ever reads the caller's own board.
     const { data, error } = await admin
       .from('contests')
-      .select('id, owner_id, status, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)')
+      .select('id, owner_id, status, published_at, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr')
       .eq('owner_id', ownerId)
       .eq('id', ref)
       .maybeSingle();
@@ -165,7 +161,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     try {
       const visibleBoard = await findVisiblePublicBoard(admin, ref, {
         snapshot: 'contest_id',
-        contest: 'id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr, board_activations(id)',
+        contest: 'id, owner_id, status, game_external_id, game_starts_at, side_team_name, side_team_abbr, top_team_name, top_team_abbr',
       });
       contest = visibleBoard?.contest || null;
     } catch (error: any) {
@@ -178,10 +174,6 @@ export const onRequestGet: PagesFunction = async (context) => {
       ? json({ error: 'Board not found or not published.' }, 404)
       : publicBoardNotFoundResponse();
   }
-  if (!hasActivatedBoardServices(contest)) {
-    return json({ error: 'Publish this board to use automatic live scoring and updates.' }, 402);
-  }
-
   if (!isPublicRef && (!contest.published_at || !['published', 'live', 'final'].includes(contest.status))) {
     return json({ error: 'Draw and lock the board numbers before managing scores.' }, 409);
   }

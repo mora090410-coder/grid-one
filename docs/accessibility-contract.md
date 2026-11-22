@@ -17,7 +17,7 @@ Every requirement below that is written as an assertion is asserted somewhere in
 
 ## Complete processes in scope
 
-**Organizer:** sign in and sign up · create draft · fill and edit assignments · block selection and assignment · reconcile and acknowledge open squares · draw and commit axes · preview · publish and checkout · recover a save conflict · operate manual scoring · correct published labels and milestones · review the Final record.
+**Organizer:** sign in and sign up · create draft · fill and edit assignments · block selection and assignment · reconcile and acknowledge open squares · draw and commit axes · preview · publish · recover a save conflict · operate manual scoring · correct published labels and milestones · review the Final record.
 
 **Viewer:** open a published link · understand score authority and freshness · find my squares · read personal coordinates, current result, and scenarios · inspect the exact grid · verify winner email · understand pending, resolved, corrected, and OPEN results · use the Final record.
 
@@ -31,7 +31,7 @@ Every site route — homepage, articles hub, guides, legal, login, 404 — rende
 - one `main`;
 - one `contentinfo` footer listing the guides, `All guides`, `Sign in`, `Privacy`, and `Terms`.
 
-Focused, short-lived routes (the checkout return, 404) may omit the footer but never the header or `main`. The wordmark and the header sign-in control are the first two tab stops and both render a visible focus ring. The homepage `Sign in` link meets the 44×44 target contract.
+Focused, short-lived routes (such as the 404) may omit the footer but never the header or `main`. The wordmark and the header sign-in control are the first two tab stops and both render a visible focus ring. The homepage `Sign in` link meets the 44×44 target contract.
 
 ## Semantic structure
 
@@ -122,7 +122,7 @@ Ordinary lists of actions stay buttons and links. Do not invent menu roles.
 - Fields render a real boundary (`border-top-style: solid`), not a placeholder-only affordance.
 - Submit failure preserves entered values.
 - `autocomplete` and password managers are supported. Authentication requires no memory puzzle or transcription challenge.
-- Checkout, publication, correction, and deletion provide review appropriate to their consequence — the publish dialog summarizes board name, matchup, kickoff, square counts, both axes, what becomes public, what remains private, and the season entitlement before the confirming button.
+- Publication, correction, and deletion provide review appropriate to their consequence — the publish dialog summarizes board name, matchup, kickoff, square counts, both axes, what becomes public, what remains private, before the confirming button.
 
 ## Status, live regions, and score updates
 
@@ -190,7 +190,7 @@ The compact cinematic homepage hero does not use `data-reveal`. A bounded Board 
 - A primary action describes its result (`Publish viewer link`, `Publish manual score`, `Publish correction and email both people`, `Draw with {n} OPEN`).
 - Advisories do not masquerade as blockers.
 - Error and recovery copy avoids blame.
-- Time, price, allowance, score authority, and irreversible consequences are explicit.
+- Time, score authority, and irreversible consequences are explicit.
 - The viewer uses no "me" language before a name is selected.
 
 ## Automated gate

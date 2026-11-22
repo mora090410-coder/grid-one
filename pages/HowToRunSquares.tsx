@@ -82,8 +82,8 @@ export const HowToRunSquares: React.FC = () => {
                     <div className="flex gap-4">
                         <span className="flex-none font-mono text-[13px] leading-none text-fg-3 pt-1">2</span>
                         <div>
-                            <h4 className="font-ui text-[17px] font-semibold text-fg">Unlock and share</h4>
-                            <p>Once the board is ready, publish it and send the viewer link to your friends, family, or coworkers. Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.</p>
+                            <h4 className="font-ui text-[17px] font-semibold text-fg">Publish and share</h4>
+                            <p>Once the board is ready, publish it and send the viewer link to your friends, family, or coworkers. Create and publish boards for free.</p>
                         </div>
                     </div>
 

@@ -12,7 +12,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: supabaseMocks.createClient,
 }));
 
-import { onRequestPost as activateBoard } from '../functions/api/pools/activate';
+import { onRequest as activateBoard } from '../functions/api/pools/activate';
 import { expectedMigrationNumbers } from './fixtures/migrationSequence';
 
 const DATABASE_NAME = 'gridone_test';
@@ -305,15 +305,7 @@ const invokeActivationRpc = async (
 };
 
 const activate = async (contestId: string) => {
-  const request = new Request('https://example.test/api/pools/activate', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer local-owner-token',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ contestId }),
-  });
-  const response = await activateBoard({ request, env });
+  const response = await activateBoard();
   return {
     contestId,
     status: response.status,
@@ -372,7 +364,7 @@ describe.sequential('disposable Postgres transaction boundaries', () => {
     const firstRun = await Promise.all(contestIds.map(activate));
     expect(firstRun.every(({ status, body }) => (
       status === 410
-      && body.code === 'PUBLISH_IS_ALLOWANCE_BOUNDARY'
+      && body.code === 'BILLING_RETIRED'
     ))).toBe(true);
     expect(await queryScalar(`
       SELECT count(*)::text

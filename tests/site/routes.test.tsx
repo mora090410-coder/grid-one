@@ -36,7 +36,6 @@ vi.mock('react-router-dom', async () => {
 
 import Login from '../../pages/Login';
 import NotFound from '../../pages/NotFound';
-import Paid from '../../pages/Paid';
 import Privacy from '../../pages/Privacy';
 import Terms from '../../pages/Terms';
 
@@ -137,15 +136,6 @@ describe('NotFound', () => {
   });
 });
 
-describe('Paid', () => {
-  it('announces the checking state politely', async () => {
-    renderAt(<Paid />, '/paid?order=order-1');
-    expect(await screen.findByRole('heading', { name: 'Finishing checkout.' })).toBeInTheDocument();
-    expect(screen.getByText('Secure verification in progress')).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveAttribute('aria-live', 'polite');
-  });
-});
-
 describe('legal pages', () => {
   it.each([
     ['Privacy', Privacy, 'Privacy Policy'],
@@ -156,7 +146,7 @@ describe('legal pages', () => {
     const headings = screen.getAllByRole('heading', { level: 1 });
     expect(headings).toHaveLength(1);
     expect(headings[0]).toHaveTextContent(heading);
-    expect(screen.getByText('Last updated: July 28, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Last updated: November 22, 2026')).toBeInTheDocument();
     unmount();
   });
 });

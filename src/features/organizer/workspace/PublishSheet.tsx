@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sheet, CapsuleButton, CapsuleTag } from '../../../design/primitives';
+import { Sheet, CapsuleButton } from '../../../design/primitives';
 import type { BoardData, GameState } from '../../../../types';
 import { QUARTER_KEYS, QUARTER_LABELS } from '../../../../utils/quarterAxes';
 import { getAxisForQuarter } from '../../../../utils/winnerLogic';
@@ -10,7 +10,6 @@ export interface PublishSheetProps {
   onClose: () => void;
   game: GameState;
   board: BoardData;
-  allowance?: { tier: string; used: number; allowance: number } | null;
   pending: boolean;
   error: string | null;
   disabled: boolean;
@@ -18,14 +17,6 @@ export interface PublishSheetProps {
   /** Present when the board changed since the organizer loaded it. */
   onReload?: () => void;
 }
-
-const TIER_LABEL: Record<string, string> = {
-  gameday: 'Game Day',
-  org: 'Organization',
-  free: 'Free',
-};
-
-const tierLabel = (tier: string) => TIER_LABEL[tier] ?? `${tier.charAt(0).toUpperCase()}${tier.slice(1)}`;
 
 const formatKickoff = (game: GameState): string => {
   if (game.kickoffAt) {
@@ -36,7 +27,7 @@ const formatKickoff = (game: GameState): string => {
 };
 
 /** Confirmation summary shown before a board's viewer link goes live. */
-export default function PublishSheet({ open, isShared = false, onClose, game, board, allowance, pending, error, disabled, onPublish, onReload }: PublishSheetProps) {
+export default function PublishSheet({ open, isShared = false, onClose, game, board, pending, error, disabled, onPublish, onReload }: PublishSheetProps) {
   const assigned = board.squares.filter((s) => s.length).length;
   const open_ = 100 - assigned;
 
@@ -77,10 +68,7 @@ export default function PublishSheet({ open, isShared = false, onClose, game, bo
           <p className="font-ui text-[14px] text-fg-2">Payment status, seller attribution, contact details, and organizer notes.</p>
         </div>
 
-        {isShared && <p className="font-ui text-[14px] text-fg-2">Your existing link will show the final numbers. Numbers and family allocations lock; later buyer corrections are recorded publicly. This uses no additional board from your season allowance.</p>}
-        {allowance && (
-          <CapsuleTag>{allowance.used} of {allowance.allowance} published this season · {tierLabel(allowance.tier)}</CapsuleTag>
-        )}
+        {isShared && <p className="font-ui text-[14px] text-fg-2">Your existing link will show the final numbers. Numbers and family allocations lock; later buyer corrections are recorded publicly.</p>}
 
         {error && (
           <p role="alert" className="font-ui text-[14px] text-tone-cardinal">{error}</p>

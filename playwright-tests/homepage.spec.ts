@@ -39,18 +39,18 @@ for (const width of [320, 390, 1280]) {
   });
 }
 
-test('phone presents the primary action immediately and pricing within three thousand pixels', async ({ page }, testInfo) => {
+test('phone presents the primary action immediately and free access within three thousand pixels', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await settle(page);
   const hero = page.getByTestId('homepage-first-viewport');
-  for (const control of [hero.getByRole('heading', { level: 1 }), hero.getByRole('link', { name: 'Create your free board' }), hero.getByText(/First published board free each season/)]) {
+  for (const control of [hero.getByRole('heading', { level: 1 }), hero.getByRole('link', { name: 'Create your free board' }), hero.getByText(/Create and publish boards for free/)]) {
     const box = await control.boundingBox();
     expect(box!.y).toBeGreaterThanOrEqual(0);
     expect(box!.y + box!.height).toBeLessThanOrEqual(844);
   }
-  const pricing = page.getByRole('heading', { name: 'Your first board is free.' });
-  expect(await pricing.evaluate(element => element.getBoundingClientRect().top + scrollY)).toBeLessThan(3000);
+  const freeAccess = page.getByRole('heading', { name: 'Every board is free.' });
+  expect(await freeAccess.evaluate(element => element.getBoundingClientRect().top + scrollY)).toBeLessThan(3000);
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThan(5000);
   await expect(page.getByRole('region', { name: 'Interactive sample board' })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Comparison table' })).toHaveCount(0);
@@ -236,4 +236,16 @@ test('the score-first cinema tells one truthful story and keeps its actions befo
     await expect(sample).toContainText('Taylor M. matches now');
     expect(await overflow(page)).toBe(0);
   }
+});
+
+test('retired checkout return opens normal recovery rather than resuming a purchase', async ({ page }) => {
+  const billingRequests: string[] = [];
+  page.on('request', request => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith('/api/stripe/') || pathname.startsWith('/api/billing/')) billingRequests.push(pathname);
+  });
+  await page.goto('/paid?order=retired-order');
+  await expect(page.getByRole('link', { name: 'Create a new board' })).toHaveAttribute('href', '/create');
+  await expect(page.getByRole('link', { name: 'See the demo board' })).toHaveAttribute('href', '/demo');
+  expect(billingRequests).toEqual([]);
 });

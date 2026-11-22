@@ -73,11 +73,6 @@ export const installOrganizerSupport = async (page: Page) => {
     contentType: 'application/json',
     body: '[]',
   }));
-  await page.route('**/api/billing/status', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
-  }));
   await page.route('**/api/nfl/games?**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',

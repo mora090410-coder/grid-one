@@ -10,8 +10,7 @@ This file describes the current production architecture, not an immutable topolo
   - `workers/score-refresh-scheduler.ts` (`wrangler.score-scheduler.toml`) calls `POST /api/scores/refresh`.
   - `workers/notification-retry-scheduler.ts` (`wrangler.retry-scheduler.toml`) calls `POST /api/notifications/retry`.
   Both authenticate with `CRON_SECRET`; the endpoints do the work, the workers only wake them.
-- **Data:** Supabase Postgres with Row Level Security. Schema and policies live in `supabase/migrations/` (`000`–`038`; `004` was deliberately removed, see `tests/fixtures/migrationSequence.ts`). 033/034 add privacy-limited client events and retention; 035 hardens score/rename/function authority, 036 restricts organizer column/table grants, 037 rejects seller-name occupancy collisions, and 038 adds direct Organization purchase and single-use verified Game Day credit. Repository inventory is not proof of hosted migration state. The browser client is `services/supabase.ts`.
-- **Payments:** Stripe Checkout — session creation and webhook activation in `functions/api/stripe/`.
+- **Data:** Supabase Postgres with Row Level Security. The migration inventory is in `tests/fixtures/migrationSequence.ts` (the `004` gap is intentional). Migration `041_free_only_board_lifecycle.sql` defines the service-role-only share and publish RPCs. Earlier billing migrations and transaction records remain historical data; repository inventory is not proof of hosted migration state. The browser client is `services/supabase.ts`.
 - **NFL schedule and live score:** ESPN, server-side only, through `functions/_lib/espnNfl.ts`. `functions/api/nfl/games.ts` lists scheduled games; `functions/api/scores/refresh.ts` fetches the live scoreboard **once per cron tick for the whole slate** and promotes canonical snapshots.
 - **Paper-board import:** Gemini OCR runs only inside `functions/api/boards/scan.ts`. It never runs in the browser.
 - **Email:** Resend, server-side, from the notification endpoints.
@@ -34,7 +33,6 @@ This file describes the current production architecture, not an immutable topolo
 | `/reset-password` | `pages/ResetPassword` — handles the recovery redirect and sets a new password |
 | `/dashboard` | `pages/Dashboard` behind `RequireAuth` |
 | `/create` | Public `pages/CreateContest` preview; API creation remains authenticated |
-| `/paid` | `pages/Paid` — checkout return |
 | `/articles`, `/articles/:slug` (12 guides) | `pages/*` (lazy) |
 | `/privacy`, `/terms` | `pages/Privacy`, `pages/Terms` |
 | `*` | `pages/NotFound` |
@@ -55,9 +53,9 @@ Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current r
 
 ### `src/features/` — the shipped surfaces
 
-- `homepage/` — `Homepage.tsx` composes the static hero, ivory organizer chapter, score explanation, pricing/FAQ and local grouped footer. Sample data remains in `demoData.ts` and `renders/organizerDemoData.ts`; `pricing.ts` is the price ladder. `atmosphere/useScoreExplanation.ts` imports GSAP only when the score explanation enters view, owns one local timeline/observer, and reverts on unmount. The former fill, parallax, reveal and device-preview implementations have been retired from the homepage. Shared motion primitives remain available to other surfaces.
+- `homepage/` — `Homepage.tsx` composes the cinematic hero, compact workflow, closing calls to action, and footer. The sample board is demonstration data; the homepage offers free organizer accounts and the signed-out demo.
 - `viewer/` — composed by `shell/ViewerShell.tsx`: `shell/ViewerIsland`, `score/ScoreInstrument`, `identity/FindSquaresEntry`, `personal/YourSquaresSummary`, `scenarios/ScenarioDisclosure`, `notifications/WinnerEmailDisclosure`, `details/BoardDetailsDisclosure`, `board/ViewerBoardGrid`. Pure logic sits beside each: `viewerScoreModel`, `scenarioModel` (including `currentSquareIndex`, the one current-square rule), `milestoneViewModel`, `boardGridModel`. `identity/viewerIdentityModel.ts` owns the saved Find my squares selection: `BoardView` restores and saves it through the model under `gridone:find-squares:<SHARECODE>` as `version: 2` (`participantId` plus `displayName`; `participantId` is null for boards without participants or a display name two participants share). A `version: 1` display-name selection is migrated on read, and the seller claim page writes the same version 2 shape.
-- `organizer/` — `workspace/OrganizerWorkspace.tsx` composes `WorkspaceHeader`, `OrganizerIsland`, `BoardEditor`, `RangeAssignBar`, `SquareSheet`, `DrawControl`, `ReconcileCard`, `PayoutRulesCard`, `BoardToolsCard`, the `PreviewSheet` → `PublishSheet` → `PublishedSheet` sequence, `UpgradeSheet`, and `gameday/` (`SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard`). Behavior lives in `lifecycle/organizerLifecycle.ts`, `lifecycle/workspaceGates.ts` (blocker copy, draw/publish gates, next step), `workspace/workspaceBoardModel.ts` (square, range, availability and draw rules), `game-day/useGameDayScoring.ts`, `workspace/usePayoutDraft.ts`, `draft/draftSaveModel.ts`, `game-day/manualScoringModel.ts`, and the workspace's own `useWorkspaceDraft`, `selection`, `secureDraw`, `publishBoard`, `applyScheduledGame`, `entryMetaService`, `renamePublishedSquare`.
+- `organizer/` — `workspace/OrganizerWorkspace.tsx` composes `WorkspaceHeader`, `OrganizerIsland`, `BoardEditor`, `RangeAssignBar`, `SquareSheet`, `DrawControl`, `ReconcileCard`, `PayoutRulesCard`, `BoardToolsCard`, the `PreviewSheet` → `PublishSheet` → `PublishedSheet` sequence, and `gameday/` (`SharePanel`, `ScoreAuthorityCard`, `CorrectionsCard`, `DeliveryIssuesCard`, `FinalRecordCard`). Behavior lives in `lifecycle/organizerLifecycle.ts`, `lifecycle/workspaceGates.ts` (blocker copy, draw/publish gates, next step), `workspace/workspaceBoardModel.ts` (square, range, availability and draw rules), `game-day/useGameDayScoring.ts`, `workspace/usePayoutDraft.ts`, `draft/draftSaveModel.ts`, `game-day/manualScoringModel.ts`, and the workspace's own `useWorkspaceDraft`, `selection`, `secureDraw`, `publishBoard`, `applyScheduledGame`, `entryMetaService`, `renamePublishedSquare`.
 - `site/` — the chrome shared by every non-product route: `SiteHeader`, `SiteFooter`, `SitePage`, `ArticleShell`.
 - `instrumentation/` — `eventSchema.ts` (the closed event union), `clientEvents.ts` (validating recorder) and `track.ts` (fire-and-forget `sendBeacon`/keepalive delivery to `POST /api/events`; production builds only, skipped under Do Not Track or Global Privacy Control, same-tick duplicates dropped). Wired: homepage CTAs, Find my squares open/resolved/no-match, winner-email form shown, publish/share completion (`publishBoard.ts`, `usePoolData.shareBoard`), copy-link `clipboard_denied`, and `image_export_failed` in `utils/boardImage.ts`.
 
@@ -66,7 +64,7 @@ Every route in `App.tsx` is a lazy chunk. At boot `App.tsx` starts the current r
 - `pages/` — route-level orchestration only.
 - `components/` — `BoardView` (the viewer/organizer host), auth guards, error boundary, loading.
 - `hooks/` — `usePoolData` (board read/write; every revision-carrying write runs through one queue, and a load older than an acknowledged save is dropped), `useContestEntries` (private notes; `background` reloads never lock the editor), `useLiveScoring` (score polling and freshness; one read at a time, newest answer wins), `useBoardActions` (publish/join), `useAuth`.
-- `services/` — `supabase.ts`, `scoreService.ts`, `stripe.ts`, `boardImportService.ts`. Feature services (`src/features/*/services`, `entryMetaService`, `publishBoard`, `sellerLinkService`, and others) also call `/api` directly; there is no single browser API client yet.
+- `services/` — `supabase.ts`, `scoreService.ts`, `boardImportService.ts`. Feature services (`src/features/*/services`, `entryMetaService`, `publishBoard`, `sellerLinkService`, and others) also call `/api` directly; there is no single browser API client yet.
 - `utils/` — pure logic with unit tests, shared by browser and server: winner logic, quarter axes, board validation, `scheduledGame.ts` (away team = side axis, home = top), retry/backoff, board image.
 - `context/AuthContext` — Supabase session; `loading` stays true until the first sign-in check settles.
 
@@ -114,14 +112,13 @@ functions/api/boards/[shareCode]/subscribe.ts           winner-email opt-in
 functions/api/notifications/verify.ts
 functions/api/notifications/unsubscribe.ts
 functions/api/notifications/retry.ts                    cron-driven delivery retry
-functions/api/billing/status.ts
-functions/api/stripe/create-checkout-session.ts
-functions/api/stripe/webhook.ts
 ```
+
+Former billing API paths return an uncached HTTP 410 after the free-only cutover. Do not cut over while a legitimate historical payment still needs webhook settlement.
 
 ## Security boundaries
 
-- Browser and server are separate security boundaries. Service-role, Stripe secret, Gemini, email, and cron secrets exist only in Pages Functions and Workers.
+- Browser and server are separate security boundaries. Service-role, Gemini, email, and cron secrets exist only in Pages Functions and Workers.
 - Email links are scanner-safe: a GET of `/api/notifications/verify` or `/unsubscribe` only renders a no-store, no-referrer, noindex confirmation form; the state change happens on POST (the form button, or RFC 8058 one-click via the `List-Unsubscribe`/`List-Unsubscribe-Post` headers on winner emails).
 - Every contest table is under RLS; the anon key alone grants nothing an unauthenticated viewer should not see.
 - Manual score authority is canonical until the organizer returns to automatic. A late or stale automatic result can never overwrite manual or newer state (`014_score_promotion_ordering.sql`).
@@ -138,7 +135,7 @@ functions/api/stripe/webhook.ts
 
 ## Pre-game sharing (September 4)
 
-`026_pregame_sharing.sql` adds explicit `contests.shared_at`, guarded owner sharing via service-only `gridone_share_board`, seasonal allowance reservation, and safe public allocation projection. First share reserves activation; `published_at` continues to represent final number locking. All scoring entry points must require finalization as well as activation. The existing final snapshot lookup takes precedence over a strict sales projection at the same share code.
+`026_pregame_sharing.sql` introduced explicit `contests.shared_at` and a safe public allocation projection. The current application calls the service-role-only `gridone_share_free_board` and `gridone_publish_free_board` RPCs from migration 041. Sharing and publication do not require a paid entitlement. `published_at` continues to represent final number locking. Scoring still requires finalization and activation. The existing final snapshot lookup takes precedence over a strict sales projection at the same share code.
 
 `POST /api/pools/:id/share` requires verified organizer identity and current revision. `functions/_lib/pregameBoard.ts` validates exactly 100 buyer cells/public allocation labels and constructs the narrow selling payload. It never projects private metadata, draft numbers, scoring or contact information. `BoardData.allocationLabels` is explicit public data independent of private entry metadata. `usePoolData` tracks sharing separately and retains visible data during background refresh. `SalesBoardViewer` owns selling presentation; `ViewerShell` retains finalized game-day behavior.
 

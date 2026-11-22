@@ -75,7 +75,6 @@ import PayoutRulesCard from './PayoutRulesCard';
 import BoardToolsCard from './BoardToolsCard';
 import PreviewSheet from './PreviewSheet';
 import PublishSheet from './PublishSheet';
-import UpgradeSheet from './UpgradeSheet';
 import PublishedSheet from './PublishedSheet';
 import SharePanel from './gameday/SharePanel';
 import ScoreAuthorityCard from './gameday/ScoreAuthorityCard';
@@ -101,7 +100,6 @@ export interface OrganizerWorkspaceProps {
   onOpenViewer?: () => void;
   onRunAnotherBoard?: (template: BoardTemplate) => void;
   onLogout: () => void;
-  isActivated: boolean;
   isPublished: boolean;
   isShared?: boolean;
   onShareBoard?: () => Promise<void>;
@@ -111,11 +109,9 @@ export interface OrganizerWorkspaceProps {
   revision: number;
   entryMeta: Record<number, EntryMeta>;
   onEntryMetaChange: (meta: EntryMeta) => void;
-  billing?: { tier: string; used: number; allowance: number } | null;
-  onCheckout?: (tier: 'gameday' | 'org', organizationName?: string) => Promise<void>;
 }
 
-type PublishedBoard = Extract<PublishResult, { published: true }>;
+type PublishedBoard = PublishResult;
 
 const PUBLISH_BLOCKED = 'Publish blocked. Reload or save the latest clean draft before publishing.';
 const PUBLISHED_IMMUTABLE = 'Published assignments cannot be changed. Select OPEN squares only.';
@@ -146,8 +142,6 @@ export default function OrganizerWorkspace({
   revision,
   entryMeta,
   onEntryMetaChange,
-  billing,
-  onCheckout,
   onApply,
   onPublish,
   onSavePayoutDescriptions,
@@ -156,7 +150,6 @@ export default function OrganizerWorkspace({
   onOpenViewer,
   onRunAnotherBoard,
   onLogout,
-  isActivated,
   isPublished,
   isShared = false,
   onShareBoard,
@@ -226,9 +219,6 @@ export default function OrganizerWorkspace({
   // The server refused to lock names the organizer has not seen. Only a
   // reload clears it; publishing again would hit the same conflict.
   const [publishConflict, setPublishConflict] = useState(false);
-  const [upgradeTier, setUpgradeTier] = useState<'gameday' | 'org' | null>(null);
-  const [upgradeError, setUpgradeError] = useState<string | null>(null);
-  const [organizationName, setOrganizationName] = useState('');
   const [published, setPublished] = useState<PublishedBoard | null>(null);
   const [publishedOpen, setPublishedOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -415,8 +405,6 @@ export default function OrganizerWorkspace({
       setShareOpen(false);
       setNote('Your board is shared. Keep assigning squares here. Everyone sees updates at the same link.');
     } catch (error) {
-      const upgradeTo = (error as { upgradeTo?: 'gameday' | 'org' })?.upgradeTo;
-      if (upgradeTo) { setShareOpen(false); setUpgradeTier(upgradeTo); }
       setShareError(error instanceof Error ? error.message : 'Sharing failed. Try again.');
     } finally { setSharePending(false); }
   };
@@ -583,12 +571,6 @@ export default function OrganizerWorkspace({
         allowOpenSquares: board.allowOpenSquares === true && openCount > 0,
         revision: flushed.revision,
       });
-      if (!result.published) {
-        setPublishOpen(false);
-        setUpgradeError(result.message || null);
-        setUpgradeTier(result.upgradeTo);
-        return;
-      }
       setPublished(result);
       setPublishOpen(false);
       setPublishedOpen(true);
@@ -624,16 +606,6 @@ export default function OrganizerWorkspace({
       await navigator.clipboard.writeText(shareUrl);
     } catch {
       // The published sheet shows the link and its own copy control.
-    }
-  };
-
-  const checkout = async () => {
-    if (!upgradeTier) return;
-    setUpgradeError(null);
-    try {
-      await onCheckout?.(upgradeTier, upgradeTier === 'org' ? organizationName.trim() : undefined);
-    } catch (error: any) {
-      setUpgradeError(error?.message || 'Checkout could not be started.');
     }
   };
 
@@ -774,7 +746,7 @@ export default function OrganizerWorkspace({
     canRefresh: () => saveState.status === 'clean'
       && !familyBusy && !paymentBusy && !paymentsOpen && !rangeBusy && privateWritesPending === 0 && !privateNotesUncertain
       && !payouts.pending && selectedSquare === null && !drawRequested && !drawPreview
-      && !previewOpen && !publishOpen && !shareOpen && upgradeTier === null && panel === null,
+      && !previewOpen && !publishOpen && !shareOpen && panel === null,
     refresh: async () => { await onReload?.({ background: true }); },
   });
 
@@ -857,8 +829,7 @@ export default function OrganizerWorkspace({
       onRetry={() => void retry()}
       onReload={() => void reloadLatest()}
       onLogout={onLogout}
-      actions={<><CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>
-        {onCheckout && billing?.tier !== 'org' && <CapsuleButton variant="quiet" onClick={() => leaveTaskFor(() => { setUpgradeError(null); setUpgradeTier('org'); })}>Season plans</CapsuleButton>}</>}
+      actions={<CapsuleButton variant="quiet" onClick={event => { event.currentTarget.focus(); openPayments(); }}>Payments</CapsuleButton>}
     />
 
     </div>
@@ -919,24 +890,11 @@ export default function OrganizerWorkspace({
         onClose={() => setPublishOpen(false)}
         game={game}
         board={board}
-        allowance={billing}
         pending={publishPending}
         error={publishError ?? (publishBlocked ? blockerMessage(firstBlocker) ?? null : null)}
         disabled={!axesCommitted || conflicted || publishPending || publishBlocked || publishConflict}
         onPublish={() => void publish()}
         onReload={publishConflict ? () => void reloadAfterPublishConflict() : undefined}
-      />
-
-      <UpgradeSheet
-        open={upgradeTier !== null}
-        tier={upgradeTier ?? 'gameday'}
-        onTierChange={setUpgradeTier}
-        allowGameDay={billing?.tier !== 'gameday' && billing?.tier !== 'org'}
-        error={upgradeError}
-        organizationName={organizationName}
-        onOrganizationNameChange={setOrganizationName}
-        onClose={() => setUpgradeTier(null)}
-        onCheckout={() => void checkout()}
       />
 
       <PublishedSheet
@@ -1055,7 +1013,7 @@ export default function OrganizerWorkspace({
       </IslandDialog>
       <IslandDialog open={panel === 'score'} onClose={closePanel} title="Score authority">
         {isPublished && <div id="organizer-score"><ScoreAuthorityCard game={game} liveData={liveData}
-          scoreSaveStatus={gameDay.scoreSaveStatus} isActivated={isActivated}
+          scoreSaveStatus={gameDay.scoreSaveStatus} isPublished={isPublished}
           onEnableAutomaticScoring={() => void gameDay.enableAutomaticScoring()}
           onEnableManualScoring={() => void gameDay.enableManualScoring()}
           onUpdateManualGameState={gameDay.updateManualGameState} onUpdateManualPeriod={gameDay.updateManualPeriod}

@@ -108,11 +108,11 @@ describe('copy-link failures', () => {
 
 describe('organizer phases', () => {
   it('tracks publish completion only after the server confirms it', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ error: 'Choose a plan', upgradeTo: 'gameday' }, 402)));
-    await publishBoard('pool-1', { allowOpenSquares: false, revision: 3 });
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: 'Board unavailable' }, 503)));
+    await expect(publishBoard('pool-1', { allowOpenSquares: false, revision: 3 })).rejects.toThrow('Board unavailable');
     expect(track).not.toHaveBeenCalled();
 
-    vi.stubGlobal('fetch', vi.fn(async () => json({ shareCode: 'ABCDEFGH', viewerUrl: '/p/ABCDEFGH', revision: 2, tier: 'free', used: 1, allowance: 1 })));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 2 })));
     await publishBoard('pool-1', { allowOpenSquares: false, revision: 3 });
     expect(track).toHaveBeenCalledWith({ name: 'organizer_phase_completed', phase: 'publish' });
   });
@@ -120,12 +120,12 @@ describe('organizer phases', () => {
   it('tracks share completion only after a confirmed share', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const stored = { id, title: 'Team board', revision: 3, board: boardWithNames('Ann'), published_at: null, shared_at: null, updated_at: '2026-09-04T12:01:00Z', share_code: 'ABCDEFGH', is_activated: true };
-    let shareStatus = 402;
+    let shareStatus = 503;
     vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
       if (!init?.method) return json(stored);
       return shareStatus === 200
         ? json({ shared: true, sharedAt: '2026-09-04T12:02:00Z', shareCode: 'ABCDEFGH', revision: 4 })
-        : json({ error: 'Choose a plan', upgradeTo: 'gameday' }, shareStatus);
+        : json({ error: 'Board unavailable' }, shareStatus);
     }));
     const { result } = renderHook(() => usePoolData());
     await act(async () => { await result.current.loadPoolData(id); });

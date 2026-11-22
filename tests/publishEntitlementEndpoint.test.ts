@@ -85,9 +85,6 @@ const adminClient = ({
   rpcData = [{
     share_code: 'ABCDEFGH',
     next_revision: 5,
-    tier: 'free',
-    used: 1,
-    allowance: 1,
   }],
   rpcError = null as null | { message: string },
 }: {
@@ -117,7 +114,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe.sequential('publish entitlement boundary', () => {
+describe.sequential('free publishing boundary', () => {
   it.each([
     ['no body', undefined],
     ['an empty body', {}],
@@ -225,7 +222,7 @@ describe.sequential('publish entitlement boundary', () => {
     expect(mocks.createClient).toHaveBeenCalledTimes(1);
   });
 
-  it('publishes through the server RPC without an activation precheck', async () => {
+  it('publishes through the free atomic RPC without an activation precheck', async () => {
     const admin = adminClient();
     mocks.clients.push(authClient(), admin);
 
@@ -241,15 +238,12 @@ describe.sequential('publish entitlement boundary', () => {
       shareCode: 'ABCDEFGH',
       viewerUrl: '/b/ABCDEFGH',
       revision: 5,
-      tier: 'free',
-      used: 1,
-      allowance: 1,
     });
     expect(admin.query.select).toHaveBeenCalledWith(
       expect.not.stringContaining('board_activations'),
     );
     expect(admin.rpc).toHaveBeenCalledWith(
-      'gridone_publish_board',
+      'gridone_publish_free_board',
       expect.objectContaining({
         p_contest_id: '33333333-3333-4333-8333-333333333333',
         p_owner_id: 'user-1',
@@ -303,7 +297,7 @@ describe.sequential('publish entitlement boundary', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(admin.rpc).toHaveBeenCalledWith('gridone_publish_board', expect.objectContaining({
+    expect(admin.rpc).toHaveBeenCalledWith('gridone_publish_free_board', expect.objectContaining({
       p_allow_open_squares: true,
       p_normalized_names: expect.arrayContaining([[]]),
       p_public_board: expect.objectContaining({ allowOpenSquares: true }),
@@ -331,47 +325,24 @@ describe.sequential('publish entitlement boundary', () => {
     expect(admin.rpc).not.toHaveBeenCalled();
   });
 
-  it.each([
-    [
-      'free',
-      1,
-      1,
-      'gameday',
-      'Your free plan includes 1 board per season. Choose the Game Day plan to publish another.',
-    ],
-    [
-      'gameday',
-      5,
-      5,
-      'org',
-      'Your Game Day plan has published all 5 boards for this season.',
-    ],
-  ] as const)(
-    'returns the server-owned %s allowance edge',
-    async (tier, used, allowance, upgradeTo, error) => {
-      const admin = adminClient({
-        rpcData: null,
-        rpcError: {
-          message: `PUBLISH_ALLOWANCE_EXHAUSTED:${tier}:${used}:${allowance}`,
-        },
-      });
-      mocks.clients.push(authClient(), admin);
+  it('rejects oversized JSON before board reads or writes', async () => {
+    const admin = adminClient();
+    mocks.clients.push(authClient(), admin);
+    const response = await publishBoard({
+      request: request({ revision: 4, padding: 'x'.repeat(5000) }),
+      env,
+      params: { id: contest.id },
+    });
+    expect(response.status).toBe(413);
+    expect(admin.from).not.toHaveBeenCalled();
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
 
-      const response = await publishBoard({
-        request: request(),
-        env,
-        params: { id: '33333333-3333-4333-8333-333333333333' },
-      });
-
-      expect(response.status).toBe(402);
-      await expect(response.json()).resolves.toEqual({
-        code: 'PUBLISH_ALLOWANCE_EXHAUSTED',
-        error,
-        tier,
-        used,
-        allowance,
-        upgradeTo,
-      });
-    },
-  );
+  it('does not offer a checkout if the free database lifecycle is unavailable', async () => {
+    const admin = adminClient({ rpcData: null, rpcError: { message: 'missing free lifecycle RPC' } });
+    mocks.clients.push(authClient(), admin);
+    const response = await publishBoard({ request: request(), env, params: { id: contest.id } });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'The board could not be published. Please try again.' });
+  });
 });

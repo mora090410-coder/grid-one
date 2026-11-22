@@ -10,8 +10,6 @@ import { escapeHtml, hmacSha256Hex, sha256Hex, timingSafeEqual } from '../functi
 import { authRejectedToken, currentSeason, readJsonObject, runBounded } from '../functions/_lib/http';
 import { hashFamilyToken } from '../functions/_lib/familyAccess';
 import { hashGuestCredential } from '../functions/_lib/guestInviteCredentials';
-import { allowanceErrorMessage } from '../functions/_lib/pricingTiers';
-import { PRICING } from '../src/features/homepage/pricing';
 
 beforeAll(() => {
   // tests/setup.ts installs a toy digest; these checks need real SHA-256 and HMAC.
@@ -117,17 +115,5 @@ describe('shared http helpers', () => {
     });
     expect(peak).toBe(3);
     expect(seen.sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
-  });
-});
-
-describe('allowance copy matches the pricing ladder', () => {
-  it('uses the board counts written in the homepage pricing', () => {
-    const detail = (id: string) => PRICING.find((tier) => tier.id === id)!.detail;
-    expect(detail('free')).toContain('1 published board');
-    expect(allowanceErrorMessage('ALLOWANCE_EXHAUSTED', 'free')).toContain('1 board per season');
-    expect(detail('gameday')).toContain('up to 5 published boards');
-    expect(allowanceErrorMessage('ALLOWANCE_EXHAUSTED', 'gameday')).toContain('all 5 boards');
-    expect(detail('org')).toContain('up to 50 published boards');
-    expect(allowanceErrorMessage('ALLOWANCE_EXHAUSTED', 'org')).toContain('all 50 boards');
   });
 });

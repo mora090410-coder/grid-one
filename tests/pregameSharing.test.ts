@@ -35,7 +35,7 @@ const id='11111111-1111-4111-8111-111111111111';
 const invokeShare=(revision:any=4,token='token')=>shareBoard({request:new Request('https://example.test/api/pools/'+id+'/share',{method:'POST',headers:{Authorization:token?'Bearer '+token:'','Content-Type':'application/json'},body:JSON.stringify({revision})}),env,params:{id}});
 const authClient=(confirmed=true)=>({auth:{getUser:vi.fn(async()=>({data:{user:{id,email:'owner@example.test',email_confirmed_at:confirmed?'2026-01-01':null}}}))}});
 beforeEach(()=>{mocks.clients.length=0;});
-describe('share endpoint authorization and allowance',()=>{
+describe('free share endpoint authorization',()=>{
  it('requires sign-in and verified email',async()=>{
   expect((await invokeShare(4,'')).status).toBe(401);
   mocks.clients.push(authClient(false)); expect((await invokeShare()).status).toBe(403);
@@ -44,16 +44,21 @@ describe('share endpoint authorization and allowance',()=>{
   mocks.clients.push(authClient()); expect((await invokeShare('4')).status).toBe(409);
  });
  it('uses verified owner identity and returns stable participant link',async()=>{
-  const rpc=vi.fn(async()=>({data:[{share_code:'ABCDEFGH',next_revision:5,shared_at:'2026-09-01',tier:'free',used:1,allowance:1}],error:null}));
+  const rpc=vi.fn(async()=>({data:[{share_code:'ABCDEFGH',next_revision:5,shared_at:'2026-09-01'}],error:null}));
   mocks.clients.push(authClient(),{rpc}); const response=await invokeShare();
-  expect(rpc).toHaveBeenCalledWith('gridone_share_board',{p_contest_id:id,p_owner_id:id,p_expected_revision:4});
-  expect(await response.json()).toMatchObject({shared:true,viewerUrl:'/b/ABCDEFGH',sharedAt:'2026-09-01',revision:5,used:1});
+  expect(rpc).toHaveBeenCalledWith('gridone_share_free_board',{p_contest_id:id,p_owner_id:id,p_expected_revision:4});
+  expect(await response.json()).toEqual({shared:true,shareCode:'ABCDEFGH',viewerUrl:'/b/ABCDEFGH',sharedAt:'2026-09-01',revision:5});
  });
- it('preserves revision conflict and upgrade handling',async()=>{
+ it('preserves the revision conflict without any billing response',async()=>{
   mocks.clients.push(authClient(),{rpc:async()=>({data:[],error:null})});
   const conflict=await invokeShare();expect(conflict.status).toBe(409);expect(await conflict.json()).toMatchObject({code:'REVISION_CONFLICT'});
-  mocks.clients.push(authClient(),{rpc:async()=>({data:null,error:{message:'PUBLISH_ALLOWANCE_EXHAUSTED:gameday:5:5'}})});
-  const exhausted=await invokeShare();expect(exhausted.status).toBe(402);expect(await exhausted.json()).toMatchObject({used:5,allowance:5,upgradeTo:'org'});
+ });
+ it('rejects oversized JSON before using the share RPC',async()=>{
+  const rpc=vi.fn();
+  mocks.clients.push(authClient(),{rpc});
+  const request=new Request('https://example.test/api/pools/'+id+'/share',{method:'POST',headers:{Authorization:'Bearer token'},body:JSON.stringify({revision:4,padding:'x'.repeat(5000)})});
+  expect((await shareBoard({request,env,params:{id}})).status).toBe(413);
+  expect(rpc).not.toHaveBeenCalled();
  });
 });
 const query=(data:any)=>{

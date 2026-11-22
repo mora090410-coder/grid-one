@@ -12,7 +12,7 @@ const Terms: React.FC = () => {
       path="/terms"
       lede={
         <>
-          <span className="mb-3 block font-mono text-[13px] text-fg-3">Last updated: July 28, 2026</span>
+          <span className="mb-3 block font-mono text-[13px] text-fg-3">Last updated: November 22, 2026</span>
           GridOne is a tracking and visualization tool for football squares boards. We help organizers manage square assignments, share read-only results, and calculate score scenarios in one viewer link.
         </>
       }
@@ -54,12 +54,11 @@ const Terms: React.FC = () => {
       </section>
 
       <section>
-        <h2>5. Payments</h2>
+        <h2>5. Free access</h2>
         <p>
-          GridOne includes one published board per account per season at no charge. For the 2026 season, the Game Day plan is a one-time $9.99 payment for up to 5 published boards, and the Organization plan is $79 per season for up to 50 published boards and the organization features described at checkout. Payments are processed securely via Stripe.
+          Creating, publishing, and viewing boards on GridOne is free. No payment is required to use GridOne.
         </p>
         <ul>
-          <li>All sales are final once a paid plan has been used to publish a board.</li>
           <li>Viewer access is read-only; organizer edit controls remain tied to the organizer account.</li>
         </ul>
       </section>

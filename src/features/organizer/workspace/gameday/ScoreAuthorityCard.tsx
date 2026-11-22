@@ -9,7 +9,7 @@ export interface ScoreAuthorityCardProps {
   game: GameState;
   liveData: LiveGameData | null;
   scoreSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
-  isActivated: boolean;
+  isPublished: boolean;
   onEnableAutomaticScoring: () => void;
   onEnableManualScoring: () => void;
   onUpdateManualGameState: (state: ManualGameState) => void;
@@ -22,7 +22,7 @@ export default function ScoreAuthorityCard({
   game,
   liveData,
   scoreSaveStatus,
-  isActivated,
+  isPublished,
   onEnableAutomaticScoring,
   onEnableManualScoring,
   onUpdateManualGameState,
@@ -55,7 +55,7 @@ export default function ScoreAuthorityCard({
         <p className="font-mono text-[13px] text-fg-3">Score unavailable · {retrieved}</p>
       )}
       <ManualScoringPanel
-        isActivated={isActivated}
+        isPublished={isPublished}
         game={game}
         scoreSaveStatus={scoreSaveStatus}
         onEnableAutomaticScoring={onEnableAutomaticScoring}

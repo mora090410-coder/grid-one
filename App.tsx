@@ -20,7 +20,6 @@ const Login = React.lazy(() => import('./pages/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
-const Paid = React.lazy(() => import('./pages/Paid'));
 const Privacy = React.lazy(() => import('./pages/Privacy'));
 const Terms = React.lazy(() => import('./pages/Terms'));
 const FamilyWorkspace = React.lazy(() => import('./src/features/family/FamilyWorkspace'));
@@ -66,7 +65,7 @@ const HomepageProductFallback = () => (
     <Logo variant="horizontal" tone="reversed" size={32} />
     <h1 className="mt-3 text-4xl font-black">Football squares. Made easy.</h1>
     <p className="mt-4">Create your board, share one link, and follow the scores and quarter winners.</p>
-    <p className="mt-4">First published board free. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
+    <p className="mt-4">Create and publish boards for free. GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.</p>
   </main>
 );
 
@@ -125,7 +124,6 @@ const App: React.FC = () => {
 
               <Route path="/family" element={<FamilyWorkspace />} />
               <Route path="/s/:code" element={<SellerClaimPage />} />
-              <Route path="/paid" element={<Paid />} />
               <Route path="/articles" element={<ArticlesHub />} />
               <Route path="/articles/run-your-pool-alternative" element={<RunYourPoolAlternative />} />
               <Route path="/articles/how-to-run-super-bowl-squares" element={<HowToRunSquares />} />

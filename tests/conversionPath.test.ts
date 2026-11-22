@@ -5,15 +5,15 @@ import { describe, expect, it } from 'vitest';
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 const homepageCorpus = () => [
   'src/features/homepage/Homepage.tsx',
-  'src/features/homepage/pricing.ts',
+  'src/features/homepage/disclosures.ts',
   'src/features/homepage/cinematic/CinematicHomepage.tsx',
   'src/features/homepage/cinematic/cinematicModel.ts',
   'src/features/homepage/sections/CompactWorkflow.tsx',
-  'src/features/homepage/sections/PriceAndClose.tsx',
+  'src/features/homepage/sections/FreeAccessClose.tsx',
   'src/features/homepage/sections/Footer.tsx',
 ].map(source).join('\n');
 
-const exactPricing = 'Your first published board is free. Game Day is $9.99 once for up to 5 published boards in the 2026 season. Organization is $79 per season for up to 50 published boards.';
+const freeAccess = 'Create and publish boards for free.';
 const exactBoundary = 'GridOne tracks the board. It does not collect square money, hold funds, settle payments, or pay winners.';
 
 describe('public conversion path', () => {
@@ -26,29 +26,28 @@ describe('public conversion path', () => {
   it('answers landing-page objections and closes with a second conversion point', () => {
     const homepage = homepageCorpus();
     for (const copy of [
-      'Give your team one board to share. Know what’s filled before kickoff.',
+      'Football squares for team fundraisers.',
       'Viewers open the link without creating an account',
       'Do viewers need an account?',
       'Does GridOne collect square money?',
-      'When do I pay?',
+      'Is GridOne free?',
       'Public viewer link: viewing only.',
       'that seller’s unsold squares by name until the numbers lock',
       'Private family editing links are separate; payment notes stay private.',
-      'Your first board is free.',
-      'organization naming, shared dashboard, and one organization receipt',
+      'Every board is free.',
       exactBoundary,
     ]) expect(homepage).toContain(copy);
-    // The second conversion point must be rendered beside pricing, not just
+    // The second conversion point must be rendered beside the free-access message, not just
     // survive in an unused legacy section included by a directory-wide scan.
-    expect(source('src/features/homepage/Homepage.tsx')).toContain('<PriceAndClose />');
-    expect(source('src/features/homepage/sections/PriceAndClose.tsx')).toMatch(/<PrimaryCtaLink to="\/create" trackCreate>Create your free board<\/PrimaryCtaLink>/);
+    expect(source('src/features/homepage/Homepage.tsx')).toContain('<FreeAccessClose />');
+    expect(source('src/features/homepage/sections/FreeAccessClose.tsx')).toMatch(/<PrimaryCtaLink to="\/create" trackCreate>Create your free board<\/PrimaryCtaLink>/);
   });
 
   it('keeps create intent through signup and reassures the organizer', () => {
     const requireAuth = source('components/auth/RequireAuth.tsx');
     const login = source('pages/Login.tsx');
     expect(requireAuth).toContain('mode=signup');
-    expect(login).toContain('Start the board now. Your first published board is free, and viewers will not need an account.');
+    expect(login).toContain('Start the board now. Publishing is free, and viewers will not need an account.');
     expect(login).toContain('Create account and start board');
   });
 
@@ -63,12 +62,12 @@ describe('public conversion path', () => {
     expect(hub).not.toContain('capture real football squares search traffic');
   });
 
-  it('removes internal and unsupported article claims while keeping exact pricing', () => {
+  it('removes internal and unsupported article claims while keeping free access clear', () => {
     const youth = source('pages/YouthSportsFootballSquaresFundraiser.tsx');
     const comparison = source('pages/RunYourPoolAlternative.tsx');
     expect(youth).not.toContain('GTM lane');
     expect(comparison).not.toMatch(/built in 2004|hidden costs|liquid glass|legacy platforms struggle/i);
-    expect(comparison).toContain(exactPricing);
+    expect(comparison).toContain(freeAccess);
   });
 
   it('gives high-intent fundraiser articles a primary create-board CTA', () => {
@@ -85,8 +84,7 @@ describe('public conversion path', () => {
     }
   });
 
-  it('always offers a next step after checkout and on missing pages', () => {
-    expect(source('pages/Paid.tsx')).toContain("state === 'ready' && !contestId");
+  it('offers a next step on missing pages', () => {
     const notFound = source('pages/NotFound.tsx');
     expect(notFound).toContain('Create a new board');
     expect(notFound).toContain('See the demo board');

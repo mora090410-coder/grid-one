@@ -16,7 +16,7 @@ for (const width of [1024, 1280, 1440]) {
       hero.getByRole('heading', { level: 1 }),
       hero.getByRole('link', { name: 'Create your free board' }),
       hero.getByRole('link', { name: 'Try the demo' }),
-      hero.getByText('First published board free each season'),
+      hero.getByText('Create and publish boards for free'),
       hero.getByText('No card required'),
       hero.getByText('Football squares for team fundraisers'),
     ];

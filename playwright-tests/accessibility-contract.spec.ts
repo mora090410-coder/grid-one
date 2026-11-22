@@ -215,11 +215,6 @@ const installOrganizerBoard = async (page: Page, options: {
     contentType: 'application/json',
     body: JSON.stringify({ games: [scheduledGame] }),
   }));
-  await page.route('**/api/billing/status', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ tier: 'free', used: 0, allowance: 1 }),
-  }));
   await page.route(`**/api/pools/${ownerId}/publish`, (route) => route.fulfill(!Number.isInteger(route.request().postDataJSON()?.revision) ? {
     status: 409,
     contentType: 'application/json',
@@ -227,7 +222,7 @@ const installOrganizerBoard = async (page: Page, options: {
   } : {
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3, tier: 'free', used: 1, allowance: 1 }),
+    body: JSON.stringify({ published: true, shareCode: 'ABCDEFGH', viewerUrl: '/b/ABCDEFGH', revision: 3 }),
   }));
 };
 
@@ -511,7 +506,7 @@ test.describe('Slice 2 signed-out accessibility contract automation', () => {
     await expect(publish).toContainText('Side axis');
     await expect(publish).toContainText('What becomes public');
     await expect(publish).toContainText('What remains private');
-    await expect(publish).toContainText('0 of 1 published this season · Free');
+    await expect(publish).not.toContainText('published this season');
     await expect(publish.getByRole('button', { name: 'Publish viewer link' })).toBeEnabled();
 
     await cancel.click();

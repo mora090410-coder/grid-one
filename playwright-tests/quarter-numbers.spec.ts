@@ -29,7 +29,7 @@ for (const exportMode of ['download','native-contract'] as const) for (const wid
       expect(board.isDynamic).toBe(true);
       for (const sets of [board.topAxisByQuarter,board.leftAxisByQuarter]) for (const key of ['Q1','Q2','Q3','Q4'] as const) expect(new Set(sets?.[key]).size).toBe(10);
       published = true;
-      return route.fulfill({json:{published:true,shareCode:'QQQQQ234',viewerUrl:'/b/QQQQQ234',revision:++revision,tier:'free',used:1,allowance:1}});
+      return route.fulfill({json:{published:true,shareCode:'QQQQQ234',viewerUrl:'/b/QQQQQ234',revision:++revision}});
     });
     await page.goto(`/boards/${boardId}`);
     await openBoardTask(page, 'Numbers');

@@ -18,7 +18,7 @@ npx vitest run --project unit
 
 - **Pure models.** `organizerLifecycle`, `draftSaveModel`, `manualScoringModel`, `scenarioModel`, `viewerScoreModel`, `viewerIdentityModel`, `milestoneViewModel`, `boardGridModel`, `winnerLogic`, `retry`, `playerNameMatching`, `numberDraw`.
 - **Rendered components** through Testing Library with semantic queries only — `tests/viewer/`, `tests/organizer/`, `tests/homepage/`, `tests/site/`, `viewerShell`, `viewerBoardGrid`, `manualScoringPanel`, `scheduledGamePicker`, `findSquaresModal`, `dashboard`, `createContest`.
-- **Pages Functions and workers** with a mocked `context.env` and request — `commercialEndpoints`, `notificationEndpoints`, `openSquaresEndpoint`, `publishEntitlementEndpoint`, `scoreEndpointActivation`, `scorePublicCaching`, `scoreValidation`, `espnNfl`, `stripeWebhookLifecycle`, `scoreRefreshScheduler`, `notificationRetryWorker`.
+- **Pages Functions and workers** with a mocked `context.env` and request — `notificationEndpoints`, `openSquaresEndpoint`, `scoreEndpointActivation`, `scorePublicCaching`, `scoreValidation`, `espnNfl`, `scoreRefreshScheduler`, `notificationRetryWorker`.
 - **Source-scanning contracts** that read files rather than run them: `tests/design/` (tokens, cascade guards, contrast), `staticSeo`, `pricingCopyConsistency`, `productionCopy`, `pollingDisclosure`, `instrumentationSchema`.
 
 ### 2. Integration — Vitest `integration` project
@@ -27,7 +27,7 @@ npx vitest run --project unit
 npm run test:integration
 ```
 
-`tests/**/*.integration.test.ts`. Each file starts a disposable Postgres container and runs real SQL against the migrations in `supabase/migrations/`, which is why the project runs one file at a time. It proves concurrency, checkout lifecycle, pricing tiers, milestone confirmation, notification rate limits and retry, published-square rename, score test mode, and the axis rename migration.
+`tests/**/*.integration.test.ts`. Each file starts a disposable Postgres container and runs real SQL against the migrations in `supabase/migrations/`, which is why the project runs one file at a time. It proves concurrency, free sharing and publishing, milestone confirmation, notification rate limits and retry, published-square rename, score test mode, and the axis rename migration.
 
 Requires Docker. If Docker is unavailable, record the blocker and run every other gate — do not claim this layer passed.
 
@@ -67,7 +67,7 @@ A passing build is necessary and insufficient. For any UI change, also inspect t
 
 ## Coverage focus
 
-`utils/winnerLogic.ts`, `utils/retry.ts`, `hooks/useLiveScoring.ts`, `src/features/organizer/lifecycle/`, `src/features/viewer/**/*Model.ts`, `functions/api/scores/*`, `functions/api/pools*`, `functions/api/stripe/*`, `functions/api/notifications/*`.
+`utils/winnerLogic.ts`, `utils/retry.ts`, `hooks/useLiveScoring.ts`, `src/features/organizer/lifecycle/`, `src/features/viewer/**/*Model.ts`, `functions/api/scores/*`, `functions/api/pools*`, `functions/api/notifications/*`.
 
 ## Non-goals
 

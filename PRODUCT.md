@@ -4,7 +4,7 @@
 
 ## Platform
 
-Responsive web application. React 19 + Vite on Cloudflare Pages, Cloudflare Pages Functions for the API, two one-minute Cloudflare cron Workers, Supabase Postgres with Row Level Security, Stripe Checkout, server-side ESPN scoring, server-side Gemini OCR for paper-board import, and transactional email through Resend.
+Responsive web application. React 19 + Vite on Cloudflare Pages, Cloudflare Pages Functions for the API, two one-minute Cloudflare cron Workers, Supabase Postgres with Row Level Security, server-side ESPN scoring, server-side Gemini OCR for paper-board import, and transactional email through Resend.
 
 ## Product
 
@@ -88,17 +88,12 @@ These are arithmetic outcomes, never probabilities, betting advice, or predictio
 - Failed deliveries are retried by a one-minute cron Worker calling `POST /api/notifications/retry`.
 - SMS is deferred.
 
-## Commercial model
+## Free-only product model
 
-The ladder is written once, in `src/features/homepage/pricing.ts`. Change it there, in Stripe, and nowhere else.
-
-- Building, editing, and previewing unlimited draft boards are free.
-- The Free tier includes **1 published board per account per season**.
-- The **Game Day** tier is **$9.99 once** for up to 5 published boards in the 2026 season.
-- The **Organization** tier is **$79 per season** for up to 50 published boards, an organization name on each board, one dashboard for all organization boards, and one receipt with the organization name.
-- Organization can be purchased directly from a saved board at any time, including before free allowance is used. An eligible verified paid same-account/same-season $9.99 Game Day purchase is credited on upgrade ($69.01 net); grants and refunded/disputed sources do not qualify. Migration 038 reserves credit once and reconciles both supporting payments; direct purchase and upgrade provide 50 TOTAL boards, not 55. The organizer's Season plans action is available before allowance exhaustion. The authenticated payment-return page provides the organization-named GridOne receipt from canonical paid order data; actual processor receipt/email delivery remains a separate operational acceptance gate.
-- First sharing reserves one board from the same seasonal allowance; finalizing that board never counts twice. Shared boards cannot be deleted to reclaim their allowance or break team links.
-- Payment gates published-board count only. Every published board includes live scores, scenarios, Find my squares, winner emails, and QR sharing.
+- GridOne is free to use. Organizers sign in to create, edit, share, and publish boards; opening a public viewer link does not require an account.
+- There are no paid plans, a paywall, or a seasonal published-board allowance. Ownership, revision checks, publication rules, and abuse protections still apply.
+- Sharing a sales board and locking its numbers are separate actions. Published links and previous results are not rewritten by this transition.
+- GridOne never collects square money, holds funds, adjudicates off-platform payments, or pays winners. A claim is not proof of payment. Organizer notes about off-platform payments remain private.
 - "100 viewers" is a tested capacity target, not a hard gate or marketing guarantee.
 
 ## Public and private boundaries
@@ -117,18 +112,18 @@ The ladder is written once, in `src/features/homepage/pricing.ts`. Change it the
 - Notification verification and delivery state
 - Private seller attribution and paid/unpaid status (public family allocation is a separate, explicitly labelled field)
 - Private family token hashes and reassignment history; only a newly issued private editing link exposes its capability to the organizer
-- Unshared draft data, draft axis numbers, Stripe identifiers, and internal audit history
+- Unshared draft data, draft axis numbers, and internal audit history
 
 ### System-only
 
-- Service-role, Gemini, Stripe-secret, webhook, cron, and email-provider credentials
+- Service-role, Gemini, cron, and email-provider credentials
 - Provider raw responses and rate-limit/delivery internals
 
 ## Terminology
 
 Use audience-familiar terms consistently and literally. **Board**, **Organizer**, **Viewer**, **Purchaser**, **Participant**, **Square**, **Axis digits**, and **Publish** are current product language, not a universal vocabulary restriction.
 
-Marketing should sound like a game-day organizer, not an internal system specification. Prefer plain language; use technical terms when they clarify actual capability, score authority, state, privacy, or legal boundaries. Words are not banned for appearing in generic AI copy. Use Beta when Anthony requests it and the designation is factually accurate; explain relevant limitations. The approved photo-import Beta and review sentences remain exact regression contracts, not exemptions from a blacklist. Copy tests protect truthful disclosures and the approved commercial ladder, not every inherited marketing phrase.
+Marketing should sound like a game-day organizer, not an internal system specification. Prefer plain language; use technical terms when they clarify actual capability, score authority, state, privacy, or legal boundaries. Words are not banned for appearing in generic AI copy. Use Beta when Anthony requests it and the designation is factually accurate; explain relevant limitations. The approved photo-import Beta and review sentences remain exact regression contracts, not exemptions from a blacklist. Copy tests protect truthful disclosures and the free-only product model, not every inherited marketing phrase.
 
 Do not use pool, contest, player, guest, bet, wager, or payout-processing language when those meanings are not literally intended.
 
@@ -159,7 +154,7 @@ Do not use pool, contest, player, guest, bet, wager, or payout-processing langua
 
 ## Success
 
-GridOne's north-star outcome is **Successful Game-Day Board Runs through Final**. A qualifying board is published and publicly available, has committed axis digits, receives authoritative automatic or manual scoring, durably resolves Q1/Q2/Q3/Final, and finishes without an unresolved integrity, publication, or score-authority failure.
+The free-only experiment asks whether people sign up and actually use GridOne. Track verified organizer sign-ups where available, first published boards, and repeat use separately. The game-day outcome is **Successful Game-Day Board Runs through Final**. A qualifying board is published and publicly available, has committed axis digits, receives authoritative automatic or manual scoring, durably resolves Q1/Q2/Q3/Final, and finishes without an unresolved integrity, publication, or score-authority failure.
 
 Supporting evidence must show that an organizer can replace Excel and paper, a phone viewer can understand their live position without contacting the organizer, winner email happens exactly once, automatic-score failure remains honest and recoverable, and private organizer/contact/payment data is inaccessible to viewers and non-owners.
 
@@ -176,7 +171,7 @@ Use `docs/product-metrics-and-evidence.md` for qualification, leading metrics, g
 - The product is pre-launch. Never invent customers, testimonials, revenue, usage, or fundraising totals.
 - Demonstration data must be labeled when it could be mistaken for real activity.
 
-Existing copy, hierarchy, materials, tokens, and interaction mechanisms are production baselines. Exploration may challenge them to improve organizer success, viewer comprehension, trust, or maintainability. Label assumptions and recommend the strongest outcome, without manufacturing a redesign. Exploration does not authorize implementation or release: intentional adoption requires an approved scope, coordinated design/journey/test updates, reversible implementation, and relevant rendered, accessibility, and integrity checks. Unchanged surfaces retain current normative tokens. Pricing, money, privacy, permissions, score authority, and evidence truth remain binding.
+Existing copy, hierarchy, materials, tokens, and interaction mechanisms are production baselines. Exploration may challenge them to improve organizer success, viewer comprehension, trust, or maintainability. Label assumptions and recommend the strongest outcome, without manufacturing a redesign. Exploration does not authorize implementation or release: intentional adoption requires an approved scope, coordinated design/journey/test updates, reversible implementation, and relevant rendered, accessibility, and integrity checks. Unchanged surfaces retain current normative tokens. The free-only policy, money, privacy, permissions, score authority, and evidence truth remain binding.
 
 ## Seller links
 

@@ -3,19 +3,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import Homepage from '../../src/features/homepage/Homepage';
-import { MONEY_BOUNDARY, PRICING } from '../../src/features/homepage/pricing';
+import { MONEY_BOUNDARY } from '../../src/features/homepage/disclosures';
 
 const renderPage = () => render(<MemoryRouter><Homepage /></MemoryRouter>);
 
 describe('Compact cinematic homepage', () => {
-  it('keeps the promise, free allowance, sign-in and demo handoffs in the hero', () => {
+  it('keeps the promise, free access, sign-in and demo handoffs in the hero', () => {
     renderPage();
     const hero = screen.getByTestId('homepage-first-viewport');
     expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent('Your team. One board. Less chasing.');
     expect(within(hero).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
     expect(within(hero).getByRole('link', { name: 'Try the demo' })).toHaveAttribute('href', '/demo');
     expect(within(hero).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login?mode=signin');
-    expect(within(hero).getByText(/First published board free each season/)).toBeInTheDocument();
+    expect(within(hero).getByText(/Create and publish boards for free/)).toBeInTheDocument();
     expect(within(hero).getByText(/No card required/)).toBeInTheDocument();
   });
 
@@ -75,27 +75,18 @@ describe('Compact cinematic homepage', () => {
     expect(film).toHaveTextContent(/sample|simulated/i);
   });
 
-  it('keeps the canonical three plans and an action beside pricing', () => {
+  it('keeps the free board features and create action without billing offers', () => {
     renderPage();
-    const pricing = screen.getByRole('region', { name: 'Your first board is free.' });
-    const plans = within(pricing).getByRole('region', { name: 'Plans' });
-    for (const tier of PRICING) {
-      expect(within(plans).getByRole('heading', { name: tier.name })).toBeInTheDocument();
-      expect(within(plans).getByText(tier.price, { exact: true })).toBeInTheDocument();
-    }
-    expect(plans).toHaveTextContent('1 published board per account per season');
-    expect(plans).toHaveTextContent(/up to 5 published boards in the 2026 season/);
-    expect(plans).toHaveTextContent(/up to 50 published boards/);
-    expect(pricing).toHaveTextContent(/organization naming|organization name/i);
-    expect(pricing).toHaveTextContent(/dashboard/i);
-    expect(pricing).toHaveTextContent(/receipt/i);
-    for (const feature of ['live scores', 'Find my squares', 'what wins next', 'winner emails', 'QR sharing']) expect(pricing).toHaveTextContent(feature);
-    expect(within(pricing).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
+    const closing = screen.getByRole('region', { name: 'Every board is free.' });
+    expect(within(closing).queryByRole('region', { name: 'Plans' })).not.toBeInTheDocument();
+    expect(closing).not.toHaveTextContent(/\$9\.99|\$79|season plan/i);
+    for (const feature of ['live scores', 'Find my squares', 'what wins next', 'winner emails', 'QR sharing']) expect(closing).toHaveTextContent(feature);
+    expect(within(closing).getByRole('link', { name: 'Create your free board' })).toHaveAttribute('href', '/create');
   });
 
-  it('uses three closed FAQs and preserves the payment boundary and allowance explanation', () => {
+  it('uses three closed FAQs and preserves the payment boundary and free access explanation', () => {
     renderPage();
-    const questions = ['Do viewers need an account?', 'Does GridOne collect square money?', 'When do I pay?'];
+    const questions = ['Do viewers need an account?', 'Does GridOne collect square money?', 'Is GridOne free?'];
     const faq = screen.getByRole('region', { name: 'A few things to know' });
     expect(faq.querySelectorAll('details')).toHaveLength(3);
     for (const question of questions) expect(within(faq).getByText(question).closest('details')?.open).toBe(false);
@@ -104,8 +95,8 @@ describe('Compact cinematic homepage', () => {
     expect(money).toHaveTextContent(MONEY_BOUNDARY);
     const payment = within(faq).getByText(questions[2]).closest('details')!;
     fireEvent.click(within(payment).getByText(questions[2]));
-    expect(payment).toHaveTextContent(/first shared board each season is free/i);
-    expect(payment).toHaveTextContent(/Each board counts once/i);
+    expect(payment).toHaveTextContent(/Create, publish, and share boards for free/i);
+    expect(payment).toHaveTextContent(/No card required/i);
   });
 
   it('opens and closes an FAQ without losing the other questions', () => {
@@ -118,7 +109,7 @@ describe('Compact cinematic homepage', () => {
     fireEvent.click(summary);
     expect(first.open).toBe(false);
     expect(screen.getByText('Does GridOne collect square money?')).toBeInTheDocument();
-    expect(screen.getByText('When do I pay?')).toBeInTheDocument();
+    expect(screen.getByText('Is GridOne free?')).toBeInTheDocument();
   });
 
   it('keeps concise guide and legal exits with the full no-money boundary', () => {

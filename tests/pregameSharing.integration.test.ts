@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// Exercises the complete migration chain and the pregame sharing security boundary.
+// Exercises the complete migration chain, legacy rollback contracts and the free lifecycle.
 
 const DATABASE_NAME = 'gridone_sales_test';
 const DATABASE_USER = 'postgres';
@@ -239,5 +239,67 @@ describe.sequential('pregame sharing on disposable PostgreSQL',()=>{
   const rev=await queryScalar(`SELECT revision FROM contests WHERE id='${OPEN_CONTEST_ID}'`);
   await expect(share(OPEN_CONTEST_ID,OWNER_ID,rev)).rejects.toThrow(/PUBLISH_ALLOWANCE_EXHAUSTED:free:1:1/);
   expect(await queryScalar(`SELECT board_data->>'isDynamic' FROM contests WHERE id='${OPEN_CONTEST_ID}'`)).toBe('true');
+ });
+ it('keeps historical payment tables and routines inaccessible to browser roles',async()=>{
+  const historicalTables = "'season_entitlements','checkout_orders','checkout_order_disputes','stripe_events','entitlement_audit_events'";
+  expect(await queryScalar(`
+    SELECT count(*) FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname IN (${historicalTables}) AND (
+        has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE') OR
+        has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE')
+      )
+  `)).toBe('0');
+  expect(await queryScalar(`
+    SELECT count(*) FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname='public'
+        AND p.proname ~ '^gridone_(claim_checkout|attach_checkout|record_checkout|fulfill_checkout|apply_(entitlement_)?payment|activate_board)'
+        AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+          OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+  `)).toBe('0');
+ });
+ it('lets an owner share and publish two boards with an exhausted historical entitlement',async()=>{
+  const ids=['30000000-0000-4000-8000-000000000031','30000000-0000-4000-8000-000000000032'];
+  const owner='30000000-0000-4000-8000-000000000033';
+  const oldBoard='30000000-0000-4000-8000-000000000034';
+  await executeSql(`
+   INSERT INTO auth.users(id,email) VALUES ('${owner}','free-owner@example.test');
+   INSERT INTO contests(id,owner_id,share_code,title,season_year,game_external_id,game_starts_at,board_data)
+   VALUES ('${ids[0]}','${owner}','EEEEE234','First free board',2026,'401772999','2026-09-13T17:00:00Z',${sqlText(JSON.stringify(publicBoard))}::jsonb),
+   ('${ids[1]}','${owner}','EEEEE235','Second free board',2026,'401772999','2026-09-13T17:00:00Z',${sqlText(JSON.stringify(publicBoard))}::jsonb),
+   ('${oldBoard}','${owner}','EEEEE236','Historical board',2026,'401772999','2026-09-13T17:00:00Z',${sqlText(JSON.stringify(publicBoard))}::jsonb);
+   INSERT INTO season_entitlements(id,owner_id,season_year,status,tier,boards_allowance,price_cents,currency)
+    VALUES ('${ENTITLEMENT_ID}','${owner}',2026,'active','free',1,0,'usd');
+   INSERT INTO board_activations(entitlement_id,contest_id) VALUES ('${ENTITLEMENT_ID}','${oldBoard}');
+  `);
+
+  const shareFree = (id: string, user: string, rev: string) => queryScalar(`
+    SET ROLE service_role;
+    SELECT row_to_json(result) FROM gridone_share_free_board('${id}','${user}',${rev}) result;
+  `);
+  const publishFreeSql = (id: string, user: string, rev: string) => `
+    SELECT row_to_json(result) FROM gridone_publish_free_board('${id}','${user}',${rev},${VALID_SIDE_AXIS},${VALID_TOP_AXIS},
+      ${sqlText(JSON.stringify(names))}::jsonb,${sqlText(JSON.stringify(publicBoard))}::jsonb,${sqlText(JSON.stringify(matchup))}::jsonb) result;
+  `;
+
+  expect(await shareFree(ids[0], STRANGER_ID, '1')).toBe('');
+  expect(await shareFree(ids[0], owner, '999')).toBe('');
+  expect(await shareFree(ids[0], owner, 'null')).toBe('');
+  const shared = await Promise.all(ids.map(id=>shareFree(id,owner,'1')));
+  expect(shared.map(row=>JSON.parse(row).shared)).toEqual([true,true]);
+  for (const id of ids) {
+    const rev=await queryScalar(`SELECT revision FROM contests WHERE id='${id}'`);
+    expect(await queryScalar('SET ROLE service_role;'+publishFreeSql(id,STRANGER_ID,rev))).toBe('');
+    expect(await queryScalar('SET ROLE service_role;'+publishFreeSql(id,owner,'999'))).toBe('');
+    const published=JSON.parse(await queryScalar('SET ROLE service_role;'+publishFreeSql(id,owner,rev)));
+    expect(published).toMatchObject({published:true});
+    expect(published).not.toHaveProperty('tier');
+  }
+  expect(await queryScalar(`SELECT count(*) FROM public_board_snapshots WHERE contest_id IN ('${ids.join("','")}')`)).toBe('2');
+  expect(await queryScalar(`SELECT count(*) FROM board_activations WHERE entitlement_id='${ENTITLEMENT_ID}'`)).toBe('1');
+  expect(await queryScalar(`SELECT boards_allowance FROM season_entitlements WHERE id='${ENTITLEMENT_ID}'`)).toBe('1');
+  await expect(executeSql(asUser(owner,`SELECT * FROM gridone_share_free_board('${ids[0]}','${owner}',1);`))).rejects.toThrow(/permission denied/i);
+  await expect(executeSql(asUser(owner,publishFreeSql(ids[0],owner,'1')))).rejects.toThrow(/permission denied/i);
+  await expect(executeSql(`SET ROLE anon; SELECT * FROM gridone_share_free_board('${ids[0]}','${owner}',1);`)).rejects.toThrow(/permission denied/i);
+  await expect(executeSql(`SET ROLE anon; ${publishFreeSql(ids[0],owner,'1')}`)).rejects.toThrow(/permission denied/i);
  });
 });

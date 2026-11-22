@@ -48,8 +48,6 @@ interface PoolDataState {
     loadingPool: boolean;
     dataReady: boolean;
     error: string | null;
-    isActivated: boolean;
-    isPaid: boolean;
     isLocked: boolean;
     isPublished: boolean;
     isShared: boolean;
@@ -88,7 +86,6 @@ export function usePoolData(): UsePoolDataReturn {
     const [loadingPool, setLoadingPool] = useState(true);
     const [dataReady, setDataReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isActivated, setIsActivated] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -116,7 +113,7 @@ export function usePoolData(): UsePoolDataReturn {
     }, []);
 
 
-    // Load pool data through the API so unpaid boards can be masked for non-owners.
+    // Load through the API so private drafts are not exposed to non-owners.
     const loadPoolData = useCallback(async (poolId: string, options?: { background?: boolean }) => {
         const sequence = ++loadSequence.current;
         const background = options?.background === true;
@@ -153,7 +150,6 @@ export function usePoolData(): UsePoolDataReturn {
             setRevision(Number.isInteger(data.revision) ? data.revision : null);
             revisionRef.current = Number.isInteger(data.revision) ? data.revision : null;
             setOwnerId(data.owner_id || null);
-            setIsActivated(Boolean(data.is_activated));
             setIsLocked(Boolean(data.locked));
             setIsPublished(Boolean(data.published_at));
             setIsShared(Boolean(data.shared_at || data.published_at));
@@ -212,7 +208,7 @@ export function usePoolData(): UsePoolDataReturn {
             const result = await response.json().catch(() => ({}));
             if (!response.ok) {
                 throw Object.assign(new Error(result.error || 'The board could not be shared. Try again.'), {
-                    code: result.code, upgradeTo: result.upgradeTo,
+                    code: result.code,
                 });
             }
             if (!result.shared || !result.shareCode || !Number.isInteger(result.revision)) {
@@ -222,7 +218,6 @@ export function usePoolData(): UsePoolDataReturn {
             setRevision(result.revision);
             setShareCode(result.shareCode);
             setIsShared(true);
-            setIsActivated(true);
             setUpdatedAt(result.sharedAt || null);
             track({ name: 'organizer_phase_completed', phase: 'share' });
         };
@@ -453,8 +448,6 @@ export function usePoolData(): UsePoolDataReturn {
         updatePublishedOpenSquares,
         migrateGuestBoard,
         clearError,
-        isActivated,
-        isPaid: isActivated,
         isLocked,
         isPublished,
         isShared,

@@ -51,7 +51,7 @@ test('reduced motion keeps all content and requests no 3D code', async ({ browse
     await control.click();
     await expect(control).toHaveAttribute('aria-pressed', 'true');
   }
-  for (const name of [/Your team\.\s*One board\.\s*Less chasing\./, 'From setup to game day.', 'Your first board is free.']) {
+  for (const name of [/Your team\.\s*One board\.\s*Less chasing\./, 'From setup to game day.', 'Every board is free.']) {
     const heading = page.getByRole('heading', { name }).first();
     await expect(heading).toBeVisible();
     expect(await heading.evaluate(element => getComputedStyle(element).opacity)).toBe('1');

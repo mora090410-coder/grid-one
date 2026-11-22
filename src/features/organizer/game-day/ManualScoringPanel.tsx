@@ -11,7 +11,7 @@ import {
 } from './manualScoringModel';
 
 interface ManualScoringPanelProps {
-  isActivated: boolean;
+  isPublished: boolean;
   game: GameState;
   scoreSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
   onEnableAutomaticScoring: () => void;
@@ -23,7 +23,7 @@ interface ManualScoringPanelProps {
 }
 
 export const ManualScoringPanel = ({
-  isActivated,
+  isPublished,
   game,
   scoreSaveStatus,
   onEnableAutomaticScoring,
@@ -33,7 +33,7 @@ export const ManualScoringPanel = ({
   onUpdateManualQuarter,
   onSaveManualScore,
 }: ManualScoringPanelProps) => {
-  if (!isActivated) {
+  if (!isPublished) {
     return (
       <Glass padding="lg">
         <p className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] mb-2 text-tone-cardinal">Ready when the board goes live</p>
