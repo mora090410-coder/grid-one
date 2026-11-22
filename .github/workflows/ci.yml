@@ -16,7 +16,7 @@ concurrency:
 jobs:
   check:
     name: check
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Check out the repository
@@ -43,6 +43,11 @@ jobs:
         run: npm run test:unit
 
       - name: Production build
+        env:
+          # Vite bakes these public, non-secret fixtures into the built UI.
+          # They must match the organizer session fixture in playwright.config.ts.
+          VITE_SUPABASE_URL: https://gridone-test.supabase.invalid
+          VITE_SUPABASE_ANON_KEY: playwright-test-anon-key
         run: npm run build
 
       - name: Design lint
@@ -59,6 +64,9 @@ jobs:
 
       - name: Free organizer and public board browser regression
         if: github.event_name == 'pull_request'
+        env:
+          # Exercise the built route chunks, not Vite's cold dev transform server.
+          PLAYWRIGHT_BUILT_UI: '1'
         run: |
           npx playwright install --with-deps chromium
-          npx playwright test --project=chromium playwright-tests/homepage.spec.ts playwright-tests/pregame-selling.spec.ts playwright-tests/organizer.spec.ts
+          npx playwright test --project=chromium --trace retain-on-failure playwright-tests/homepage.spec.ts playwright-tests/pregame-selling.spec.ts playwright-tests/organizer.spec.ts
