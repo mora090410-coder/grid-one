@@ -69,6 +69,22 @@ afterAll(async () => {
 });
 
 describe('build-time public route metadata', () => {
+  it('declares exactly one zero-price homepage offer in both source and generated HTML', async () => {
+    const [template, generated] = await Promise.all([
+      readFile(resolve(projectRoot, 'index.html'), 'utf8'),
+      readFile(outputPathForRoute(outputDirectory, '/'), 'utf8'),
+    ]);
+    for (const html of [template, generated]) {
+      const document = new DOMParser().parseFromString(html, 'text/html');
+      const schemas = Array.from(document.querySelectorAll('script[type="application/ld+json"]'),
+        script => JSON.parse(script.textContent ?? ''));
+      const offers = schemas.flatMap(schema => schema['@graph'] ?? [schema])
+        .filter(entry => entry['@type'] === 'SoftwareApplication')
+        .flatMap(entry => entry.offers);
+      expect(offers).toEqual([{ '@type': 'Offer', price: '0', priceCurrency: 'USD' }]);
+    }
+  });
+
   it('keeps every static public app route in the metadata manifest', () => {
     expect(PUBLIC_ROUTE_METADATA.map((route) => route.path).sort()).toEqual(
       publicAppPaths().sort(),
